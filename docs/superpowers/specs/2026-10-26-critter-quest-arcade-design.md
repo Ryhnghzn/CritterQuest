@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Disetujui (2026-10-26) |
+| **Status** | Disetujui (2026-10-26); **diubah 2026-10-26: Kota & Dungeon (§13)** — §13 mengalahkan bagian lain bila bertentangan |
 | **Basis kode** | Prototipe `app/` (Critter Survivors, Vite + JavaScript murni + canvas) |
 | **Konsep induk** | [`docs/2026-10-26-konsep-critter-quest.md`](../../2026-10-26-konsep-critter-quest.md) — versi RPG penuh; dokumen ini adalah langkah pertamanya |
 | **Perkiraan** | 2–4 sesi kerja |
@@ -13,7 +13,7 @@ Semua angka keseimbangan di dokumen ini adalah **nilai awal** dan akan disetel s
 
 ## 1. Tujuan
 
-Mengubah prototipe survival arena menjadi **arcade roguelite**: setiap ronde tetap arcade (masuk arena, bertahan, mati/menang), tetapi karakter, level, uang, dan gear **tersimpan permanen di IndexedDB**. Bisa dimainkan di PC dan HP.
+Mengubah prototipe survival arena menjadi **action roguelite dengan kota**: pemain tinggal di **kota** yang bisa dijelajahi (Inn, toko), lalu masuk **dungeon berlantai**; karakter, level, uang, HP, potion, dan gear **tersimpan permanen di IndexedDB**. Bisa dimainkan di PC dan HP. (Rancangan awal "Kemah + ronde arcade" diganti — lihat §13.)
 
 **Ukuran berhasil:**
 1. Pemain bisa membuat karakter (nama, rambut, kelas), bermain beberapa ronde, menutup browser, membuka lagi, dan semua progres masih ada.
@@ -23,9 +23,11 @@ Mengubah prototipe survival arena menjadi **arcade roguelite**: setiap ronde tet
 
 ## 2. Di luar lingkup
 
-Kota yang dijelajahi, dungeon, job lanjutan, item Legendaris, PWA, fitur online, simpan di tengah ronde.
+Job lanjutan, item Legendaris, dungeon kedua dst., Pandai Besi/tempa, Papan Quest, Gudang, PWA, fitur online, simpan di tengah dungeon. (Kota dan satu dungeon berlantai **masuk lingkup** sejak 2026-10-26, §13.)
 
 ## 3. Alur & Layar
+
+> Diganti oleh §13.1 (Kemah dihapus; kota + dungeon). Tabel di bawah tetap berlaku untuk Judul, Pilih Slot, Buat Karakter, HUD, Level-up.
 
 ```
 Judul ─► Pilih Slot (3) ─► [slot kosong] Buat Karakter ─┐
@@ -150,8 +152,7 @@ Dipertahankan dari prototipe (`STAT_UPS`) tetapi hanya berlaku selama ronde. Kar
 
 ### 5.6 Akhir ronde
 
-- **Mati atau Menyerah:** semua EXP, uang, dan gear yang didapat **tetap disimpan**.
-- Bonus waktu: +1 uang per 10 detik bertahan.
+- Diganti oleh §13.4 (akhir perjalanan dungeon: pulang lewat portal / mati / menyerah, hukuman separuh).
 
 ## 6. Gear & Rarity
 
@@ -198,6 +199,8 @@ Cincin selalu minimal Bagus (punya ≥1 bonus).
 - Jual: harga = `5 × levelItem × (1 + rarity)`.
 
 ## 7. Toko (Kemah)
+
+> Diganti oleh §13.2: toko kini NPC di kota. Potion dibeli di Toko Ramuan (bukan upgrade "Potion Awal"); Peti Gear di Toko Gear (langkah 5); Upgrade HP/ATK/Magnet pindah ke NPC Pelatih (langkah 6); Ganti Rambut ke Tukang Cukur (langkah 6).
 
 | Barang | Efek | Harga |
 |---|---|---|
@@ -277,6 +280,8 @@ Setiap transaksi langsung di-auto-save.
 
 ## 10. Struktur Kode
 
+> Tambahan §13.6: `town/`, `data/town.js`, `data/dungeon.js`, `meta/shop.js`, `run/dungeon.js`, `render/town.js`, `render/light.js`, `ui/npc.js`, `ui/charpanel.js`; `ui/camp.js` dihapus.
+
 ```
 app/src/
   main.js              # bootstrap: buat layanan, pasang layar, mulai loop
@@ -325,6 +330,81 @@ app/src/
 | 1 | Rapikan struktur folder sesuai §10 tanpa mengubah perilaku; pasang Vitest | Game lama masih jalan, tes kosong hijau |
 | 2 | Save (IndexedDB) + Pilih Slot + Buat Karakter + Kemah kerangka | Karakter tersimpan setelah muat ulang |
 | 3 | 4 kelas + serangan manual + skill + dodge + kontrol sentuh; sistem hit baru | Main ronde dengan tiap kelas di PC & HP |
-| 4 | Item, rarity, drop, elite, inventori, paper doll gear | Gear didapat, dipasang, terlihat, tersimpan |
-| 5 | Uang, Toko, upgrade, peti, ganti rambut, layar Hasil lengkap | Siklus ronde ↔ kemah lengkap |
-| 6 | Ekspor/impor, polesan, penyeimbangan | Siap dibagikan |
+| 4 | **(diubah, §13)** 4A Kota + tema gelap + Inn + Toko Ramuan + panel Karakter + save v2; 4B Dungeon 5 lantai, portal, koin, HP & potion terbawa, hukuman mati, Hasil Perjalanan | Siklus kota ↔ dungeon lengkap |
+| 5 | Item, rarity, drop, elite, inventori, paper doll gear + Toko Gear (beli/jual/peti) | Gear didapat, dipasang, terlihat, tersimpan |
+| 6 | Pelatih (upgrade permanen), Tukang Cukur, ekspor/impor, polesan, penyeimbangan | Siap dibagikan |
+
+## 13. Kota & Dungeon (perubahan 2026-10-26)
+
+Atas permintaan pemilik: masuk game langsung ke **kota** yang bisa dijelajahi, dengan NPC penjual, Inn untuk memulihkan darah, dan gerbang ke **dungeon**. Tema **gelap** (dark fantasy kartun).
+
+### 13.1 Alur
+
+```
+Judul ─► Pilih Slot ─► [Buat Karakter] ─► KOTA ⇄ DUNGEON (Lantai 1 → … → 5 BOS)
+                                            ▲         │ portal tiap lantai: Turun / Pulang
+                                            └─ Hasil Perjalanan ◄─ pulang / mati / menyerah
+```
+Kemah dihapus. Stat & rekor dilihat di **panel Karakter** (tombol C / ikon di kota).
+
+### 13.2 Kota
+
+- Peta tetap ± 900 × 700 unit, dibatasi tembok; bangunan dan tembok tidak bisa ditembus (tabrakan kotak).
+- Malam berkabut: lapisan gelap di atas dunia, terang hanya di sekitar lentera, obor, api unggun, jendela, dan pemain (cahaya jingga hangat). Jalan batu bulat, rumah kayu beratap curam.
+- Karakter berjalan dengan kontrol yang sama dengan dungeon (WASD/joystick); tidak ada pertarungan, tombol serang/skill disembunyikan.
+- **Interaksi:** NPC dalam radius 48 → gelembung "E Bicara"; di HP muncul tombol **Bicara**. Aksi terbuka di jendela panel.
+
+| NPC | Aksi |
+|---|---|
+| Penginapan | Tidur: HP penuh seketika, biaya `10 + 2 × level` koin |
+| Toko Ramuan | Beli potion (pulih 40% HP maks), 25 koin, maks 5 dibawa |
+| Toko Gear | Belum buka sampai langkah 5 (dialog saja) |
+| Penjaga gerbang | Masuk dungeon (mulai Lantai 1) |
+
+- Di kota HP pulih 1% HP maks per detik (agar tidak pernah buntu tanpa uang).
+- Potion diminum dengan **R** / tombol potion, di kota maupun dungeon; jeda minum 1 detik.
+- NPC digambar dengan paper doll yang sama (warna baju/rambut sendiri) + ikon peran di atas kepala.
+- Muncul di kota: di depan gerbang setelah dungeon, di alun-alun saat memuat slot. Posisi tidak disimpan.
+
+### 13.3 Dungeon "Ruang Bawah Tanah Bayangan"
+
+- 5 lantai; tiap lantai satu ruangan batu bundar (radius ± 560) berdinding, obor dinding & jamur bercahaya; musuh masuk dari 4 lorong di tepi.
+- Komposisi gelombang per lantai di `data/dungeon.js` (awal: L1 3 gelombang lendir; L2 3 lendir+kelelawar; L3 4 +golem; L4 4 campuran padat; L5 bos Raja Maw + pengawal). HP musuh × (1 + 0,25 × (lantai − 1)).
+- Lantai selesai bila semua gelombang sudah muncul dan musuh habis → dua portal di tengah: **biru = turun**, **emas = pulang**. Setelah bos lantai 5 hanya portal emas + spanduk "Dungeon tamat!".
+- Koin: 30% musuh biasa jatuhkan 1–3, bos 100; bonus `10 × lantai` tiap lantai selesai.
+- Kartu berkah level-up dan EXP ronde berlaku selama satu perjalanan (lintas lantai).
+
+### 13.4 Akhir perjalanan
+
+| Cara | Akibat |
+|---|---|
+| Pulang lewat portal | Semua hadiah dibawa; HP disimpan apa adanya (dibatasi HP maks karakter) |
+| Mati | EXP tetap; koin perjalanan × 0,5 (dibulatkan ke bawah); tiap gear perjalanan 50% hilang (langkah 5); bangun di kota dengan HP 10% |
+| Menyerah (menu jeda) | Sama dengan mati |
+
+Setelahnya layar **Hasil Perjalanan** (lantai terdalam, kill, EXP, koin, yang hilang), lalu kota. Karakter disimpan saat masuk gerbang dan saat perjalanan berakhir; menutup browser di tengah dungeon = kembali ke keadaan saat masuk (tanpa hadiah, tanpa hukuman).
+
+### 13.5 Save versi 2
+
+Slot naik ke `version: 2`; `migrate()` v1 → v2:
+- tambah `hp: null` (null = penuh) dan `potions: 0`;
+- `upgrades` menjadi `{ hp, atk, magnet }` (`potion` dihapus);
+- `records` menjadi `{ bestFloor: 0, clears: 0, trips: runs, kills, bossKills }` (`bestTime` dibuang).
+
+`hp` disimpan sebagai bilangan bulat ≥ 0 atau `null`; saat dimuat dibatasi ke HP maks karakter. Settings tetap versi 2 (§9.2).
+
+### 13.6 Struktur kode & pengujian
+
+| Modul | Isi | Tes |
+|---|---|---|
+| `data/town.js` | peta, tembok, bangunan, NPC, lampu, titik muncul | — |
+| `data/dungeon.js` | lantai & gelombang, ruangan, portal, koin, bonus, hukuman, harga Inn/potion, regen kota | — |
+| `town/town.js` | gerak + tabrakan kotak, NPC terdekat, regen HP — tanpa DOM | Vitest |
+| `meta/shop.js` | `innRest`, `buyPotion` (uang kurang, stok maks) | Vitest |
+| `meta/character.js` | `currentHp`, `applyTrip` (pulang / mati: koin × 0,5, HP 10%, rekor) | Vitest |
+| `meta/schema.js` | v2 + migrasi v1 → v2 | Vitest |
+| `run/dungeon.js` | lantai, gelombang, portal, akhir perjalanan | Vitest |
+| `render/light.js`, `render/town.js` | lapisan gelap + cahaya, gambar kota | screenshot |
+| `ui/npc.js`, `ui/charpanel.js` | jendela NPC, panel Karakter | smoke Playwright |
+
+Dikerjakan dalam dua bagian, masing-masing dicek manual oleh pemilik: **4A** kota (gerbang sementara menuju arena lama), **4B** dungeon berlantai.
