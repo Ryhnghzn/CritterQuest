@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Critter Survivors</title>
+<title>Critter Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -55,6 +55,40 @@ h1.logo{font-size:clamp(20px,4.5vw,44px);margin:0;color:var(--acc);
   color:var(--acc2);text-shadow:0 3px 0 #571b00,0 0 22px rgba(255,120,71,.4);opacity:0;transition:opacity .3s;white-space:nowrap}
 .help{font-size:8px;color:var(--dim);line-height:2}
 #dmg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(255,40,60,.45));opacity:0}
+/* menus: slots, create, camp, results */
+.screen{overflow-y:auto;touch-action:pan-y;justify-content:safe center}
+h1.logo.small{font-size:clamp(14px,3vw,26px)}
+.doll{image-rendering:pixelated}
+.card canvas.doll{width:auto;height:auto}
+.card.slotcard{cursor:pointer;min-height:220px;justify-content:center}
+.card.bad{border-color:var(--acc2)}
+.card.bad .nm{color:var(--acc2)}
+.btn.small{font-size:8px;padding:8px 12px;box-shadow:0 3px 0 #a8871f}
+.btn.ghost.small{box-shadow:0 3px 0 var(--line);border-width:2px}
+.btn:disabled{opacity:.5;cursor:default}
+input.name{font-family:inherit;font-size:12px;padding:10px;background:#0b100d;color:var(--ink);border:3px solid var(--line);
+  width:min(280px,84vw);text-align:center;user-select:text;-webkit-user-select:text;outline:none}
+input.name:focus{border-color:var(--acc)}
+.label{font-size:8px;color:var(--dim)}
+.chip{font-family:inherit;font-size:8px;padding:8px 10px;background:var(--panel);color:var(--dim);border:2px solid var(--line);cursor:pointer}
+.chip.sel{border-color:var(--acc);color:var(--acc)}
+.swatch{width:30px;height:30px;border:3px solid var(--line);cursor:pointer;padding:0}
+.swatch.sel{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+.err{font-size:8px;color:var(--acc2);min-height:1em;line-height:1.8}
+.panel{background:var(--panel);border:3px solid var(--line);padding:16px;width:min(560px,100%)}
+.camphead{display:flex;gap:18px;align-items:center;text-align:left}
+.camphead .nm{font-size:14px;color:var(--acc)}
+.camphead .ds{font-size:8px;color:var(--dim);line-height:2}
+.statgrid{display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px 14px;font-size:8px;text-align:left}
+.statgrid b{color:var(--acc);text-align:right}
+.mini{width:160px;height:10px;background:#00000088;border:2px solid var(--line);position:relative;margin:4px 0}
+.mini>i{position:absolute;inset:0;transform-origin:left;background:var(--xp)}
+.tabs{display:flex;gap:6px;justify-content:center}
+.soon{font-size:9px;color:var(--dim);line-height:2;padding:24px 0}
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px}
+.modal .panel{display:flex;flex-direction:column;gap:18px;align-items:center;text-align:center;font-size:10px;line-height:2}
+#nosave{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:20;font-size:8px;color:#1a1405;
+  background:var(--acc2);padding:8px 12px;white-space:nowrap;pointer-events:none}
 </style>
 </head>
 <body>
@@ -67,16 +101,24 @@ h1.logo{font-size:clamp(20px,4.5vw,44px);margin:0;color:var(--acc);
     <div id="meta"><span>WAKTU <b id="time">0:00</b></span><span>KILL <b id="kills">0</b></span><span>REKOR <b id="best">0:00</b></span></div>
   </div>
   <div id="weapons" class="hidden"></div>
-  <button id="mute" class="hidden">SUARA ON</button>
+  <button id="mute">SUARA ON</button>
   <div id="banner"></div>
 
   <div id="title" class="screen">
-    <h1 class="logo">CRITTER SURVIVORS</h1>
-    <div class="sub">Gerombolan makhluk bayangan datang tanpa henti. Bertahanlah sebisa mungkin bersama teman crittermu. Seranganmu menembak otomatis — fokusmu hanya satu: bergerak.</div>
-    <div class="row" id="critters"></div>
-    <button class="btn" id="start">MULAI MAIN</button>
-    <div class="help">GERAK: WASD / panah / seret jari &nbsp;·&nbsp; JEDA: ESC &nbsp;·&nbsp; SUARA: M<br>REKOR TERSIMPAN DI BROWSER INI</div>
+    <h1 class="logo">CRITTER QUEST</h1>
+    <div class="sub">ARCADE</div>
+    <button class="btn" id="play">MAIN</button>
+    <div class="help">PC: GERAK WASD / panah &nbsp;·&nbsp; JEDA: ESC &nbsp;·&nbsp; SUARA: M<br>HP: seret jari untuk bergerak</div>
   </div>
+
+  <div id="slots" class="screen hidden">
+    <h1 class="logo small">PILIH SLOT</h1>
+    <div class="row" id="slotlist"></div>
+    <button class="btn ghost" id="slotsback">KEMBALI</button>
+  </div>
+
+  <div id="create" class="screen hidden"></div>
+  <div id="camp" class="screen hidden"></div>
 
   <div id="levelup" class="screen hidden">
     <h1 class="logo" style="font-size:clamp(14px,3vw,26px)">NAIK LEVEL!</h1>
@@ -88,20 +130,24 @@ h1.logo{font-size:clamp(20px,4.5vw,44px);margin:0;color:var(--acc);
     <h1 class="logo" style="font-size:clamp(16px,3.4vw,30px)">JEDA</h1>
     <div class="row">
       <button class="btn" id="resume">LANJUT</button>
-      <button class="btn ghost" id="restart1">ULANG</button>
-      <button class="btn ghost" id="quit1">MENU</button>
+      <button class="btn ghost" id="surrender">MENYERAH</button>
     </div>
+    <div class="help">Menyerah mengakhiri ronde — EXP yang didapat tetap tersimpan</div>
   </div>
 
-  <div id="gameover" class="screen hidden">
-    <h1 class="logo" style="font-size:clamp(16px,3.4vw,30px);color:var(--acc2);text-shadow:0 4px 0 #571b00">TUMBANG!</h1>
-    <div class="stats" id="finalstats"></div>
+  <div id="results" class="screen hidden"></div>
+</div>
+
+<div id="confirm" class="modal hidden">
+  <div class="panel">
+    <div id="confirmtext"></div>
     <div class="row">
-      <button class="btn" id="restart2">MAIN LAGI</button>
-      <button class="btn ghost" id="quit2">MENU</button>
+      <button class="btn ghost" id="confirmno">BATAL</button>
+      <button class="btn" id="confirmyes">YA</button>
     </div>
   </div>
 </div>
+<div id="nosave" class="hidden">PROGRES TIDAK AKAN TERSIMPAN DI BROWSER INI</div>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

@@ -1,12 +1,20 @@
-// Bootstrap: wires the game, renderer, input, audio and the DOM screens
-// together and runs the fixed-timestep loop.
+// Bootstrap: opens the save, wires the game, renderer, input, audio and the
+// DOM screens together and runs the fixed-timestep loop.
+// Flow (spec §3): Judul → Pilih Slot → Buat Karakter / Kemah → Ronde → Hasil → Kemah.
 import { Game, ST } from './run/run.js';
 import { Renderer } from './render/world.js';
-import { CRITTERS } from './data/classes.js';
+import { CRITTERS, CLASSES } from './data/classes.js';
 import { SPRITES, bakeAll } from './art/sprites.js';
 import { input, pollMove, input as inp } from './core/input.js';
-import { ensureAudio, startMusic, stopMusic, toggleMuted, isMuted, sfx } from './core/audio.js';
+import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
+import { openStore } from './meta/save.js';
+import { createCharacter, applyRunResult } from './meta/character.js';
+import { showScreen, confirmDialog, fmtTime } from './ui/screens.js';
+import { renderSlots } from './ui/slots.js';
+import { renderCreate } from './ui/create.js';
+import { renderCamp } from './ui/camp.js';
+import { renderResults } from './ui/results.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game');
@@ -14,66 +22,109 @@ bakeAll();
 const game = new Game();
 const R = new Renderer(canvas);
 
-let selected = 0;
-let paused = false;
 let simT = 0;
+let screen = 'title';
+let slots = [];       // last store.loadSlots()
+let current = null;   // character being played (save data)
 
-// ——— build the critter select cards ———
-const critRow = $('critters');
-CRITTERS.forEach((c, i) => {
-  const card = document.createElement('div');
-  card.className = 'card' + (i === 0 ? ' sel' : '');
-  const cv = document.createElement('canvas');
-  cv.width = 64; cv.height = 64;
-  const g = cv.getContext('2d');
-  const img = SPRITES[c.sprite];
-  g.imageSmoothingEnabled = false;
-  g.drawImage(img, (64 - img.width * 4) / 2, (64 - img.height * 4) / 2, img.width * 4, img.height * 4);
-  card.appendChild(cv);
-  const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = c.name;
-  const ds = document.createElement('div'); ds.className = 'ds'; ds.textContent = c.desc;
-  card.appendChild(nm); card.appendChild(ds);
-  card.addEventListener('click', () => {
-    selected = i;
-    critRow.querySelectorAll('.card').forEach((el, j) => el.classList.toggle('sel', j === i));
-    ensureAudio(); sfx.pickCard();
-  });
-  critRow.appendChild(card);
-});
+// ——— save + settings ———
+const store = await openStore();
+if (!store.persistent) $('nosave').classList.remove('hidden');
 
-function fmtTime(t) { t = Math.floor(t); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; }
-
-function show(id) {
-  for (const s of ['title', 'levelup', 'pause', 'gameover']) $(s).classList.toggle('hidden', s !== id);
-  const inGame = id === null;
-  $('hud').classList.toggle('hidden', inGame || game.state === ST.TITLE);
-  $('weapons').classList.toggle('hidden', id !== null && id !== 'levelup' ? true : inGame);
-  $('mute').classList.toggle('hidden', game.state === ST.TITLE && id === 'title');
+function legacyMuted() {
+  try { return localStorage.getItem('cs-muted') === '1'; } catch (_) { return false; }
 }
-function hideAll() {
-  for (const s of ['title', 'levelup', 'pause', 'gameover']) $(s).classList.add('hidden');
+const settings = (await store.loadSettings()) ?? { version: 1, muted: legacyMuted(), lastSlot: 0 };
+setMuted(settings.muted);
+$('mute').textContent = settings.muted ? 'SUARA OFF' : 'SUARA ON';
+
+function saveSettings() {
+  store.saveSettings(settings).catch(() => { /* settings are a convenience; ignore */ });
+}
+
+// ——— screens ———
+function showMenu(id) {
+  game.state = ST.TITLE; // not in a run
+  screen = showScreen(id);
+  $('hud').classList.add('hidden');
+  $('weapons').classList.add('hidden');
+}
+
+// overlay during a run (levelup / pause); null = playing
+function showOverlay(id) {
+  screen = showScreen(id);
   $('hud').classList.remove('hidden');
-  $('weapons').classList.remove('hidden');
-  $('mute').classList.remove('hidden');
+  $('weapons').classList.toggle('hidden', id !== null && id !== 'levelup');
 }
 
+async function toSlots() {
+  stopMusic();
+  slots = await store.loadSlots();
+  renderSlots($('slotlist'), slots, { onOpen: openSlot, onCreate: toCreate, onDelete: deleteSlot });
+  showMenu('slots');
+}
+
+function openSlot(slot) {
+  const e = slots[slot];
+  if (e.status === 'ok') toCamp(e.data);
+}
+
+function toCreate(slot) {
+  renderCreate($('create'), { onCreate: (form) => createChar(slot, form), onBack: toSlots });
+  showMenu('create');
+  $('charname').focus();
+}
+
+async function createChar(slot, form) {
+  const first = !slots.some((e) => e.status === 'ok');
+  const char = createCharacter({ slot, ...form }, Date.now());
+  await store.saveSlot(char);
+  // ask the browser not to evict our data (spec §9.3); ignore if unsupported/denied
+  if (first && store.persistent) navigator.storage?.persist?.().catch(() => {});
+  ensureAudio(); sfx.pickCard();
+  toCamp(char);
+}
+
+async function deleteSlot(slot) {
+  const e = slots[slot];
+  const what = e.status === 'ok' ? `${e.data.name} (LV ${e.data.level})` : `data rusak di slot ${slot + 1}`;
+  if (!(await confirmDialog(`Hapus ${what}? Tidak bisa dibatalkan.`, 'HAPUS'))) return;
+  await store.deleteSlot(slot);
+  await toSlots();
+}
+
+function toCamp(char) {
+  current = char;
+  settings.lastSlot = char.slot;
+  saveSettings();
+  stopMusic();
+  renderCamp($('camp'), char, { onStart: startRun, onBack: toSlots });
+  showMenu('camp');
+}
+
+// ——— run ———
 function startRun() {
   ensureAudio(); startMusic();
-  game.start(CRITTERS[selected]);
-  hideAll();
+  // langkah 2: the run still plays a prototype critter mapped from the class
+  game.start(CRITTERS.find((c) => c.id === CLASSES[current.classId].protoCritter));
+  game.best = { time: current.records.bestTime, kills: 0, level: 0 };
+  showOverlay(null);
   refreshWeaponBar();
 }
 
-function toTitle() {
-  game.state = ST.TITLE;
+// After death or surrender: apply rewards, auto-save, show Hasil (spec §5.6, §9.3).
+async function endRun(died) {
+  screen = 'ending';
   stopMusic();
-  show('title');
-  $('mute').classList.remove('hidden');
-  updateBestLabel();
-}
-
-function updateBestLabel() {
-  $('best').textContent = fmtTime(game.best.time);
+  const result = game.result();
+  const isRecord = Math.floor(result.time) > current.records.bestTime;
+  const { char, levelsGained } = applyRunResult(current, result, Date.now());
+  current = char; // keep progress in memory even if the write fails
+  let saveError = null;
+  try { await store.saveSlot(char); } catch (e) { saveError = e.message; }
+  renderResults($('results'), { char, result, levelsGained, isRecord, died, saveError },
+    { onContinue: () => toCamp(current) });
+  showMenu('results');
 }
 
 // ——— level-up screen ———
@@ -102,14 +153,14 @@ function showLevelUp() {
     card.addEventListener('click', () => pickChoice(i));
     box.appendChild(card);
   });
-  show('levelup');
+  showOverlay('levelup');
 }
 
 function pickChoice(i) {
   if (game.state !== ST.LEVELUP || !game.choices[i]) return;
   game.applyChoice(game.choices[i]);
   refreshWeaponBar();
-  if (game.state === ST.PLAY) hideAll();
+  if (game.state === ST.PLAY) showOverlay(null);
   else showLevelUp();
 }
 
@@ -133,27 +184,29 @@ function refreshWeaponBar() {
   }
 }
 
+function pause() { game.state = ST.PAUSE; showOverlay('pause'); }
+function resume() { game.state = ST.PLAY; showOverlay(null); }
+
 // ——— buttons ———
-$('start').addEventListener('click', startRun);
-$('resume').addEventListener('click', () => { game.state = ST.PLAY; hideAll(); });
-$('restart1').addEventListener('click', startRun);
-$('quit1').addEventListener('click', toTitle);
-$('restart2').addEventListener('click', startRun);
-$('quit2').addEventListener('click', toTitle);
+$('play').addEventListener('click', () => { ensureAudio(); toSlots(); });
+$('slotsback').addEventListener('click', () => showMenu('title'));
+$('resume').addEventListener('click', resume);
+$('surrender').addEventListener('click', () => { game.surrender(); endRun(false); });
 $('mute').addEventListener('click', () => {
   ensureAudio();
-  $('mute').textContent = toggleMuted() ? 'SUARA OFF' : 'SUARA ON';
+  settings.muted = toggleMuted();
+  $('mute').textContent = settings.muted ? 'SUARA OFF' : 'SUARA ON';
+  saveSettings();
 });
 
 // ——— keyboard shortcuts ———
 inp.onAction.push((code) => {
   if (code === 'KeyM') { $('mute').click(); return; }
-  if (game.state === ST.TITLE && (code === 'Space' || code === 'Enter')) { startRun(); return; }
-  if (game.state === ST.PLAY && code === 'Escape') {
-    game.state = ST.PAUSE; show('pause'); return;
-  }
-  if (game.state === ST.PAUSE && code === 'Escape') { game.state = ST.PLAY; hideAll(); return; }
-  if (game.state === ST.OVER && code === 'Space') { startRun(); return; }
+  const go = code === 'Space' || code === 'Enter';
+  if (screen === 'title' && go) { $('play').click(); return; }
+  if (screen === 'results' && go) { $('tocamp').click(); return; }
+  if (game.state === ST.PLAY && code === 'Escape') { pause(); return; }
+  if (game.state === ST.PAUSE && code === 'Escape') { resume(); return; }
   if (game.state === ST.LEVELUP && code.startsWith('Digit')) {
     pickChoice(Number(code.slice(5)) - 1);
   }
@@ -176,15 +229,6 @@ function updateHUD() {
   else b.style.opacity = 0;
 }
 
-function gameOverScreen() {
-  const isRecord = game.time >= game.best.time && game.time > 0;
-  $('finalstats').innerHTML =
-    `Bertahan <b>${fmtTime(game.time)}</b><br>` +
-    `Kill <b>${game.kills}</b> · Level <b>${game.level}</b><br>` +
-    (isRecord ? `<span style="color:#ffd54a">REKOR BARU!</span>` : `Rekor: <b>${fmtTime(game.best.time)}</b>`);
-  show('gameover');
-}
-
 // ——— main loop ———
 function tick() {
   simT += STEP;
@@ -196,7 +240,7 @@ function tick() {
   // every frame swaps the DOM between mousedown and mouseup and kills clicks
   if (!wasPlaying) return false;
   if (game.state === ST.LEVELUP) { showLevelUp(); refreshWeaponBar(); return true; }
-  if (game.state === ST.OVER) { gameOverScreen(); refreshWeaponBar(); return true; }
+  if (game.state === ST.OVER) { $('dmg').style.opacity = 0; endRun(true); return true; }
   return false;
 }
 
@@ -207,13 +251,13 @@ function frame(dt) {
   window.__SCENE_READY__ = true;
 }
 
-toTitle();
+showMenu('title');
 const loop = startLoop(tick, frame);
 
 // ——— screenshot / debug hooks ———
 window.__seek = (t) => {
   const v = Number(t) || 0;
-  if (game.state === ST.TITLE) { game.start(CRITTERS[selected]); hideAll(); }
+  if (game.state === ST.TITLE) { game.start(CRITTERS[0]); showOverlay(null); }
   game.moveVec = { x: 0.6, y: 0.35 };
   const n = Math.floor(v / STEP);
   for (let i = 0; i < n && game.state === ST.PLAY; i++) {

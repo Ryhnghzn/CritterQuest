@@ -1,13 +1,11 @@
 // All sound is synthesized with the Web Audio API — no audio files.
 // The context is created lazily on the first user gesture (autoplay policy).
+// Mute is persisted by the caller (save settings), not here.
 let ctx = null, master = null, musicGain = null, musicTimer = null, muted = false;
-
-try { muted = localStorage.getItem('cs-muted') === '1'; } catch (_) { /* private mode */ }
 
 export function isMuted() { return muted; }
 export function setMuted(v) {
   muted = v;
-  try { localStorage.setItem('cs-muted', v ? '1' : '0'); } catch (_) { /* ignore */ }
   if (master) master.gain.value = v ? 0 : 0.5;
 }
 export function toggleMuted() { setMuted(!muted); return muted; }

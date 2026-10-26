@@ -1,0 +1,96 @@
+import { describe, it, expect } from 'vitest';
+import { SAVE_VERSION, migrate, validateSlot, readSlot, readSettings } from './schema.js';
+import { createCharacter } from './character.js';
+
+const fresh = () => createCharacter(
+  { slot: 1, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'mage' }, 1761436800000,
+);
+const item = (over = {}) => ({
+  id: 'it_a1', slot: 'helm', classId: null, variant: 0, rarity: 1, itemLevel: 3,
+  base: { maxHp: 20 }, bonuses: [{ stat: 'crit', value: 2 }], ...over,
+});
+
+describe('validateSlot', () => {
+  it('menerima karakter baru', () => {
+    expect(validateSlot(fresh())).toEqual([]);
+  });
+
+  it('menerima inventori + gear terpasang yang konsisten', () => {
+    const c = { ...fresh(), inventory: [item()], equipped: { ...fresh().equipped, helm: 'it_a1' } };
+    expect(validateSlot(c)).toEqual([]);
+  });
+
+  it.each([
+    ['nama terlalu panjang', (c) => { c.name = 'x'.repeat(13); }],
+    ['kelas tak dikenal', (c) => { c.classId = 'ninja'; }],
+    ['level 0', (c) => { c.level = 0; }],
+    ['level 51', (c) => { c.level = 51; }],
+    ['uang negatif', (c) => { c.gold = -1; }],
+    ['EXP pecahan', (c) => { c.exp = 1.5; }],
+    ['rambut di luar rentang', (c) => { c.look.hair = 9; }],
+    ['upgrade hilang', (c) => { delete c.upgrades.potion; }],
+    ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
+    ['inventori > 30', (c) => { c.inventory = Array.from({ length: 31 }, (_, i) => item({ id: `it_${i}` })); }],
+    ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
+    ['rarity tak dikenal', (c) => { c.inventory = [item({ rarity: 4 })]; }],
+    ['bonus stat tak dikenal', (c) => { c.inventory = [item({ bonuses: [{ stat: 'luck', value: 1 }] })]; }],
+    ['gear terpasang tidak ada di inventori', (c) => { c.equipped.helm = 'it_x'; }],
+    ['gear dipasang di slot yang salah', (c) => { c.inventory = [item()]; c.equipped.armor = 'it_a1'; }],
+  ])('menolak: %s', (_, mutate) => {
+    const c = structuredClone(fresh());
+    mutate(c);
+    expect(validateSlot(c).length).toBeGreaterThan(0);
+  });
+});
+
+describe('migrate', () => {
+  it('versi terkini dikembalikan sebagai salinan', () => {
+    const c = fresh();
+    const out = migrate(c);
+    expect(out).toEqual(c);
+    expect(out).not.toBe(c);
+  });
+
+  it('menjalankan langkah migrasi selangkah demi selangkah', () => {
+    const steps = {
+      1: (d) => ({ ...d, version: 2, a: 1 }),
+      2: (d) => ({ ...d, version: 3, b: d.a + 1 }),
+    };
+    expect(migrate({ version: 1 }, steps, 3)).toEqual({ version: 3, a: 1, b: 2 });
+  });
+
+  it('menolak versi lebih baru dan versi tanpa langkah', () => {
+    expect(() => migrate({ version: SAVE_VERSION + 1 })).toThrow(/lebih baru/);
+    expect(() => migrate({ version: 1 }, {}, 2)).toThrow();
+    expect(() => migrate({ version: 'satu' })).toThrow();
+  });
+});
+
+describe('readSlot', () => {
+  it('data sah → ok', () => {
+    expect(readSlot(fresh())).toEqual({ status: 'ok', data: fresh() });
+  });
+
+  it.each([
+    ['null', null],
+    ['string', 'halo'],
+    ['objek kosong', {}],
+    ['versi lebih baru', { ...fresh(), version: SAVE_VERSION + 1 }],
+    ['field rusak', { ...fresh(), level: -3 }],
+  ])('%s → rusak, data mentah disimpan', (_, raw) => {
+    const r = readSlot(raw);
+    expect(r.status).toBe('corrupt');
+    expect(r.raw).toBe(raw);
+    expect(typeof r.reason).toBe('string');
+  });
+});
+
+describe('readSettings', () => {
+  it('menerima pengaturan sah', () => {
+    const s = { version: 1, muted: true, lastSlot: 2 };
+    expect(readSettings(s)).toEqual(s);
+  });
+  it.each([[null], [{ version: 1, muted: 'ya', lastSlot: 0 }], [{ version: 1, muted: false, lastSlot: 3 }]])(
+    'menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); },
+  );
+});

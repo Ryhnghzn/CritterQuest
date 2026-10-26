@@ -18,22 +18,26 @@ export class Game {
     this.floaters = [];
     this.state = ST.TITLE;
     this.critter = CRITTERS[0];
-    this.best = this.loadBest();
+    // record to beat; the caller seeds it from the character's save
+    this.best = { time: 0, kills: 0, level: 0 };
     this.shake = 0;
     this.reset(CRITTERS[0]);
   }
 
-  loadBest() {
-    try {
-      const b = JSON.parse(localStorage.getItem('cs-best') || 'null');
-      if (b && Number.isFinite(b.time)) return b;
-    } catch (_) { /* corrupted or blocked storage */ }
-    return { time: 0, kills: 0, level: 0 };
-  }
-  saveBest() {
+  updateBest() {
     if (this.time <= this.best.time) return;
     this.best = { time: Math.floor(this.time), kills: this.kills, level: this.level };
-    try { localStorage.setItem('cs-best', JSON.stringify(this.best)); } catch (_) { /* ignore */ }
+  }
+
+  // Rewards earned so far; applied to the save by meta/ (spec §10).
+  result() {
+    return { time: this.time, kills: this.kills, exp: this.expGained, gold: 0, items: [], bossKills: this.bossKills };
+  }
+
+  // Pause → Menyerah: ends the run, everything earned is kept (spec §5.6).
+  surrender() {
+    this.state = ST.OVER;
+    this.updateBest();
   }
 
   reset(critter) {
@@ -44,6 +48,7 @@ export class Game {
     this.particles.length = 0; this.floaters.length = 0;
     this.px = 0; this.py = 0;
     this.time = 0; this.kills = 0; this.level = 1;
+    this.expGained = 0; this.bossKills = 0;
     this.xp = 0; this.xpNeed = XP_BASE + XP_GROWTH;
     this.spawnT = 0; this.bossAt = BOSS_EVERY; this.bossAlive = false;
     this.pendingLevels = 0; this.choices = null;
@@ -306,6 +311,7 @@ export class Game {
     this.spawnBurst(e.x, e.y, e.type === 'boss' ? '#c26bd8' : '#7a45c2', e.type === 'boss' ? 26 : 8);
     if (e.type === 'boss') {
       this.bossAlive = false;
+      this.bossKills += 1;
       this.bossAt += BOSS_EVERY;
       this.showBanner('RAJA MAW TUMBANG!');
       for (let i = 0; i < 8; i++) {
@@ -342,6 +348,7 @@ export class Game {
           sfx.heart();
         } else {
           this.xp += g.v;
+          this.expGained += g.v;
           this.addFloater(g.x, g.y, `+${g.v}`, '#8fffc0');
           sfx.gem();
           while (this.xp >= this.xpNeed) {
@@ -416,7 +423,7 @@ export class Game {
   die() {
     this.stats.hp = 0;
     this.state = ST.OVER;
-    this.saveBest();
+    this.updateBest();
     sfx.gameover();
     this.spawnBurst(this.px, this.py, '#ff5a6e', 30);
   }

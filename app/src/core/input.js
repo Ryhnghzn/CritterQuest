@@ -10,6 +10,7 @@ const KEYMAP = {
 };
 
 addEventListener('keydown', (e) => {
+  if (e.target.closest?.('input, textarea')) return; // typing a name, not playing
   if (KEYMAP[e.code]) { input.keys.add(e.code); e.preventDefault(); }
   if (e.code === 'Space') e.preventDefault();
   for (const cb of input.onAction) cb(e.code);
@@ -20,7 +21,7 @@ addEventListener('blur', () => input.keys.clear());
 input.onAction = []; // code => void ; used for Esc/M/Space/1-3 etc.
 
 addEventListener('touchstart', (e) => {
-  if (e.target.closest('.screen') || e.target.closest('#mute')) return;
+  if (e.target.closest('.screen, .modal, #mute')) return;
   const t = e.changedTouches[0];
   input.joy = { id: t.identifier, ox: t.clientX, oy: t.clientY, dx: 0, dy: 0 };
   e.preventDefault();

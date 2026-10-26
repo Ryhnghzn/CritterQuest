@@ -76,3 +76,33 @@ export const WEAPONS = {
     ],
   },
 };
+
+// Character classes (spec §4.2). Stats every class starts with unless overridden.
+export const CLASS_BASE = { atkSpd: 1, critDmg: 1.5, cdr: 0, magnet: 70 };
+
+export const CLASSES = {
+  warrior: {
+    id: 'warrior', name: 'WARRIOR', desc: 'Tebal darah, tebasan jarak dekat.',
+    stats: { maxHp: 140, atk: 14, def: 2, crit: 5, moveSpd: 105 },
+    attackInterval: 0.55, growth: { maxHp: 12, atk: 1.4 },
+    protoCritter: 'bulb', // langkah 2 only: runs still use prototype critters
+  },
+  archer: {
+    id: 'archer', name: 'ARCHER', desc: 'Panah jarak jauh, lincah.',
+    stats: { maxHp: 95, atk: 11, def: 0, crit: 8, moveSpd: 115 },
+    attackInterval: 0.45, growth: { maxHp: 8, atk: 1.2 },
+    protoCritter: 'ember',
+  },
+  mage: {
+    id: 'mage', name: 'MAGE', desc: 'Sihir area yang sakit, tapi rapuh.',
+    stats: { maxHp: 85, atk: 16, def: 0, crit: 5, moveSpd: 100 },
+    attackInterval: 0.8, growth: { maxHp: 7, atk: 1.6 },
+    protoCritter: 'zep',
+  },
+  assassin: {
+    id: 'assassin', name: 'ASSASSIN', desc: 'Cepat, kritis tinggi, tusukan beruntun.',
+    stats: { maxHp: 90, atk: 9, def: 0, crit: 20, moveSpd: 125 },
+    attackInterval: 0.3, growth: { maxHp: 8, atk: 1.0 },
+    protoCritter: 'ember',
+  },
+};
