@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Critter Survivors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#e8f0e9; --dim:#9fb3a4; --bg:#0d1310; --panel:#17211b;
+  --line:#3b5443; --acc:#ffd54a; --acc2:#ff7847; --hp:#ff5a6e; --xp:#6ee7a0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:'Press Start 2P',ui-monospace,monospace;touch-action:none;user-select:none}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#ui{position:fixed;inset:0;pointer-events:none}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;background:rgba(10,15,12,.88);pointer-events:auto;padding:20px;text-align:center}
+.hidden{display:none!important}
+h1.logo{font-size:clamp(20px,4.5vw,44px);margin:0;color:var(--acc);
+  text-shadow:0 4px 0 #7a5410,0 8px 24px rgba(255,213,74,.25);letter-spacing:2px}
+.sub{font-size:clamp(8px,1.4vw,12px);color:var(--dim);line-height:1.9;max-width:640px}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.card{background:var(--panel);border:3px solid var(--line);padding:14px 12px;width:150px;cursor:pointer;
+  display:flex;flex-direction:column;gap:10px;align-items:center;transition:transform .08s,border-color .08s}
+.card:hover{transform:translateY(-3px);border-color:var(--acc)}
+.card.sel{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.card canvas{width:64px;height:64px;image-rendering:pixelated}
+.card .nm{font-size:10px;color:var(--acc)}
+.card .ds{font-size:8px;color:var(--dim);line-height:1.7}
+.btn{pointer-events:auto;font-family:inherit;font-size:12px;color:#1a1405;background:var(--acc);
+  border:0;padding:14px 26px;cursor:pointer;box-shadow:0 4px 0 #a8871f}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a8871f}
+.btn.ghost{background:transparent;color:var(--dim);box-shadow:0 4px 0 var(--line);border:3px solid var(--line)}
+.stats{font-size:11px;line-height:2.2;color:var(--ink)}
+.stats b{color:var(--acc)}
+/* HUD */
+#hud{position:absolute;top:10px;left:10px;right:10px;display:flex;flex-direction:column;gap:6px;font-size:9px}
+.bar{width:min(320px,44vw);height:12px;background:#00000088;border:2px solid var(--line);position:relative}
+.bar>i{position:absolute;inset:0;transform-origin:left;background:var(--hp)}
+.bar.xp>i{background:var(--xp)}
+.bar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;text-shadow:0 1px 0 #000}
+#meta{display:flex;gap:16px;color:var(--ink);text-shadow:0 2px 0 #000}
+#meta b{color:var(--acc)}
+#weapons{position:absolute;left:10px;bottom:10px;display:flex;gap:6px}
+.slot{width:34px;height:34px;border:2px solid var(--line);background:#00000066;position:relative}
+.slot canvas{width:100%;height:100%;image-rendering:pixelated}
+.slot em{position:absolute;right:1px;bottom:0;font-size:7px;font-style:normal;color:var(--acc)}
+#mute{position:absolute;right:10px;top:64px;z-index:5;pointer-events:auto;font-family:inherit;font-size:8px;
+  background:#00000088;color:var(--dim);border:2px solid var(--line);padding:8px 10px;cursor:pointer}
+#banner{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:clamp(12px,2.6vw,22px);
+  color:var(--acc2);text-shadow:0 3px 0 #571b00,0 0 22px rgba(255,120,71,.4);opacity:0;transition:opacity .3s;white-space:nowrap}
+.help{font-size:8px;color:var(--dim);line-height:2}
+#dmg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(255,40,60,.45));opacity:0}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="dmg"></div>
+<div id="ui">
+  <div id="hud" class="hidden">
+    <div class="bar hp"><i id="hpfill"></i><span id="hptext"></span></div>
+    <div class="bar xp"><i id="xpfill"></i><span id="lvltext"></span></div>
+    <div id="meta"><span>WAKTU <b id="time">0:00</b></span><span>KILL <b id="kills">0</b></span><span>REKOR <b id="best">0:00</b></span></div>
+  </div>
+  <div id="weapons" class="hidden"></div>
+  <button id="mute" class="hidden">SUARA ON</button>
+  <div id="banner"></div>
+
+  <div id="title" class="screen">
+    <h1 class="logo">CRITTER SURVIVORS</h1>
+    <div class="sub">Gerombolan makhluk bayangan datang tanpa henti. Bertahanlah sebisa mungkin bersama teman crittermu. Seranganmu menembak otomatis — fokusmu hanya satu: bergerak.</div>
+    <div class="row" id="critters"></div>
+    <button class="btn" id="start">MULAI MAIN</button>
+    <div class="help">GERAK: WASD / panah / seret jari &nbsp;·&nbsp; JEDA: ESC &nbsp;·&nbsp; SUARA: M<br>REKOR TERSIMPAN DI BROWSER INI</div>
+  </div>
+
+  <div id="levelup" class="screen hidden">
+    <h1 class="logo" style="font-size:clamp(14px,3vw,26px)">NAIK LEVEL!</h1>
+    <div class="sub">Pilih satu kekuatan (klik atau tekan 1 / 2 / 3)</div>
+    <div class="row" id="choices"></div>
+  </div>
+
+  <div id="pause" class="screen hidden">
+    <h1 class="logo" style="font-size:clamp(16px,3.4vw,30px)">JEDA</h1>
+    <div class="row">
+      <button class="btn" id="resume">LANJUT</button>
+      <button class="btn ghost" id="restart1">ULANG</button>
+      <button class="btn ghost" id="quit1">MENU</button>
+    </div>
+  </div>
+
+  <div id="gameover" class="screen hidden">
+    <h1 class="logo" style="font-size:clamp(16px,3.4vw,30px);color:var(--acc2);text-shadow:0 4px 0 #571b00">TUMBANG!</h1>
+    <div class="stats" id="finalstats"></div>
+    <div class="row">
+      <button class="btn" id="restart2">MAIN LAGI</button>
+      <button class="btn ghost" id="quit2">MENU</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="./src/scene.js"></script>
+</body>
+</html>

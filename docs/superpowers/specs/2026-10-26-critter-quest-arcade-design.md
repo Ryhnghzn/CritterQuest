@@ -1,0 +1,326 @@
+# Critter Quest — Arcade: Spesifikasi Desain
+
+| | |
+|---|---|
+| **Status** | Disetujui (2026-10-26) |
+| **Basis kode** | Prototipe `app/` (Critter Survivors, Vite + JavaScript murni + canvas) |
+| **Konsep induk** | [`docs/2026-10-26-konsep-critter-quest.md`](../../2026-10-26-konsep-critter-quest.md) — versi RPG penuh; dokumen ini adalah langkah pertamanya |
+| **Perkiraan** | 2–4 sesi kerja |
+
+Semua angka keseimbangan di dokumen ini adalah **nilai awal** dan akan disetel saat uji main. Angka disimpan di file data, tidak ditulis langsung di logika.
+
+---
+
+## 1. Tujuan
+
+Mengubah prototipe survival arena menjadi **arcade roguelite**: setiap ronde tetap arcade (masuk arena, bertahan, mati/menang), tetapi karakter, level, uang, dan gear **tersimpan permanen di IndexedDB**. Bisa dimainkan di PC dan HP.
+
+**Ukuran berhasil:**
+1. Pemain bisa membuat karakter (nama, rambut, kelas), bermain beberapa ronde, menutup browser, membuka lagi, dan semua progres masih ada.
+2. Keempat kelas terasa berbeda cara mainnya.
+3. Gear yang dipakai terlihat di badan karakter.
+4. Bisa dimainkan penuh di HP dengan kontrol sentuh.
+
+## 2. Di luar lingkup
+
+Kota yang dijelajahi, dungeon, job lanjutan, item Legendaris, PWA, fitur online, simpan di tengah ronde.
+
+## 3. Alur & Layar
+
+```
+Judul ─► Pilih Slot (3) ─► [slot kosong] Buat Karakter ─┐
+                    │                                    ▼
+                    └──────[slot terisi]──────────────► KEMAH
+                                                         │
+          ┌──────────────────────────────────────────────┤
+          ▼                                              │
+     Ronde Arcade ──► (Level-up kartu / Jeda) ──► Hasil ─┘ (auto-save)
+```
+
+| Layar | Isi |
+|---|---|
+| **Judul** | Logo, tombol Main, tombol suara |
+| **Pilih Slot** | 3 slot: nama, kelas, level, potret paper doll; tombol Hapus (dengan konfirmasi); tombol Ekspor / Impor save |
+| **Buat Karakter** | Nama (1–12 karakter), 5 gaya rambut × 6 warna, pilih kelas; pratinjau paper doll langsung |
+| **Kemah** | Potret karakter + stat; tab **Mulai Ronde**, **Gear** (inventori + slot terpasang), **Toko** |
+| **HUD Ronde** | HP, EXP ronde, waktu, kill, uang ronde, ikon skill + cooldown; kontrol sentuh di HP |
+| **Level-up** | 3 kartu berkah sementara (dipertahankan dari prototipe) |
+| **Jeda** | Lanjut, Menyerah (mengakhiri ronde dengan hadiah tetap didapat) |
+| **Hasil** | Waktu bertahan, kill, EXP & level naik, uang, daftar gear didapat (warna rarity) |
+
+## 4. Karakter
+
+### 4.1 Model stat
+
+```
+stat akhir = dasar kelas
+           + pertumbuhan level × (level − 1)
+           + upgrade permanen toko
+           + gear terpasang
+           × berkah sementara ronde (kartu level-up)
+```
+
+| Stat | Arti |
+|---|---|
+| `maxHp` | Darah maksimal |
+| `atk` | Damage dasar |
+| `def` | Pengurang damage diterima (flat) |
+| `atkSpd` | Pengali kecepatan serang (1 = normal) |
+| `crit` | Peluang kritis (%) |
+| `critDmg` | Pengali damage kritis (awal 1,5) |
+| `moveSpd` | Kecepatan gerak (px/detik) |
+| `cdr` | Pengurangan cooldown skill (%, maks 40) |
+| `magnet` | Jangkauan tarik pickup (px) |
+
+### 4.2 Kelas
+
+| | Warrior | Archer | Mage | Assassin |
+|---|---|---|---|---|
+| maxHp | 140 | 95 | 85 | 90 |
+| atk | 14 | 11 | 16 | 9 |
+| def | 2 | 0 | 0 | 0 |
+| crit | 5% | 8% | 5% | 20% |
+| moveSpd | 105 | 115 | 100 | 125 |
+| Jeda serangan dasar | 0,55 s | 0,45 s | 0,8 s | 0,3 s |
+| Pertumbuhan / level | +12 HP, +1,4 atk | +8 HP, +1,2 atk | +7 HP, +1,6 atk | +8 HP, +1,0 atk |
+
+| Kelas | Serangan dasar | Skill 1 (Q) | Skill 2 (E) |
+|---|---|---|---|
+| **Warrior** | Tebasan busur 100° radius 46 di arah bidik | **Putaran Pedang** — area radius 70 di sekeliling, 4 tik selama 1 s, 150% atk/tik; cd 8 s | **Teriakan Baja** — damage diterima −50% selama 4 s; cd 14 s |
+| **Archer** | Panah lurus, laju 380, jangkauan 450 | **Hujan Panah** — area radius 60 di titik bidik, 5 tik / 1,5 s, 80% atk/tik; cd 9 s | **Tembakan Tembus** — panah besar menembus semua musuh, 300% atk; cd 7 s |
+| **Mage** | Bola api laju 260, meledak radius 36 saat kena | **Nova Es** — radius 90 di sekeliling, 120% atk + membekukan 1,5 s; cd 10 s | **Petir Berantai** — melompat ke 5 musuh, 180% atk; cd 7 s |
+| **Assassin** | Tusukan jarak 34 di arah bidik | **Langkah Bayangan** — dash 150 px menembus musuh, 250% atk ke yang dilewati; cd 6 s | **Kipas Belati** — 7 belati menyebar 60°, 90% atk; cd 8 s |
+
+**Dodge (semua kelas):** dash 150 px dalam 0,18 s, kebal 0,25 s, cd 1,2 s.
+
+### 4.3 Level & EXP permanen
+
+- EXP karakter = total nilai **permata EXP yang diambil** dalam ronde (sama dengan sumber EXP ronde, §5.4); diberikan di layar Hasil.
+- EXP untuk naik level: `30 + 20 × level`.
+- Level maks versi ini: 50.
+
+## 5. Pertarungan
+
+### 5.1 Kontrol
+
+| Aksi | PC | HP |
+|---|---|---|
+| Gerak | WASD / panah | Joystick virtual (setengah layar kiri, muncul di titik sentuh) |
+| Bidik | Kursor mouse | Otomatis ke musuh terdekat dalam jangkauan; bila tidak ada, arah gerak |
+| Serang | Klik / tahan kiri | Tahan tombol serang |
+| Skill 1 / 2 | Q / E | Tombol skill (dengan lingkaran cooldown) |
+| Dodge | Spasi | Tombol dodge |
+| Minum potion (§7) | R | Tombol potion (tampil bila punya) |
+| Jeda | Esc | Tombol jeda di HUD |
+
+Kontrol sentuh tampil bila perangkat memakai pointer kasar (`matchMedia('(pointer: coarse)')`) atau ada sentuhan pertama.
+
+### 5.2 Aturan damage
+
+- `damage = atk × pengali_skill × (kritis ? critDmg : 1)`
+- `damage diterima = max(1, damage_musuh − def)` (lalu dikali pengurang aktif seperti Teriakan Baja)
+- **Tidak ada masa kebal musuh bersama.** Setiap instans serangan menyimpan daftar musuh yang sudah dikenai:
+  - serangan sekali-kena (panah, tebasan, belati) mengenai tiap musuh **maksimal sekali**;
+  - area bertahan (Putaran Pedang, Hujan Panah) mengenai tiap musuh sekali **per tik**.
+  Ini mengganti mekanisme `hurtCd` bersama di prototipe (bug #4).
+- Pemain kebal 0,7 s setelah terkena (dipertahankan dari prototipe).
+
+### 5.3 Musuh & gelombang
+
+- Jenis musuh, gelombang, dan bos setiap 150 s **dipertahankan** dari prototipe (`data.js`).
+- **Musuh elite (baru):** setelah detik ke-60, 3% musuh yang muncul menjadi elite — HP ×3, ukuran ×1,3, bercahaya, **pasti menjatuhkan 1 gear**.
+- Musuh bisa dibekukan (Nova Es): diam dan berwarna biru selama durasi.
+
+### 5.4 Pickup
+
+| Pickup | Sumber | Efek |
+|---|---|---|
+| Permata EXP | Semua musuh | EXP ronde (untuk kartu level-up) **dan** EXP karakter |
+| Koin | 30% musuh biasa (1–3), elite (10), bos (100) | Uang |
+| Hati | 1,8% musuh | +20 HP |
+| Gear | Elite, bos, 0,5% musuh biasa | Masuk daftar "didapat ronde ini" |
+
+Semua pickup tertarik oleh `magnet`. Gear di tanah memancarkan sinar warna rarity.
+
+### 5.5 Berkah sementara (kartu level-up)
+
+Dipertahankan dari prototipe (`STAT_UPS`) tetapi hanya berlaku selama ronde. Kartu senjata baru dihapus karena kelas sudah menentukan serangan.
+
+### 5.6 Akhir ronde
+
+- **Mati atau Menyerah:** semua EXP, uang, dan gear yang didapat **tetap disimpan**.
+- Bonus waktu: +1 uang per 10 detik bertahan.
+
+## 6. Gear & Rarity
+
+### 6.1 Slot
+
+| Slot | Terlihat di badan | Stat dasar |
+|---|---|---|
+| Senjata (khusus kelas) | Ya | atk |
+| Helm | Ya (menutupi rambut) | maxHp |
+| Armor | Ya | def + maxHp |
+| Cincin | Tidak | — (bonus saja) |
+
+### 6.2 Rarity
+
+| Rarity | Warna | Bonus acak | Pengali stat dasar |
+|---|---|---|---|
+| 0 Biasa | Putih `#e8e8e8` | 0 | ×1,00 |
+| 1 Bagus | Hijau `#6ee7a0` | 1 | ×1,00 |
+| 2 Langka | Biru `#6ec9ff` | 2 | ×1,05 |
+| 3 Epik | Ungu `#c26bd8` | 3 | ×1,15 |
+
+Cincin selalu minimal Bagus (punya ≥1 bonus).
+
+### 6.3 Pembuatan item
+
+- **Level item** = `min(levelKarakter + 3, 1 + floor(detikRonde / 30))`, minimal 1.
+- **Stat dasar** = `dasarSlot × (1 + 0,12 × (levelItem − 1)) × pengaliRarity`, dibulatkan.
+- **Bonus acak:** diambil tanpa duplikat dari `atk, maxHp, atkSpd, crit, moveSpd, cdr`; nilainya diskalakan dengan level item.
+- **Visual:** tiap slot punya 3 varian tampilan (mis. Pedang Kayu / Besi / Baja) dipilih dari rentang level item. Epik diberi kilau.
+- **Nama:** `<varian> <akhiran bonus pertama>`, mis. "Pedang Besi Kilat".
+- Pembuatan item memakai RNG yang bisa di-seed agar bisa dites.
+
+### 6.4 Peluang rarity
+
+| Sumber | Biasa | Bagus | Langka | Epik |
+|---|---|---|---|---|
+| Musuh biasa / elite / peti Toko | 70% | 23% | 6% | 1% |
+| Bos (2 item) | — | — | 65% | 35% |
+
+### 6.5 Inventori
+
+- Maksimal **30 item**. Bila penuh, gear baru di ronde tetap tercatat tetapi pemain harus menjual/membuang sebelum ronde berikutnya (layar Hasil mengarahkan ke tab Gear).
+- Pasang/lepas di tab Gear, dengan perbandingan stat (naik hijau / turun merah).
+- Jual: harga = `5 × levelItem × (1 + rarity)`.
+
+## 7. Toko (Kemah)
+
+| Barang | Efek | Harga |
+|---|---|---|
+| Upgrade HP (maks 10) | +6% maxHp | `50 × 1,5^tingkat` |
+| Upgrade ATK (maks 10) | +5% atk | `60 × 1,5^tingkat` |
+| Upgrade Magnet (maks 5) | +20 magnet | `40 × 1,6^tingkat` |
+| Potion Awal (maks 3) | Mulai ronde dengan N potion (pulih 40% HP, tombol khusus) | `120 × 2^tingkat` |
+| **Peti Gear** | 1 item acak, level = level karakter | `30 + 10 × levelKarakter` |
+| Ganti Rambut | Ubah gaya/warna | 50 |
+
+Setiap transaksi langsung di-auto-save.
+
+## 8. Paper Doll & Aset
+
+- Semua aset dibuat lewat kode (gaya pixel art prototipe), di-*bake* ke canvas offscreen saat mulai.
+- **Kerangka:** badan dasar ± 16 × 20 piksel; menghadap kanan, arah kiri memakai flip horizontal.
+- **Frame:** diam (1), jalan (2), serang (2), terkena (1).
+- **Lapisan (bawah → atas):** badan → armor → rambut (disembunyikan bila helm terpasang) → helm → senjata.
+- Tiap lapisan digambar pada kerangka yang sama dengan **titik jangkar** (kepala, badan, tangan) per frame, sehingga gear selalu pas.
+- Rambut: 5 gaya × 6 warna (warna = palet, bukan sprite terpisah).
+- Hasil gabungan karakter di-cache per kombinasi (kelas, rambut, gear) dan dibuat ulang hanya saat gear berubah.
+- Struktur data sprite memakai format "sprite sheet" agar kelak bisa diganti aset gambar (mis. LPC) tanpa mengubah logika.
+
+## 9. Save (IndexedDB)
+
+### 9.1 Basis data
+
+- Nama DB: `critter-quest`, versi 1.
+- Object store `slots` (keyPath `slot`, nilai 0–2) dan `settings` (kunci `main`).
+
+### 9.2 Bentuk data slot (versi 1)
+
+```js
+{
+  version: 1,
+  slot: 0,                       // 0..2
+  createdAt: 1761436800000,      // epoch ms
+  updatedAt: 1761436800000,
+  name: 'Reyhan',                // 1–12 karakter
+  look: { hair: 2, hairColor: 4 },
+  classId: 'warrior',            // warrior | archer | mage | assassin
+  level: 1, exp: 0,
+  gold: 0,
+  upgrades: { hp: 0, atk: 0, magnet: 0, potion: 0 },
+  inventory: [ /* Item, maks 30 */ ],
+  equipped: { weapon: null, helm: null, armor: null, ring: null }, // id item
+  records: { bestTime: 0, runs: 0, kills: 0, bossKills: 0 },
+}
+
+// Item
+{
+  id: 'it_k3f9x2',               // unik dalam slot
+  slot: 'weapon',                // weapon | helm | armor | ring
+  classId: 'warrior',            // hanya senjata; selain itu null
+  variant: 1,                    // indeks varian tampilan
+  rarity: 2,                     // 0..3
+  itemLevel: 12,
+  base: { atk: 24 },
+  bonuses: [ { stat: 'atkSpd', value: 0.08 }, { stat: 'maxHp', value: 15 } ],
+}
+
+// settings
+{ version: 1, muted: false, lastSlot: 0 }
+```
+
+### 9.3 Aturan
+
+- **Auto-save:** setelah layar Hasil, setiap transaksi Toko, pasang/lepas gear, buat/hapus karakter.
+- **Validasi saat memuat:** bila data rusak atau tidak dikenal, slot ditampilkan "Data rusak" dengan pilihan Ekspor (untuk diselamatkan) atau Hapus. Data rusak **tidak pernah** ditimpa otomatis.
+- **Migrasi versi:** fungsi `migrate(data)` menaikkan versi lama selangkah demi selangkah; versi lebih baru dari yang dikenal game → perlakukan sebagai rusak (jangan ditimpa).
+- **Ekspor:** unduh file `critter-quest-<nama>.json` (satu slot). **Impor:** unggah file → validasi → pilih slot tujuan → konfirmasi bila menimpa.
+- **IndexedDB tidak tersedia** (mode privat tertentu, diblokir): game tetap jalan dengan penyimpanan di memori + spanduk peringatan "Progres tidak akan tersimpan".
+- Meminta `navigator.storage.persist()` saat karakter pertama dibuat (bila didukung).
+- Rekor lama prototipe (`localStorage: cs-best`, `cs-muted`) tidak dimigrasi; `cs-muted` dibaca sekali sebagai nilai awal `settings.muted`.
+
+## 10. Struktur Kode
+
+```
+app/src/
+  main.js              # bootstrap: buat layanan, pasang layar, mulai loop
+  core/
+    loop.js            # fixed-timestep 60 Hz
+    input.js           # keyboard, mouse (bidik), sentuh (joystick + tombol)
+    audio.js           # dipertahankan dari prototipe
+    rng.js             # mulberry32 yang bisa di-seed (instans, bukan global)
+  data/
+    classes.js  enemies.js  items.js  shop.js  balance.js   # semua angka
+  run/                 # simulasi satu ronde — tidak tahu soal save/DOM
+    run.js             # state ronde, step(dt), hasil ronde
+    player.js  skills.js  enemies.js  pickups.js  hits.js
+  meta/                # progres permanen — tanpa DOM
+    save.js            # wrapper IndexedDB + fallback memori
+    schema.js          # validasi + migrate()
+    character.js       # buat karakter, hitung stat akhir, EXP/level
+    itemgen.js         # pembuatan item & rarity
+    shop.js            # harga & transaksi
+  art/
+    sprites.js         # sprite musuh/pickup/ikon (dari prototipe)
+    doll.js            # kerangka paper doll + lapisan + cache
+  render/
+    world.js           # gambar arena, entitas, efek
+  ui/
+    screens.js         # pengatur layar (tampil/sembunyi)
+    title.js  slots.js  create.js  camp.js  gear.js  shopui.js  hud.js  results.js  touch.js
+```
+
+**Batas modul:** `run/` dan `meta/` adalah logika murni (bisa dites tanpa browser). `ui/` dan `render/` hanya membaca state dan memanggil fungsi publik. `run.js` menerima stat akhir dari `character.js` dan mengembalikan **hasil ronde** (`{ time, kills, exp, gold, items[], bossKills }`) yang lalu diterapkan ke save oleh `meta/`.
+
+## 11. Pengujian
+
+| Jenis | Alat | Cakupan |
+|---|---|---|
+| Unit | **Vitest** | `itemgen` (rarity sesuai tabel pada sampel besar ber-seed, jumlah bonus, tanpa duplikat), `schema` (validasi, migrasi, data rusak), `character` (stat akhir, EXP/level), `shop` (harga, uang tidak cukup, batas tingkat), `hits` (sekali-kena per instans, tik area) |
+| IndexedDB | Vitest + **fake-indexeddb** | simpan/muat/hapus slot, fallback memori |
+| Asap (smoke) di browser | Playwright (instalasi yang sudah ada di mesin) | buat karakter → main ronde singkat → hasil tersimpan → muat ulang halaman → progres masih ada; klik kartu level-up; kontrol sentuh tampil di viewport HP |
+| Manual | Uji main | Rasa tiap kelas, keseimbangan |
+
+## 12. Urutan Pembangunan
+
+| Langkah | Isi | Bisa diuji |
+|---|---|---|
+| 0 | `git init` + `CLAUDE.md` di folder PKS | — |
+| 1 | Rapikan struktur folder sesuai §10 tanpa mengubah perilaku; pasang Vitest | Game lama masih jalan, tes kosong hijau |
+| 2 | Save (IndexedDB) + Pilih Slot + Buat Karakter + Kemah kerangka | Karakter tersimpan setelah muat ulang |
+| 3 | 4 kelas + serangan manual + skill + dodge + kontrol sentuh; sistem hit baru | Main ronde dengan tiap kelas di PC & HP |
+| 4 | Item, rarity, drop, elite, inventori, paper doll gear | Gear didapat, dipasang, terlihat, tersimpan |
+| 5 | Uang, Toko, upgrade, peti, ganti rambut, layar Hasil lengkap | Siklus ronde ↔ kemah lengkap |
+| 6 | Ekspor/impor, polesan, penyeimbangan | Siap dibagikan |
