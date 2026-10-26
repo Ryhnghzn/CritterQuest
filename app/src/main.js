@@ -1,11 +1,12 @@
 // Bootstrap: wires the game, renderer, input, audio and the DOM screens
 // together and runs the fixed-timestep loop.
-import { Game, ST } from './game.js';
-import { Renderer } from './render.js';
-import { CRITTERS } from './data.js';
-import { SPRITES, bakeAll } from './sprites.js';
-import { input, pollMove, input as inp } from './input.js';
-import { ensureAudio, startMusic, stopMusic, toggleMuted, isMuted, sfx } from './audio.js';
+import { Game, ST } from './run/run.js';
+import { Renderer } from './render/world.js';
+import { CRITTERS } from './data/classes.js';
+import { SPRITES, bakeAll } from './art/sprites.js';
+import { input, pollMove, input as inp } from './core/input.js';
+import { ensureAudio, startMusic, stopMusic, toggleMuted, isMuted, sfx } from './core/audio.js';
+import { STEP, startLoop } from './core/loop.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game');
@@ -16,8 +17,6 @@ const R = new Renderer(canvas);
 let selected = 0;
 let paused = false;
 let simT = 0;
-const STEP = 1 / 60;
-let acc = 0;
 
 // ——— build the critter select cards ———
 const critRow = $('critters');
@@ -187,27 +186,21 @@ function gameOverScreen() {
 }
 
 // ——— main loop ———
-const clock = { last: performance.now() };
-function frame(now) {
-  requestAnimationFrame(frame);
-  const dt = Math.min((now - clock.last) / 1000, 0.1);
-  clock.last = now;
-  acc += dt;
-  let steps = 0;
-  while (acc >= STEP && steps < 5) {
-    acc -= STEP; steps++;
-    simT += STEP;
-    pollMove();
-    game.moveVec = { x: input.x, y: input.y };
-    const wasPlaying = game.state === ST.PLAY;
-    game.step(STEP);
-    // react only on the PLAY -> LEVELUP/OVER transition; rebuilding the cards
-    // every frame swaps the DOM between mousedown and mouseup and kills clicks
-    if (!wasPlaying) continue;
-    if (game.state === ST.LEVELUP) { showLevelUp(); refreshWeaponBar(); break; }
-    if (game.state === ST.OVER) { gameOverScreen(); refreshWeaponBar(); break; }
-  }
-  if (steps === 5) acc = 0; // don't spiral after a hitch
+function tick() {
+  simT += STEP;
+  pollMove();
+  game.moveVec = { x: input.x, y: input.y };
+  const wasPlaying = game.state === ST.PLAY;
+  game.step(STEP);
+  // react only on the PLAY -> LEVELUP/OVER transition; rebuilding the cards
+  // every frame swaps the DOM between mousedown and mouseup and kills clicks
+  if (!wasPlaying) return false;
+  if (game.state === ST.LEVELUP) { showLevelUp(); refreshWeaponBar(); return true; }
+  if (game.state === ST.OVER) { gameOverScreen(); refreshWeaponBar(); return true; }
+  return false;
+}
+
+function frame(dt) {
   R.draw(game, simT);
   hudT += dt;
   if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(); }
@@ -215,7 +208,7 @@ function frame(now) {
 }
 
 toTitle();
-requestAnimationFrame(frame);
+const loop = startLoop(tick, frame);
 
 // ——— screenshot / debug hooks ———
 window.__seek = (t) => {
@@ -230,7 +223,7 @@ window.__seek = (t) => {
   }
   R.draw(game, simT);
 };
-window.__play = () => { clock.last = performance.now(); };
+window.__play = () => { loop.resetClock(); };
 const T_PARAM = new URLSearchParams(location.search).get('t');
 if (T_PARAM !== null) window.__seek(T_PARAM);
 window.__game = game;

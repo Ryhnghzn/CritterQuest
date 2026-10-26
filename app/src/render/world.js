@@ -1,7 +1,8 @@
 // World rendering: low-res pixel canvas scaled up, camera follows the player,
 // plus a deterministic ring of grass tufts/flowers for the ground.
-import { WORLD_R } from './data.js';
-import { SPRITES, drawSprite } from './sprites.js';
+import { WORLD_R } from '../data/balance.js';
+import { WEAPONS } from '../data/classes.js';
+import { SPRITES, drawSprite } from '../art/sprites.js';
 
 const DECOR = [];
 (function makeDecor() {
@@ -180,7 +181,6 @@ export class Renderer {
   }
 }
 
-// local helpers to read gale level table without circular imports
-import { WEAPONS } from './data.js';
+// local helpers to read the gale level table
 function galeLevel(l) { return WEAPONS.gale.levels[l - 1]; }
 function galeCount(l) { return WEAPONS.gale.levels[l - 1].count; }

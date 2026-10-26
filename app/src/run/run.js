@@ -1,12 +1,10 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
-import { rand, rrange, rint, pick, resetRng } from './rng.js';
-import {
-  WORLD_R, MAX_WEAPONS, XP_BASE, XP_GROWTH, CRITTERS, WEAPONS,
-  STAT_UPS, ENEMIES, WAVES, BOSS_EVERY, MAX_ENEMIES,
-} from './data.js';
-import { sfx } from './audio.js';
-import { SPRITES } from './sprites.js';
+import { rand, rrange, rint, pick, resetRng } from '../core/rng.js';
+import { WORLD_R, MAX_WEAPONS, XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
+import { CRITTERS, WEAPONS } from '../data/classes.js';
+import { ENEMIES, WAVES, BOSS_EVERY, MAX_ENEMIES } from '../data/enemies.js';
+import { sfx } from '../core/audio.js';
 
 export const ST = { TITLE: 0, PLAY: 1, LEVELUP: 2, PAUSE: 3, OVER: 4 };
 
