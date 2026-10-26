@@ -69,6 +69,7 @@ export class Renderer {
     this.avatar = null;   // { classId, look } of the character being played
     this.facing = 1;
     this.walk = 0;
+    this.trail = [];      // dodge afterimages: { x, y, life }
     this.resize();
     addEventListener('resize', () => this.resize());
   }
@@ -89,6 +90,11 @@ export class Renderer {
     this.vignette = this.ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.hypot(W, H) * 0.62);
     this.vignette.addColorStop(0, 'rgba(14,10,36,0)');
     this.vignette.addColorStop(1, 'rgba(14,10,36,.55)');
+  }
+
+  // CSS pixel → world point (for mouse aim); ignores screen shake on purpose.
+  screenToWorld(x, y) {
+    return { x: this.camX + (x - innerWidth / 2) / this.zoom, y: this.camY + (y - innerHeight / 2) / this.zoom };
   }
 
   draw(game, t) {
@@ -201,14 +207,30 @@ export class Renderer {
 
     // player
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
-    const mv = game.moveVec || { x: 0, y: 0 };
-    const moving = Math.min(1, Math.hypot(mv.x, mv.y));
-    if (mv.x > 0.1) this.facing = 1; else if (mv.x < -0.1) this.facing = -1;
+    const moving = Math.min(1, Math.hypot(game.moveX, game.moveY));
+    if (game.aimX > 0.05) this.facing = 1; else if (game.aimX < -0.05) this.facing = -1;
     this.walk += moving * 0.22;
+    const dodging = game.dodgeT > 0;
+    if (dodging) this.trail.push({ x: game.px, y: game.py, life: 0.22 });
+    for (let i = this.trail.length - 1; i >= 0; i--) {
+      const a = this.trail[i];
+      a.life -= 1 / 60;
+      if (a.life <= 0) { this.trail.splice(i, 1); continue; }
+      if (!this.avatar) continue;
+      g.save();
+      g.globalAlpha = a.life * 1.6;
+      g.translate(a.x, a.y + 10);
+      g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
+      g.filter = 'brightness(1.6) saturate(.4)';
+      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving: 1, walk: this.walk });
+      g.restore();
+    }
     shadow(g, game.px, game.py + 10, 10, 3);
+    aimMarker(g, game.px, game.py, game.aimX, game.aimY);
     if (this.avatar && !blink) {
       g.save();
       g.translate(game.px, game.py + 10);
+      if (dodging) g.rotate(game.dodgeX * 0.25);
       g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
       drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, hurt: game.flash > 0 });
       g.restore();
@@ -242,6 +264,18 @@ export class Renderer {
 function shadow(g, x, y, rx, ry) {
   g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU);
   g.fillStyle = 'rgba(20,30,40,.22)'; g.fill();
+}
+
+// soft chevron on a ring around the player pointing where attacks will go
+function aimMarker(g, x, y, ax, ay) {
+  const a = Math.atan2(ay, ax), R = 24;
+  g.save();
+  g.translate(x, y + 2); g.rotate(a);
+  g.beginPath(); g.arc(0, 0, R, -0.45, 0.45);
+  g.lineWidth = 2; g.lineCap = 'round'; g.strokeStyle = 'rgba(255,255,255,.35)'; g.stroke();
+  g.beginPath(); g.moveTo(R + 2, -4); g.lineTo(R + 8, 0); g.lineTo(R + 2, 4);
+  g.lineJoin = 'round'; g.lineWidth = 2.4; g.strokeStyle = 'rgba(255,255,255,.85)'; g.stroke();
+  g.restore();
 }
 
 function glow(g, x, y, r, rgb) {

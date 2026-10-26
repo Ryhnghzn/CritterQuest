@@ -1,23 +1,4 @@
-// Playable characters & their auto-fire weapons (+5 levels each).
-// Prototype content: replaced by the 4 classes (spec §4.2) in langkah 3.
-export const CRITTERS = [
-  {
-    id: 'ember', name: 'EMBERKIT', sprite: 'ember',
-    desc: 'Rubah api. Cepat & tembakan tunggal yang sakit.',
-    hp: 90, speed: 118, magnet: 70, weapon: 'ember',
-  },
-  {
-    id: 'bulb', name: 'BULBLUB', sprite: 'bulb',
-    desc: 'Katak gelembung. Tebal darah, tembakan menyebar.',
-    hp: 125, speed: 100, magnet: 70, weapon: 'bubble',
-  },
-  {
-    id: 'zep', name: 'ZEPWING', sprite: 'zep',
-    desc: 'Burung angin. Pisau orbit & daya tarik permata besar.',
-    hp: 85, speed: 112, magnet: 110, weapon: 'gale',
-  },
-];
-
+// Classes and, until langkah 3C, the prototype auto-fire weapons (+5 levels each).
 // Weapon level tables. Each weapon fires automatically.
 export const WEAPONS = {
   ember: {
@@ -85,24 +66,24 @@ export const CLASSES = {
     id: 'warrior', name: 'Warrior', desc: 'Tebal darah, tebasan jarak dekat.',
     stats: { maxHp: 140, atk: 14, def: 2, crit: 5, moveSpd: 105 },
     attackInterval: 0.55, growth: { maxHp: 12, atk: 1.4 },
-    protoCritter: 'bulb', // langkah 2 only: runs still use prototype critters
+    protoWeapon: 'bubble', // until langkah 3C: classes still fire a prototype weapon
   },
   archer: {
     id: 'archer', name: 'Archer', desc: 'Panah jarak jauh, lincah.',
     stats: { maxHp: 95, atk: 11, def: 0, crit: 8, moveSpd: 115 },
     attackInterval: 0.45, growth: { maxHp: 8, atk: 1.2 },
-    protoCritter: 'ember',
+    protoWeapon: 'ember',
   },
   mage: {
     id: 'mage', name: 'Mage', desc: 'Sihir area yang sakit, tapi rapuh.',
     stats: { maxHp: 85, atk: 16, def: 0, crit: 5, moveSpd: 100 },
     attackInterval: 0.8, growth: { maxHp: 7, atk: 1.6 },
-    protoCritter: 'zep',
+    protoWeapon: 'zap',
   },
   assassin: {
     id: 'assassin', name: 'Assassin', desc: 'Cepat, kritis tinggi, tusukan beruntun.',
     stats: { maxHp: 90, atk: 9, def: 0, crit: 20, moveSpd: 125 },
     attackInterval: 0.3, growth: { maxHp: 8, atk: 1.0 },
-    protoCritter: 'ember',
+    protoWeapon: 'gale',
   },
 };

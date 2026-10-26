@@ -1,12 +1,18 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
 import { rand, rrange, rint, pick, resetRng } from '../core/rng.js';
-import { WORLD_R, MAX_WEAPONS, XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
-import { CRITTERS, WEAPONS } from '../data/classes.js';
+import { MAX_WEAPONS, XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
+import { WEAPONS, CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES, WAVES, BOSS_EVERY, MAX_ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
+import { stepPlayer } from './player.js';
 
 export const ST = { TITLE: 0, PLAY: 1, LEVELUP: 2, PAUSE: 3, OVER: 4 };
+
+// What a run starts from: class, final stats (meta/character.js finalStats)
+// and, until langkah 3C, the prototype weapon the class fires.
+const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, weapon: CLASSES.warrior.protoWeapon };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false };
 
 export class Game {
   constructor() {
@@ -17,11 +23,10 @@ export class Game {
     this.particles = [];
     this.floaters = [];
     this.state = ST.TITLE;
-    this.critter = CRITTERS[0];
     // record to beat; the caller seeds it from the character's save
     this.best = { time: 0, kills: 0, level: 0 };
     this.shake = 0;
-    this.reset(CRITTERS[0]);
+    this.reset(DEFAULT_START);
   }
 
   updateBest() {
@@ -40,23 +45,25 @@ export class Game {
     this.updateBest();
   }
 
-  reset(critter) {
+  reset({ classId, stats, weapon }) {
     resetRng();
-    this.critter = critter;
+    this.classId = classId;
     this.enemies.length = 0; this.projectiles.length = 0;
     this.gems.length = 0; this.fields.length = 0;
     this.particles.length = 0; this.floaters.length = 0;
     this.px = 0; this.py = 0;
+    this.intent = IDLE;
+    this.moveX = 0; this.moveY = 0;
+    this.aimX = 1; this.aimY = 0;
+    this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0; this.level = 1;
     this.expGained = 0; this.bossKills = 0;
     this.xp = 0; this.xpNeed = XP_BASE + XP_GROWTH;
     this.spawnT = 0; this.bossAt = BOSS_EVERY; this.bossAlive = false;
     this.pendingLevels = 0; this.choices = null;
-    this.stats = {
-      speed: critter.speed, maxHp: critter.hp, hp: critter.hp,
-      dmgMul: 1, rateMul: 1, magnet: critter.magnet, armor: 0,
-    };
-    this.weapons = [this.newWeapon(critter.weapon)];
+    // run stats: the character's final stats, then multiplied by level-up blessings
+    this.stats = { ...stats, hp: stats.maxHp, dmgMul: 1 };
+    this.weapons = [this.newWeapon(weapon)];
     this.upCounts = {}; // stat id -> times taken
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
@@ -65,8 +72,8 @@ export class Game {
 
   newWeapon(id) { return { id, level: 1, cd: 0.4, angle: rand() * 6.28 }; }
 
-  start(critter) {
-    this.reset(critter);
+  start(setup) {
+    this.reset(setup);
     this.state = ST.PLAY;
   }
 
@@ -76,14 +83,7 @@ export class Game {
   step(dt) {
     if (this.state !== ST.PLAY) return;
     this.time += dt;
-    const s = this.stats;
-
-    // movement
-    const mv = this.moveVec;
-    this.px += mv.x * s.speed * dt;
-    this.py += mv.y * s.speed * dt;
-    const dCenter = Math.hypot(this.px, this.py);
-    if (dCenter > WORLD_R) { this.px *= WORLD_R / dCenter; this.py *= WORLD_R / dCenter; }
+    stepPlayer(this, this.intent, dt);
 
     if (this.invuln > 0) this.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;
@@ -148,8 +148,8 @@ export class Game {
     for (const w of this.weapons) {
       const def = WEAPONS[w.id];
       const L = def.levels[w.level - 1];
-      w.cd -= dt * this.stats.rateMul;
-      if (w.id === 'gale') w.angle += L.speed * dt * this.stats.rateMul;
+      w.cd -= dt * this.stats.atkSpd;
+      if (w.id === 'gale') w.angle += L.speed * dt * this.stats.atkSpd;
       if (w.cd > 0) continue;
       const fired = this.fire(w, L);
       if (fired) w.cd = L.rate;
@@ -286,8 +286,8 @@ export class Game {
       e.kx *= 0.86; e.ky *= 0.86;
       // touch damage
       const rr = e.r + 10;
-      if (this.invuln <= 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr) {
-        const dmg = Math.max(1, e.dmg - this.stats.armor);
+      if (this.invuln <= 0 && this.dodgeInv <= 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr) {
+        const dmg = Math.max(1, e.dmg - this.stats.def);
         this.stats.hp -= dmg;
         this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
         sfx.hurt();
@@ -406,12 +406,12 @@ export class Game {
     else if (c.kind === 'stat') {
       this.upCounts[c.id] = (this.upCounts[c.id] || 0) + 1;
       const s = this.stats;
-      if (c.id === 'spd') s.speed *= 1.12;
+      if (c.id === 'spd') s.moveSpd *= 1.12;
       if (c.id === 'vit') { s.maxHp += 25; s.hp = Math.min(s.maxHp, s.hp + 25); }
       if (c.id === 'pow') s.dmgMul *= 1.15;
-      if (c.id === 'hst') s.rateMul *= 1.12;
+      if (c.id === 'hst') s.atkSpd *= 1.12;
       if (c.id === 'mag') s.magnet += 35;
-      if (c.id === 'arm') s.armor += 2;
+      if (c.id === 'arm') s.def += 2;
     } else if (c.kind === 'new') this.weapons.push(this.newWeapon(c.id));
     else { const w = this.weapons.find((x) => x.id === c.id); w.level = c.to; }
     this.pendingLevels--;

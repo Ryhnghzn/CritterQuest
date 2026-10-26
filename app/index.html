@@ -164,7 +164,7 @@ h2.h.bad{color:var(--coral)}
 /* ——— HUD ——— */
 #hud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:18px;
   background:rgba(22,17,46,.55);border:1.5px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  width:min(340px,calc(100vw - 84px))}
+  width:min(340px,calc(100vw - 142px))}
 .hpbar{height:20px;border-radius:999px;background:rgba(0,0,0,.4);position:relative;overflow:hidden;box-shadow:inset 0 2px 4px rgba(0,0,0,.4)}
 .hpbar>i{position:absolute;inset:0;transform-origin:left;border-radius:999px;background:linear-gradient(90deg,#ff5f7e,#ff9f6b);
   box-shadow:inset 0 -4px 0 rgba(0,0,0,.15),inset 0 3px 0 rgba(255,255,255,.25);transition:transform .15s}
@@ -185,6 +185,24 @@ h2.h.bad{color:var(--coral)}
 #mute .off{display:none}
 #mute.muted .on{display:none}
 #mute.muted .off{display:inline}
+/* action buttons (dodge now; attack + skills in 3C/3D), pause, joystick */
+#actions{position:absolute;right:16px;bottom:16px;display:flex;gap:12px;align-items:flex-end}
+.act{pointer-events:auto;position:relative;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;
+  font-size:24px;color:var(--ink);cursor:pointer;background:rgba(22,17,46,.6);border:1.5px solid var(--line);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);touch-action:none}
+.act .cd{position:absolute;inset:-1.5px;border-radius:50%;pointer-events:none;
+  background:conic-gradient(rgba(10,6,30,.72) calc(var(--cd,0) * 360deg),transparent 0)}
+.act kbd{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);font-size:10px;padding:0 6px;white-space:nowrap}
+.act.ready{border-color:rgba(78,225,160,.6)}
+body.touch .act{width:80px;height:80px;font-size:32px}
+body.touch .act kbd{display:none}
+#pausebtn{position:absolute;right:66px;top:12px;z-index:5;pointer-events:auto;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  font-size:20px;color:var(--ink);background:rgba(22,17,46,.6);border:1.5px solid var(--line);cursor:pointer;backdrop-filter:blur(6px)}
+#joy{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.08),rgba(255,255,255,.02));border:2px solid rgba(255,255,255,.22)}
+#joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.55),rgba(255,255,255,.2));border:2px solid rgba(255,255,255,.5)}
+body.playing:not(.touch) canvas#game{cursor:crosshair}
 #banner{position:absolute;left:50%;top:24%;transform:translateX(-50%);font-size:clamp(24px,4.5vw,44px);font-weight:700;white-space:nowrap;
   color:#fff;text-shadow:0 4px 0 #8a1f4a,0 0 30px rgba(255,107,139,.6);opacity:0;transition:opacity .3s}
 #dmg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(255,50,90,.45));opacity:0}
@@ -204,6 +222,8 @@ h2.h.bad{color:var(--coral)}
   <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4a3 3 0 0 0 4 4M16 6h4a3 3 0 0 1-4 4M12 13v4M8 21h8M9 17h6"/></symbol>
   <symbol id="i-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></symbol>
   <symbol id="i-sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-dash" viewBox="0 0 24 24"><path d="M13 5l7 7-7 7"/><path d="M4 8h6M2 12h9M4 16h6"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
 </svg>
@@ -220,6 +240,11 @@ h2.h.bad{color:var(--coral)}
     </div>
   </div>
   <div id="weapons" class="hidden"></div>
+  <div id="actions" class="hidden">
+    <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd>Spasi</kbd></button>
+  </div>
+  <div id="joy" class="hidden"><i></i></div>
+  <button id="pausebtn" class="touchbtn hidden" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>
   <button id="mute" title="Suara" aria-label="Suara"><svg class="i on"><use href="#i-sound-on"/></svg><svg class="i off"><use href="#i-sound-off"/></svg></button>
   <div id="banner"></div>
 

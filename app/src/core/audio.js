@@ -49,6 +49,7 @@ export const sfx = {
   enemyDie() { tone(320, 0.12, 'triangle', 0.1, -240); noise(0.08, 0.06); },
   gem() { tone(880, 0.06, 'sine', 0.08, 220); },
   heart() { tone(520, 0.12, 'sine', 0.1, 260); },
+  dodge() { noise(0.12, 0.06); tone(300, 0.12, 'sine', 0.05, 500); },
   hurt() { tone(220, 0.2, 'sawtooth', 0.16, -140); noise(0.12, 0.1); },
   levelup() { tone(523, 0.1, 'square', 0.1); tone(659, 0.1, 'square', 0.1, 0, 0.09); tone(784, 0.16, 'square', 0.1, 0, 0.18); },
   pickCard() { tone(660, 0.08, 'square', 0.09); tone(990, 0.12, 'square', 0.09, 0, 0.07); },

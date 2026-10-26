@@ -15,9 +15,9 @@ Keputusan 2026-10-26: tampilan diganti dari pixel art ke **kartun vektor halus**
 - [x] Pemain di ronde digambar sebagai karakter (paper doll), bukan critter
 
 ## 3B — Stat kelas + kontrol
-- [ ] Ronde memakai `finalStats()` karakter
-- [ ] Bidik mouse (PC) / otomatis ke musuh terdekat (HP), dodge (Spasi / tombol)
-- [ ] Joystick sentuh setengah layar kiri, tombol Jeda di HUD
+- [x] Ronde memakai `finalStats()` karakter
+- [x] Bidik mouse (PC) / otomatis ke musuh terdekat (HP), dodge (Spasi / tombol)
+- [x] Joystick sentuh setengah layar kiri, tombol Jeda di HUD
 
 ## 3C — Sistem hit + serangan dasar
 - [ ] `run/hits.js` + tes: sekali-kena per instans, area per tik

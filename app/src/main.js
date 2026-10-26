@@ -3,23 +3,26 @@
 // Flow (spec §3): Judul → Pilih Slot → Buat Karakter / Kemah → Ronde → Hasil → Kemah.
 import { Game, ST } from './run/run.js';
 import { Renderer } from './render/world.js';
-import { CRITTERS, CLASSES } from './data/classes.js';
+import { CLASSES, CLASS_BASE } from './data/classes.js';
 import { iconCanvas } from './art/sprites.js';
-import { input, pollMove, input as inp } from './core/input.js';
+import { input, pollMove, consumePressed } from './core/input.js';
 import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
-import { createCharacter, applyRunResult } from './meta/character.js';
-import { showScreen, confirmDialog, fmtTime } from './ui/screens.js';
+import { createCharacter, applyRunResult, finalStats } from './meta/character.js';
+import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
 import { renderCamp } from './ui/camp.js';
 import { renderResults } from './ui/results.js';
+import { updateHUD, updateActions } from './ui/hud.js';
+import { setupTouch, updateJoystick } from './ui/touch.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game');
 const game = new Game();
 const R = new Renderer(canvas);
+setupTouch();
 
 let simT = 0;
 let screen = 'title';
@@ -45,15 +48,22 @@ function saveSettings() {
 function showMenu(id) {
   game.state = ST.TITLE; // not in a run
   screen = showScreen(id);
-  $('hud').classList.add('hidden');
-  $('weapons').classList.add('hidden');
+  setRunUI(false, false);
+}
+
+// HUD visible during a run; weapons + action buttons only while actually playing or picking a card.
+function setRunUI(hud, controls) {
+  $('hud').classList.toggle('hidden', !hud);
+  $('pausebtn').classList.toggle('hidden', !controls);
+  $('actions').classList.toggle('hidden', !controls);
+  $('weapons').classList.toggle('hidden', !hud);
+  document.body.classList.toggle('playing', controls);
 }
 
 // overlay during a run (levelup / pause); null = playing
 function showOverlay(id) {
   screen = showScreen(id);
-  $('hud').classList.remove('hidden');
-  $('weapons').classList.toggle('hidden', id !== null && id !== 'levelup');
+  setRunUI(true, id === null);
 }
 
 async function toSlots() {
@@ -104,8 +114,8 @@ function toCamp(char) {
 // ——— run ———
 function startRun() {
   ensureAudio(); startMusic();
-  // langkah 2: the run still plays a prototype critter mapped from the class
-  game.start(CRITTERS.find((c) => c.id === CLASSES[current.classId].protoCritter));
+  // until langkah 3C the class still fires a prototype weapon
+  game.start({ classId: current.classId, stats: finalStats(current), weapon: CLASSES[current.classId].protoWeapon });
   game.best = { time: current.records.bestTime, kills: 0, level: 0 };
   R.avatar = { classId: current.classId, look: current.look };
   showOverlay(null);
@@ -178,6 +188,7 @@ $('play').addEventListener('click', () => { ensureAudio(); toSlots(); });
 $('slotsback').addEventListener('click', () => showMenu('title'));
 $('resume').addEventListener('click', resume);
 $('surrender').addEventListener('click', () => { game.surrender(); endRun(false); });
+$('pausebtn').addEventListener('click', () => { if (game.state === ST.PLAY) pause(); });
 $('mute').addEventListener('click', () => {
   ensureAudio();
   settings.muted = toggleMuted();
@@ -186,7 +197,7 @@ $('mute').addEventListener('click', () => {
 });
 
 // ——— keyboard shortcuts ———
-inp.onAction.push((code) => {
+input.onAction.push((code) => {
   if (code === 'KeyM') { $('mute').click(); return; }
   const go = code === 'Space' || code === 'Enter';
   if (screen === 'title' && go) { $('play').click(); return; }
@@ -198,28 +209,15 @@ inp.onAction.push((code) => {
   }
 });
 
-// ——— HUD (DOM, updated ~10x/s is plenty) ———
 let hudT = 0;
-function updateHUD() {
-  const s = game.stats;
-  $('hpfill').style.transform = `scaleX(${Math.max(0, s.hp / s.maxHp)})`;
-  $('hptext').textContent = `${Math.ceil(Math.max(0, s.hp))} / ${Math.round(s.maxHp)}`;
-  $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
-  $('lvltext').textContent = `LV ${game.level}`;
-  $('time').textContent = fmtTime(game.time);
-  $('kills').textContent = game.kills;
-  $('best').textContent = fmtTime(Math.max(game.best.time, game.time));
-  $('dmg').style.opacity = game.flash > 0 ? 0.9 : 0;
-  const b = $('banner');
-  if (game.bannerT > 0 && game.banner) { b.textContent = game.banner; b.style.opacity = 1; }
-  else b.style.opacity = 0;
-}
 
 // ——— main loop ———
 function tick() {
   simT += STEP;
   pollMove();
-  game.moveVec = { x: input.x, y: input.y };
+  const pressed = consumePressed(); // one-shot actions go to the first step of the frame
+  const aimAt = !input.touch && input.mouse.active ? R.screenToWorld(input.mouse.x, input.mouse.y) : null;
+  game.intent = { move: { x: input.x, y: input.y }, aimAt, dodge: pressed.has('dodge') };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
   // react only on the PLAY -> LEVELUP/OVER transition; rebuilding the cards
@@ -233,7 +231,10 @@ function tick() {
 function frame(dt) {
   R.draw(game, simT);
   hudT += dt;
-  if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(); }
+  if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); }
+  const playing = game.state === ST.PLAY;
+  if (playing) updateActions(game);
+  updateJoystick(playing);
   window.__SCENE_READY__ = true;
 }
 
@@ -243,8 +244,11 @@ const loop = startLoop(tick, frame);
 // ——— screenshot / debug hooks ———
 window.__seek = (t) => {
   const v = Number(t) || 0;
-  if (game.state === ST.TITLE) { game.start(CRITTERS[0]); showOverlay(null); }
-  game.moveVec = { x: 0.6, y: 0.35 };
+  if (game.state === ST.TITLE) {
+    game.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, weapon: CLASSES.warrior.protoWeapon });
+    showOverlay(null);
+  }
+  game.intent = { move: { x: 0.6, y: 0.35 }, aimAt: null, dodge: false };
   const n = Math.floor(v / STEP);
   for (let i = 0; i < n && game.state === ST.PLAY; i++) {
     simT += STEP;
