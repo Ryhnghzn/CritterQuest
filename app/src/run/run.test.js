@@ -3,17 +3,15 @@ import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { XP_BASE, XP_GROWTH } from '../data/balance.js';
 
-const setup = (classId) => ({
-  classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats }, weapon: CLASSES[classId].protoWeapon,
-});
+const setup = (classId) => ({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats } });
 const CLASS_IDS = Object.keys(CLASSES);
 
-// Plays a run headlessly: circle around the arena, always take the first card.
+// Plays a run headlessly: circle around the arena attacking, always take the first card.
 function simulate(classId, seconds) {
   const g = new Game();
   g.start(setup(classId));
   for (let i = 0; i < seconds * 60 && g.state !== ST.OVER; i++) {
-    g.intent = { move: { x: Math.cos(g.time * 0.9), y: Math.sin(g.time * 0.9) }, aimAt: null, dodge: false };
+    g.intent = { move: { x: Math.cos(g.time * 0.9), y: Math.sin(g.time * 0.9) }, aimAt: null, dodge: false, attack: true };
     g.step(1 / 60);
     if (g.state === ST.LEVELUP) g.applyChoice(g.choices[0]);
   }
@@ -23,7 +21,6 @@ function simulate(classId, seconds) {
 const snapshot = (g) => ({
   state: g.state, time: g.time, kills: g.kills, level: g.level, xp: g.xp,
   hp: g.stats.hp, px: g.px, py: g.py, enemies: g.enemies.length,
-  weapons: g.weapons.map((w) => `${w.id}${w.level}`),
 });
 
 describe('run', () => {
@@ -75,10 +72,9 @@ describe('stat kelas', () => {
   it('ronde dimulai dengan stat akhir karakter', () => {
     const g = new Game();
     const stats = { ...CLASS_BASE, ...CLASSES.warrior.stats, maxHp: 260 };
-    g.start({ classId: 'warrior', stats, weapon: 'bubble' });
+    g.start({ classId: 'warrior', stats });
     expect(g.stats.hp).toBe(260);
     expect(g.stats.def).toBe(2);
-    expect(g.weapons.map((w) => w.id)).toEqual(['bubble']);
   });
 
   it('def mengurangi damage sentuh (minimal 1)', () => {

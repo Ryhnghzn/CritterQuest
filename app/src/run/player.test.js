@@ -9,7 +9,7 @@ const DT = 1 / 60;
 
 function fresh() {
   const g = new Game();
-  g.start({ classId: 'archer', stats: STATS, weapon: 'ember' });
+  g.start({ classId: 'archer', stats: STATS });
   g.enemies.length = 0;
   return g;
 }

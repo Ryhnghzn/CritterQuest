@@ -20,9 +20,9 @@ Keputusan 2026-10-26: tampilan diganti dari pixel art ke **kartun vektor halus**
 - [x] Joystick sentuh setengah layar kiri, tombol Jeda di HUD
 
 ## 3C — Sistem hit + serangan dasar
-- [ ] `run/hits.js` + tes: sekali-kena per instans, area per tik
-- [ ] Serangan dasar 4 kelas (klik/tahan, tombol Serang), kritis, `def`
-- [ ] Kartu level-up hanya berkah stat (kartu senjata dihapus)
+- [x] `run/hits.js` + tes: sekali-kena per instans, area per tik
+- [x] Serangan dasar 4 kelas (klik/tahan, tombol Serang), kritis, `def`
+- [x] Kartu level-up hanya berkah stat (kartu senjata dihapus)
 
 ## 3D — Skill
 - [ ] Skill Q/E 4 kelas, cooldown + `cdr`, beku (Nova Es)

@@ -7,6 +7,7 @@ export const input = {
   keys: new Set(),
   joy: null,                        // { id, ox, oy, dx, dy } while the stick is held
   mouse: { x: 0, y: 0, active: false, down: false },
+  attackHeld: false,                // touch attack button held
   touch: matchMedia('(pointer: coarse)').matches, // touch controls in use
   pressed: new Set(),               // queued one-shot actions
   onAction: [],                     // code => void ; menus/shortcuts (Esc, M, 1-3, …)
@@ -30,7 +31,7 @@ addEventListener('keydown', (e) => {
   for (const cb of input.onAction) cb(e.code);
 });
 addEventListener('keyup', (e) => input.keys.delete(e.code));
-addEventListener('blur', () => { input.keys.clear(); input.mouse.down = false; input.joy = null; });
+addEventListener('blur', () => { input.keys.clear(); input.mouse.down = false; input.attackHeld = false; input.joy = null; });
 
 addEventListener('mousemove', (e) => {
   if (input.touch) return; // ignore the emulated mouse events that follow taps

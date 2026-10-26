@@ -9,6 +9,12 @@ export function setupTouch() {
   const sync = () => document.body.classList.toggle('touch', input.touch);
   input.onTouchMode.push(sync);
   sync();
+  // hold buttons (attack): active while a finger stays on them
+  for (const b of document.querySelectorAll('.act[data-hold]')) {
+    const set = (v) => (e) => { e.preventDefault(); input[b.dataset.hold] = v; };
+    b.addEventListener('pointerdown', (e) => { b.setPointerCapture?.(e.pointerId); set(true)(e); });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, set(false));
+  }
   for (const b of document.querySelectorAll('.act[data-action]')) {
     // pointerdown, not click: a thumb resting on the button should react at once
     b.addEventListener('pointerdown', (e) => {

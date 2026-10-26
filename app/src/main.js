@@ -51,12 +51,11 @@ function showMenu(id) {
   setRunUI(false, false);
 }
 
-// HUD visible during a run; weapons + action buttons only while actually playing or picking a card.
+// HUD visible during a run; action buttons only while actually playing.
 function setRunUI(hud, controls) {
   $('hud').classList.toggle('hidden', !hud);
   $('pausebtn').classList.toggle('hidden', !controls);
   $('actions').classList.toggle('hidden', !controls);
-  $('weapons').classList.toggle('hidden', !hud);
   document.body.classList.toggle('playing', controls);
 }
 
@@ -114,12 +113,10 @@ function toCamp(char) {
 // ——— run ———
 function startRun() {
   ensureAudio(); startMusic();
-  // until langkah 3C the class still fires a prototype weapon
-  game.start({ classId: current.classId, stats: finalStats(current), weapon: CLASSES[current.classId].protoWeapon });
+  game.start({ classId: current.classId, stats: finalStats(current) });
   game.best = { time: current.records.bestTime, kills: 0, level: 0 };
   R.avatar = { classId: current.classId, look: current.look };
   showOverlay(null);
-  refreshWeaponBar();
 }
 
 // After death or surrender: apply rewards, auto-save, show Hasil (spec §5.6, §9.3).
@@ -162,22 +159,8 @@ function showLevelUp() {
 function pickChoice(i) {
   if (game.state !== ST.LEVELUP || !game.choices[i]) return;
   game.applyChoice(game.choices[i]);
-  refreshWeaponBar();
   if (game.state === ST.PLAY) showOverlay(null);
   else showLevelUp();
-}
-
-function refreshWeaponBar() {
-  const bar = $('weapons');
-  bar.innerHTML = '';
-  for (const w of game.weapons) {
-    const slot = document.createElement('div');
-    slot.className = 'slot';
-    slot.appendChild(iconCanvas(w.id, 30));
-    const lv = document.createElement('em'); lv.textContent = w.level;
-    slot.appendChild(lv);
-    bar.appendChild(slot);
-  }
 }
 
 function pause() { game.state = ST.PAUSE; showOverlay('pause'); }
@@ -217,13 +200,14 @@ function tick() {
   pollMove();
   const pressed = consumePressed(); // one-shot actions go to the first step of the frame
   const aimAt = !input.touch && input.mouse.active ? R.screenToWorld(input.mouse.x, input.mouse.y) : null;
-  game.intent = { move: { x: input.x, y: input.y }, aimAt, dodge: pressed.has('dodge') };
+  const attack = input.touch ? input.attackHeld : input.mouse.down;
+  game.intent = { move: { x: input.x, y: input.y }, aimAt, dodge: pressed.has('dodge'), attack };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
   // react only on the PLAY -> LEVELUP/OVER transition; rebuilding the cards
   // every frame swaps the DOM between mousedown and mouseup and kills clicks
   if (!wasPlaying) return false;
-  if (game.state === ST.LEVELUP) { showLevelUp(); refreshWeaponBar(); return true; }
+  if (game.state === ST.LEVELUP) { showLevelUp(); return true; }
   if (game.state === ST.OVER) { $('dmg').style.opacity = 0; endRun(true); return true; }
   return false;
 }
@@ -245,10 +229,10 @@ const loop = startLoop(tick, frame);
 window.__seek = (t) => {
   const v = Number(t) || 0;
   if (game.state === ST.TITLE) {
-    game.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, weapon: CLASSES.warrior.protoWeapon });
+    game.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } });
     showOverlay(null);
   }
-  game.intent = { move: { x: 0.6, y: 0.35 }, aimAt: null, dodge: false };
+  game.intent = { move: { x: 0.6, y: 0.35 }, aimAt: null, dodge: false, attack: true };
   const n = Math.floor(v / STEP);
   for (let i = 0; i < n && game.state === ST.PLAY; i++) {
     simT += STEP;

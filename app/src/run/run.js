@@ -1,25 +1,25 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
 import { rand, rrange, rint, pick, resetRng } from '../core/rng.js';
-import { MAX_WEAPONS, XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
-import { WEAPONS, CLASSES, CLASS_BASE } from '../data/classes.js';
+import { XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
+import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES, WAVES, BOSS_EVERY, MAX_ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
+import { stepAttack } from './skills.js';
+import { stepHits } from './hits.js';
 
 export const ST = { TITLE: 0, PLAY: 1, LEVELUP: 2, PAUSE: 3, OVER: 4 };
 
-// What a run starts from: class, final stats (meta/character.js finalStats)
-// and, until langkah 3C, the prototype weapon the class fires.
-const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, weapon: CLASSES.warrior.protoWeapon };
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false };
+// What a run starts from: class and final stats (meta/character.js finalStats).
+const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false };
 
 export class Game {
   constructor() {
     this.enemies = [];
-    this.projectiles = [];
+    this.hits = [];       // live attack instances (run/hits.js)
     this.gems = [];
-    this.fields = [];
     this.particles = [];
     this.floaters = [];
     this.state = ST.TITLE;
@@ -27,6 +27,12 @@ export class Game {
     this.best = { time: 0, kills: 0, level: 0 };
     this.shake = 0;
     this.reset(DEFAULT_START);
+    const run = this;
+    this.hitCtx = {
+      get px() { return run.px; }, get py() { return run.py; },
+      onHit: (h, e) => this.damageEnemy(h, e),
+      add: (h) => this.hits.push(h),
+    };
   }
 
   updateBest() {
@@ -45,16 +51,17 @@ export class Game {
     this.updateBest();
   }
 
-  reset({ classId, stats, weapon }) {
+  reset({ classId, stats }) {
     resetRng();
     this.classId = classId;
-    this.enemies.length = 0; this.projectiles.length = 0;
-    this.gems.length = 0; this.fields.length = 0;
+    this.enemies.length = 0; this.hits.length = 0;
+    this.gems.length = 0;
     this.particles.length = 0; this.floaters.length = 0;
     this.px = 0; this.py = 0;
     this.intent = IDLE;
     this.moveX = 0; this.moveY = 0;
     this.aimX = 1; this.aimY = 0;
+    this.atkCd = 0; this.attackT = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0; this.level = 1;
     this.expGained = 0; this.bossKills = 0;
@@ -63,14 +70,11 @@ export class Game {
     this.pendingLevels = 0; this.choices = null;
     // run stats: the character's final stats, then multiplied by level-up blessings
     this.stats = { ...stats, hp: stats.maxHp, dmgMul: 1 };
-    this.weapons = [this.newWeapon(weapon)];
     this.upCounts = {}; // stat id -> times taken
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
   }
-
-  newWeapon(id) { return { id, level: 1, cd: 0.4, angle: rand() * 6.28 }; }
 
   start(setup) {
     this.reset(setup);
@@ -90,10 +94,9 @@ export class Game {
     if (this.shake > 0) this.shake -= dt * 3;
     if (this.bannerT > 0) this.bannerT -= dt;
 
+    stepAttack(this, this.intent, dt);
+    stepHits(this.hits, this.enemies, dt, this.hitCtx);
     this.spawnLogic(dt);
-    this.updateWeapons(dt);
-    this.updateProjectiles(dt);
-    this.updateFields(dt);
     this.updateEnemies(dt);
     if (this.state !== ST.PLAY) return; // died this step: no gem pickup / level-up after death
     this.updateGems(dt);
@@ -137,23 +140,23 @@ export class Game {
       hp: base.hp * hpMul, maxHp: base.hp * hpMul,
       speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg,
       r: base.r, xp: base.xp, sprite: base.sprite, score: base.score,
-      hurtCd: 0, wob: rand() * 6.28, flash: 0, knock: 0, kx: 0, ky: 0,
+      wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
     };
     this.enemies.push(e);
     return e;
   }
 
-  // ——————————————— weapons ———————————————
-  updateWeapons(dt) {
-    for (const w of this.weapons) {
-      const def = WEAPONS[w.id];
-      const L = def.levels[w.level - 1];
-      w.cd -= dt * this.stats.atkSpd;
-      if (w.id === 'gale') w.angle += L.speed * dt * this.stats.atkSpd;
-      if (w.cd > 0) continue;
-      const fired = this.fire(w, L);
-      if (fired) w.cd = L.rate;
-    }
+  // ——————————————— combat ———————————————
+  // Damage rules (spec §5.2): atk × skill multiplier × (crit ? critDmg : 1), × level-up power.
+  damageEnemy(h, e) {
+    const s = this.stats;
+    const crit = rand() * 100 < s.crit;
+    const dmg = s.atk * h.mult * s.dmgMul * (crit ? s.critDmg : 1);
+    e.hp -= dmg;
+    e.flash = 0.12;
+    if (h.freeze) e.frozen = Math.max(e.frozen, h.freeze);
+    this.floaters.push({ x: e.x + rrange(-4, 4), y: e.y - e.r, text: String(Math.round(dmg)), color: crit ? '#ffd166' : '#ffffff', life: 0.7, big: crit });
+    sfx.hit();
   }
 
   nearestEnemy(maxDist = 1e9) {
@@ -165,110 +168,8 @@ export class Game {
     return best;
   }
 
-  fire(w, L) {
-    const px = this.px, py = this.py;
-    if (w.id === 'ember' || w.id === 'bubble') {
-      let target = this.nearestEnemy(520);
-      if (!target) { w.cd = 0.15; return false; }
-      const baseA = Math.atan2(target.y - py, target.x - px);
-      const spread = w.id === 'bubble' ? 0.32 : 0.09;
-      for (let i = 0; i < L.count; i++) {
-        const off = (i - (L.count - 1) / 2) * spread;
-        const a = baseA + off + rrange(-0.03, 0.03);
-        this.projectiles.push({
-          kind: w.id, x: px, y: py, vx: Math.cos(a) * L.speed, vy: Math.sin(a) * L.speed,
-          dmg: L.dmg, r: w.id === 'bubble' ? 8 : 5, pierce: L.pierce, life: 2.2, spin: 0,
-        });
-      }
-      sfx.shoot();
-      return true;
-    }
-    if (w.id === 'gale') return true; // continuous, handled in collision
-    if (w.id === 'zap') {
-      const target = this.nearestEnemy(420);
-      if (!target) { w.cd = 0.15; return false; }
-      let from = { x: px, y: py };
-      let cur = target;
-      const hit = new Set();
-      for (let i = 0; i < L.count && cur; i++) {
-        this.hurtEnemy(cur, L.dmg);
-        hit.add(cur);
-        this.spawnLightning(from.x, from.y, cur.x, cur.y);
-        from = cur;
-        // next nearest not yet hit
-        let bn = null, bd = 180 * 180;
-        for (const e of this.enemies) {
-          if (hit.has(e) || e.hp <= 0) continue;
-          const d = (e.x - from.x) ** 2 + (e.y - from.y) ** 2;
-          if (d < bd) { bd = d; bn = e; }
-        }
-        cur = bn;
-      }
-      sfx.zap();
-      return true;
-    }
-    if (w.id === 'thorn') {
-      this.fields.push({ x: px, y: py, r: L.radius, dmg: L.dmg, life: 0.5, maxLife: 0.5 });
-      return true;
-    }
-    return false;
-  }
-
-  updateProjectiles(dt) {
-    const P = this.projectiles;
-    for (let i = P.length - 1; i >= 0; i--) {
-      const p = P[i];
-      p.life -= dt;
-      if (p.life <= 0) { P[i] = P[P.length - 1]; P.pop(); continue; }
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      // collide with enemies
-      for (const e of this.enemies) {
-        if (e.hp <= 0 || e.hurtCd > 0) continue;
-        const rr = e.r + p.r;
-        if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < rr * rr) {
-          this.hurtEnemy(e, p.dmg);
-          this.spawnBurst(p.x, p.y, '#ffd54a', 4);
-          if (p.pierce > 0) { p.pierce--; e.hurtCd = 0.05; }
-          else { p.life = 0; break; }
-        }
-      }
-      if (p.life <= 0 && P[i] === p) { P[i] = P[P.length - 1]; P.pop(); }
-    }
-  }
-
-  updateFields(dt) {
-    for (let i = this.fields.length - 1; i >= 0; i--) {
-      const f = this.fields[i];
-      f.life -= dt;
-      if (f.life <= 0) { this.fields[i] = this.fields[this.fields.length - 1]; this.fields.pop(); continue; }
-      for (const e of this.enemies) {
-        if (e.hp <= 0 || e.hurtCd > 0) continue;
-        const rr = e.r + f.r;
-        if ((e.x - f.x) ** 2 + (e.y - f.y) ** 2 < rr * rr) this.hurtEnemy(e, f.dmg);
-      }
-    }
-  }
-
   updateEnemies(dt) {
     const E = this.enemies;
-    // gale blades: continuous damage around the player
-    for (const w of this.weapons) {
-      if (w.id !== 'gale') continue;
-      const L = WEAPONS.gale.levels[w.level - 1];
-      for (let b = 0; b < L.count; b++) {
-        const a = w.angle + (b / L.count) * Math.PI * 2;
-        const bx = this.px + Math.cos(a) * L.radius;
-        const by = this.py + Math.sin(a) * L.radius;
-        for (const e of E) {
-          if (e.hp <= 0 || e.hurtCd > 0) continue;
-          const rr = e.r + 12;
-          if ((e.x - bx) ** 2 + (e.y - by) ** 2 < rr * rr) {
-            this.hurtEnemy(e, L.dmg);
-            this.spawnBurst(bx, by, '#a8e063', 3);
-          }
-        }
-      }
-    }
     for (let i = E.length - 1; i >= 0; i--) {
       const e = E[i];
       if (e.hp <= 0) {
@@ -276,8 +177,8 @@ export class Game {
         E[i] = E[E.length - 1]; E.pop();
         continue;
       }
-      if (e.hurtCd > 0) e.hurtCd -= dt;
       if (e.flash > 0) e.flash -= dt;
+      if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
       const a = Math.atan2(this.py - e.y, this.px - e.x);
       const zig = e.type === 'dart' ? Math.sin(e.wob) * 0.7 : 0;
@@ -296,13 +197,6 @@ export class Game {
         if (this.stats.hp <= 0) { this.die(); return; }
       }
     }
-  }
-
-  hurtEnemy(e, dmg) {
-    e.hp -= dmg * this.stats.dmgMul;
-    e.flash = 0.12;
-    e.hurtCd = Math.max(e.hurtCd, 0.24);
-    sfx.hit();
   }
 
   killEnemy(e) {
@@ -365,19 +259,8 @@ export class Game {
 
   // ——————————————— level up ———————————————
   rollChoices() {
+    // run blessings only; the class decides the attack (spec §5.5)
     const cands = [];
-    for (const w of this.weapons) {
-      if (w.level < 5) {
-        cands.push({ kind: 'weapon', id: w.id, to: w.level + 1, label: 'NAIKKAN' });
-      }
-    }
-    if (this.weapons.length < MAX_WEAPONS) {
-      for (const id of Object.keys(WEAPONS)) {
-        if (!this.weapons.some((w) => w.id === id)) {
-          cands.push({ kind: 'new', id, to: 1, label: 'SENJATA BARU' });
-        }
-      }
-    }
     for (const s of STAT_UPS) {
       if ((this.upCounts[s.id] || 0) < s.max) cands.push({ kind: 'stat', id: s.id });
     }
@@ -395,10 +278,9 @@ export class Game {
     if (c.kind === 'heal') return { name: 'Camilan Darurat', desc: 'Pulih 30 HP sekarang', icon: 'heart' };
     if (c.kind === 'stat') {
       const s = STAT_UPS.find((x) => x.id === c.id);
-      return { name: s.name, desc: s.desc(), icon: null };
+      return { name: s.name, desc: s.desc(), icon: s.id };
     }
-    const w = WEAPONS[c.id];
-    return { name: `${c.kind === 'new' ? '' : '↑ '}${w.name} Lv${c.to}`, desc: w.desc(c.to), icon: w.icon };
+    return null;
   }
 
   applyChoice(c) {
@@ -412,8 +294,7 @@ export class Game {
       if (c.id === 'hst') s.atkSpd *= 1.12;
       if (c.id === 'mag') s.magnet += 35;
       if (c.id === 'arm') s.def += 2;
-    } else if (c.kind === 'new') this.weapons.push(this.newWeapon(c.id));
-    else { const w = this.weapons.find((x) => x.id === c.id); w.level = c.to; }
+    }
     this.pendingLevels--;
     if (this.pendingLevels > 0) this.choices = this.rollChoices();
     else { this.choices = null; this.state = ST.PLAY; }

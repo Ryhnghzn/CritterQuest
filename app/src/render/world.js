@@ -2,10 +2,10 @@
 // adaptive zoom (the short screen side shows ~VIEW world units), cartoon vector
 // art baked per scale, soft shadows, fog beyond the arena edge and a vignette.
 import { WORLD_R } from '../data/balance.js';
-import { WEAPONS } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { SPRITES, bakeAll, drawBaked } from '../art/sprites.js';
 import { drawDoll } from '../art/doll.js';
+import { ATTACK_POSE } from '../run/skills.js';
 
 const VIEW = 360;          // world units across the short side of the screen
 const DOLL_SCALE = 0.82;   // player doll size in world units
@@ -154,15 +154,6 @@ export class Renderer {
       drawBaked(g, s, gm.x, gm.y + bob - 2, 1);
     }
 
-    // thorn fields (prototype weapon)
-    for (const f of game.fields) {
-      const k = f.life / f.maxLife;
-      const rr = f.r * (1.15 - k * 0.15);
-      g.beginPath(); g.arc(f.x, f.y, rr, 0, TAU);
-      g.fillStyle = `rgba(140,240,120,${0.18 * k})`; g.fill();
-      g.lineWidth = 3; g.strokeStyle = `rgba(200,255,150,${0.7 * k})`; g.stroke();
-    }
-
     // enemies
     for (const e of game.enemies) {
       if (!visible(e.x, e.y, 40)) continue;
@@ -173,37 +164,8 @@ export class Renderer {
       if (e.type === 'boss' || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp);
     }
 
-    // projectiles (prototype weapons)
-    g.save(); g.globalCompositeOperation = 'lighter';
-    for (const p of game.projectiles) {
-      if (p.kind === 'ember') glow(g, p.x, p.y, p.r * 2.6, '255,140,60');
-      else glow(g, p.x, p.y, p.r * 1.8, '110,200,255');
-    }
-    g.restore();
-    for (const p of game.projectiles) {
-      g.beginPath(); g.arc(p.x, p.y, p.r, 0, TAU);
-      if (p.kind === 'ember') { g.fillStyle = '#ffd36b'; g.fill(); }
-      else {
-        g.fillStyle = 'rgba(160,225,255,.45)'; g.fill();
-        g.lineWidth = 1.5; g.strokeStyle = '#7fd4ff'; g.stroke();
-        g.beginPath(); g.arc(p.x - p.r * 0.35, p.y - p.r * 0.35, p.r * 0.25, 0, TAU); g.fillStyle = '#fff'; g.fill();
-      }
-    }
-
-    // gale blades (prototype weapon)
-    for (const wp of game.weapons) {
-      if (wp.id !== 'gale') continue;
-      const L = WEAPONS.gale.levels[wp.level - 1];
-      for (let b = 0; b < L.count; b++) {
-        const a = wp.angle + (b / L.count) * TAU;
-        g.save();
-        g.translate(game.px + Math.cos(a) * L.radius, game.py + Math.sin(a) * L.radius);
-        g.rotate(a + Math.PI / 2);
-        g.beginPath(); g.moveTo(-8, 0); g.quadraticCurveTo(0, -7, 8, 0); g.quadraticCurveTo(0, 3, -8, 0);
-        g.fillStyle = '#b8f06a'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = '#2f7a3a'; g.stroke();
-        g.restore();
-      }
-    }
+    // attack instances
+    for (const h of game.hits) drawHit(g, h, this.avatar);
 
     // player
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
@@ -232,7 +194,8 @@ export class Renderer {
       g.translate(game.px, game.py + 10);
       if (dodging) g.rotate(game.dodgeX * 0.25);
       g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
-      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, hurt: game.flash > 0 });
+      const attack = Math.max(0, game.attackT / ATTACK_POSE);
+      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, hurt: game.flash > 0 });
       g.restore();
     }
 
@@ -248,10 +211,10 @@ export class Renderer {
     g.restore();
 
     // floating numbers
-    g.font = '600 9px Fredoka, system-ui, sans-serif';
     g.textAlign = 'center';
     g.lineJoin = 'round';
     for (const f of game.floaters) {
+      g.font = f.big ? '700 13px Fredoka, system-ui, sans-serif' : '600 9px Fredoka, system-ui, sans-serif';
       g.globalAlpha = Math.min(1, f.life * 2);
       g.lineWidth = 3; g.strokeStyle = 'rgba(30,20,60,.85)';
       g.strokeText(f.text, f.x, f.y);
@@ -264,6 +227,77 @@ export class Renderer {
 function shadow(g, x, y, rx, ry) {
   g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU);
   g.fillStyle = 'rgba(20,30,40,.22)'; g.fill();
+}
+
+const SLASH = { warrior: '255,214,120', default: '255,255,255' };
+
+// Visual for one attack instance (run/hits.js); k = remaining life 1 → 0.
+function drawHit(g, h, avatar) {
+  const k = Math.max(0, h.life / h.maxLife);
+  const p = 1 - k;
+  if (h.fx === 'slash') {
+    const a0 = h.angle - h.arc / 2, sweep = h.arc * Math.min(1, p * 2.4);
+    const col = SLASH[avatar?.classId] || SLASH.default;
+    g.save();
+    g.globalAlpha = Math.min(1, k * 1.5);
+    g.beginPath();
+    g.arc(h.x, h.y, h.r + 2, a0, a0 + sweep);
+    g.arc(h.x, h.y, h.r * 0.35, a0 + sweep, a0, true);
+    g.closePath();
+    const gr = g.createRadialGradient(h.x, h.y, h.r * 0.35, h.x, h.y, h.r + 2);
+    gr.addColorStop(0, `rgba(${col},0)`);
+    gr.addColorStop(0.7, `rgba(${col},.55)`);
+    gr.addColorStop(1, `rgba(${col},.95)`);
+    g.fillStyle = gr; g.fill();
+    g.globalCompositeOperation = 'lighter';
+    g.beginPath(); g.arc(h.x, h.y, h.r, a0, a0 + sweep);
+    g.lineCap = 'round';
+    g.lineWidth = 7; g.strokeStyle = `rgba(${col},.35)`; g.stroke();
+    g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke();
+    g.restore();
+  } else if (h.fx === 'stab') {
+    g.save();
+    g.translate(h.x, h.y); g.rotate(h.angle);
+    g.globalAlpha = Math.min(1, k * 1.8);
+    const reach = h.r * (0.55 + 0.45 * Math.min(1, p * 3)) + 8;
+    g.beginPath(); g.moveTo(6, -7); g.quadraticCurveTo(reach * 0.6, -4, reach, 0); g.quadraticCurveTo(reach * 0.6, 4, 6, 7); g.closePath();
+    const gr = g.createLinearGradient(6, 0, reach, 0);
+    gr.addColorStop(0, 'rgba(255,77,94,0)'); gr.addColorStop(0.5, 'rgba(255,120,140,.6)'); gr.addColorStop(1, 'rgba(255,255,255,1)');
+    g.fillStyle = gr; g.fill();
+    g.globalCompositeOperation = 'lighter';
+    g.beginPath(); g.moveTo(10, 0); g.lineTo(reach + 2, 0);
+    g.lineWidth = 2; g.lineCap = 'round'; g.strokeStyle = 'rgba(255,255,255,.9)'; g.stroke();
+    g.restore();
+  } else if (h.fx === 'arrow') {
+    g.save();
+    g.translate(h.x, h.y); g.rotate(h.angle);
+    g.beginPath(); g.moveTo(-26, 0); g.lineTo(-8, 0);
+    g.lineWidth = 3; g.lineCap = 'round'; g.strokeStyle = 'rgba(255,255,255,.25)'; g.stroke();
+    g.beginPath(); g.moveTo(-9, 0); g.lineTo(5, 0);
+    g.lineWidth = 2.6; g.strokeStyle = '#2a2140'; g.stroke();
+    g.lineWidth = 1.4; g.strokeStyle = '#c8874e'; g.stroke();
+    g.beginPath(); g.moveTo(9, 0); g.lineTo(3, -3.2); g.lineTo(3, 3.2); g.closePath();
+    g.fillStyle = '#e6ecf5'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#2a2140'; g.stroke();
+    g.fillStyle = '#ff6b8b';
+    g.beginPath(); g.moveTo(-9, 0); g.lineTo(-12, -3); g.lineTo(-7, 0); g.lineTo(-12, 3); g.closePath(); g.fill();
+    g.restore();
+  } else if (h.fx === 'fireball') {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    glow(g, h.x - h.vx * 0.04, h.y - h.vy * 0.04, h.r * 2.6, '255,110,40');
+    glow(g, h.x, h.y, h.r * 3, '255,160,60');
+    g.restore();
+    g.beginPath(); g.arc(h.x, h.y, h.r * 0.9, 0, TAU); g.fillStyle = '#fff3b0'; g.fill();
+  } else if (h.fx === 'boom') {
+    const rr = h.r * (0.45 + 0.55 * Math.min(1, p * 2.5));
+    g.save(); g.globalCompositeOperation = 'lighter';
+    glow(g, h.x, h.y, rr * 1.3, `255,140,50`);
+    g.restore();
+    g.beginPath(); g.arc(h.x, h.y, rr, 0, TAU);
+    g.lineWidth = 3 * k + 0.5; g.strokeStyle = `rgba(255,220,120,${k})`; g.stroke();
+  } else {
+    g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU);
+    g.lineWidth = 2; g.strokeStyle = `rgba(255,255,255,${0.6 * k})`; g.stroke();
+  }
 }
 
 // soft chevron on a ring around the player pointing where attacks will go
