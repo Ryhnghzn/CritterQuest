@@ -4,7 +4,7 @@
 import { Game, ST } from './run/run.js';
 import { Renderer } from './render/world.js';
 import { CRITTERS, CLASSES } from './data/classes.js';
-import { SPRITES, bakeAll } from './art/sprites.js';
+import { iconCanvas } from './art/sprites.js';
 import { input, pollMove, input as inp } from './core/input.js';
 import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
@@ -18,7 +18,6 @@ import { renderResults } from './ui/results.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game');
-bakeAll();
 const game = new Game();
 const R = new Renderer(canvas);
 
@@ -36,7 +35,7 @@ function legacyMuted() {
 }
 const settings = (await store.loadSettings()) ?? { version: 1, muted: legacyMuted(), lastSlot: 0 };
 setMuted(settings.muted);
-$('mute').textContent = settings.muted ? 'SUARA OFF' : 'SUARA ON';
+$('mute').classList.toggle('muted', settings.muted);
 
 function saveSettings() {
   store.saveSettings(settings).catch(() => { /* settings are a convenience; ignore */ });
@@ -88,7 +87,7 @@ async function createChar(slot, form) {
 async function deleteSlot(slot) {
   const e = slots[slot];
   const what = e.status === 'ok' ? `${e.data.name} (LV ${e.data.level})` : `data rusak di slot ${slot + 1}`;
-  if (!(await confirmDialog(`Hapus ${what}? Tidak bisa dibatalkan.`, 'HAPUS'))) return;
+  if (!(await confirmDialog(`Hapus ${what}? Tidak bisa dibatalkan.`, 'Hapus'))) return;
   await store.deleteSlot(slot);
   await toSlots();
 }
@@ -108,6 +107,7 @@ function startRun() {
   // langkah 2: the run still plays a prototype critter mapped from the class
   game.start(CRITTERS.find((c) => c.id === CLASSES[current.classId].protoCritter));
   game.best = { time: current.records.bestTime, kills: 0, level: 0 };
+  R.avatar = { classId: current.classId, look: current.look };
   showOverlay(null);
   refreshWeaponBar();
 }
@@ -135,21 +135,14 @@ function showLevelUp() {
     const d = game.describeChoice(c);
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.width = '190px';
-    if (d.icon && SPRITES[d.icon]) {
-      const cv = document.createElement('canvas');
-      cv.width = 48; cv.height = 48;
-      const g = cv.getContext('2d');
-      g.imageSmoothingEnabled = false;
-      const img = SPRITES[d.icon];
-      g.drawImage(img, (48 - img.width * 3) / 2, (48 - img.height * 3) / 2, img.width * 3, img.height * 3);
-      card.appendChild(cv);
-    }
-    const tag = document.createElement('div'); tag.className = 'ds'; tag.style.color = '#ffd54a';
-    tag.textContent = `#${i + 1} ${c.label || ''}`;
+    card.style.animationDelay = `${i * 0.07}s`;
+    const key = document.createElement('div'); key.className = 'key'; key.textContent = i + 1;
+    const icon = document.createElement('div'); icon.className = 'iconbubble';
+    icon.append(iconCanvas(d.icon || c.id, 44));
+    const tag = document.createElement('div'); tag.className = 'tagline'; tag.textContent = c.label || 'BERKAH';
     const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = d.name;
     const ds = document.createElement('div'); ds.className = 'ds'; ds.textContent = d.desc;
-    card.append(tag, nm, ds);
+    card.append(key, icon, tag, nm, ds);
     card.addEventListener('click', () => pickChoice(i));
     box.appendChild(card);
   });
@@ -168,17 +161,10 @@ function refreshWeaponBar() {
   const bar = $('weapons');
   bar.innerHTML = '';
   for (const w of game.weapons) {
-    const def = { ember: 'iconEmber', bubble: 'iconBubble', gale: 'iconGale', zap: 'iconZap', thorn: 'iconThorn' }[w.id];
     const slot = document.createElement('div');
     slot.className = 'slot';
-    const cv = document.createElement('canvas');
-    cv.width = 34; cv.height = 34;
-    const g = cv.getContext('2d');
-    g.imageSmoothingEnabled = false;
-    const img = SPRITES[def];
-    g.drawImage(img, (34 - img.width * 2) / 2, (34 - img.height * 2) / 2, img.width * 2, img.height * 2);
-    slot.appendChild(cv);
-    const lv = document.createElement('em'); lv.textContent = 'Lv' + w.level;
+    slot.appendChild(iconCanvas(w.id, 30));
+    const lv = document.createElement('em'); lv.textContent = w.level;
     slot.appendChild(lv);
     bar.appendChild(slot);
   }
@@ -195,7 +181,7 @@ $('surrender').addEventListener('click', () => { game.surrender(); endRun(false)
 $('mute').addEventListener('click', () => {
   ensureAudio();
   settings.muted = toggleMuted();
-  $('mute').textContent = settings.muted ? 'SUARA OFF' : 'SUARA ON';
+  $('mute').classList.toggle('muted', settings.muted);
   saveSettings();
 });
 
@@ -217,7 +203,7 @@ let hudT = 0;
 function updateHUD() {
   const s = game.stats;
   $('hpfill').style.transform = `scaleX(${Math.max(0, s.hp / s.maxHp)})`;
-  $('hptext').textContent = `HP ${Math.ceil(Math.max(0, s.hp))}/${s.maxHp}`;
+  $('hptext').textContent = `${Math.ceil(Math.max(0, s.hp))} / ${Math.round(s.maxHp)}`;
   $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
   $('lvltext').textContent = `LV ${game.level}`;
   $('time').textContent = fmtTime(game.time);

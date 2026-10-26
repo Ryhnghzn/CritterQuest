@@ -40,3 +40,21 @@ export function confirmDialog(text, yesLabel = 'YA') {
     $('confirmno').onclick = done(false);
   });
 }
+
+// Inline icon from the <symbol> sprite in index.html.
+export function svgIcon(id) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'i');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', `#i-${id}`);
+  svg.append(use);
+  return svg;
+}
+
+// Round coloured backdrop with a character portrait (class colour via --c).
+export function stage(canvas, color) {
+  const s = el('div', 'stage');
+  s.style.setProperty('--c', color);
+  s.append(canvas);
+  return s;
+}

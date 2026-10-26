@@ -5,23 +5,18 @@ import { el, button, fmtTime } from './screens.js';
 export function renderResults(box, info, { onContinue }) {
   const { char, result, levelsGained, isRecord, died, saveError } = info;
   box.replaceChildren();
-  const title = el('h1', 'logo small', died ? 'TUMBANG!' : 'RONDE SELESAI');
-  if (died) title.style.color = 'var(--acc2)';
-  const stats = el('div', 'stats');
-  const line = (label, value) => {
-    const d = el('div', null, `${label} `);
-    d.append(el('b', null, value));
-    return d;
-  };
-  stats.append(
-    line('Bertahan', fmtTime(result.time)),
-    line('Kill', String(result.kills)),
-    line('EXP', `+${result.exp}`),
-  );
-  if (levelsGained > 0) stats.append(line('NAIK LEVEL!', `LV ${char.level}`));
-  if (isRecord) stats.append(el('div', null, 'REKOR BARU!'));
+  const title = el('h2', died ? 'h bad' : 'h', died ? 'Tumbang!' : 'Ronde Selesai');
+  const tiles = el('div', 'tiles');
+  for (const [label, value] of [['Bertahan', fmtTime(result.time)], ['Kill', String(result.kills)], ['EXP', `+${result.exp}`]]) {
+    const t = el('div', 'tile');
+    t.append(el('span', null, label), el('b', null, value));
+    tiles.append(t);
+  }
+  const badges = el('div', 'badges');
+  if (levelsGained > 0) badges.append(el('span', 'badge mint', `Naik level! LV ${char.level}`));
+  if (isRecord) badges.append(el('span', 'badge', 'Rekor baru!'));
   const err = el('div', 'err', saveError ? `Gagal menyimpan: ${saveError}` : '');
-  const next = button('KEMBALI KE KEMAH', 'btn', onContinue);
+  const next = button('Kembali ke Kemah', 'btn', onContinue);
   next.id = 'tocamp';
-  box.append(title, stats, err, next);
+  box.append(title, tiles, badges, err, next);
 }

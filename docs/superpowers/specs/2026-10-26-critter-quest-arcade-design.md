@@ -210,14 +210,16 @@ Setiap transaksi langsung di-auto-save.
 
 ## 8. Paper Doll & Aset
 
-- Semua aset dibuat lewat kode (gaya pixel art prototipe), di-*bake* ke canvas offscreen saat mulai.
-- **Kerangka:** badan dasar ± 16 × 20 piksel; menghadap kanan, arah kiri memakai flip horizontal.
-- **Frame:** diam (1), jalan (2), serang (2), terkena (1).
+> Diubah 2026-10-26 (langkah 3A): gaya **pixel art → kartun vektor halus** atas permintaan pemilik.
+
+- Semua aset dibuat lewat kode dengan gaya **kartun vektor**: bentuk membulat, outline tebal gelap, gradien & sorot cahaya lembut, bayangan elips di bawah entitas. UI memakai font Fredoka, panel membulat, tombol pil bergradien.
+- Canvas digambar pada resolusi penuh (`devicePixelRatio`); zoom menyesuaikan layar (sisi pendek ≈ 360 unit dunia). Musuh, pickup, dan dekor di-*bake* ke canvas offscreen sesuai skala dan dibuat ulang saat ukuran layar berubah.
+- **Kerangka karakter:** chibi ± 24 × 44 unit dunia, titik asal di tengah kaki; menghadap kanan, arah kiri memakai flip horizontal.
+- **Pose** (pengganti frame sprite): diam, jalan (ayunan kaki + badan memantul), serang, terkena — dihitung prosedural dari parameter pose.
 - **Lapisan (bawah → atas):** badan → armor → rambut (disembunyikan bila helm terpasang) → helm → senjata.
-- Tiap lapisan digambar pada kerangka yang sama dengan **titik jangkar** (kepala, badan, tangan) per frame, sehingga gear selalu pas.
-- Rambut: 5 gaya × 6 warna (warna = palet, bukan sprite terpisah).
-- Hasil gabungan karakter di-cache per kombinasi (kelas, rambut, gear) dan dibuat ulang hanya saat gear berubah.
-- Struktur data sprite memakai format "sprite sheet" agar kelak bisa diganti aset gambar (mis. LPC) tanpa mengubah logika.
+- Tiap lapisan digambar relatif terhadap **titik jangkar** (kepala, badan, tangan) yang dihitung per pose, sehingga gear selalu pas.
+- Rambut: 5 gaya × 6 warna (warna = palet). Baju diberi warna & ciri khas per kelas.
+- Potret menu digambar sekali ke canvas; karakter di ronde digambar langsung tiap frame (cukup murah untuk satu karakter).
 
 ## 9. Save (IndexedDB)
 
