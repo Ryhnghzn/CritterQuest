@@ -159,13 +159,14 @@ export class Renderer {
       if (!visible(e.x, e.y, 40)) continue;
       shadow(g, e.x, e.y + e.r * 0.75, e.r * 0.85, e.r * 0.3);
       const squash = 1 + Math.sin(e.wob) * 0.06;
-      const sprite = SPRITES[e.flash > 0 ? `${e.type}Flash` : e.type];
+      const sprite = SPRITES[e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type];
       drawBaked(g, sprite, e.x, e.y, 1 / squash, squash, game.px < e.x);
       if (e.type === 'boss' || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp);
     }
 
     // attack instances
-    for (const h of game.hits) drawHit(g, h, this.avatar);
+    for (const h of game.hits) drawHit(g, h, this.avatar, t);
+    if (game.buffT > 0) shoutAura(g, game.px, game.py, t, Math.min(1, game.buffT * 2));
 
     // player
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
@@ -183,7 +184,7 @@ export class Renderer {
       g.globalAlpha = a.life * 1.6;
       g.translate(a.x, a.y + 10);
       g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
-      g.filter = 'brightness(1.6) saturate(.4)';
+      g.filter = this.avatar.classId === 'assassin' ? 'brightness(.8) saturate(2) hue-rotate(200deg)' : 'brightness(1.6) saturate(.4)';
       drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving: 1, walk: this.walk });
       g.restore();
     }
@@ -232,7 +233,7 @@ function shadow(g, x, y, rx, ry) {
 const SLASH = { warrior: '255,214,120', default: '255,255,255' };
 
 // Visual for one attack instance (run/hits.js); k = remaining life 1 → 0.
-function drawHit(g, h, avatar) {
+function drawHit(g, h, avatar, t) {
   const k = Math.max(0, h.life / h.maxLife);
   const p = 1 - k;
   if (h.fx === 'slash') {
@@ -294,10 +295,95 @@ function drawHit(g, h, avatar) {
     g.restore();
     g.beginPath(); g.arc(h.x, h.y, rr, 0, TAU);
     g.lineWidth = 3 * k + 0.5; g.strokeStyle = `rgba(255,220,120,${k})`; g.stroke();
+  } else if (h.fx === 'spin') {
+    const a0 = t * 16;
+    g.save();
+    g.globalAlpha = Math.min(1, k * 4);
+    g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU);
+    g.fillStyle = 'rgba(255,214,120,.10)'; g.fill();
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++) {
+      const a = a0 + (i * TAU) / 3;
+      g.beginPath(); g.arc(h.x, h.y, h.r * 0.92, a, a + 1.1);
+      g.arc(h.x, h.y, h.r * 0.45, a + 1.1, a, true); g.closePath();
+      const gr = g.createRadialGradient(h.x, h.y, h.r * 0.45, h.x, h.y, h.r);
+      gr.addColorStop(0, 'rgba(255,214,120,0)'); gr.addColorStop(1, 'rgba(255,230,160,.8)');
+      g.fillStyle = gr; g.fill();
+    }
+    g.restore();
+  } else if (h.fx === 'rain') {
+    g.save();
+    g.globalAlpha = Math.min(1, k * 5);
+    g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU);
+    g.fillStyle = 'rgba(255,107,139,.12)'; g.fill();
+    g.setLineDash([6, 5]); g.lineDashOffset = -t * 20;
+    g.lineWidth = 2; g.strokeStyle = 'rgba(255,170,190,.85)'; g.stroke();
+    g.setLineDash([]);
+    // falling arrows: fixed pseudo-random spots, each dropping on a short loop
+    for (let i = 0; i < 14; i++) {
+      const fx = Math.sin(i * 12.99) * 0.8, fy = Math.cos(i * 78.23) * 0.8;
+      const ph = (t * 3.2 + i * 0.37) % 1;
+      const x = h.x + fx * h.r, y = h.y + fy * h.r - (1 - ph) * 40;
+      g.globalAlpha = Math.min(1, k * 5) * (1 - ph * 0.6);
+      g.beginPath(); g.moveTo(x, y - 12); g.lineTo(x, y);
+      g.lineWidth = 1.6; g.strokeStyle = '#fff'; g.stroke();
+      g.beginPath(); g.moveTo(x, y + 4); g.lineTo(x - 2.4, y - 1); g.lineTo(x + 2.4, y - 1); g.closePath();
+      g.fillStyle = '#e6ecf5'; g.fill();
+    }
+    g.restore();
+  } else if (h.fx === 'pierce') {
+    g.save();
+    g.translate(h.x, h.y); g.rotate(h.angle);
+    g.globalCompositeOperation = 'lighter';
+    const gr = g.createLinearGradient(-60, 0, 10, 0);
+    gr.addColorStop(0, 'rgba(255,214,90,0)'); gr.addColorStop(1, 'rgba(255,214,90,.75)');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(-60, -5); g.lineTo(10, -8); g.lineTo(10, 8); g.lineTo(-60, 5); g.fill();
+    g.globalCompositeOperation = 'source-over';
+    g.beginPath(); g.moveTo(-14, 0); g.lineTo(8, 0);
+    g.lineWidth = 4.5; g.lineCap = 'round'; g.strokeStyle = '#2a2140'; g.stroke();
+    g.lineWidth = 2.6; g.strokeStyle = '#ffd36b'; g.stroke();
+    g.beginPath(); g.moveTo(16, 0); g.lineTo(6, -6); g.lineTo(6, 6); g.closePath();
+    g.fillStyle = '#fff4b8'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = '#2a2140'; g.stroke();
+    g.restore();
+  } else if (h.fx === 'nova') {
+    const rr = h.r * (0.25 + 0.75 * Math.min(1, p * 2.2));
+    g.save();
+    g.globalAlpha = k;
+    g.beginPath(); g.arc(h.x, h.y, rr, 0, TAU);
+    g.fillStyle = 'rgba(150,215,255,.22)'; g.fill();
+    g.lineWidth = 4; g.strokeStyle = 'rgba(210,240,255,.95)'; g.stroke();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU;
+      g.beginPath();
+      g.moveTo(h.x + Math.cos(a) * rr, h.y + Math.sin(a) * rr);
+      g.lineTo(h.x + Math.cos(a) * (rr + 9), h.y + Math.sin(a) * (rr + 9));
+      g.lineWidth = 2.4; g.strokeStyle = '#e8f7ff'; g.stroke();
+    }
+    g.restore();
+  } else if (h.fx === 'dagger') {
+    g.save();
+    g.translate(h.x, h.y); g.rotate(h.angle);
+    g.beginPath(); g.moveTo(9, 0); g.lineTo(0, -2.4); g.lineTo(-3, 0); g.lineTo(0, 2.4); g.closePath();
+    g.fillStyle = '#eef2fb'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#2a2140'; g.stroke();
+    g.beginPath(); g.moveTo(-3, 0); g.lineTo(-8, 0); g.lineWidth = 2.4; g.lineCap = 'round'; g.strokeStyle = '#ff4d5e'; g.stroke();
+    g.restore();
+  } else if (h.fx === 'shadow') {
+    // the dash itself draws the afterimages
   } else {
     g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU);
     g.lineWidth = 2; g.strokeStyle = `rgba(255,255,255,${0.6 * k})`; g.stroke();
   }
+}
+
+// Teriakan Baja: golden pulse around the player while damage taken is halved.
+function shoutAura(g, x, y, t, a) {
+  const pulse = 1 + Math.sin(t * 8) * 0.06;
+  g.save();
+  g.globalAlpha = a;
+  g.beginPath(); g.arc(x, y - 6, 26 * pulse, 0, TAU);
+  g.fillStyle = 'rgba(255,214,120,.12)'; g.fill();
+  g.lineWidth = 2.5; g.strokeStyle = 'rgba(255,214,120,.8)'; g.stroke();
+  g.restore();
 }
 
 // soft chevron on a ring around the player pointing where attacks will go
@@ -339,7 +425,7 @@ function bolt(g, x1, y1, x2, y2, k) {
   }
   g.lineTo(x2, y2);
   g.globalAlpha = k;
-  g.lineWidth = 5; g.strokeStyle = 'rgba(255,230,90,.35)'; g.stroke();
-  g.lineWidth = 2; g.strokeStyle = '#fff6b0'; g.stroke();
+  g.lineWidth = 8; g.strokeStyle = 'rgba(190,160,255,.35)'; g.stroke();
+  g.lineWidth = 3; g.strokeStyle = '#fff6b0'; g.stroke();
   g.globalAlpha = 1;
 }

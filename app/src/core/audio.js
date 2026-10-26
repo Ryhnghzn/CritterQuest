@@ -56,6 +56,16 @@ export const sfx = {
     else if (fx === 'arrow') { tone(1200, 0.06, 'triangle', 0.05, -700); }
     else if (fx === 'fireball') { tone(260, 0.16, 'sawtooth', 0.05, 180); noise(0.1, 0.04); }
   },
+  skill(id) {
+    if (id === 'spin') { noise(0.3, 0.08); tone(300, 0.3, 'sawtooth', 0.05, -120); }
+    else if (id === 'shout') { tone(160, 0.35, 'square', 0.08, 60); tone(240, 0.3, 'square', 0.05, 0, 0.05); }
+    else if (id === 'rain') { for (let i = 0; i < 4; i++) tone(1300 - i * 120, 0.05, 'triangle', 0.04, -500, i * 0.06); }
+    else if (id === 'pierce') { tone(700, 0.25, 'sawtooth', 0.06, -500); }
+    else if (id === 'nova') { tone(1800, 0.4, 'sine', 0.06, -1400); noise(0.25, 0.05); }
+    else if (id === 'chain') { tone(1400, 0.12, 'sawtooth', 0.07, -900); tone(1000, 0.12, 'sawtooth', 0.05, -600, 0.08); }
+    else if (id === 'shadow') { noise(0.15, 0.08); tone(200, 0.15, 'sine', 0.06, 600); }
+    else if (id === 'fan') { for (let i = 0; i < 3; i++) tone(1100, 0.04, 'square', 0.03, -400, i * 0.03); }
+  },
   dodge() { noise(0.12, 0.06); tone(300, 0.12, 'sine', 0.05, 500); },
   hurt() { tone(220, 0.2, 'sawtooth', 0.16, -140); noise(0.12, 0.1); },
   levelup() { tone(523, 0.1, 'square', 0.1); tone(659, 0.1, 'square', 0.1, 0, 0.09); tone(784, 0.16, 'square', 0.1, 0, 0.18); },

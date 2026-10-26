@@ -6,14 +6,14 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES, WAVES, BOSS_EVERY, MAX_ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
-import { stepAttack } from './skills.js';
+import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
 
 export const ST = { TITLE: 0, PLAY: 1, LEVELUP: 2, PAUSE: 3, OVER: 4 };
 
 // What a run starts from: class and final stats (meta/character.js finalStats).
 const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } };
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false };
 
 export class Game {
   constructor() {
@@ -62,6 +62,11 @@ export class Game {
     this.moveX = 0; this.moveY = 0;
     this.aimX = 1; this.aimY = 0;
     this.atkCd = 0; this.attackT = 0;
+    this.aimPX = 0; this.aimPY = 0;
+    this.skillCd = [0, 0];
+    this.skillCdMax = CLASSES[classId].skills.map((sk) => skillCooldown(stats, sk));
+    this.buffT = 0; this.dmgTakenMul = 1;
+    this.dashSpeed = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0; this.level = 1;
     this.expGained = 0; this.bossKills = 0;
@@ -95,6 +100,7 @@ export class Game {
     if (this.bannerT > 0) this.bannerT -= dt;
 
     stepAttack(this, this.intent, dt);
+    stepSkills(this, this.intent, dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
     this.spawnLogic(dt);
     this.updateEnemies(dt);
@@ -188,7 +194,7 @@ export class Game {
       // touch damage
       const rr = e.r + 10;
       if (this.invuln <= 0 && this.dodgeInv <= 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr) {
-        const dmg = Math.max(1, e.dmg - this.stats.def);
+        const dmg = Math.max(1, e.dmg - this.stats.def) * this.dmgTakenMul;
         this.stats.hp -= dmg;
         this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
         sfx.hurt();
@@ -321,7 +327,7 @@ export class Game {
   }
 
   spawnLightning(x1, y1, x2, y2) {
-    this.particles.push({ x: x1, y: y1, x2, y2, vx: 0, vy: 0, life: 0.18, maxLife: 0.18, color: '#ffe95a', size: 2, line: true });
+    this.particles.push({ x: x1, y: y1, x2, y2, vx: 0, vy: 0, life: 0.32, maxLife: 0.32, color: '#ffe95a', size: 2, line: true });
   }
 
   updateParticles(dt) {

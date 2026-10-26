@@ -263,6 +263,88 @@ const ICONS = {
     g.beginPath(); g.moveTo(0, -6); g.lineTo(0, 7); g.moveTo(-5.5, -2); g.lineTo(5.5, -2);
     g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,.75)'; g.stroke();
   },
+  // ——— class skills ———
+  spin(g) {
+    g.lineCap = 'round';
+    for (const s of [0, Math.PI]) {
+      g.beginPath(); g.arc(0, 0, 9.5, s + 0.35, s + 2.6);
+      g.lineWidth = 5; g.strokeStyle = OUT; g.stroke();
+      g.lineWidth = 2.6; g.strokeStyle = '#ffd36b'; g.stroke();
+      const a = s + 2.6, x = Math.cos(a) * 9.5, y = Math.sin(a) * 9.5;
+      g.save(); g.translate(x, y); g.rotate(a + Math.PI / 2);
+      g.beginPath(); g.moveTo(-3.5, -2); g.lineTo(3.5, 0); g.lineTo(-3.5, 2.6); g.closePath(); ink(g, '#ffd36b', 1.1);
+      g.restore();
+    }
+    g.save(); g.rotate(-Math.PI / 4); g.scale(0.55, 0.55); ICONS.pow(g); g.restore();
+  },
+  shout(g) {
+    g.save(); g.translate(-3, 0); g.scale(0.75, 0.75); ICONS.arm(g); g.restore();
+    g.lineCap = 'round';
+    for (const r of [7, 11]) {
+      g.beginPath(); g.arc(1, 0, r, -0.7, 0.7);
+      g.lineWidth = 3.6; g.strokeStyle = OUT; g.stroke();
+      g.lineWidth = 1.8; g.strokeStyle = '#ffe27a'; g.stroke();
+    }
+  },
+  rain(g) {
+    for (const [x, y] of [[-6, -6], [1, -1], [7, -7]]) {
+      g.save(); g.translate(x, y); g.rotate(Math.PI / 2);
+      g.beginPath(); g.moveTo(-5, 0); g.lineTo(7, 0); g.lineWidth = 3.6; g.strokeStyle = OUT; g.lineCap = 'round'; g.stroke();
+      g.lineWidth = 1.8; g.strokeStyle = '#c8874e'; g.stroke();
+      g.beginPath(); g.moveTo(11, 0); g.lineTo(6, -3); g.lineTo(6, 3); g.closePath(); ink(g, '#e6ecf5', 1);
+      g.restore();
+    }
+    g.beginPath(); g.ellipse(0, 10, 10, 2.6, 0, 0, TAU); g.fillStyle = 'rgba(255,107,139,.6)'; g.fill();
+  },
+  pierce(g) {
+    g.beginPath(); g.arc(0, 0, 6, 0, TAU); ink(g, 'rgba(155,123,255,.5)', 1.2);
+    g.save(); g.rotate(-Math.PI / 4);
+    g.beginPath(); g.moveTo(-12, 0); g.lineTo(6, 0); g.lineCap = 'round';
+    g.lineWidth = 5; g.strokeStyle = OUT; g.stroke(); g.lineWidth = 2.8; g.strokeStyle = '#ffe27a'; g.stroke();
+    g.beginPath(); g.moveTo(13, 0); g.lineTo(5, -5); g.lineTo(5, 5); g.closePath(); ink(g, '#fff4b8', 1.3);
+    g.restore();
+  },
+  nova(g) {
+    g.lineCap = 'round';
+    for (const [w, c] of [[4.4, OUT], [2.2, '#bfe9ff']]) {
+      g.lineWidth = w; g.strokeStyle = c;
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU, cx = Math.cos(a), cy = Math.sin(a);
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(cx * 11, cy * 11);
+        const bx = cx * 7, by = cy * 7;
+        g.moveTo(bx, by); g.lineTo(bx + Math.cos(a + 0.8) * 3.5, by + Math.sin(a + 0.8) * 3.5);
+        g.moveTo(bx, by); g.lineTo(bx + Math.cos(a - 0.8) * 3.5, by + Math.sin(a - 0.8) * 3.5);
+        g.stroke();
+      }
+    }
+    g.beginPath(); g.arc(0, 0, 2.6, 0, TAU); ink(g, '#ffffff', 1);
+  },
+  chain(g) {
+    const pts = [[-9, 6], [-2, -6], [4, 4], [10, -7]];
+    g.lineJoin = 'round';
+    for (const [w, c] of [[5, OUT], [2.6, '#c9b6ff']]) {
+      g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+      g.lineWidth = w; g.strokeStyle = c; g.stroke();
+    }
+    for (const [x, y] of pts) { g.beginPath(); g.arc(x, y, 2.6, 0, TAU); ink(g, '#fff59a', 1.1); }
+  },
+  shadow(g) {
+    g.beginPath(); g.arc(3, 0, 8, -Math.PI / 2, Math.PI / 2); g.quadraticCurveTo(-1, 0, 3, -8);
+    ink(g, grad(g, -8, 8, '#a78bfa', '#4c1d95'), 1.5);
+    g.lineCap = 'round';
+    for (const [y, l] of [[-5, 8], [0, 11], [5, 8]]) {
+      g.beginPath(); g.moveTo(-12, y); g.lineTo(-12 + l, y);
+      g.lineWidth = 2; g.strokeStyle = 'rgba(167,139,250,.9)'; g.stroke();
+    }
+  },
+  fan(g) {
+    for (const a of [-0.5, 0, 0.5]) {
+      g.save(); g.rotate(a - Math.PI / 2); g.translate(0, -2);
+      g.beginPath(); g.moveTo(0, -12); g.lineTo(2.2, -3); g.lineTo(-2.2, -3); g.closePath(); ink(g, '#e6ecf5', 1.1);
+      g.beginPath(); g.roundRect(-1.4, -3, 2.8, 5, 1); ink(g, '#ff4d5e', 1);
+      g.restore();
+    }
+  },
 };
 export const ICON_IDS = Object.keys(ICONS);
 

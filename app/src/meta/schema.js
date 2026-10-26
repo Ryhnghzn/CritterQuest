@@ -93,8 +93,17 @@ export function readSlot(raw) {
   return { status: 'ok', data };
 }
 
+// Settings (spec §9.2) have their own version: v2 added autoAttack.
+export const SETTINGS_VERSION = 2;
+const SETTINGS_MIGRATIONS = {
+  1: (d) => ({ ...d, version: 2, autoAttack: false }),
+};
+
+// Raw settings → current-version settings, or null when unusable (caller uses defaults).
 export function readSettings(raw) {
-  if (!isObj(raw) || raw.version !== 1 || typeof raw.muted !== 'boolean'
-    || !isInt(raw.lastSlot, 0, SLOT_COUNT - 1)) return null;
-  return { version: 1, muted: raw.muted, lastSlot: raw.lastSlot };
+  let s;
+  try { s = migrate(raw, SETTINGS_MIGRATIONS, SETTINGS_VERSION); } catch (_) { return null; }
+  if (typeof s.muted !== 'boolean' || !isInt(s.lastSlot, 0, SLOT_COUNT - 1)
+    || typeof s.autoAttack !== 'boolean') return null;
+  return { version: SETTINGS_VERSION, muted: s.muted, lastSlot: s.lastSlot, autoAttack: s.autoAttack };
 }

@@ -22,7 +22,7 @@ const KEYMAP = {
   KeyA: [-1, 0], ArrowLeft: [-1, 0],
   KeyD: [1, 0], ArrowRight: [1, 0],
 };
-const ACTION_KEYS = { Space: 'dodge' };
+const ACTION_KEYS = { Space: 'dodge', KeyQ: 'skill1', KeyE: 'skill2' };
 
 addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, textarea')) return; // typing a name, not playing

@@ -27,3 +27,5 @@ export const INVENTORY_MAX = 30;
 // Controls (spec §4.2 dodge, §5.1).
 export const DODGE = { distance: 150, duration: 0.18, invuln: 0.25, cooldown: 1.2 };
 export const AUTO_AIM_RANGE = 450;     // touch: aim at the nearest enemy within this range
+export const AUTO_ATTACK_MARGIN = 14;  // auto mode: melee swings once an enemy centre is within r + this
+export const CDR_MAX = 40;             // % (spec §4.1)

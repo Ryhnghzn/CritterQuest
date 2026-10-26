@@ -36,9 +36,21 @@ if (!store.persistent) $('nosave').classList.remove('hidden');
 function legacyMuted() {
   try { return localStorage.getItem('cs-muted') === '1'; } catch (_) { return false; }
 }
-const settings = (await store.loadSettings()) ?? { version: 1, muted: legacyMuted(), lastSlot: 0 };
+const settings = (await store.loadSettings()) ?? { version: 2, muted: legacyMuted(), lastSlot: 0, autoAttack: false };
 setMuted(settings.muted);
 $('mute').classList.toggle('muted', settings.muted);
+
+function renderAuto() {
+  $('autobtn').classList.toggle('on', settings.autoAttack);
+  $('autobtn').setAttribute('aria-pressed', String(settings.autoAttack));
+}
+renderAuto();
+
+function toggleAuto() {
+  settings.autoAttack = !settings.autoAttack;
+  renderAuto();
+  saveSettings();
+}
 
 function saveSettings() {
   store.saveSettings(settings).catch(() => { /* settings are a convenience; ignore */ });
@@ -55,6 +67,7 @@ function showMenu(id) {
 function setRunUI(hud, controls) {
   $('hud').classList.toggle('hidden', !hud);
   $('pausebtn').classList.toggle('hidden', !controls);
+  $('autobtn').classList.toggle('hidden', !controls);
   $('actions').classList.toggle('hidden', !controls);
   document.body.classList.toggle('playing', controls);
 }
@@ -114,6 +127,11 @@ function toCamp(char) {
 function startRun() {
   ensureAudio(); startMusic();
   game.start({ classId: current.classId, stats: finalStats(current) });
+  CLASSES[current.classId].skills.forEach((sk, i) => {
+    const btn = $(i ? 'act-e' : 'act-q');
+    btn.querySelector('.ic').replaceChildren(iconCanvas(sk.id, 30));
+    btn.title = `${sk.name} (${i ? 'E' : 'Q'})`;
+  });
   game.best = { time: current.records.bestTime, kills: 0, level: 0 };
   R.avatar = { classId: current.classId, look: current.look };
   showOverlay(null);
@@ -172,6 +190,7 @@ $('slotsback').addEventListener('click', () => showMenu('title'));
 $('resume').addEventListener('click', resume);
 $('surrender').addEventListener('click', () => { game.surrender(); endRun(false); });
 $('pausebtn').addEventListener('click', () => { if (game.state === ST.PLAY) pause(); });
+$('autobtn').addEventListener('click', toggleAuto);
 $('mute').addEventListener('click', () => {
   ensureAudio();
   settings.muted = toggleMuted();
@@ -182,6 +201,7 @@ $('mute').addEventListener('click', () => {
 // ——— keyboard shortcuts ———
 input.onAction.push((code) => {
   if (code === 'KeyM') { $('mute').click(); return; }
+  if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
   const go = code === 'Space' || code === 'Enter';
   if (screen === 'title' && go) { $('play').click(); return; }
   if (screen === 'results' && go) { $('tocamp').click(); return; }
@@ -199,9 +219,13 @@ function tick() {
   simT += STEP;
   pollMove();
   const pressed = consumePressed(); // one-shot actions go to the first step of the frame
-  const aimAt = !input.touch && input.mouse.active ? R.screenToWorld(input.mouse.x, input.mouse.y) : null;
+  const auto = settings.autoAttack; // auto mode: attack + aim on their own (spec §5.1)
+  const aimAt = !auto && !input.touch && input.mouse.active ? R.screenToWorld(input.mouse.x, input.mouse.y) : null;
   const attack = input.touch ? input.attackHeld : input.mouse.down;
-  game.intent = { move: { x: input.x, y: input.y }, aimAt, dodge: pressed.has('dodge'), attack };
+  game.intent = {
+    move: { x: input.x, y: input.y }, aimAt, attack, auto,
+    dodge: pressed.has('dodge'), skill1: pressed.has('skill1'), skill2: pressed.has('skill2'),
+  };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
   // react only on the PLAY -> LEVELUP/OVER transition; rebuilding the cards

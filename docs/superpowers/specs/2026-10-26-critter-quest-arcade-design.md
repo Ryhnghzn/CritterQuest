@@ -115,6 +115,8 @@ stat akhir = dasar kelas
 
 Kontrol sentuh tampil bila perangkat memakai pointer kasar (`matchMedia('(pointer: coarse)')`) atau ada sentuhan pertama.
 
+**Mode AUTO** (ditambahkan 2026-10-26 atas permintaan pemilik): tombol **F** atau tombol AUTO di HUD (PC & HP). Saat aktif, serangan dasar keluar sendiri setiap ada musuh dalam jangkauan serangan kelas (jarak dekat: radius serangan + 14 px; proyektil: jangkauan proyektil) dan bidik otomatis ke musuh terdekat — bisa dimainkan hanya dengan keyboard. Skill dan dodge tetap manual. Pilihan disimpan di `settings.autoAttack`.
+
 ### 5.2 Aturan damage
 
 - `damage = atk × pengali_skill × (kritis ? critDmg : 1)`
@@ -259,8 +261,8 @@ Setiap transaksi langsung di-auto-save.
   bonuses: [ { stat: 'atkSpd', value: 0.08 }, { stat: 'maxHp', value: 15 } ],
 }
 
-// settings
-{ version: 1, muted: false, lastSlot: 0 }
+// settings (versi 2; v1 tanpa autoAttack dimigrasi otomatis dengan autoAttack: false)
+{ version: 2, muted: false, lastSlot: 0, autoAttack: false }
 ```
 
 ### 9.3 Aturan

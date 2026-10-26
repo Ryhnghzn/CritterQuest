@@ -25,5 +25,6 @@ Keputusan 2026-10-26: tampilan diganti dari pixel art ke **kartun vektor halus**
 - [x] Kartu level-up hanya berkah stat (kartu senjata dihapus)
 
 ## 3D — Skill
-- [ ] Skill Q/E 4 kelas, cooldown + `cdr`, beku (Nova Es)
-- [ ] HUD ikon skill + cooldown; tombol skill sentuh
+- [x] Skill Q/E 4 kelas, cooldown + `cdr`, beku (Nova Es)
+- [x] HUD ikon skill + cooldown; tombol skill sentuh
+- [x] Mode AUTO (permintaan pemilik): serang + bidik otomatis, tombol F / tombol AUTO; `settings` naik ke versi 2 dengan migrasi + tes; spesifikasi §5.1 & §9.2 diperbarui

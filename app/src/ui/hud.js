@@ -19,10 +19,19 @@ export function updateHUD(game) {
   else b.style.opacity = 0;
 }
 
-// --cd: remaining cooldown fraction drawn as a dark sweep over the button.
+// --cd: remaining cooldown fraction drawn as a dark sweep over the button;
+// skills also show the seconds left.
 export function updateActions(game) {
-  const k = Math.max(0, game.dodgeCd) / DODGE.cooldown;
-  const b = $('act-dodge');
-  b.style.setProperty('--cd', k.toFixed(3));
-  b.classList.toggle('ready', k <= 0);
+  ring($('act-dodge'), game.dodgeCd, DODGE.cooldown);
+  for (const [i, id] of [[0, 'act-q'], [1, 'act-e']]) {
+    const left = ring($(id), game.skillCd[i], game.skillCdMax[i]);
+    $(id).querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
+  }
+}
+
+function ring(btn, cd, max) {
+  const left = Math.max(0, cd);
+  btn.style.setProperty('--cd', (max > 0 ? left / max : 0).toFixed(3));
+  btn.classList.toggle('ready', left <= 0);
+  return left;
 }

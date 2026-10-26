@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SAVE_VERSION, migrate, validateSlot, readSlot, readSettings } from './schema.js';
+import { SAVE_VERSION, SETTINGS_VERSION, migrate, validateSlot, readSlot, readSettings } from './schema.js';
 import { createCharacter } from './character.js';
 
 const fresh = () => createCharacter(
@@ -86,11 +86,19 @@ describe('readSlot', () => {
 });
 
 describe('readSettings', () => {
-  it('menerima pengaturan sah', () => {
-    const s = { version: 1, muted: true, lastSlot: 2 };
+  it('menerima pengaturan versi terkini', () => {
+    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true };
     expect(readSettings(s)).toEqual(s);
   });
-  it.each([[null], [{ version: 1, muted: 'ya', lastSlot: 0 }], [{ version: 1, muted: false, lastSlot: 3 }]])(
-    'menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); },
-  );
+  it('memigrasi versi 1 (tanpa autoAttack) ke versi 2', () => {
+    expect(readSettings({ version: 1, muted: true, lastSlot: 1 }))
+      .toEqual({ version: 2, muted: true, lastSlot: 1, autoAttack: false });
+  });
+  it.each([
+    [null],
+    [{ version: 1, muted: 'ya', lastSlot: 0 }],
+    [{ version: 2, muted: false, lastSlot: 3, autoAttack: false }],
+    [{ version: 2, muted: false, lastSlot: 0, autoAttack: 'ya' }],
+    [{ version: 3, muted: false, lastSlot: 0, autoAttack: false }],
+  ])('menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); });
 });
