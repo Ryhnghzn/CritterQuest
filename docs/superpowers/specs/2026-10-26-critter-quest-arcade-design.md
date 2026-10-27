@@ -542,7 +542,14 @@ Atas permintaan pemilik. Dikerjakan sebagai langkah 7 (ekspor/impor & polesan la
 - Angka semua monster di `data/enemies.js`.
 
 ### 18.2 Skill berenergi (langkah 7B)
-Serangan dasar yang kena mengisi **energi**; Q/E memakai energi dan jauh lebih kuat. Detail ditetapkan di 7B.
+Serangan dasar yang kena mengisi **energi** (maks 100, mulai 50 tiap perjalanan, pulih 3/detik); Q/E memakai energi, cooldown pendek, dan jauh lebih kuat. Skill menembus perisai Kura Baja.
+
+| Kelas | Energi / musuh kena | Q (biaya, cd) | E (biaya, cd) |
+|---|---|---|---|
+| Warrior | 7 | Putaran Pedang 35, 3 s — r 95, 5 tik × 220%, menarik musuh | Teriakan Baja 50, 8 s — damage diterima −60% 5 s + gelombang kejut 250% r 115 mendorong |
+| Archer | 8 | Hujan Panah 40, 3 s — r 85, 6 tik × 160% | Tembakan Tembus 35, 2,5 s — 600%, menembus |
+| Mage | 9 | Nova Es 45, 4 s — r 125, 300%, beku 2,2 s, mendorong | Petir Berantai 35, 2,5 s — 8 lompatan × 350% |
+| Assassin | 4 | Langkah Bayangan 30, 2 s — 180 px, 500% | Kipas Belati 40, 3 s — 11 belati × 180% |
 
 ### 18.3 Dungeon bertema (langkah 7C)
 Empat dungeon terbuka berurutan (Ruang Bawah Tanah Bayangan → Gua Kristal → Hutan Jamur Busuk → Benteng Lava), masing-masing 5 lantai + bos sendiri; bentuk ruangan tiap lantai diacak dengan rintangan. Detail di 7C.

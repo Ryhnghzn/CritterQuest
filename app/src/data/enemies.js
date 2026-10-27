@@ -45,4 +45,4 @@ export const ENEMIES = {
 };
 
 // Basic attacks hit a shield; skills (and gear lightning) go through it.
-export const SHIELD_PIERCING = ['spin', 'rain', 'pierce', 'nova', 'chain', 'shadow', 'dagger'];
+export const SHIELD_PIERCING = ['spin', 'rain', 'pierce', 'nova', 'chain', 'shadow', 'dagger', 'shout'];

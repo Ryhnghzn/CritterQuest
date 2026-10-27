@@ -24,3 +24,5 @@ export const DODGE = { distance: 150, duration: 0.18, invuln: 0.25, cooldown: 1.
 export const AUTO_AIM_RANGE = 450;     // touch: aim at the nearest enemy within this range
 export const AUTO_ATTACK_MARGIN = 14;  // auto mode: melee swings once an enemy centre is within r + this
 export const CDR_MAX = 40;             // % (spec §4.1)
+// Skill energy (spec §18.2): filled by basic-attack hits and slowly by itself.
+export const ENERGY = { max: 100, start: 50, regen: 3 };

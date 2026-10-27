@@ -567,6 +567,14 @@ function drawHit(g, h, avatar, t) {
     g.fillStyle = '#eef2fb'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#2a2140'; g.stroke();
     g.beginPath(); g.moveTo(-3, 0); g.lineTo(-8, 0); g.lineWidth = 2.4; g.lineCap = 'round'; g.strokeStyle = '#ff4d5e'; g.stroke();
     g.restore();
+  } else if (h.fx === 'shout') { // Teriakan Baja shockwave
+    const rr = h.r * (0.2 + 0.8 * Math.min(1, p * 2));
+    g.save();
+    g.globalAlpha = k;
+    g.beginPath(); g.arc(h.x, h.y, rr, 0, TAU);
+    g.fillStyle = 'rgba(255,214,120,.18)'; g.fill();
+    g.lineWidth = 5 * k + 1; g.strokeStyle = 'rgba(255,230,160,.95)'; g.stroke();
+    g.restore();
   } else if (h.fx === 'shadow') {
     // the dash itself draws the afterimages
   } else {

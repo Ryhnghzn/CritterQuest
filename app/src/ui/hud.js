@@ -1,6 +1,7 @@
 // In-run HUD (DOM): bars, counters and banner (~10×/s), action cooldown rings (every frame).
 import { FLOORS } from '../data/dungeon.js';
-import { DODGE } from '../data/balance.js';
+import { DODGE, ENERGY } from '../data/balance.js';
+import { CLASSES } from '../data/classes.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
 
@@ -17,6 +18,9 @@ export function updateHUD(game) {
   $('kills').textContent = game.kills;
   $('gold').textContent = game.gold;
   $('dmg').style.opacity = game.flash > 0 ? 0.9 : 0;
+  $('enfill').style.transform = `scaleX(${game.energy / ENERGY.max})`;
+  $('entext').textContent = `Energi ${Math.floor(game.energy)}`;
+  $('enbar').classList.toggle('empty', game.noEnergyT > 0);
   const chips = [];
   if (game.shield > 0) chips.push(['shield', `Perisai ${Math.ceil(game.shield)}`]);
   for (const id of ['wind', 'rage']) if (game.buffs[id] > 0) chips.push([id, `${POTIONS[id].name.replace('Ramuan ', '')} ${Math.ceil(game.buffs[id])}s`]);
@@ -39,7 +43,10 @@ export function updateHUD(game) {
 export function updateActions(game) {
   ring($('act-dodge'), game.dodgeCd, DODGE.cooldown);
   updateBelt(game.belt, game.potions, game.potionCd);
+  const skills = CLASSES[game.classId].skills;
   for (const [i, id] of [[0, 'act-q'], [1, 'act-e']]) {
+    $(id).querySelector('.cost').textContent = skills[i].cost;
+    $(id).classList.toggle('noen', game.energy < skills[i].cost);
     const left = ring($(id), game.skillCd[i], game.skillCdMax[i]);
     $(id).querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
   }

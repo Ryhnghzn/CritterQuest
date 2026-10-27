@@ -155,7 +155,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
   letter-spacing:1px;color:#ffb3c1;background:rgba(80,10,30,.7);border:1.5px solid rgba(255,107,139,.6);border-radius:999px;padding:5px 12px;cursor:pointer}
 #cheat{position:absolute;right:12px;top:64px;z-index:30;pointer-events:auto;width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow-y:auto;
   display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:16px;background:rgba(20,10,30,.94);border:1.5px solid rgba(255,107,139,.5);font-size:13px}
-@media (max-width:560px){#cheat{top:auto;bottom:12px;max-height:46vh}}
+@media (max-width:560px){#cheat{top:auto;bottom:12px;max-height:46vh}#cheatbtn{left:12px;top:20px;transform:none}}
 .chhead{display:flex;justify-content:space-between;align-items:center;color:#ffb3c1}
 .chx{font-family:inherit;font-size:18px;background:none;border:0;color:var(--ink);cursor:pointer}
 .chsec{display:flex;flex-direction:column;gap:6px}
@@ -266,6 +266,14 @@ h2.h.bad{color:var(--coral)}
   box-shadow:inset 0 -4px 0 rgba(0,0,0,.15),inset 0 3px 0 rgba(255,255,255,.25);transition:transform .15s}
 .hpbar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .xprow{display:flex;align-items:center;gap:8px}
+.enbar{height:12px;border-radius:999px;background:rgba(0,0,0,.4);position:relative;overflow:hidden}
+.enbar>i{position:absolute;inset:0;transform-origin:left;border-radius:999px;background:linear-gradient(90deg,#3f7ee0,#62d6ff);transition:transform .1s}
+.enbar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.enbar.empty{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.act .cost{position:absolute;left:-4px;top:-4px;min-width:20px;height:18px;padding:0 4px;border-radius:999px;display:grid;place-items:center;
+  font-size:11px;font-weight:700;background:#3f7ee0;color:#fff;box-shadow:0 2px 0 #24539e}
+.act.noen{filter:saturate(.3) brightness(.7)}
 .lv{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--mint);color:#0d3b28;white-space:nowrap}
 .xpbar{flex:1;height:8px;border-radius:999px;background:rgba(0,0,0,.4);position:relative;overflow:hidden}
 .xpbar>i{position:absolute;inset:0;transform-origin:left;border-radius:999px;background:linear-gradient(90deg,var(--mint),var(--sky))}
@@ -394,6 +402,7 @@ body.touch #prompt kbd{display:none}
   <div id="cheat" class="hidden"></div>
   <div id="hud" class="hidden">
     <div class="hpbar"><i id="hpfill"></i><span id="hptext"></span></div>
+    <div class="enbar" id="enbar"><i id="enfill"></i><span id="entext"></span></div>
     <div class="xprow"><span class="lv" id="lvltext">LV 1</span><div class="xpbar"><i id="xpfill"></i></div></div>
     <div id="meta">
       <span class="hchip"><svg class="i"><use href="#i-trophy"/></svg><b id="floor">Lantai 1</b></span>
@@ -403,8 +412,8 @@ body.touch #prompt kbd{display:none}
     <div id="buffs"></div>
   </div>
   <div id="actions" class="hidden">
-    <button class="act touchbtn" id="act-q" data-action="skill1" aria-label="Skill Q"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>Q</kbd></button>
-    <button class="act touchbtn" id="act-e" data-action="skill2" aria-label="Skill E"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>E</kbd></button>
+    <button class="act touchbtn" id="act-q" data-action="skill1" aria-label="Skill Q"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>Q</kbd><b class="cost"></b></button>
+    <button class="act touchbtn" id="act-e" data-action="skill2" aria-label="Skill E"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>E</kbd><b class="cost"></b></button>
     <button class="act big touchbtn" id="act-talk" data-action="talk" aria-label="Bicara"><svg class="i"><use href="#i-chat"/></svg></button>
     <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd>Spasi</kbd></button>
     <button class="act big touchbtn" id="act-attack" data-hold="attackHeld" aria-label="Serang"><svg class="i"><use href="#i-sword"/></svg></button>

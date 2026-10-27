@@ -10,5 +10,8 @@ Spesifikasi: `../specs/2026-10-26-critter-quest-arcade-design.md` §18. Tiap bag
 - [x] Verifikasi: tes, build, screenshot PC & HP
 
 ## 7B — Energi & skill kuat
+- [x] Energi: serangan dasar yang kena mengisi (per kelas), pulih 3/detik, mulai 50 — tes
+- [x] Q/E memakai energi, cooldown pendek, angka diperbesar; tarik/dorong; gelombang Teriakan Baja — tes
+- [x] HUD: bar energi, biaya di tombol, redup bila kurang
 ## 7C — 4 dungeon bertema, ruangan acak
 ## 7D — Siang–malam di kota

@@ -1,7 +1,8 @@
-// Class attacks (spec §4.2): the basic attack (held, or automatic in auto mode)
-// and the two skills Q / E with cooldowns reduced by cdr.
+// Class attacks (spec §4.2, §18.2): the basic attack (held, or automatic in auto
+// mode) whose hits fill energy, and the two skills Q / E that spend it (short
+// cooldowns, reduced by cdr).
 import { CLASSES } from '../data/classes.js';
-import { AUTO_ATTACK_MARGIN, CDR_MAX } from '../data/balance.js';
+import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY } from '../data/balance.js';
 import { makeArea, makeSweep, makeProjectile } from './hits.js';
 import { sfx } from '../core/audio.js';
 
@@ -41,10 +42,14 @@ export function stepAttack(run, intent, dt) {
 export function stepSkills(run, intent, dt) {
   for (let i = 0; i < 2; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
+  run.energy = Math.min(ENERGY.max, run.energy + ENERGY.regen * dt);
+  if (run.noEnergyT > 0) run.noEnergyT -= dt;
   const skills = CLASSES[run.classId].skills;
   const pressed = [intent.skill1, intent.skill2];
   for (let i = 0; i < 2; i++) {
     if (!pressed[i] || run.skillCd[i] > 0) continue;
+    if (run.energy < skills[i].cost) { run.noEnergyT = 0.4; continue; }
+    run.energy -= skills[i].cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
     castSkill(run, skills[i]);
@@ -68,6 +73,7 @@ function castSkill(run, s) {
         x, y, r: s.r, mult: s.mult, ticks: s.ticks ?? 1, duration: s.duration ?? 0,
         follow: !!s.follow, freeze: s.freeze ?? 0, fx: s.id,
       }));
+      run.hits[run.hits.length - 1].knock = s.knock || 0;
       break;
     }
     case 'proj':
@@ -97,6 +103,10 @@ function castSkill(run, s) {
     case 'buff':
       run.buffT = s.duration;
       run.dmgTakenMul = s.dmgTaken;
+      if (s.blast) {
+        run.hits.push(makeArea({ x: run.px, y: run.py, r: s.blast.r, mult: s.blast.mult, fx: 'shout', duration: 0.35 }));
+        run.hits[run.hits.length - 1].knock = s.blast.knock;
+      }
       break;
     default:
       throw new Error(`unknown skill kind ${s.kind}`);

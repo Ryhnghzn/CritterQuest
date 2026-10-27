@@ -1,7 +1,7 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
 import { rand, rrange, rint, resetRng } from '../core/rng.js';
-import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY } from '../data/balance.js';
 import { expToNext } from '../meta/character.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
@@ -21,6 +21,8 @@ export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 // EXP gems level the character up right in the dungeon (spec §14.1). A run is one dungeon
 // trip: floor after floor (run/dungeon.js) until a gold portal, death or giving up.
 const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } };
+// hits from basic attacks fill energy (spec §18.2)
+const BASIC_FX = new Set(['slash', 'stab', 'arrow', 'fireball', 'boom']);
 // potion: belt slot to drink from this step (0–3), or -1
 const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, potion: -1 };
 const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
@@ -76,6 +78,7 @@ export class Game {
     this.atkCd = 0; this.attackT = 0;
     this.aimPX = 0; this.aimPY = 0;
     this.skillCd = [0, 0];
+    this.energy = ENERGY.start; this.noEnergyT = 0;
     this.skillCdMax = CLASSES[classId].skills.map((sk) => skillCooldown(stats, sk));
     this.buffT = 0; this.dmgTakenMul = 1;
     this.dashSpeed = 0;
@@ -260,6 +263,11 @@ export class Game {
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.type === 'boss' || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
+    if (BASIC_FX.has(h.fx)) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy);
+    if (h.knock && e.type !== 'boss') { // push away from (or pull toward) the area's centre
+      const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy) || 1;
+      e.kx += (dx / d) * h.knock; e.ky += (dy / d) * h.knock;
+    }
     if (fx.lifesteal) s.hp = Math.min(s.maxHp, s.hp + dmg * fx.lifesteal);
     if (fx.chain && !h.chained && rand() < fx.chain) this.chainFrom(e);
     e.flash = 0.12;
