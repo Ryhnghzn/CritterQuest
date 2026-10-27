@@ -2,28 +2,34 @@
 // Pandai Besi (chests, selling gear), the dungeon gate (pick a floor) and
 // townsfolk who just talk.
 import { el, button, stage } from './screens.js';
-import { portrait } from '../art/doll.js';
-import { iconCanvas } from '../art/sprites.js';
+import { portrait, HAIR_NAMES, HAIR_PALETTE, HAIR_COLOR_NAMES } from '../art/doll.js';
+import { iconCanvas, gearIcon } from '../art/sprites.js';
 import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
-import { innPrice, chestPrice, junkIds } from '../meta/shop.js';
+import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
+import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
+import { spentPoints } from '../meta/character.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
-import { gearIcon } from '../art/sprites.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
+let newLook = null;     // Tukang Cukur: style being tried on
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
   potion: 'Hehehe… ramuan segar dari kuali. Mau yang mana?',
   gear: 'Tungku sudah panas! Mau beli peti, atau menjual barang rongsokan dari dungeon?',
   gate: 'Di balik gerbang ini ada Ruang Bawah Tanah Bayangan. Kau sudah siap?',
+  trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
+  barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
 };
-const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', gate: 'Gerbang Dungeon', talk: 'Warga' };
+const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', gate: 'Gerbang Dungeon', trainer: 'Pelatih', barber: 'Tukang Cukur', talk: 'Warga' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
-//        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onEnter(floor), onClose }
+//        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
+//        onHaircut(look), onEnter(floor), onClose }
 export function renderNpc(box, npc, ctx) {
+  if (npc.role !== 'barber') newLook = null;
   const { char, hp, maxHp } = ctx;
   box.replaceChildren();
   const panel = el('div', 'panel npcpanel');
@@ -49,6 +55,10 @@ export function renderNpc(box, npc, ctx) {
     actions.append(b);
   } else if (npc.role === 'potion') {
     panel.append(potionList(char, ctx.onBuyPotion), beltEditor(char, ctx.onBelt));
+  } else if (npc.role === 'trainer') {
+    panel.append(trainerList(char, ctx.onUpgrade, ctx.onRespec));
+  } else if (npc.role === 'barber') {
+    panel.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gear') {
     panel.append(chestCards(char, ctx.onBuyChest), sellPanel(char, ctx.onSell, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gate') {
@@ -170,5 +180,65 @@ function sellPanel(char, onSell, redraw) {
   sell.disabled = !toSell.size;
   act.append(pickJunk(0), pickJunk(1), sell);
   wrap.append(head, grid, act);
+  return wrap;
+}
+
+function trainerList(char, onUpgrade, onRespec) {
+  const list = el('div', 'shoplist');
+  for (const [id, u] of Object.entries(UPGRADES)) {
+    const tier = char.upgrades[id], maxed = tier >= u.max;
+    const row = el('div', 'shoprow');
+    const ic = el('span', 'sic');
+    ic.append(iconCanvas(id === 'hp' ? 'vit' : id === 'atk' ? 'pow' : 'mag', 28));
+    const txt = el('div', 'stx');
+    txt.append(el('b', null, u.name), el('span', null, `${u.desc} per tingkat`));
+    const price = upgradePrice(id, tier);
+    const b = button(maxed ? 'Maks' : String(price), 'btn small buy', () => onUpgrade(id));
+    if (!maxed) b.prepend(el('span', 'coin'));
+    b.dataset.upgrade = id;
+    b.disabled = maxed || char.gold < price;
+    row.append(ic, txt, el('span', 'have', `${tier}/${u.max}`), b);
+    list.append(row);
+  }
+  const row = el('div', 'shoprow');
+  const ic = el('span', 'sic');
+  ic.append(iconCanvas('trainer', 28));
+  const txt = el('div', 'stx');
+  txt.append(el('b', null, 'Atur Ulang Poin'), el('span', null, 'Semua poin atribut kembali, bisa dibagi lagi'));
+  const price = respecPrice(char);
+  const b = button(String(price), 'btn small buy', onRespec);
+  b.prepend(el('span', 'coin'));
+  b.id = 'npc-respec';
+  b.disabled = !spentPoints(char) || char.gold < price;
+  row.append(ic, txt, el('span', 'have', `${spentPoints(char)} poin`), b);
+  list.append(row);
+  return list;
+}
+
+function barberPanel(char, onHaircut, redraw) {
+  newLook ??= { ...char.look };
+  const wrap = el('div', 'barber');
+  const pv = el('div', 'pv');
+  pv.append(stage(portrait(char.classId, newLook, 110), '#e0527a'));
+  const opts = el('div', 'bopts');
+  const hair = el('div', 'row');
+  HAIR_NAMES.forEach((n, i) => {
+    const b = button(n, `chip${newLook.hair === i ? ' sel' : ''}`, () => { newLook.hair = i; redraw(); });
+    b.dataset.hair = i;
+    hair.append(b);
+  });
+  const colors = el('div', 'row');
+  HAIR_PALETTE.forEach(([main], i) => {
+    const b = button('', `swatch${newLook.hairColor === i ? ' sel' : ''}`, () => { newLook.hairColor = i; redraw(); });
+    b.style.background = main; b.title = HAIR_COLOR_NAMES[i];
+    b.dataset.color = i;
+    colors.append(b);
+  });
+  const same = newLook.hair === char.look.hair && newLook.hairColor === char.look.hairColor;
+  const go = button(same ? 'Pilih gaya baru' : `Potong — ${BARBER_PRICE} koin`, 'btn small', () => { const l = newLook; newLook = null; onHaircut(l); });
+  go.id = 'npc-haircut';
+  go.disabled = same || char.gold < BARBER_PRICE;
+  opts.append(el('span', 'note', 'Gaya'), hair, el('span', 'note', 'Warna'), colors, go);
+  wrap.append(pv, opts);
   return wrap;
 }

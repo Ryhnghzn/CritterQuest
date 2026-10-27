@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { innPrice, innRest, buyPotion, setBelt, chestPrice, buyChest, sellItems, junkIds } from './shop.js';
+import { innPrice, innRest, buyPotion, setBelt, chestPrice, buyChest, sellItems, junkIds, buyUpgrade, respec, respecPrice, changeLook } from './shop.js';
+import { finalStats, freePoints } from './character.js';
 import { equip } from './gear.js';
 import { createCharacter } from './character.js';
 
@@ -95,5 +96,44 @@ describe('Pandai Besi', () => {
   it('jual semua sampah: hanya rarity rendah yang tidak terpasang', () => {
     const worn = equip(make({ inventory: [gear('a', 0), gear('b', 1), gear('c', 2), gear('d', 0)] }), 'd', NOW).char;
     expect(junkIds(worn, 1)).toEqual(['a', 'b']);
+  });
+});
+
+describe('Pelatih', () => {
+  it('upgrade: harga dasar × pertumbuhan^tingkat, stat naik', () => {
+    const r = buyUpgrade(make({ gold: 1000 }), 'hp', NOW);
+    expect(r.char.gold).toBe(950);
+    expect(r.char.upgrades.hp).toBe(1);
+    expect(finalStats(r.char).maxHp).toBeCloseTo(140 * 1.06);
+    const r2 = buyUpgrade(r.char, 'hp', NOW);
+    expect(r2.char.gold).toBe(950 - 75);
+    expect(finalStats(make({ upgrades: { hp: 0, atk: 2, magnet: 3 } })).atk).toBeCloseTo(14 * 1.1);
+    expect(finalStats(make({ upgrades: { hp: 0, atk: 0, magnet: 3 } })).magnet).toBe(70 + 60);
+  });
+
+  it('upgrade tidak memulihkan HP; ditolak bila maks atau uang kurang', () => {
+    const hurt = buyUpgrade(make({ gold: 1000, hp: 50 }), 'hp', NOW).char;
+    expect(hurt.hp).toBe(50);
+    expect(buyUpgrade(make({ gold: 1e6, upgrades: { hp: 10, atk: 0, magnet: 0 } }), 'hp', NOW).reason).toBe('max');
+    expect(buyUpgrade(make({ gold: 10 }), 'atk', NOW).reason).toBe('gold');
+  });
+
+  it('atur ulang poin: bayar, semua poin kembali', () => {
+    const c = make({ gold: 1000, level: 5, attrs: { str: 6, vit: 3, agi: 0, dex: 2, luk: 1 } });
+    const r = respec(c, NOW);
+    expect(r.char.gold).toBe(1000 - respecPrice(c));
+    expect(freePoints(r.char)).toBe(12);
+    expect(respec(make({ gold: 1000 }), NOW).reason).toBe('none');
+  });
+});
+
+describe('Tukang Cukur', () => {
+  it('ganti rambut 50 koin; ditolak bila sama, tidak sah, atau uang kurang', () => {
+    const r = changeLook(make({ gold: 60 }), { hair: 3, hairColor: 5 }, NOW);
+    expect(r.char.look).toEqual({ hair: 3, hairColor: 5 });
+    expect(r.char.gold).toBe(10);
+    expect(changeLook(make({ gold: 60 }), { hair: 0, hairColor: 0 }, NOW).reason).toBe('same');
+    expect(changeLook(make({ gold: 60 }), { hair: 9, hairColor: 0 }, NOW).reason).toBe('bad');
+    expect(changeLook(make({ gold: 5 }), { hair: 1, hairColor: 0 }, NOW).reason).toBe('gold');
   });
 });

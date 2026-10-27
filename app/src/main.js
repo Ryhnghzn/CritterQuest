@@ -14,7 +14,8 @@ import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from '
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
-import { innRest, buyPotion, setBelt, buyChest, sellItems } from './meta/shop.js';
+import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
+import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
 import { itemName, makeItem } from './meta/itemgen.js';
 import { renderCheat, CHEAT_ON } from './ui/cheat.js';
@@ -200,6 +201,13 @@ function openNpc(npc, message = null) {
       text: `Kau mendapat ${itemName(r.item)} (${RARITIES[r.item.rarity].name})!`, color: RARITIES[r.item.rarity].color,
     })),
     onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => `Terjual! +${r.gold} koin.`),
+    onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), `${UPGRADES[id].name} selesai. Kau makin kuat!`),
+    onRespec: async () => {
+      if (await confirmDialog(`Atur ulang semua poin atribut seharga ${respecPrice(current)} koin?`, 'Atur ulang')) {
+        serve(respec, 'Poinmu kembali. Bagi lagi di panel Karakter (C).');
+      } else openNpc(townNpc);
+    },
+    onHaircut: (look) => serve((c, now) => changeLook(c, look, now), 'Nah, rapi sekali! Cocok untukmu.'),
     onEnter: enterDungeon,
     onClose: closeTownOverlay,
   });
@@ -210,7 +218,8 @@ function openNpc(npc, message = null) {
 const REFUSE = {
   full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' },
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
-  equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Pilih barang dulu.',
+  equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
+  max: 'Latihan itu sudah tuntas.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
 };
 
 // Belt slot cycles: empty → each potion type in turn → empty.
@@ -227,7 +236,8 @@ async function serve(action, okText) {
     return;
   }
   current = r.char;
-  town.hp = currentHp(current);
+  const s = finalStats(current); // upgrades / respec change max HP and speed
+  town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
   if (okText) sfx.heart(); else sfx.pickCard();
   const err = await saveCurrent();
   const ok = typeof okText === 'function' ? okText(r) : okText;

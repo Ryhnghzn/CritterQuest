@@ -26,9 +26,11 @@ export const TOWN = {
     { id: 'fence4', kind: 'fence', x: 902, y: 150, w: 28, h: 70 },
     { id: 'fire', kind: 'fire', x: 458, y: 405, w: 44, h: 30 },
     { id: 'gate', kind: 'gate', x: 390, y: 650, w: 180, h: 100 },
+    { id: 'barber', kind: 'stall', x: 80, y: 548, w: 116, h: 56, name: 'Tukang Cukur' },
   ],
   npcs: [
     npc('gate', 'gate', 'Penjaga Rolan', 480, 632, { hair: 1, hairColor: 0 }, ['#6b7280', '#4b5563']),
+    npc('barber', 'barber', 'Bang Rudi', 138, 628, { hair: 1, hairColor: 3 }, ['#e0527a', '#a8355a']),
     npc('dara', 'talk', 'Dara', 418, 396, { hair: 2, hairColor: 4 }, ['#b33a3a', '#7d2424'], { title: 'Petualang', lines: [
       'Lendir itu lambat, tapi jangan biarkan mereka mengepungmu.',
       'Kalau lantai sudah bersih, ambil dulu semua permata sebelum masuk portal.',
@@ -154,8 +156,10 @@ export const INTERIORS = {
       { kind: 'bench', x: 160, y: 186, w: 200, h: 8 }, { kind: 'bench', x: 160, y: 242, w: 200, h: 8 },
       { kind: 'barrel', x: 466, y: 100, w: 22, h: 26, solid: true }, { kind: 'barrel', x: 466, y: 132, w: 22, h: 26, solid: true },
       { kind: 'window', x: 380, y: 22, w: 46, h: 40 },
+      { kind: 'dummy', x: 46, y: 150, w: 26, h: 22, solid: true },
     ],
     npcs: [
+      npc('trainer', 'trainer', 'Guru Hadi', 100, 150, { hair: 0, hairColor: 5 }, ['#3a3a3a', '#222']),
       npc('vera', 'talk', 'Kapten Vera', 260, 104, { hair: 1, hairColor: 4 }, ['#2f6b4f', '#1f4a36'], { title: 'Ketua Balai', lines: [
         'Selamat datang di Balai Petualang. Papan tugas akan segera dibuka.',
         'Kau bisa melanjutkan dari lantai terdalam yang pernah kau capai — bilang saja ke Rolan di gerbang.',

@@ -508,3 +508,17 @@ Penjaga gerbang: tombol utama **"Lanjut ke Lantai X"** (X = lantai terdalam yang
 
 ### 16.2 Panel cheat (khusus pengujian)
 Aktif hanya di `npm run dev` atau bila alamat diberi `?cheat`; dibuka dengan tombol CHEAT atau tombol <kbd>`</kbd>. Di kota: koin, level, ramuan penuh, HP penuh, reset poin, buka lantai 1–5, gear per rarity & slot, semua item unik kelas, kosongkan tas. Di dungeon: kebal, bunuh semua, bersihkan lantai, +EXP, lompat lantai, jatuhkan gear. Perubahan karakter disimpan seperti biasa.
+
+## 17. Pelatih & Tukang Cukur (langkah 6A, 2026-10-27)
+
+- **Pelatih — Guru Hadi** (Balai Petualang, di samping boneka latihan). Angka di `data/shop.js`:
+
+| Latihan | Efek per tingkat | Maks | Harga tingkat berikut |
+|---|---|---|---|
+| Daya Tahan | HP maks +6% | 10 | `50 × 1,5^tingkat` |
+| Tempur | ATK +5% | 10 | `60 × 1,5^tingkat` |
+| Kepekaan | Magnet +20 | 5 | `40 × 1,6^tingkat` |
+| Atur Ulang Poin | semua poin atribut kembali (konfirmasi) | — | `100 + 20 × level` |
+
+  Persen dihitung dari total stat (kelas + level + atribut + gear). Upgrade/atur ulang tidak memulihkan HP.
+- **Tukang Cukur — Bang Rudi**: kios beratap belang di sudut barat daya kota. Pilih gaya & warna rambut dengan pratinjau; 50 koin per potongan; gaya yang sama ditolak.

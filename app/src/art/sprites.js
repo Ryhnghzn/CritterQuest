@@ -345,6 +345,17 @@ const ICONS = {
     ink(g, grad(g, -10, -2, '#c9f0ff', '#4fa8e8'), 1.2);
   },
   // ——— town ———
+  trainer(g) { // dumbbell
+    g.beginPath(); g.roundRect(-7, -1.6, 14, 3.2, 1.5); ink(g, '#b9c1d0', 1.2);
+    for (const x of [-10, 7]) { g.beginPath(); g.roundRect(x, -6, 3.4, 12, 1.5); ink(g, '#4a4866', 1.3); }
+    for (const x of [-12.5, 10.4]) { g.beginPath(); g.roundRect(x, -4, 2.2, 8, 1); ink(g, '#4a4866', 1.1); }
+  },
+  barber(g) { // scissors
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(s * 3, -11); g.lineTo(s * 0.6, -1); g.closePath(); ink(g, '#e6ecf5', 1.1);
+      g.beginPath(); g.arc(s * 4, 5.5, 3.6, 0, TAU); g.lineWidth = 3.4; g.strokeStyle = OUT; g.stroke(); g.lineWidth = 2; g.strokeStyle = '#e0527a'; g.stroke();
+    }
+  },
   talk(g) { // speech bubble
     g.beginPath(); g.roundRect(-10, -9, 20, 14, 6); g.moveTo(-3, 5); g.lineTo(-6, 10); g.lineTo(2, 5);
     ink(g, '#fffaf0', 1.5);

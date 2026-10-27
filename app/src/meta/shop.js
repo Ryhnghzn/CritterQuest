@@ -1,10 +1,11 @@
-// Town services (spec §13.2, §15.2, §6.5): Inn, potion shop, potion belt, gear
-// shop (sell, chests). Pure — returns
+// Town services (spec §13.2, §15.2, §6.5, §17): Inn, potion shop, potion belt,
+// gear shop (sell, chests), trainer, barber. Pure — returns
 // { ok: true, char } with a new character, or { ok: false, reason } ('full' | 'gold').
 import { INN } from '../data/dungeon.js';
 import { POTIONS, POTION_MAX, BELT_SIZE } from '../data/potions.js';
 import { CHESTS, SELL_PRICE } from '../data/items.js';
-import { INVENTORY_MAX } from '../data/balance.js';
+import { INVENTORY_MAX, HAIR_STYLES, HAIR_COLORS } from '../data/balance.js';
+import { UPGRADES, upgradePrice, RESPEC, BARBER_PRICE } from '../data/shop.js';
 import { dropItem } from './itemgen.js';
 import { isEquipped } from './gear.js';
 import { currentHp, finalStats } from './character.js';
@@ -75,3 +76,50 @@ export function sellItems(char, ids, now) {
 
 // ids of unworn items at or below a rarity (for "sell all")
 export const junkIds = (char, maxRarity) => char.inventory.filter((it) => it.rarity <= maxRarity && !isEquipped(char, it)).map((it) => it.id);
+
+// keeps the current HP (not healed, only clamped) when max HP changes
+function keepHp(before, c) {
+  const hp = currentHp(before);
+  c.hp = hp >= finalStats(c).maxHp ? null : Math.round(hp);
+  return c;
+}
+
+// Trainer: next tier of a permanent upgrade.
+export function buyUpgrade(char, id, now) {
+  const tier = char.upgrades[id];
+  if (tier >= UPGRADES[id].max) return { ok: false, reason: 'max' };
+  const price = upgradePrice(id, tier);
+  if (char.gold < price) return { ok: false, reason: 'gold' };
+  const c = structuredClone(char);
+  c.gold -= price;
+  c.upgrades[id] += 1;
+  c.updatedAt = now;
+  return { ok: true, char: keepHp(char, c) };
+}
+
+export const respecPrice = (char) => RESPEC.base + RESPEC.perLevel * char.level;
+
+// Trainer: give back every spent attribute point.
+export function respec(char, now) {
+  if (Object.values(char.attrs).every((n) => n === 0)) return { ok: false, reason: 'none' };
+  const price = respecPrice(char);
+  if (char.gold < price) return { ok: false, reason: 'gold' };
+  const c = structuredClone(char);
+  c.gold -= price;
+  for (const k in c.attrs) c.attrs[k] = 0;
+  c.updatedAt = now;
+  return { ok: true, char: keepHp(char, c) };
+}
+
+// Barber: new hair style / colour.
+export function changeLook(char, look, now) {
+  const { hair, hairColor } = look;
+  if (!Number.isInteger(hair) || hair < 0 || hair >= HAIR_STYLES || !Number.isInteger(hairColor) || hairColor < 0 || hairColor >= HAIR_COLORS) return { ok: false, reason: 'bad' };
+  if (hair === char.look.hair && hairColor === char.look.hairColor) return { ok: false, reason: 'same' };
+  if (char.gold < BARBER_PRICE) return { ok: false, reason: 'gold' };
+  const c = structuredClone(char);
+  c.gold -= BARBER_PRICE;
+  c.look = { hair, hairColor };
+  c.updatedAt = now;
+  return { ok: true, char: c };
+}

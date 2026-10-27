@@ -6,6 +6,7 @@ import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
 import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS } from './schema.js';
 import { itemStats } from './itemgen.js';
+import { UPGRADES } from '../data/shop.js';
 
 export function validateName(name) {
   if (typeof name !== 'string') return null;
@@ -62,8 +63,8 @@ export function gearStats(char) {
   return s;
 }
 
-// Class base + level growth + attribute points (spec §14.1) + equipped gear.
-// Trainer upgrades (langkah 6) are layered on top of this later.
+// Class base + level growth + attribute points (spec §14.1) + equipped gear,
+// then trainer upgrades (spec §7: % of the total, flat magnet).
 export function finalStats(char) {
   const cls = CLASSES[char.classId];
   const lv = char.level - 1;
@@ -75,6 +76,11 @@ export function finalStats(char) {
     for (const [stat, v] of Object.entries(a.per)) s[stat] += v * n;
   }
   for (const [stat, v] of Object.entries(gearStats(char))) s[stat] += v;
+  for (const [id, u] of Object.entries(UPGRADES)) {
+    const n = char.upgrades[id];
+    for (const [stat, v] of Object.entries(u.pct || {})) s[stat] *= 1 + v * n;
+    for (const [stat, v] of Object.entries(u.flat || {})) s[stat] += v * n;
+  }
   return s;
 }
 

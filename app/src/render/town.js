@@ -107,6 +107,7 @@ export class TownRenderer {
       if (b.kind === 'house') house(g, b, t);
       else if (b.kind === 'fence') fence(g, b);
       else if (b.kind === 'gate') gateArch(g, b);
+      else if (b.kind === 'stall') stall(g, b, t);
     }
 
     // y-sorted: decor, lamps, bonfire, NPCs, player
@@ -335,6 +336,32 @@ function gateArch(g, b) {
     g.beginPath(); g.rect(px - 4, y + 34, 38, 10); ink(g, '#625f80', 1.6);
     g.beginPath(); g.rect(px + 11, y + 14, 8, 22); ink(g, '#4c3324', 1.4); // torch handle
   }
+}
+
+// barber's stall: striped awning, mirror, chair, pole
+function stall(g, b, t) {
+  const { x, y, w, h } = b;
+  shadow(g, x + w / 2, y + h + 4, w / 2 + 6, 6);
+  g.beginPath(); g.rect(x + 4, y + 16, w - 8, h - 16); ink(g, lin(g, y + 16, y + h, '#6a4630', '#4a2c1a'), 1.8);
+  g.beginPath(); g.roundRect(x + 14, y + 22, 26, 22, 4); ink(g, lin(g, y + 22, y + 44, '#d6ecff', '#8fb8e0'), 1.4); // mirror
+  g.beginPath(); g.roundRect(x + w - 44, y + 30, 26, 18, 4); ink(g, '#c2185b', 1.4); // chair
+  g.beginPath(); g.rect(x + w - 40, y + 22, 18, 10); ink(g, '#a8104a', 1.2);
+  for (let i = 0; i < 6; i++) {  // awning
+    g.beginPath(); g.moveTo(x + (i * w) / 6, y); g.lineTo(x + ((i + 1) * w) / 6, y); g.lineTo(x + ((i + 1) * w) / 6, y + 16);
+    g.quadraticCurveTo(x + ((i + 0.5) * w) / 6, y + 22, x + (i * w) / 6, y + 16); g.closePath();
+    ink(g, i % 2 ? '#f1e9d8' : '#e0527a', 1.3);
+  }
+  // spinning barber pole
+  const px = x - 6;
+  g.beginPath(); g.roundRect(px - 4, y + 2, 8, 34, 4); ink(g, '#f1e9d8', 1.4);
+  g.save(); g.beginPath(); g.roundRect(px - 4, y + 2, 8, 34, 4); g.clip();
+  for (let i = -2; i < 6; i++) {
+    const yy = y + 2 + i * 9 + ((t * 12) % 9);
+    g.beginPath(); g.moveTo(px - 5, yy); g.lineTo(px + 5, yy - 5); g.lineTo(px + 5, yy - 1); g.lineTo(px - 5, yy + 4); g.closePath();
+    g.fillStyle = i % 2 ? '#e0527a' : '#3f7ee0'; g.fill();
+  }
+  g.restore();
+  plate(g, b.name, x + w / 2, y - 10);
 }
 
 function lampPost(g, l) {

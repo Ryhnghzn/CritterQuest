@@ -302,6 +302,14 @@ function furniture(g, f, t) {
       box(g, x, y, w, h, lin(g, y, y + 14, '#a06a3e', '#8a5a36'), '#5a3820', 14);
       for (let i = 0; i < 5; i++) { g.beginPath(); g.roundRect(x + 20 + i * 44, y + 1, 8, 10, 2); ink(g, i % 2 ? '#c8874e' : '#ffd36b', 1); }
       break;
+    case 'dummy': // straw training dummy
+      shadow(g, x + w / 2, y + h, w / 2 + 2, 4);
+      g.beginPath(); g.rect(x + w / 2 - 2, y - 6, 4, h + 6); ink(g, '#6a4630', 1.1);
+      g.beginPath(); g.ellipse(x + w / 2, y - 14, 10, 13, 0, 0, TAU); ink(g, '#d9b25e', 1.4);
+      g.beginPath(); g.arc(x + w / 2, y - 32, 7, 0, TAU); ink(g, '#d9b25e', 1.3);
+      g.beginPath(); g.moveTo(x + w / 2 - 12, y - 18); g.lineTo(x + w / 2 + 12, y - 18); g.lineWidth = 3; g.strokeStyle = '#6a4630'; g.stroke();
+      g.beginPath(); g.arc(x + w / 2, y - 14, 4, 0, TAU); g.lineWidth = 1.5; g.strokeStyle = '#c2185b'; g.stroke();
+      break;
     case 'bench':
       g.beginPath(); g.rect(x, y, w, h); ink(g, '#6a4228', 1.2);
       break;
