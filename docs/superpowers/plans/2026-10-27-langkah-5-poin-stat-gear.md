@@ -25,9 +25,9 @@ Empat bagian; tiap bagian dicek manual oleh pemilik sebelum commit.
 - [x] Verifikasi: tes, build, screenshot PC & HP
 
 ## 5C — Inventori & paper doll
-- [ ] Tab Gear di panel Karakter: daftar, pasang/lepas, perbandingan stat, buang
-- [ ] Gear di `finalStats`; efek khusus di ronde — tes
-- [ ] Paper doll: senjata, helm, armor, sepatu per varian; kilau Epik+
+- [x] Tab Gear di panel Karakter: daftar, pasang/lepas, perbandingan stat, buang
+- [x] Gear di `finalStats`; efek khusus di ronde — tes
+- [x] Paper doll: senjata, helm, armor, sepatu per varian; kilau Epik+
 
 ## 5D — Toko Gear
 - [ ] Jual item, Peti Gear (biasa & mahal) — tes

@@ -458,6 +458,12 @@ Stat akhir = dasar kelas + pertumbuhan level + atribut + gear (+ upgrade Pelatih
 - Gear di tanah: sinar & cahaya warna rarity; dipungut seperti permata. Mati → tiap gear 50% hilang. Tas maks **60**; bila penuh, sisanya ditinggal (disebut di Hasil Perjalanan).
 - Item save mendapat field opsional `unique` (id item unik atau `null`).
 
+**Ditetapkan di langkah 5C:**
+- Tab **Gear** di panel Karakter: 6 slot terpasang, tas (urut rarity lalu level), kartu detail (stat dasar, bonus, efek ★, perbandingan "Bila dipakai" hijau/merah), tombol Pasang / Lepas / Buang (konfirmasi). Di dungeon hanya bisa dilihat ("Ganti gear di kota").
+- Gear menambah stat akhir; memasang/melepas tidak memulihkan HP (hanya dibatasi HP maks).
+- Efek unik di dungeon (`FX` di `data/dungeon.js`): eksekusi < 30% HP; petir berantai ke musuh terdekat (jangkauan 140, 80% ATK); perisai tiap 10 detik; amuk < 50% HP; ledakan radius 46; duri = penyerang terkena {v}% ATK; menghisap darah, regenerasi, koin/EXP +, jeda dodge −, damage bos & elite +; Cincin Phoenix bangkit sekali per perjalanan (kebal 2 detik).
+- Paper doll: senjata per kelas (pedang/busur/tongkat/belati), helm (menyembunyikan rambut; tanduk, jambul, mahkota per tingkat), armor, sepatu — warna bahan per tingkat (kayu → besi → baja → ksatria → runa → obsidian → naga), kilau warna rarity untuk Epik ke atas.
+
 ### 14.3 Save versi 3
 
 `migrate()` v2 → v3: tambah `attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 }`; `equipped` mendapat `boots: null, amulet: null`. Validasi: jumlah `attrs` ≤ `3 × (level − 1)`.

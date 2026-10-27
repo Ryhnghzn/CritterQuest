@@ -10,6 +10,7 @@ import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
+import { FX } from '../data/dungeon.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
@@ -46,7 +47,7 @@ export class Game {
   // Rewards earned so far; meta/character.js applyTrip turns them into save data (spec §13.4).
   result() {
     return {
-      time: this.time, kills: this.kills, exp: this.expGained, gold: this.gold, items: this.loot.slice(),
+      time: this.time, kills: this.kills, exp: Math.floor(this.expGained), gold: this.gold, items: this.loot.slice(),
       bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared,
     };
   }
@@ -56,7 +57,8 @@ export class Game {
     this.state = ST.OVER;
   }
 
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0 }) {
+  // effects: special effects of the equipped unique gear, { effect: value } (meta/gear.js)
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {} }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -89,6 +91,8 @@ export class Game {
     this.buffs = { wind: 0, rage: 0 }; // seconds left
     this.shield = 0; this.shieldT = 0; this.shieldMax = 0;
     this.dodgeCdMul = 1;
+    this.fx = { ...effects }; this.fxShieldT = 0; this.frenzyOn = false; this.revived = false;
+    this.applyBuffs();
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
@@ -122,7 +126,26 @@ export class Game {
       if (this.buffs[id] <= 0) continue;
       for (const k of keys) this.stats[k] *= 1 + POTIONS[id][k];
     }
-    this.dodgeCdMul = this.buffs.wind > 0 ? POTIONS.wind.dodgeCd : 1;
+    if (this.frenzyOn) this.stats.atkSpd *= 1 + this.fx.frenzy;
+    this.dodgeCdMul = (this.buffs.wind > 0 ? POTIONS.wind.dodgeCd : 1) * (1 - (this.fx.dodgecd || 0));
+  }
+
+  addGold(n) { this.gold += Math.round(n * (1 + (this.fx.goldfind || 0))); }
+
+  // Unique gear that works over time: regeneration, periodic shield, frenzy at low HP.
+  stepEffects(dt) {
+    const fx = this.fx, s = this.stats;
+    if (fx.regen) s.hp = Math.min(s.maxHp, s.hp + s.maxHp * fx.regen * dt);
+    if (fx.shield && (this.fxShieldT -= dt) <= 0) {
+      this.fxShieldT = FX.shieldEvery;
+      this.shieldMax = Math.max(this.shield, s.maxHp * fx.shield);
+      this.shield = this.shieldMax;
+      this.shieldT = FX.shieldEvery;
+    }
+    if (fx.frenzy && this.frenzyOn !== s.hp < s.maxHp * FX.frenzyBelow) {
+      this.frenzyOn = !this.frenzyOn;
+      this.applyBuffs();
+    }
   }
 
   // ——————————————— fixed step ———————————————
@@ -139,6 +162,7 @@ export class Game {
     stepAttack(this, this.intent, dt);
     stepSkills(this, this.intent, dt);
     this.stepPotion(dt);
+    this.stepEffects(dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
     stepDungeon(this, dt);
     this.updateEnemies(dt);
@@ -223,12 +247,30 @@ export class Game {
   damageEnemy(h, e) {
     const s = this.stats;
     const crit = rand() * 100 < s.crit;
-    const dmg = s.atk * h.mult * (crit ? s.critDmg : 1);
+    const fx = this.fx;
+    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1);
+    if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
+    if (fx.bossdmg && (e.type === 'boss' || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
+    if (fx.lifesteal) s.hp = Math.min(s.maxHp, s.hp + dmg * fx.lifesteal);
+    if (fx.chain && !h.chained && rand() < fx.chain) this.chainFrom(e);
     e.flash = 0.12;
     if (h.freeze) e.frozen = Math.max(e.frozen, h.freeze);
     this.floaters.push({ x: e.x + rrange(-4, 4), y: e.y - e.r, text: String(Math.round(dmg)), color: crit ? '#ffd166' : '#ffffff', life: 0.7, big: crit });
     sfx.hit();
+  }
+
+  // chain lightning from a struck enemy to its nearest neighbour
+  chainFrom(e) {
+    let best = null, bd = FX.chainRange * FX.chainRange;
+    for (const o of this.enemies) {
+      if (o === e || o.hp <= 0) continue;
+      const d = (o.x - e.x) ** 2 + (o.y - e.y) ** 2;
+      if (d < bd) { bd = d; best = o; }
+    }
+    if (!best) return;
+    this.spawnLightning(e.x, e.y, best.x, best.y);
+    this.damageEnemy({ mult: FX.chainMult, chained: true }, best);
   }
 
   nearestEnemy(maxDist = 1e9) {
@@ -265,6 +307,7 @@ export class Game {
         let dmg = Math.max(1, e.dmg - this.stats.def) * this.dmgTakenMul;
         if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; }
         this.stats.hp -= dmg;
+        if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; }
         this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
         sfx.hurt();
         this.spawnBurst(this.px, this.py, '#ff5a6e', 8);
@@ -279,6 +322,12 @@ export class Game {
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.type === 'boss' ? '#c26bd8' : '#7a45c2', e.type === 'boss' ? 26 : 8);
     dropLoot(this, e);
+    if (this.fx.explode) {
+      this.spawnBurst(e.x, e.y, '#ff9a3c', 12);
+      for (const o of this.enemies) {
+        if (o !== e && o.hp > 0 && (o.x - e.x) ** 2 + (o.y - e.y) ** 2 < FX.explodeRadius ** 2) { o.hp -= this.stats.atk * this.fx.explode; o.flash = 0.12; }
+      }
+    }
     if (e.type === 'boss') {
       this.bossKills += 1;
       this.showBanner('RAJA MAW TUMBANG!');
@@ -325,13 +374,14 @@ export class Game {
       gearPickedUp(this, g.gear);
       sfx.pickCard();
     } else if (g.coin) {
-      this.gold += g.v;
+      this.addGold(g.v);
       this.addFloater(g.x, g.y, `+${g.v}`, '#ffd166');
       sfx.gem();
     } else {
-      this.xp += g.v;
-      this.expGained += g.v;
-      this.addFloater(g.x, g.y, `+${g.v}`, '#8fffc0');
+      const v = g.v * (1 + (this.fx.expfind || 0)); // fractions add up over the trip
+      this.xp += v;
+      this.expGained += v;
+      this.addFloater(g.x, g.y, `+${Math.round(v * 10) / 10}`, '#8fffc0');
       sfx.gem();
       while (this.level < CHAR_LEVEL_MAX && this.xp >= this.xpNeed) {
         this.xp -= this.xpNeed;
@@ -346,6 +396,15 @@ export class Game {
   }
 
   die() {
+    if (this.fx.phoenix && !this.revived) { // Cincin Phoenix: rise once per trip
+      this.revived = true;
+      this.stats.hp = this.stats.maxHp * this.fx.phoenix;
+      this.invuln = FX.phoenixInvuln;
+      this.showBanner('Bangkit dari abu!');
+      this.spawnBurst(this.px, this.py, '#ff9a3c', 30);
+      sfx.levelup();
+      return;
+    }
     this.stats.hp = 0;
     this.state = ST.OVER;
     sfx.gameover();

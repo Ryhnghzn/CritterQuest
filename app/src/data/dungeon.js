@@ -3,6 +3,16 @@ export const INN = { base: 10, perLevel: 2 };          // price = base + perLeve
 export const TOWN_REGEN = 0.01;                         // fraction of max HP per second in town
 export const DEATH = { goldKeep: 0.5, gearKeepChance: 0.5, wakeHp: 0.1 };
 
+// Unique gear effects in the dungeon (spec §14.2; values per item in data/items.js).
+export const FX = {
+  executeBelow: 0.3,   // execute: bonus damage below this HP fraction
+  chainRange: 140, chainMult: 0.8,
+  shieldEvery: 10,     // shield: refreshed every N s
+  frenzyBelow: 0.5,    // frenzy: active below this HP fraction
+  explodeRadius: 46,
+  phoenixInvuln: 2,
+};
+
 // "Ruang Bawah Tanah Bayangan" (spec §13.3): one round stone room per floor,
 // enemies walk in through 4 lanes (N/E/S/W) cut through the wall.
 export const ROOM = { r: 560, wall: 36, laneWidth: 96, laneLen: 240 };

@@ -203,3 +203,90 @@ describe('level karakter di dungeon', () => {
     expect(g.stats.maxHp).toBe(160);
   });
 });
+
+describe('efek item unik', () => {
+  const start = (effects, over = {}) => {
+    const g = new Game();
+    g.start({ ...setup('warrior'), effects, ...over });
+    g.spawnT = 1e9;
+    return g;
+  };
+  const step = (g) => { g.intent = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, potion: -1 }; g.step(1 / 60); };
+  const hit = (g, e, mult = 1) => g.damageEnemy({ mult }, e);
+  const noCrit = (g) => { g.stats.crit = 0; };
+
+  it('eksekusi: damage +v ke musuh di bawah 30% HP', () => {
+    const g = start({ execute: 0.5 }); noCrit(g);
+    const e = g.spawnEnemy('tank'); e.x = 300;
+    hit(g, e); const full = e.maxHp - e.hp;
+    e.hp = e.maxHp * 0.2; const before = e.hp; hit(g, e);
+    expect(before - e.hp).toBeCloseTo(full * 1.5);
+  });
+
+  it('damage bos & elite, menghisap darah', () => {
+    const g = start({ bossdmg: 0.4, lifesteal: 0.05 }); noCrit(g);
+    const b = g.spawnEnemy('boss'); b.x = 300;
+    g.stats.hp = 50;
+    hit(g, b);
+    expect(b.maxHp - b.hp).toBeCloseTo(14 * 1.4);
+    expect(g.stats.hp).toBeCloseTo(50 + 14 * 1.4 * 0.05);
+  });
+
+  it('petir berantai menyambar musuh terdekat', () => {
+    const g = start({ chain: 1 }); noCrit(g);
+    const a = g.spawnEnemy('tank'); a.x = 300; a.y = 0;
+    const b = g.spawnEnemy('tank'); b.x = 360; b.y = 0;
+    hit(g, a);
+    expect(b.maxHp - b.hp).toBeCloseTo(14 * 0.8);
+  });
+
+  it('duri melukai penyerang; ledakan saat musuh tumbang', () => {
+    const g = start({ thorns: 1, explode: 1 }); noCrit(g);
+    const e = g.spawnEnemy('tank'); e.x = 0; e.y = 0;
+    step(g);
+    expect(e.maxHp - e.hp).toBeCloseTo(14);
+    const k = g.spawnEnemy('slink'); k.x = 300; k.y = 0; k.hp = 0;
+    const n = g.spawnEnemy('tank'); n.x = 320; n.y = 0;
+    e.hp = e.maxHp; g.invuln = 99;
+    step(g);
+    expect(n.maxHp - n.hp).toBeCloseTo(14);
+  });
+
+  it('regenerasi & perisai berkala', () => {
+    const g = start({ regen: 0.01, shield: 0.15 }, { hp: 10 });
+    step(g);
+    expect(g.shield).toBeCloseTo(140 * 0.15);
+    for (let i = 0; i < 60; i++) step(g);
+    expect(g.stats.hp).toBeCloseTo(10 + 1.4 * (61 / 60), 1);
+  });
+
+  it('amuk saat HP di bawah 50%; jeda dodge lebih cepat', () => {
+    const g = start({ frenzy: 0.3, dodgecd: 0.4 }, { hp: 100 });
+    const base = g.stats.atkSpd;
+    step(g);
+    expect(g.stats.atkSpd).toBeCloseTo(base);
+    expect(g.dodgeCdMul).toBeCloseTo(0.6);
+    g.stats.hp = 60; step(g);
+    expect(g.stats.atkSpd).toBeCloseTo(base * 1.3);
+    g.stats.hp = 100; step(g);
+    expect(g.stats.atkSpd).toBeCloseTo(base);
+  });
+
+  it('koin & EXP bertambah', () => {
+    const g = start({ goldfind: 0.4, expfind: 0.25 });
+    g.addGold(10);
+    expect(g.gold).toBe(14);
+    g.gems.push({ x: g.px, y: g.py, v: 4, mag: false, big: false, t: 0 });
+    step(g);
+    expect(g.expGained).toBeCloseTo(5);
+  });
+
+  it('Cincin Phoenix: bangkit sekali dengan 30% HP', () => {
+    const g = start({ phoenix: 0.3 });
+    g.die();
+    expect(g.state).toBe(ST.PLAY);
+    expect(g.stats.hp).toBeCloseTo(42);
+    g.die();
+    expect(g.state).toBe(ST.OVER);
+  });
+});

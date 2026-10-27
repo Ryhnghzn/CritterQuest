@@ -126,7 +126,7 @@ function clearFloor(run) {
   run.floorClear = true;
   run.clearT = 0;
   const bonus = COINS.floorBonus * run.floor;
-  run.gold += bonus;
+  run.addGold(bonus);
   run.addFloater(run.px, run.py - 40, `+${bonus} koin`, '#ffd166');
   for (let i = 0; i < DROP.chestItems; i++) dropGear(run, 'chest', 0, 0);
   for (const g of run.gems) g.mag = true; // nothing left behind on the floor
@@ -179,7 +179,7 @@ export function dropLoot(run, e) {
 export function dropCoins(run, e) {
   if (e.type === 'boss' || e.elite) {
     const v = e.type === 'boss' ? COINS.boss : ELITE.gold;
-    run.gold += v;
+    run.addGold(v);
     run.addFloater(e.x, e.y - e.r - 10, `+${v} koin`, '#ffd166');
     return;
   }

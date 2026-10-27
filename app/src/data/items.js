@@ -62,7 +62,7 @@ export const BONUS_IDS = Object.keys(BONUSES);
 // {v} in desc is replaced by the item's value (× 100 for fractions).
 export const EFFECTS = {
   lifesteal: { desc: 'Menghisap {v}% damage menjadi HP' },
-  thorns: { desc: 'Memantulkan {v}% damage sentuh ke penyerang' },
+  thorns: { desc: 'Penyerang terkena duri {v}% ATK' },
   chain: { desc: '{v}% serangan menyambar petir ke musuh terdekat' },
   execute: { desc: 'Damage +{v}% ke musuh di bawah 30% HP' },
   shield: { desc: 'Perisai {v}% HP maks tiap 10 detik' },

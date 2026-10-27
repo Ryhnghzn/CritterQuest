@@ -1,9 +1,10 @@
 // Paper doll (spec §8): a chibi character drawn as vector layers around anchor
 // points that move with the pose. Origin = centre between the feet, facing
 // right (callers flip for left), ~44 world units tall. Layer order:
-// body → armor → hair (hidden under a helm) → helm → weapon; gear layers
-// arrive in langkah 4 and attach to the anchors returned by drawDoll().
+// body → boots → armor → hair (hidden under a helm) → helm → weapon. Gear looks
+// follow the item's tier (look variant) and glint in its rarity colour from Epik up.
 import { OUT } from './sprites.js';
+import { RARITIES } from '../data/items.js';
 
 const TAU = Math.PI * 2;
 const SKIN = ['#ffd9b8', '#f2b08c'];
@@ -43,6 +44,97 @@ function limb(g, x1, y1, x2, y2, w, color) {
   g.lineWidth = w; g.strokeStyle = color; g.stroke();
 }
 function dot(g, x, y, r, fill) { g.beginPath(); g.arc(x, y, r, 0, TAU); ink(g, fill, 1.3); }
+
+// ——— gear (tier 0–6: kayu/kulit, besi, baja, ksatria, runa, obsidian, naga) ———
+const METAL = [
+  ['#c08a5c', '#7a4e30'], ['#b9c1d0', '#6f7890'], ['#e6ebf4', '#9aa4b8'], ['#eef1f8', '#a7b0c4'],
+  ['#9fe0ff', '#3f8fd6'], ['#6e5a92', '#2e2440'], ['#ff8a5a', '#b8321e'],
+];
+const TRIM = ['#7a4e30', '#6f7890', '#9aa4b8', '#ffc94d', '#e8f7ff', '#c26bd8', '#ffd36b'];
+const metal = (g, tier, y0, y1) => lin(g, y0, y1, METAL[tier][0], METAL[tier][1]);
+
+// a four-point glint in the rarity colour (Epik and up)
+function glint(g, x, y, rarity, t, s = 1) {
+  if (rarity < 3) return;
+  const k = (0.6 + 0.4 * Math.sin(t * 4 + x)) * s * (rarity >= 4 ? 1.3 : 1);
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  g.fillStyle = RARITIES[rarity].color;
+  g.beginPath();
+  g.moveTo(x, y - 4 * k); g.lineTo(x + 1 * k, y - 1 * k); g.lineTo(x + 4 * k, y); g.lineTo(x + 1 * k, y + 1 * k);
+  g.lineTo(x, y + 4 * k); g.lineTo(x - 1 * k, y + 1 * k); g.lineTo(x - 4 * k, y); g.lineTo(x - 1 * k, y - 1 * k);
+  g.closePath(); g.fill();
+  g.restore();
+}
+
+function drawArmor(g, a, bob, t) {
+  const y0 = -24 + bob;
+  g.beginPath(); g.roundRect(-7.8, y0 + 0.5, 15.6, 11.5, [6, 6, 3, 3]); ink(g, metal(g, a.tier, y0, y0 + 12), 1.4);
+  if (a.tier >= 1) { g.beginPath(); g.moveTo(0, y0 + 2); g.lineTo(0, y0 + 11); g.lineWidth = 1; g.strokeStyle = 'rgba(42,33,64,.45)'; g.stroke(); }
+  for (const sx of [-6.5, 6.5]) { g.beginPath(); g.ellipse(sx, y0 + 2.5, 4, 3, 0, 0, TAU); ink(g, metal(g, a.tier, y0, y0 + 5), 1.2); }
+  if (a.tier >= 3) { g.beginPath(); g.roundRect(-7.8, y0 + 9.5, 15.6, 2.2, 1); ink(g, TRIM[a.tier], 0.9); }
+  if (a.tier >= 4) { g.beginPath(); g.arc(0, y0 + 5.5, 1.8, 0, TAU); ink(g, a.rarity >= 3 ? RARITIES[a.rarity].color : TRIM[a.tier], 0.9); }
+  glint(g, 4, y0 + 3, a.rarity, t);
+}
+
+function drawHelm(g, h, hx, hy, r, t) {
+  const tier = h.tier;
+  // horns / plume / crown behind the dome
+  if (tier === 2 || tier === 6) {
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.moveTo(hx + s * 6, hy - 8); g.quadraticCurveTo(hx + s * 14, hy - 12, hx + s * 12, hy - 20); g.quadraticCurveTo(hx + s * 9, hy - 13, hx + s * 3, hy - 10);
+      g.closePath(); ink(g, tier === 6 ? '#ffd36b' : '#f1e9d8', 1.2);
+    }
+  }
+  if (tier === 3) { g.beginPath(); g.ellipse(hx - 3, hy - r - 4, 3.5, 7, -0.5, 0, TAU); ink(g, '#ff4d5e', 1.2); }
+  g.beginPath(); g.arc(hx, hy - 2.5, r * 1.12, Math.PI - 0.12, TAU + 0.12); g.closePath();
+  ink(g, metal(g, tier, hy - r, hy), 1.6);
+  g.beginPath(); g.roundRect(hx - r * 1.15, hy - 4.4, r * 2.3, 3.2, 1.6); ink(g, TRIM[tier], 1.2);
+  if (tier === 4 || tier === 5) {
+    for (const dx of [-6, 0, 6]) { g.beginPath(); g.moveTo(hx + dx - 2.5, hy - r + 1); g.lineTo(hx + dx, hy - r - 5); g.lineTo(hx + dx + 2.5, hy - r + 1); g.closePath(); ink(g, TRIM[tier], 1); }
+  }
+  g.beginPath(); g.ellipse(hx - 3, hy - r * 0.7, 2.6, 1.3, -0.4, 0, TAU); g.fillStyle = 'rgba(255,255,255,.4)'; g.fill();
+  glint(g, hx + 6, hy - r + 2, h.rarity, t);
+}
+
+function drawBoots(g, b, x, swing) {
+  g.beginPath(); g.ellipse(x, -1.3, 4.1, 2.6, 0, 0, TAU); ink(g, metal(g, b.tier, -4, 1), 1.3);
+  g.beginPath(); g.roundRect(x - 3.2, -5.2, 5.6, 3, 1.2); ink(g, TRIM[b.tier], 1);
+}
+
+// weapon in the front hand, per class
+function drawWeapon(g, classId, w, hand, attack, t) {
+  const tier = w.tier;
+  g.save();
+  g.translate(hand.x, hand.y);
+  if (classId === 'warrior') {
+    g.rotate(0.6 + attack * 0.9); // tip forward, away from the face
+    g.beginPath(); g.moveTo(-1.8, -3); g.lineTo(-1.8, -17 - tier * 0.6); g.lineTo(0, -20 - tier * 0.6); g.lineTo(1.8, -17 - tier * 0.6); g.lineTo(1.8, -3); g.closePath();
+    ink(g, metal(g, tier, -20, -3), 1.2);
+    g.beginPath(); g.roundRect(-4.5, -3.4, 9, 2.2, 1); ink(g, TRIM[tier], 1);
+    g.beginPath(); g.roundRect(-1.2, -1.4, 2.4, 4.5, 1); ink(g, '#6a4630', 1);
+    glint(g, 0, -18 - tier * 0.6, w.rarity, t);
+  } else if (classId === 'archer') {
+    g.rotate(0.15);
+    g.beginPath(); g.moveTo(1, -12); g.quadraticCurveTo(8, 0, 1, 12);
+    g.lineCap = 'round'; g.lineWidth = 4; g.strokeStyle = OUT; g.stroke();
+    g.lineWidth = 2.4; g.strokeStyle = METAL[tier][tier === 0 ? 1 : 0]; g.stroke();
+    g.beginPath(); g.moveTo(1, -12); g.lineTo(1, 12); g.lineWidth = 0.8; g.strokeStyle = '#f1e9d8'; g.stroke();
+    glint(g, 5, -6, w.rarity, t);
+  } else if (classId === 'mage') {
+    g.rotate(0.55 + attack * 0.4);
+    g.beginPath(); g.roundRect(-1.3, -16, 2.6, 22, 1.2); ink(g, tier >= 5 ? '#3a2f4f' : '#8a5a3a', 1.1);
+    g.beginPath(); g.arc(0, -18, 3.4 + tier * 0.25, 0, TAU);
+    ink(g, lin(g, -22, -14, '#ffffff', w.rarity >= 3 ? RARITIES[w.rarity].color : METAL[tier][0]), 1.2);
+    glint(g, 3, -21, w.rarity, t);
+  } else if (classId === 'assassin') {
+    g.rotate(0.9 + attack * 0.8);
+    g.beginPath(); g.moveTo(-1.4, -2); g.lineTo(0, -10 - tier * 0.4); g.lineTo(1.4, -2); g.closePath(); ink(g, metal(g, tier, -10, -2), 1.1);
+    g.beginPath(); g.roundRect(-3.4, -2.4, 6.8, 1.8, 0.9); ink(g, TRIM[tier], 0.9);
+    glint(g, 0, -9, w.rarity, t);
+  }
+  g.restore();
+}
 
 // ——— hair: back layers (behind the body) and front layers (over the head) ———
 function capPath(g, hx, hy, r, spikes) {
@@ -147,16 +239,19 @@ export function drawDoll(g, classId, look, pose = {}) {
   const hx = 1, hy = -33 + bob, hr = 11;
   const hairFill = lin(g, hy - hr, hy + hr, hMain, hShade);
   const robe = classId === 'mage';
+  const gear = look.gear || {};
 
   g.lineJoin = 'round';
-  HAIR_BACK[look.hair]?.(g, hx, hy, hr, hairFill, t);
+  if (!gear.helm) HAIR_BACK[look.hair]?.(g, hx, hy, hr, hairFill, t);
   CLASS_BACK[classId]?.(g, bob, t, moving);
 
   // legs (back leg darker), boots
   limb(g, -2.5, -10 + bob, -2.5 - swing, -2, 5, '#2f2850');
-  g.beginPath(); g.ellipse(-1.8 - swing, -1.3, 3.8, 2.4, 0, 0, TAU); ink(g, BOOTS, 1.3);
+  if (gear.boots) drawBoots(g, gear.boots, -1.8 - swing);
+  else { g.beginPath(); g.ellipse(-1.8 - swing, -1.3, 3.8, 2.4, 0, 0, TAU); ink(g, BOOTS, 1.3); }
   limb(g, 2.5, -10 + bob, 2.5 + swing, -2, 5, PANTS);
-  g.beginPath(); g.ellipse(3.2 + swing, -1.3, 3.8, 2.4, 0, 0, TAU); ink(g, BOOTS, 1.3);
+  if (gear.boots) drawBoots(g, gear.boots, 3.2 + swing);
+  else { g.beginPath(); g.ellipse(3.2 + swing, -1.3, 3.8, 2.4, 0, 0, TAU); ink(g, BOOTS, 1.3); }
 
   // back arm
   limb(g, -5, -20 + bob, -6.5 + swing * 0.5, -12.5 + bob, 4, cShade);
@@ -168,6 +263,7 @@ export function drawDoll(g, classId, look, pose = {}) {
   g.beginPath(); g.roundRect(-8.5, -13.5 + bob, 17, 2.6, 1); g.fillStyle = cShade; g.fill();
   g.beginPath(); g.ellipse(-3.5, -20 + bob, 2.6, 1.3, -0.4, 0, TAU); g.fillStyle = 'rgba(255,255,255,.28)'; g.fill();
   CLASS_FRONT[classId]?.(g, bob);
+  if (gear.armor) drawArmor(g, gear.armor, bob, t);
 
   // front arm: swings while walking, thrusts forward when attacking
   const handX = 6.5 - swing * 0.5 + attack * 7, handY = -12.5 + bob - attack * 6;
@@ -181,7 +277,8 @@ export function drawDoll(g, classId, look, pose = {}) {
   ink(g, sk);
   // ear on the back side
   g.beginPath(); g.ellipse(hx - 6.5, hy + 1.5, 2.2, 2.8, 0, 0, TAU); ink(g, SKIN[1], 1.2);
-  HAIR_FRONT[look.hair](g, hx, hy, hr, hairFill);
+  if (gear.helm) drawHelm(g, gear.helm, hx, hy, hr, t);
+  else HAIR_FRONT[look.hair](g, hx, hy, hr, hairFill);
 
   // face
   const ey = hy + 0.5;
@@ -207,6 +304,8 @@ export function drawDoll(g, classId, look, pose = {}) {
   }
   g.fillStyle = 'rgba(255,120,140,.35)';
   for (const bx of [hx + 2.2, hx + 10]) { g.beginPath(); g.ellipse(bx, hy + 3.6, 1.8, 1.1, 0, 0, TAU); g.fill(); }
+
+  if (gear.weapon && classId) drawWeapon(g, classId, gear.weapon, { x: handX, y: handY }, attack, t);
 
   return { head: { x: hx, y: hy, r: hr }, body: { x: 0, y: -17 + bob }, hand: { x: handX, y: handY } };
 }

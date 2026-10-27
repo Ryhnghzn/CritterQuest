@@ -15,6 +15,8 @@ import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
 import { innRest, buyPotion, setBelt } from './meta/shop.js';
+import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
+import { itemName } from './meta/itemgen.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
@@ -231,14 +233,43 @@ function tripChar() {
 function openCharPanel() {
   if (scene === 'run') {
     game.state = ST.PAUSE;
-    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun });
+    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false } });
     showOverlay('charpanel');
     return;
   }
   syncHp();
-  renderCharPanel($('charpanel'), current, town.hp, { onClose: closeTownOverlay, onAllocate: allocateInTown });
+  renderCharPanel($('charpanel'), current, town.hp, {
+    onClose: closeTownOverlay, onAllocate: allocateInTown,
+    gear: {
+      editable: true,
+      onEquip: (id) => changeGear((c, now) => equip(c, id, now)),
+      onUnequip: (slot) => changeGear((c, now) => unequip(c, slot, now)),
+      onDiscard: async (id) => {
+        const it = current.inventory.find((x) => x.id === id);
+        if (await confirmDialog(`Buang ${itemName(it)}? Tidak bisa dikembalikan.`, 'Buang')) changeGear((c, now) => discard(c, id, now));
+        else openCharPanel();
+      },
+    },
+  });
   showTownOverlay('charpanel');
 }
+
+// Equip / unequip / discard in town: new stats, save, redraw.
+async function changeGear(action) {
+  syncHp();
+  const r = action(current, Date.now());
+  if (!r.ok) return;
+  current = r.char;
+  const s = finalStats(current);
+  town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
+  sfx.pickCard();
+  await saveCurrent();
+  updateTownHUD(current, town);
+  openCharPanel();
+}
+
+// classId + look with the visible gear, for the paper doll
+const avatarOf = (c) => ({ classId: c.classId, look: { ...c.look, gear: dollGear(c) } });
 
 async function allocateInTown(add) {
   const next = allocate(current, add, Date.now());
@@ -300,7 +331,7 @@ async function enterDungeon(floor = 1) {
   const stats = finalStats(current);
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor,
-    level: current.level, exp: current.exp, luk: current.attrs.luk,
+    level: current.level, exp: current.exp, luk: current.attrs.luk, effects: gearEffects(current),
   });
   tripAttrs = {};
   CLASSES[current.classId].skills.forEach((sk, i) => {
@@ -308,7 +339,7 @@ async function enterDungeon(floor = 1) {
     btn.querySelector('.ic').replaceChildren(iconCanvas(sk.id, 30));
     btn.title = `${sk.name} (${i ? 'E' : 'Q'})`;
   });
-  R.avatar = { classId: current.classId, look: current.look };
+  R.avatar = avatarOf(current);
   $('surrender').classList.remove('hidden');
   $('toslots').classList.add('hidden');
   $('pausenote').classList.remove('hidden');
@@ -436,7 +467,7 @@ function frame(dt) {
     if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); }
     if (game.state === ST.PLAY) updateActions(game);
   } else {
-    TR.draw(scene === 'town' ? town : null, simT, current && { classId: current.classId, look: current.look });
+    TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current));
     if (scene === 'town') {
       if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); }
       const near = screen === null ? town.near : null;

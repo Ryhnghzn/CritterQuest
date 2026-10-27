@@ -4,7 +4,8 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS } from './schema.js';
+import { itemStats } from './itemgen.js';
 
 export function validateName(name) {
   if (typeof name !== 'string') return null;
@@ -49,8 +50,20 @@ export function addExp(char, amount) {
   return { char: c, levelsGained };
 }
 
-// Class base + level growth + attribute points (spec §14.1). Gear (langkah 5C)
-// and trainer upgrades (langkah 6) are layered on top of this later.
+// Every stat the equipped gear adds, summed.
+export function gearStats(char) {
+  const s = {};
+  for (const slot of EQUIP_SLOTS) {
+    const id = char.equipped[slot];
+    const it = id && char.inventory.find((x) => x.id === id);
+    if (!it) continue;
+    for (const [k, v] of Object.entries(itemStats(it))) s[k] = (s[k] || 0) + v;
+  }
+  return s;
+}
+
+// Class base + level growth + attribute points (spec §14.1) + equipped gear.
+// Trainer upgrades (langkah 6) are layered on top of this later.
 export function finalStats(char) {
   const cls = CLASSES[char.classId];
   const lv = char.level - 1;
@@ -61,6 +74,7 @@ export function finalStats(char) {
     const n = char.attrs[a.id];
     for (const [stat, v] of Object.entries(a.per)) s[stat] += v * n;
   }
+  for (const [stat, v] of Object.entries(gearStats(char))) s[stat] += v;
   return s;
 }
 
