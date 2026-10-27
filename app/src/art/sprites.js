@@ -434,6 +434,12 @@ const ICONS = {
       g.beginPath(); g.arc(s * 4, 5.5, 3.6, 0, TAU); g.lineWidth = 3.4; g.strokeStyle = OUT; g.stroke(); g.lineWidth = 2; g.strokeStyle = '#e0527a'; g.stroke();
     }
   },
+  board(g) { // pinned bounty notice
+    g.beginPath(); g.roundRect(-9, -10, 18, 20, 2); ink(g, grad(g, -10, 10, '#f3e2b8', '#c9a46a'), 1.5);
+    g.strokeStyle = '#6b4a2a'; g.lineWidth = 1.4;
+    for (const y of [-3, 1, 5]) { g.beginPath(); g.moveTo(-5, y); g.lineTo(5, y); g.stroke(); }
+    g.beginPath(); g.arc(0, -8, 2.4, 0, TAU); ink(g, '#c0392b', 1);
+  },
   talk(g) { // speech bubble
     g.beginPath(); g.roundRect(-10, -9, 20, 14, 6); g.moveTo(-3, 5); g.lineTo(-6, 10); g.lineTo(2, 5);
     ink(g, '#fffaf0', 1.5);
@@ -565,6 +571,20 @@ export function iconCanvas(id, cssSize) {
   const g = c.getContext('2d');
   g.translate(c.width / 2, c.height / 2);
   drawIcon(g, id, cssSize * dpr);
+  return c;
+}
+
+// An enemy portrait for the DOM (bestiary), scaled to fit cssSize.
+export function enemyCanvas(type, r, cssSize) {
+  const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
+  const c = document.createElement('canvas');
+  c.width = c.height = Math.round(cssSize * dpr);
+  c.style.width = c.style.height = `${cssSize}px`;
+  const g = c.getContext('2d');
+  g.translate(c.width / 2, c.height / 2);
+  g.scale(c.width / (r * 3.4), c.width / (r * 3.4));
+  g.lineJoin = 'round';
+  ENEMY_ART[type](g, r);
   return c;
 }
 

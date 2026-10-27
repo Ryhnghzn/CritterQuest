@@ -133,6 +133,7 @@ export function stepDungeon(run, dt) {
 function clearFloor(run) {
   run.floorClear = true;
   run.clearT = 0;
+  run.floorsCleared += 1;
   const bonus = COINS.floorBonus * run.floor;
   run.addGold(bonus);
   addMats(run, { dust: MAT_DROPS.floor.dust * run.floor }, 0, -60);

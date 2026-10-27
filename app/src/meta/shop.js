@@ -2,6 +2,7 @@
 // gear shop (sell, chests), trainer, barber. Pure — returns
 // { ok: true, char } with a new character, or { ok: false, reason } ('full' | 'gold').
 import { INN } from '../data/dungeon.js';
+import { discover } from './collection.js';
 import { POTIONS, POTION_MAX, BELT_SIZE } from '../data/potions.js';
 import { CHESTS, SELL_PRICE } from '../data/items.js';
 import { INVENTORY_MAX, HAIR_STYLES, HAIR_COLORS } from '../data/balance.js';
@@ -58,6 +59,7 @@ export function buyChest(char, kind, now, rng = Math.random) {
   while (c.inventory.some((x) => x.id === item.id)) item.id += 'x';
   c.gold -= price;
   c.inventory.push(item);
+  discover(c, [item]); // codex (spec §24)
   c.updatedAt = now;
   return { ok: true, char: c, item };
 }

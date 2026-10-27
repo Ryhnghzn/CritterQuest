@@ -162,11 +162,7 @@ export const INTERIORS = {
     ],
     npcs: [
       npc('trainer', 'trainer', 'Guru Hadi', 100, 150, { hair: 0, hairColor: 5 }, ['#3a3a3a', '#222']),
-      npc('vera', 'talk', 'Kapten Vera', 260, 104, { hair: 1, hairColor: 4 }, ['#2f6b4f', '#1f4a36'], { title: 'Ketua Balai', lines: [
-        'Selamat datang di Balai Petualang. Papan tugas akan segera dibuka.',
-        'Kau bisa melanjutkan dari lantai terdalam yang pernah kau capai — bilang saja ke Rolan di gerbang.',
-        'Kepala di dinding itu? Replika. Raja Maw yang asli masih hidup di bawah sana.',
-      ] }),
+      npc('vera', 'board', 'Kapten Vera', 260, 104, { hair: 1, hairColor: 4 }, ['#2f6b4f', '#1f4a36'], { title: 'Ketua Balai' }),
       npc('ruko', 'talk', 'Ruko', 130, 248, { hair: 0, hairColor: 0 }, ['#2f8a4e', '#1f5e35'], { title: 'Pemanah', lines: [
         'Jaga jarak, tembak, mundur. Itu rahasia pemanah.',
         'LUK menaikkan peluang barang langka. Aku menaruh semua poinku di sana… mungkin terlalu banyak.',

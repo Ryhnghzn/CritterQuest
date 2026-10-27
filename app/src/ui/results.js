@@ -5,11 +5,13 @@ import { RARITIES } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { dungeonById } from '../data/dungeons.js';
 import { MATS, MAT_IDS } from '../data/forge.js';
+import { bountyText } from './board.js';
+import { isDone } from '../meta/bounties.js';
 import { tr, t } from '../i18n.js';
 
 // info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
 export function renderResults(box, info, { onContinue }) {
-  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError } = info;
+  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError, bountiesDone, uniquesFound } = info;
   box.replaceChildren();
   const titleText = tr(trip.died ? 'Tumbang!' : trip.cleared ? 'Dungeon Tamat!' : 'Pulang dengan Selamat');
   const title = el('h2', trip.died ? 'h bad' : 'h', titleText);
@@ -25,6 +27,11 @@ export function renderResults(box, info, { onContinue }) {
   if (trip.cleared) badges.append(el('span', 'badge', tr('Raja Maw tumbang!')));
   if (newRecord) badges.append(el('span', 'badge', t('Rekor baru: Lantai {n}', { n: trip.floor })));
   if (levelsGained > 0) badges.append(el('span', 'badge mint', t('Naik level! LV {n}', { n: char.level })));
+  if (bountiesDone > 0) badges.append(el('span', 'badge mint', t('{n} tugas selesai — klaim di Balai Petualang', { n: bountiesDone })));
+  if (uniquesFound?.length) badges.append(el('span', 'badge', t('Kodeks: +{n} item unik', { n: uniquesFound.length })));
+  // bounty board progress after this trip (spec §24)
+  const board = el('div', 'rbounties');
+  for (const b of char.bounties) board.append(el('div', `rb${isDone(b) ? ' done' : ''}`, `${bountyText(b)} — ${b.have}/${b.need}`));
   const notes = el('div', 'sub');
   if (trip.died) notes.textContent = `${tr('Kamu terbangun di kota dengan sisa tenaga.')}${goldLost > 0 ? ` ${t('{n} koin hilang.', { n: goldLost })}` : ''}`;
   const loot = el('div', 'loot');
@@ -48,6 +55,7 @@ export function renderResults(box, info, { onContinue }) {
   box.append(title, where, tiles, badges);
   if (matRow.childElementCount) box.append(matRow);
   if (loot.childElementCount) box.append(loot);
+  box.append(board);
   box.append(notes, err, next);
 }
 

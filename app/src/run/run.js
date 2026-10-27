@@ -59,7 +59,7 @@ export class Game {
     return {
       time: this.time, kills: this.kills, exp: Math.floor(this.expGained), gold: this.gold, items: this.loot.slice(),
       mats: { ...this.mats }, gems: this.gemsFound.slice(),
-      bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
+      bossKills: this.bossKills, killsBy: { ...this.killsBy }, elites: this.elites, floorsCleared: this.floorsCleared, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
     };
   }
 
@@ -97,6 +97,7 @@ export class Game {
     this.dashSpeed = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0;
+    this.killsBy = {}; this.elites = 0; this.floorsCleared = 0; // bounties & bestiary (spec §24)
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
@@ -374,6 +375,8 @@ export class Game {
   killEnemy(e) {
     onDeath(this, e);
     this.kills += 1;
+    this.killsBy[e.type] = (this.killsBy[e.type] || 0) + 1;
+    if (e.elite) this.elites += 1;
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);

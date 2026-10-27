@@ -497,6 +497,34 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .skbtns .skkey.on{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;border-color:#e6c27a}
 .skbtns .skkey:disabled{opacity:1;cursor:default}
 .skill .lock{font-size:12px;font-weight:700;color:var(--dim);padding:4px 8px;border:1px dashed var(--line);border-radius:3px}
+/* 9C: bounty board, Lencana shop, collection (spec §24) */
+.shoprow.bounty{grid-template-columns:38px minmax(0,1fr) auto}
+.shoprow.bounty.done{box-shadow:inset 0 0 0 1.5px #e6c27a}
+.shoplist .shoprow:not(:has(.sic)){grid-template-columns:minmax(0,1fr) auto}
+.bbar{height:6px;border-radius:3px;background:rgba(0,0,0,.45);margin:4px 0 3px;overflow:hidden}
+.bbar i{display:block;height:100%;background:linear-gradient(90deg,#7a5a20,#e6c27a)}
+.markic{display:inline-block;width:11px;height:11px;margin-right:5px;border-radius:3px;transform:rotate(45deg);background:linear-gradient(135deg,#9fe0ff,#2f6b9a);box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+.btn.reroll{display:flex;flex-direction:column;align-items:center;line-height:1.1;padding:6px 12px}
+.btn.reroll small{font:600 10px/1.2 inherit;font-family:var(--font, inherit);text-transform:none;letter-spacing:0;opacity:.8}
+.btn.claim{background:linear-gradient(180deg,#e6c27a,#a8782e);color:#2a1606}
+.coll h3{margin:0 0 2px;font-size:16px}
+.colltotal{font-size:12px;color:#9fd6a8;margin:6px 0}
+.bestlist{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.beast{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;column-gap:8px;padding:4px 8px;border-radius:10px;background:var(--glass2);text-align:left}
+.beast .binfo{display:flex;flex-direction:column;min-width:0}
+.beast .binfo b{font-size:14px}
+.beast .bsub{font-size:11px;color:var(--dim)}
+.beast .pips{display:flex;gap:3px}
+.beast .pips i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.12)}
+.beast .pips i.on{background:#e6c27a;box-shadow:0 0 6px rgba(230,194,122,.6)}
+.beast .bbonus{grid-column:2/4;font-size:11px;color:#9fd6a8}
+.beast.boss{box-shadow:inset 0 0 0 1px rgba(194,107,216,.45)}
+.beast.unseen canvas,.cdx.unseen canvas{filter:brightness(0) opacity(.45)}
+.codex{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;margin-top:8px}
+.cdx{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:10px;background:var(--glass2);border:1px solid var(--c);font-size:11px;line-height:1.2;text-align:center;color:var(--c)}
+.cdx.unseen{border-color:var(--line);color:var(--dim)}
+.rbounties{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dim);margin:6px 0}
+.rbounties .rb.done{color:#e6c27a}
 </style>
 </head>
 <body>

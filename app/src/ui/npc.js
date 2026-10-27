@@ -15,6 +15,7 @@ import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
+import { bountyList, markShop } from './board.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -22,6 +23,7 @@ let newLook = null;     // Tukang Cukur: style being tried on
 let gateDungeon = null; // Penjaga gerbang: dungeon picked
 let smithTab = 'peti';  // Pandai Brom: peti | jual | tempa | urai
 let gemTab = 'pasang';  // Tukang Permata: pasang | gabung
+let boardTab = 'tugas'; // Kapten Vera: tugas | lencana
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
@@ -30,9 +32,10 @@ const LINES = {
   jeweler: 'Permata yang tepat di soket yang tepat… itu seni, Sayang.',
   gate: 'Gerbang ini membuka jalan ke semua dungeon yang sudah kau taklukkan. Mau ke mana?',
   trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
+  board: 'Papan tugas sudah dibuka! Selesaikan tugas di dungeon, lalu ambil hadiahmu di sini.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
 };
-const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Gerbang Dungeon', trainer: 'Pelatih', barber: 'Tukang Cukur', talk: 'Warga' };
+const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Gerbang Dungeon', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
@@ -53,7 +56,9 @@ export function renderNpc(box, npc, ctx) {
 
   if (npc.role !== 'talk') {
     const wallet = el('div', 'records');
-    for (const text of [t('{n} koin', { n: char.gold }), `HP ${Math.ceil(hp)} / ${Math.round(maxHp)}`]) wallet.append(el('span', 'hchip', text));
+    const chips = [t('{n} koin', { n: char.gold }), `HP ${Math.ceil(hp)} / ${Math.round(maxHp)}`];
+    if (npc.role === 'board') chips.push(t('{n} Lencana', { n: char.marks }));
+    for (const text of chips) wallet.append(el('span', 'hchip', text));
     panel.append(wallet);
   }
 
@@ -79,6 +84,10 @@ export function renderNpc(box, npc, ctx) {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
     panel.append(tabBar([['pasang', 'Soket'], ['gabung', 'Gabung']], gemTab, (tab) => { gemTab = tab; redraw(); }));
     panel.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
+  } else if (npc.role === 'board') {
+    const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
+    panel.append(tabBar([['tugas', 'Tugas'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
+    panel.append(boardTab === 'tugas' ? bountyList(char, ctx) : markShop(char, ctx.onMarkBuy));
   } else if (npc.role === 'gate') {
     const open = unlockedDungeons(char);
     if (!open.some((d) => d.id === gateDungeon)) gateDungeon = open[open.length - 1].id;

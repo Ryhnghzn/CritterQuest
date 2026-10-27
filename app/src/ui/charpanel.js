@@ -9,10 +9,11 @@ import { expToNext, finalStats, freePoints, allocate } from '../meta/character.j
 import { dollGear } from '../meta/gear.js';
 import { renderGearTab } from './gear.js';
 import { renderSkillTab } from './skilltab.js';
+import { renderCollectionTab } from './collection.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { tr, t, num } from '../i18n.js';
 
-let tab = 'status'; // 'status' | 'gear', kept between openings
+let tab = 'status'; // 'status' | 'skill' | 'gear' | 'coll', kept between openings
 
 const STAT_ROWS = [
   ['maxHp', 'HP maks', (v) => Math.round(v)],
@@ -115,7 +116,7 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   const close = button(tr('Tutup'), 'btn ghost', onClose);
   close.id = 'char-close';
   const tabs = el('div', 'tabs');
-  for (const [id, label] of [['status', tr('Status')], ['skill', tr('Skill')], ['gear', t('Gear ({n})', { n: char.inventory.length })]]) {
+  for (const [id, label] of [['status', tr('Status')], ['skill', tr('Skill')], ['gear', t('Gear ({n})', { n: char.inventory.length })], ['coll', tr('Koleksi')]]) {
     const b = button(label, `tab${tab === id ? ' on' : ''}`, () => { tab = id; redraw(); });
     b.dataset.tab = id;
     tabs.append(b);
@@ -123,6 +124,7 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   let body = el('div', 'cpbody');
   if (tab === 'gear') body.append(renderGearTab(char, gear, redraw));
   else if (tab === 'skill') body = renderSkillTab(char, skill, redraw);
+  else if (tab === 'coll') body = renderCollectionTab(char);
   else body.append(attrs, panel);
   box.append(head, tabs, body, close);
 }

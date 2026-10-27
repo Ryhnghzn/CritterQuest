@@ -96,4 +96,13 @@ export default {
   '{n} gear dibuat': '{n} gear created',
   'Semua item unik masuk tas': 'All unique items added to the bag',
   'Tas dikosongkan': 'Bag emptied',
+  'Tugas selesai! +{g} koin, +{e} EXP, +{d} {dust}, +{m} Lencana.': 'Bounty complete! +{g} coins, +{e} EXP, +{d} {dust}, +{m} Badges.',
+  'Naik level!': 'Level up!',
+  'Lencana bertambah': 'Badges added',
+  'Semua tugas selesai': 'All bounties finished',
+  'Tugas baru ditempel di papan.': 'A new bounty is pinned to the board.',
+  'Kau mendapat {gem}!': 'You got {gem}!',
+  'Bahan masuk ke tasmu.': 'Materials added to your bag.',
+  'Lencanamu belum cukup.': 'Not enough Badges.',
+  'Tugas itu belum selesai.': "That bounty isn't finished yet.",
 };

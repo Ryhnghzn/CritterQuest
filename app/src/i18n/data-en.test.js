@@ -5,6 +5,7 @@ import { setLang } from '../i18n.js';
 import { localizeData } from './data-en.js';
 import { CLASSES } from '../data/classes.js';
 import { RARITIES, SLOTS, VARIANTS, BONUSES, EFFECTS, UNIQUES, CHESTS } from '../data/items.js';
+import { MARK_SHOP } from '../data/bounties.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { POTIONS } from '../data/potions.js';
@@ -29,6 +30,7 @@ function strings() {
   for (const [k, list] of Object.entries(VARIANTS)) if (k !== 'weapon') out.push(...list);
   for (const b of Object.values(BONUSES)) out.push(b.suffix);
   out.push(...Object.values(EFFECTS).map((e) => e.desc), ...UNIQUES.map((u) => u.name), ...Object.values(CHESTS).map((c) => c.name));
+  for (const o of MARK_SHOP) out.push(o.name, o.desc);
   out.push(...Object.values(ENEMIES).map((e) => e.name).filter((n) => n !== 'Golem'));
   for (const d of DUNGEONS) out.push(d.name, d.short);
   for (const p of Object.values(POTIONS)) out.push(p.name, p.desc);

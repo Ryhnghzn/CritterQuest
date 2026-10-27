@@ -144,6 +144,24 @@ describe('save versi 2', () => {
     expect(r.data.talents.might).toBe(0);
   });
 
+  it('migrasi v9 → v10: papan tugas awal, Lencana nol, bestiari kosong, kodeks dari tas', () => {
+    const v9 = { ...fresh(), version: 9, inventory: [item({ id: 'u1', rarity: 4, unique: 'fajar', sockets: [null, null] }), item()] };
+    delete v9.bounties; delete v9.marks;
+    v9.records = { ...v9.records }; delete v9.records.bestiary; delete v9.records.uniques;
+    const r = readSlot(v9);
+    expect(r.status).toBe('ok');
+    expect(r.data.bounties.map((b) => b.kind)).toEqual(['kill', 'elite', 'floors']);
+    expect(r.data.marks).toBe(0);
+    expect(r.data.records.bestiary.slink).toBe(0);
+    expect(r.data.records.uniques).toEqual(['fajar']);
+  });
+
+  it('menolak tugas yang progresnya melebihi target', () => {
+    const c = fresh();
+    c.bounties[0].have = 99;
+    expect(validateSlot(c)).toContain('bounties');
+  });
+
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {
     const v1 = { ...fresh(), version: 1, records: 'hilang' };
     delete v1.hp; delete v1.potions;

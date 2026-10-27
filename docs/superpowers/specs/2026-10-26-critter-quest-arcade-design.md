@@ -635,3 +635,30 @@ Atas permintaan pemilik: skill maksimal 4 terpasang + 1 ultimate; teks game teta
 - Di bahasa Inggris, akhiran bonus di nama item ditaruh di depan (misalnya "Swift Iron Sword").
 - Modul `i18n` bawaannya bahasa Indonesia, sehingga tes Vitest tetap memakai teks Indonesia. Tes `data-en.test.js` memeriksa bahwa semua data punya terjemahan.
 - **Pengaturan versi 3:** menambah `lang` (`'en'` | `'id'`). `migrate()` v2 → v3 mengisi `'en'`. Save karakter tidak berubah.
+
+## 24. Papan Tugas, Lencana & Koleksi (langkah 9C, 2026-10-27)
+
+Tujuan: target jangka pendek di setiap perjalanan dan bonus permanen kecil untuk grinding jangka panjang. Angka ada di `data/bounties.js` dan `data/collection.js`.
+
+- **Papan Tugas** (Kapten Vera di Balai Petualang): selalu ada **3 tugas**. Progres dihitung dari setiap perjalanan, termasuk perjalanan yang berakhir mati atau menyerah. Jenis tugas:
+  - **Buru**: kalahkan N musuh jenis tertentu yang muncul di dungeon yang sudah terbuka.
+  - **Elite**: kalahkan N musuh elite.
+  - **Bos**: kalahkan bos dungeon tertentu.
+  - **Lantai**: bersihkan N lantai di dungeon tertentu.
+  - **Koin**: kumpulkan N koin di dungeon.
+- **Hadiah tugas:** koin dan EXP (bertambah dengan level), Debu Rune, dan **Lencana**. Tugas yang selesai diklaim di papan, lalu langsung diganti tugas baru. Tugas boleh diganti dengan biaya `15 × level` koin.
+- **Toko Lencana** di tempat yang sama:
+  - Peti Lencana: 1 gear **Epik** seharga 12 Lencana;
+  - 5 Kristal Arkana seharga 4 Lencana;
+  - 1 Inti Kegelapan seharga 5 Lencana;
+  - 1 permata acak tingkat Biasa seharga 6 Lencana;
+  - 20 Debu Rune seharga 2 Lencana.
+- **Koleksi** (tab baru di panel Karakter):
+  - **Bestiari**: jumlah kill per jenis musuh. Tonggak 25 / 100 / 300 / 1000 kill (bos: 1 / 5 / 15 / 40) masing-masing memberi bonus stat permanen yang khas untuk jenis musuh itu, misalnya Lendir menambah HP maks dan Kura Baja menambah DEF.
+  - **Kodeks Unik**: setiap item Legendaris atau Mitos yang pernah ditemukan tercatat. Tiap item memberi Koin & EXP +1% di dungeon.
+- **Save versi 10:**
+  - `bounties` (3 tugas: `{ kind, target, need, have }`);
+  - `marks` (Lencana);
+  - `records.bestiary` (kill per jenis musuh);
+  - `records.uniques` (id unik yang ditemukan).
+  - `migrate()` v9 → v10 mengisi 3 tugas awal, nol Lencana, bestiari kosong, dan kodeks dari item unik yang ada di tas.

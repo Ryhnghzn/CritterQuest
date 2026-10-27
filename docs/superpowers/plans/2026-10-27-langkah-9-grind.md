@@ -23,6 +23,11 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Tombol: skill 1–4, ultimate 5, ramuan Z X C V, bicara E, Karakter I; HUD & tombol HP
 - [x] Verifikasi: tes, build, screenshot PC & HP
 
-## 9C — Papan Tugas & koleksi
+## 9C — Papan Tugas & koleksi (§24)
+- [x] `data/bounties.js`, `data/collection.js`; `meta/bounties.js` (gulir, progres, klaim, ganti, toko Lencana), `meta/collection.js` (bonus bestiari, kodeks) — tes
+- [x] Save v10: `bounties`, `marks`, `records.bestiary`, `records.uniques` — tes
+- [x] Run mencatat kill per jenis, elite, lantai bersih; `applyTrip` memajukan tugas & koleksi — tes
+- [x] Kapten Vera: tab Tugas / Lencana; tab Koleksi di panel Karakter; hasil perjalanan menampilkan progres tugas; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
 ## 9D — Open world (biome, kota lain, harta karun & mini bos, portal bos)
 ## 9E — Tingkat kesulitan & Celah tanpa batas

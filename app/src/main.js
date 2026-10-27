@@ -18,8 +18,10 @@ import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
+import { codexFx } from './meta/collection.js';
+import { claimBounty, rerollBounty, buyWithMarks } from './meta/bounties.js';
 import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf } from './meta/talents.js';
-import { MATS } from './data/forge.js';
+import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
 import { itemName, makeItem, statText } from './meta/itemgen.js';
@@ -244,6 +246,14 @@ function openNpc(npc, message = null) {
       } else openNpc(townNpc);
     },
     onHaircut: (look) => serve((c, now) => changeLook(c, look, now), tr('Nah, rapi sekali! Cocok untukmu.')),
+    onBountyClaim: (i) => serve((c, now) => claimBounty(c, i, Math.random, now), (r) => ({
+      text: t('Tugas selesai! +{g} koin, +{e} EXP, +{d} {dust}, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, d: r.reward.dust, dust: MATS.dust.name, m: r.reward.marks })
+        + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a',
+    })),
+    onBountyReroll: (i) => serve((c, now) => rerollBounty(c, i, Math.random, now), tr('Tugas baru ditempel di papan.')),
+    onMarkBuy: (id) => serve((c, now) => buyWithMarks(c, id, Math.random, now), (r) => (r.item
+      ? { text: t('Kau mendapat {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color }
+      : r.gem ? t('Kau mendapat {gem}!', { gem: `${GEMS[r.gem.gem].name} ${GEM_TIER_NAMES[r.gem.tier - 1]}` }) : tr('Bahan masuk ke tasmu.'))),
     onEnter: enterDungeon,
     onClose: closeTownOverlay,
   });
@@ -256,6 +266,7 @@ const REFUSE = {
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
+  marks: 'Lencanamu belum cukup.', notdone: 'Tugas itu belum selesai.',
   mats: 'Bahanmu belum cukup.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
@@ -402,7 +413,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(gearEffects(current), talentFx(current)), skills: current.skills, ult: ultimateOf(current),
+    effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
   });
   tripAttrs = {};
   wornSkills(current).forEach((sk, i) => {
@@ -428,7 +439,7 @@ async function endRun(died) {
   stopMusic();
   const r = game.result();
   const trip = {
-    exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills,
+    exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills, killsBy: r.killsBy, elites: r.elites, floorsCleared: r.floorsCleared,
     dungeon: r.dungeon, floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
     attrs: tripAttrs, items: r.items, mats: r.mats, gems: r.gems,
   };
@@ -528,6 +539,8 @@ const cheatActions = {
   hours: (n) => { worldClock += n * 60; toast(t('+{n} jam', { n })); },
   mats: () => cheatChar((c) => { c.mats.dust += 500; c.mats.crystal += 100; c.mats.core += 20; }, 'Material bertambah'),
   gems: () => cheatChar((c) => { for (const g in c.gems) c.gems[g][0] += 6; }, 'Permata bertambah'),
+  marks: () => cheatChar((c) => { c.marks += 10; }, 'Lencana bertambah'),
+  bounties: () => cheatChar((c) => { for (const bt of c.bounties) bt.have = bt.need; }, 'Semua tugas selesai'),
   unlockFloors: () => cheatChar((c) => {
     for (const d of DUNGEONS) { const r = c.records.dungeons[d.id]; r.bestFloor = 5; r.clears = Math.max(1, r.clears); }
   }, 'Semua dungeon & lantai terbuka di gerbang'),

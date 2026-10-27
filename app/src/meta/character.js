@@ -5,7 +5,9 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshTalents } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshTalents, freshBounties, freshBestiary } from './schema.js';
+import { collectionStats, addKills, discover } from './collection.js';
+import { advanceBounties, isDone } from './bounties.js';
 import { TALENTS } from '../data/talents.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
@@ -30,6 +32,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     mats: freshMats(), gems: freshGems(),
     skills: CLASSES[classId] ? [...CLASSES[classId].skills.slice(0, 2).map((s) => s.id), null, null] : [null, null, null, null],
     talents: freshTalents(),
+    bounties: freshBounties(), marks: 0,
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),
@@ -37,7 +40,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
     inventory: [],
     equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
-    records: { trips: 0, kills: 0, bossKills: 0, dungeons: freshDungeonRecords() },
+    records: { trips: 0, kills: 0, bossKills: 0, dungeons: freshDungeonRecords(), bestiary: freshBestiary(), uniques: [] },
   };
   const err = validateSlot(c);
   if (err.length) throw new Error(t('karakter tidak sah: {list}', { list: err.join(', ') }));
@@ -84,6 +87,7 @@ export function finalStats(char) {
     for (const [stat, v] of Object.entries(a.per)) s[stat] += v * n;
   }
   for (const [stat, v] of Object.entries(gearStats(char))) s[stat] += v;
+  for (const [stat, v] of Object.entries(collectionStats(char))) s[stat] += v; // bestiary (spec §24)
   for (const t of TALENTS) { // talents (spec §21)
     const n = char.talents?.[t.id] || 0;
     for (const [stat, v] of Object.entries(t.pct || {})) s[stat] *= 1 + v * n;
@@ -147,13 +151,16 @@ export function usePotion(char, id, now) {
 }
 
 // End of a dungeon trip (spec §13.4).
-// trip: { dungeon, exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs?, items? }
+// trip: { dungeon, exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs?, items?,
+//         killsBy?, elites?, floorsCleared? } — the last three (with gold & bossKills) drive
+// bounties and the bestiary (spec §24); every unique picked up enters the codex.
 // attrs: points spent during the trip (on levels gained in it). items: gear picked
 // up — after a death each piece survives with DEATH.gearKeepChance (rng decides);
 // what does not fit in the bag is left behind.
 // mats / gems: forge materials & gems found — a death keeps half the materials
 // (rounded down) and each gem with DEATH.gearKeepChance.
-// Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost }.
+// Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost,
+//           bountiesDone (newly finished), uniquesFound }.
 export function applyTrip(char, trip, now, rng = Math.random) {
   const leveled = addExp(char, trip.exp);
   const levelsGained = leveled.levelsGained;
@@ -169,6 +176,11 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   r.trips += 1;
   r.kills += trip.kills;
   r.bossKills += trip.bossKills;
+  addKills(c, trip.killsBy);
+  const uniquesFound = discover(c, trip.items);
+  const before = c.bounties.filter(isDone).length;
+  c.bounties = advanceBounties(c.bounties, trip);
+  const bountiesDone = c.bounties.filter(isDone).length - before;
   const itemsKept = [], itemsLost = [], itemsLeft = [];
   const ids = new Set(c.inventory.map((it) => it.id));
   for (const item of trip.items || []) {
@@ -192,7 +204,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
     c.gems[gm.gem][gm.tier - 1] += 1;
   }
   c.updatedAt = now;
-  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost };
+  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound };
 }
 
 // Dungeons open one after another: the next once the previous has been cleared (spec §18.3).

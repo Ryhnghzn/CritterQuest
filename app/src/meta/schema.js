@@ -11,8 +11,10 @@ import { DUNGEON_IDS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js';
 import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
+import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
+import { BESTIARY_IDS } from '../data/collection.js';
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -66,8 +68,19 @@ export const MIGRATIONS = {
   }),
   // v9 (spec §22): four skill slots (keys 1–4); empty slots are null.
   8: (d) => ({ ...d, version: 9, skills: Array.isArray(d.skills) ? [...d.skills, null, null] : d.skills }),
+  // v10 (spec §24): bounty board, Lencana, bestiary & unique codex (seeded from the bag).
+  9: (d) => {
+    const out = { ...d, version: 10, bounties: freshBounties(), marks: 0 };
+    if (isObj(d.records)) {
+      const uniques = Array.isArray(d.inventory) ? [...new Set(d.inventory.map((it) => it?.unique).filter(Boolean))] : [];
+      out.records = { ...d.records, bestiary: freshBestiary(), uniques };
+    }
+    return out;
+  },
 };
 
+export const freshBounties = () => structuredClone(STARTER_BOUNTIES);
+export const freshBestiary = () => Object.fromEntries(BESTIARY_IDS.map((id) => [id, 0]));
 export const freshTalents = () => Object.fromEntries(TALENT_IDS.map((id) => [id, 0]));
 export const freshMats = () => Object.fromEntries(MAT_IDS.map((id) => [id, 0]));
 export const freshGems = () => Object.fromEntries(GEM_IDS.map((id) => [id, Array(GEM_TIERS).fill(0)]));
@@ -142,6 +155,13 @@ export function validateSlot(d) {
   if (talentsOk && isInt(d.level, 1)) need(Object.values(d.talents).reduce((a, b) => a + b, 0) <= Math.floor(d.level / TALENT_EVERY), 'talents: poin melebihi level');
   need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
+  need(isInt(d.marks, 0), 'marks');
+  need(Array.isArray(d.bounties) && d.bounties.length === BOUNTY_COUNT && d.bounties.every((b) => isObj(b)
+    && Object.hasOwn(BOUNTY_KINDS, b.kind) && (b.target === null || typeof b.target === 'string')
+    && isInt(b.need, 1) && isInt(b.have, 0, b.need)), 'bounties');
+  need(isObj(d.records) && isObj(d.records.bestiary) && BESTIARY_IDS.every((id) => isInt(d.records.bestiary[id], 0)), 'records.bestiary');
+  need(isObj(d.records) && Array.isArray(d.records.uniques) && d.records.uniques.every((id) => UNIQUE_IDS.includes(id))
+    && new Set(d.records.uniques).size === d.records.uniques.length, 'records.uniques');
   need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))
     && Object.keys(d.potions).length === POTION_IDS.length, 'potions');
   need(Array.isArray(d.belt) && d.belt.length === BELT_SIZE

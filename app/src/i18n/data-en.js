@@ -16,6 +16,7 @@ import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
 import { TOWN, INTERIORS } from '../data/town.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
+import { MARK_SHOP } from '../data/bounties.js';
 
 export const CLASS_EN = {
   'Tebal darah, tebasan jarak dekat.': 'Thick-blooded, cleaves up close.',
@@ -136,6 +137,14 @@ const UNIQUE_EN = {
 };
 const CHEST_EN = { 'Peti Gear': 'Gear Chest', 'Peti Agung': 'Grand Chest' };
 
+const MARK_EN = {
+  'Peti Lencana': ['Badge Chest', '1 Epic gear piece'],
+  'Kristal Arkana ×5': ['Arcane Crystal ×5', 'Forging material for +5 and up'],
+  'Inti Kegelapan': ['Dark Core', 'Forging material for +10 and up'],
+  'Permata acak': ['Random gem', '1 gem of Common tier'],
+  'Debu Rune ×20': ['Rune Dust ×20', 'Forging material'],
+};
+
 const ENEMY_EN = {
   Lendir: 'Ooze', Kelelawar: 'Bat', Golem: 'Golem', 'Lendir Kecil': 'Oozeling', 'Katak Ludah': 'Spitting Toad', 'Babi Batu': 'Stone Boar',
   'Dukun Tengkorak': 'Skull Shaman', 'Peri Lumut': 'Moss Wisp', 'Jamur Bom': 'Bomb Shroom', 'Kura Baja': 'Iron Tortoise',
@@ -238,6 +247,7 @@ export function localizeData() {
   for (const [id, e] of Object.entries(EFFECTS)) if (EFFECT_EN[id]) e.desc = EFFECT_EN[id];
   for (const u of UNIQUES) swap(u, 'name', UNIQUE_EN);
   for (const c of Object.values(CHESTS)) swap(c, 'name', CHEST_EN);
+  for (const o of MARK_SHOP) { const en = MARK_EN[o.name]; if (en) [o.name, o.desc] = en; }
   for (const e of Object.values(ENEMIES)) swap(e, 'name', ENEMY_EN);
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }
   for (const p of Object.values(POTIONS)) { const en = POTION_EN[p.name]; if (en) [p.name, p.desc] = en; }
