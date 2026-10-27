@@ -8,8 +8,9 @@ import { POTION_IDS, POTION_MAX, BELT_SIZE, DEFAULT_BELT } from '../data/potions
 import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
 import { DUNGEON_IDS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
+import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -48,7 +49,17 @@ export const MIGRATIONS = {
   },
   // v6 (spec §18.4): the in-game clock is saved.
   5: (d) => ({ ...d, version: 6, clock: START_TIME }),
+  // v7 (spec §20): materials & gems in the bag; items get a forge level and gem sockets.
+  6: (d) => ({
+    ...d, version: 7, mats: freshMats(), gems: freshGems(),
+    inventory: Array.isArray(d.inventory)
+      ? d.inventory.map((it) => (isObj(it) ? { ...it, plus: 0, sockets: Array(SOCKETS[it.rarity] ?? 0).fill(null) } : it))
+      : d.inventory,
+  }),
 };
+
+export const freshMats = () => Object.fromEntries(MAT_IDS.map((id) => [id, 0]));
+export const freshGems = () => Object.fromEntries(GEM_IDS.map((id) => [id, Array(GEM_TIERS).fill(0)]));
 
 export const freshDungeonRecords = () => Object.fromEntries(DUNGEON_IDS.map((id) => [id, { bestFloor: 0, clears: 0 }]));
 
@@ -88,7 +99,10 @@ function validateItem(it) {
     && isObj(it.base) && Object.entries(it.base).every(([k, v]) => BASE_STATS.includes(k) && isNum(v))
     && Array.isArray(it.bonuses)
     && it.bonuses.every((b) => isObj(b) && BONUS_IDS.includes(b.stat) && isNum(b.value))
-    && (it.unique === undefined || it.unique === null || UNIQUE_IDS.includes(it.unique));
+    && (it.unique === undefined || it.unique === null || UNIQUE_IDS.includes(it.unique))
+    && isInt(it.plus, 0, ENHANCE.max)
+    && Array.isArray(it.sockets) && it.sockets.length === SOCKETS[it.rarity]
+    && it.sockets.every((s) => s === null || (isObj(s) && GEM_IDS.includes(s.gem) && isInt(s.tier, 1, GEM_TIERS)));
 }
 
 // Returns a list of problems; empty means the slot is valid for SAVE_VERSION.
@@ -108,6 +122,8 @@ export function validateSlot(d) {
   need(isInt(d.exp, 0), 'exp');
   need(isInt(d.gold, 0), 'gold');
   need(isInt(d.clock, 0), 'clock');
+  need(isObj(d.mats) && MAT_IDS.every((k) => isInt(d.mats[k], 0)), 'mats');
+  need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
   need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))
     && Object.keys(d.potions).length === POTION_IDS.length, 'potions');

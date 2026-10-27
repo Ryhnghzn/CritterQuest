@@ -133,9 +133,11 @@ export const INTERIORS = {
       { kind: 'barrel', x: 30, y: 250, w: 22, h: 26, solid: true, water: true },
       { kind: 'crate', x: 400, y: 262, w: 30, h: 28, solid: true },
       { kind: 'grind', x: 300, y: 214, w: 36, h: 26, solid: true },
+      { kind: 'counter', x: 320, y: 132, w: 90, h: 26, solid: true, cloth: '#5a3a7a' },
     ],
     npcs: [
       npc('gear', 'gear', 'Pandai Brom', 230, 148, { hair: 0, hairColor: 3 }, ['#7a6f66', '#57504a']),
+      npc('jeweler', 'jeweler', 'Sari', 360, 120, { hair: 2, hairColor: 5 }, ['#5a3a7a', '#3a2450']),
       npc('tika', 'talk', 'Tika', 120, 150, { hair: 3, hairColor: 4 }, ['#a0522d', '#6e3a1f'], { title: 'Murid Pandai Besi', lines: [
         'Gear rongsokan dari dungeon bisa dijual ke Guru Brom. Lumayan buat beli ramuan.',
         'Gear dari dungeon dipasang lewat panel Karakter, tab Gear.',

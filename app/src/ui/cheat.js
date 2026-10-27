@@ -29,6 +29,7 @@ export function renderCheat(box, ctx, actions, redraw) {
       row(b('+1.000 koin', () => actions.gold(1000)), b('+10.000 koin', () => actions.gold(10000))),
       row(b('+1 level', () => actions.level(1)), b('+5 level', () => actions.level(5)), b('Level 50', () => actions.level(99))),
       row(b('Ramuan penuh', actions.potions), b('HP penuh', actions.heal), b('Reset poin', actions.resetPoints)),
+      row(b('+Material', actions.mats), b('+Permata', actions.gems)),
       row(b('Buka semua dungeon', actions.unlockFloors), b('+3 jam', () => actions.hours(3)), b('+12 jam', () => actions.hours(12))));
   }
 

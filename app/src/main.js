@@ -15,9 +15,11 @@ import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
+import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
+import { MATS } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
-import { itemName, makeItem } from './meta/itemgen.js';
+import { itemName, makeItem, statText } from './meta/itemgen.js';
 import { renderCheat, CHEAT_ON } from './ui/cheat.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
@@ -205,6 +207,14 @@ function openNpc(npc, message = null) {
       text: `Kau mendapat ${itemName(r.item)} (${RARITIES[r.item.rarity].name})!`, color: RARITIES[r.item.rarity].color,
     })),
     onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => `Terjual! +${r.gold} koin.`),
+    onEnhance: (id) => serve((c, now) => enhance(c, id, now), (r) => (r.success
+      ? { text: `Berhasil! Sekarang +${r.plus}.`, color: '#e6c27a' }
+      : { text: `Gagal… ${r.plus >= 10 || r.plus === 9 ? `turun ke +${r.plus}.` : 'tingkatnya tetap.'}`, color: '#e0526a' })),
+    onReroll: (id, line) => serve((c, now) => reroll(c, id, line, now), (r) => `Bonus baru: ${statText(r.bonus.stat, r.bonus.value)}`),
+    onSalvage: (ids) => serve((c, now) => salvage(c, ids, now), (r) => `Diurai! ${Object.entries(r.mats).filter(([, n]) => n).map(([m, n]) => `+${n} ${MATS[m].name}`).join(', ')}${r.gems.length ? ` + ${r.gems.length} permata` : ''}`),
+    onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), 'Permata terpasang. Berkilau, bukan?'),
+    onUnsocket: (id, slot) => serve((c, now) => unsocket(c, id, slot, now), 'Permata dilepas dan kembali ke tasmu.'),
+    onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), 'Tiga menjadi satu — permata naik tingkat!'),
     onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), `${UPGRADES[id].name} selesai. Kau makin kuat!`),
     onRespec: async () => {
       if (await confirmDialog(`Atur ulang semua poin atribut seharga ${respecPrice(current)} koin?`, 'Atur ulang')) {
@@ -223,7 +233,8 @@ const REFUSE = {
   full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' },
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
-  max: 'Latihan itu sudah tuntas.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
+  max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
+  mats: 'Bahanmu belum cukup.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
 // Belt slot cycles: empty → each potion type in turn → empty.
@@ -387,7 +398,7 @@ async function endRun(died) {
   const trip = {
     exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills,
     dungeon: r.dungeon, floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
-    attrs: tripAttrs, items: r.items,
+    attrs: tripAttrs, items: r.items, mats: r.mats, gems: r.gems,
   };
   const newRecord = trip.floor > current.records.dungeons[r.dungeon].bestFloor;
   const applied = applyTrip(current, trip, Date.now());
@@ -483,6 +494,8 @@ const cheatActions = {
   heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
   resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
   hours: (n) => { worldClock += n * 60; toast(`+${n} jam`); },
+  mats: () => cheatChar((c) => { c.mats.dust += 500; c.mats.crystal += 100; c.mats.core += 20; }, 'Material bertambah'),
+  gems: () => cheatChar((c) => { for (const g in c.gems) c.gems[g][0] += 6; }, 'Permata bertambah'),
   unlockFloors: () => cheatChar((c) => {
     for (const d of DUNGEONS) { const r = c.records.dungeons[d.id]; r.bestFloor = 5; r.clears = Math.max(1, r.clears); }
   }, 'Semua dungeon & lantai terbuka di gerbang'),

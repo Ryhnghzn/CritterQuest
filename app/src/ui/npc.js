@@ -13,20 +13,24 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
+import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
 let newLook = null;     // Tukang Cukur: style being tried on
 let gateDungeon = null; // Penjaga gerbang: dungeon picked
+let smithTab = 'peti';  // Pandai Brom: peti | jual | tempa | urai
+let gemTab = 'pasang';  // Tukang Permata: pasang | gabung
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
   potion: 'Hehehe… ramuan segar dari kuali. Mau yang mana?',
-  gear: 'Tungku sudah panas! Mau beli peti, atau menjual barang rongsokan dari dungeon?',
+  gear: 'Tungku sudah panas! Beli peti, jual rongsokan, tempa gear-mu, atau urai jadi bahan.',
+  jeweler: 'Permata yang tepat di soket yang tepat… itu seni, Sayang.',
   gate: 'Gerbang ini membuka jalan ke semua dungeon yang sudah kau taklukkan. Mau ke mana?',
   trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
 };
-const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', gate: 'Gerbang Dungeon', trainer: 'Pelatih', barber: 'Tukang Cukur', talk: 'Warga' };
+const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Gerbang Dungeon', trainer: 'Pelatih', barber: 'Tukang Cukur', talk: 'Warga' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
@@ -63,7 +67,16 @@ export function renderNpc(box, npc, ctx) {
   } else if (npc.role === 'barber') {
     panel.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gear') {
-    panel.append(chestCards(char, ctx.onBuyChest), sellPanel(char, ctx.onSell, () => renderNpc(box, npc, { ...ctx, message: null })));
+    const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
+    panel.append(tabBar([['peti', 'Peti'], ['jual', 'Jual'], ['tempa', 'Tempa'], ['urai', 'Urai']], smithTab, (t) => { smithTab = t; redraw(); }));
+    if (smithTab === 'peti') panel.append(chestCards(char, ctx.onBuyChest));
+    else if (smithTab === 'jual') panel.append(sellPanel(char, ctx.onSell, redraw));
+    else if (smithTab === 'tempa') panel.append(forgePanel(char, ctx, redraw));
+    else panel.append(salvagePanel(char, ctx.onSalvage, redraw));
+  } else if (npc.role === 'jeweler') {
+    const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
+    panel.append(tabBar([['pasang', 'Pasang'], ['gabung', 'Gabung']], gemTab, (t) => { gemTab = t; redraw(); }));
+    panel.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
   } else if (npc.role === 'gate') {
     const open = unlockedDungeons(char);
     if (!open.some((d) => d.id === gateDungeon)) gateDungeon = open[open.length - 1].id;
@@ -271,4 +284,14 @@ function dungeonPicker(char, open, redraw) {
     row.append(card);
   });
   return row;
+}
+
+function tabBar(tabs, current, onPick) {
+  const bar = el('div', 'tabs');
+  for (const [id, label] of tabs) {
+    const b = button(label, `tab${id === current ? ' on' : ''}`, () => onPick(id));
+    b.dataset.tab = id;
+    bar.append(b);
+  }
+  return bar;
 }

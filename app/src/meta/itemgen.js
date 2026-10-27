@@ -4,6 +4,7 @@ import {
   RARITIES, LEGENDARY, SLOTS, SLOT_IDS, TIER_LEVELS, VARIANTS, LEVEL_GROWTH, BONUSES, BONUS_IDS,
   ROLL_MIN, UNIQUES, EFFECTS, DROP_WEIGHTS, LUK_RARITY, DROP,
 } from '../data/items.js';
+import { SOCKETS, ENHANCE, GEMS } from '../data/forge.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
 
 const ROUND = { atk: 0, maxHp: 0, moveSpd: 1, def: 1, crit: 1, cdr: 1, magnet: 0, atkSpd: 3, critDmg: 3 };
@@ -61,6 +62,7 @@ export function makeItem({ slot, classId, rarity, itemLevel, unique = null }, rn
   return {
     id: rollId(rng), slot, classId: slot === 'weapon' ? classId : null,
     variant: tierFor(itemLevel), rarity, itemLevel, base, bonuses, unique,
+    plus: 0, sockets: Array(SOCKETS[rarity]).fill(null), // forge level & gem sockets (spec §20)
   };
 }
 
@@ -82,15 +84,19 @@ export function dropItem({ source, classId, charLevel, floor, luk = 0, level = n
 
 export function itemName(item) {
   const u = uniqueOf(item);
-  if (u) return u.name;
   const names = item.slot === 'weapon' ? VARIANTS.weapon[item.classId] : VARIANTS[item.slot];
   const first = item.bonuses[0];
-  return first ? `${names[item.variant]} ${BONUSES[first.stat].suffix}` : names[item.variant];
+  const plus = item.plus ? `+${item.plus} ` : '';
+  return plus + (u ? u.name : first ? `${names[item.variant]} ${BONUSES[first.stat].suffix}` : names[item.variant]);
 }
 
-// Every stat the item adds: base + bonuses, summed per stat.
+// Every stat the item adds: base (× forge level) + bonuses + socketed gems, summed per stat.
 export function itemStats(item) {
-  const s = { ...item.base };
+  const s = {};
+  const k = 1 + ENHANCE.perPlus * (item.plus || 0);
+  // forged bases keep one decimal so every +1 shows, even on low-level gear
+  for (const [stat, v] of Object.entries(item.base)) s[stat] = item.plus ? Math.round(v * k * 10) / 10 : round(stat, v);
+  for (const g of item.sockets || []) if (g) { const def = GEMS[g.gem]; s[def.stat] = round(def.stat, (s[def.stat] || 0) + def.values[g.tier - 1]); }
   for (const b of item.bonuses) s[b.stat] = round(b.stat, (s[b.stat] || 0) + b.value);
   return s;
 }

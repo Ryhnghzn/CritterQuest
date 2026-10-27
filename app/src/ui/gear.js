@@ -4,6 +4,7 @@
 import { el, button } from './screens.js';
 import { iconCanvas } from '../art/sprites.js';
 import { gearCanvas } from '../art/gear.js';
+import { GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { RARITIES, SLOTS, BONUSES } from '../data/items.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { EQUIP_SLOTS } from '../meta/schema.js';
@@ -61,6 +62,7 @@ function tile(it, onClick, slot = null) {
   if (it) {
     t.style.setProperty('--c', RARITIES[it.rarity].color);
     t.append(gearCanvas(it, 28), el('span', 'ilv', String(it.itemLevel)));
+    if (it.plus) t.append(el('span', 'iplus', `+${it.plus}`));
     t.title = itemName(it);
     t.dataset.item = it.id;
   } else {
@@ -92,6 +94,9 @@ function detail(box, char, it, opts) {
   const lines = el('div', 'gdlines');
   for (const [k, v] of Object.entries(it.base)) lines.append(el('div', 'base', statText(k, v)));
   for (const b of it.bonuses) lines.append(el('div', 'bonus', statText(b.stat, b.value)));
+  it.sockets.forEach((s) => lines.append(s
+    ? el('div', 'gem', `◆ ${GEMS[s.gem].name} ${GEM_TIER_NAMES[s.tier - 1]}: ${statText(GEMS[s.gem].stat, GEMS[s.gem].values[s.tier - 1])}`)
+    : el('div', 'gem empty', '◇ Soket kosong')));
   const fx = effectText(it);
   if (fx) lines.append(el('div', 'fx', `★ ${fx}`));
   box.append(lines);

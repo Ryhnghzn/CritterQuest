@@ -583,3 +583,13 @@ Atas permintaan pemilik ("terlalu ke anak-anakan"). Mengalahkan §8 untuk gaya g
 - **8B Aura** (`art/aura.js`): lingkaran rune di kaki tiap 10 level (emas di level 50); aura tubuh per efek item unik (sayap api Phoenix, kabut merah, duri, bara, daun, kilau koin/EXP, petir, angin, mata merah, perisai, amuk); gear Epik+ berpendar di badan; partikel untuk Legendaris/Mitos; ayunan & proyektil meninggalkan jejak warna rarity senjata. Di kota dan dungeon.
 - **8C Monster:** semua monster & bos digambar ulang dengan mata sipit menyala, taring/tanduk/duri, warna gelap; outline bersama `#16121c`.
 - **8D UI:** font Cinzel (judul, tombol) + Barlow (teks, angka di kanvas); palet arang–perunggu–emas, sudut 3–6 px, tombol berbingkai logam, panel berbingkai ganda, bar HP merah tua / energi biru / EXP emas.
+
+## 20. Tempa, Material & Permata (langkah 9A, 2026-10-27)
+
+Tujuan: setiap drop berguna dan ada alasan grinding jangka panjang. Angka di `data/forge.js`.
+
+- **Material:** Debu Rune, Kristal Arkana, Inti Kegelapan. Didapat dari **mengurai** gear (Biasa 2 debu … Mitos 15 debu + 6 kristal + 3 inti; Epik+ 35% peluang permata Retak), **tiap lantai bersih** (3 debu × lantai), **elite** (50%: 1–3 debu), **bos** (3 kristal + 1 inti + 1 permata Retak acak). Mati: material separuh, tiap permata 50% hilang.
+- **Tempa +0 … +15** (Pandai Brom): stat dasar × (1 + 0,1 × tingkat). Biaya langkah +p: koin `10 × level item × (p+1)`, debu `2 + 2p`, kristal `p − 4` (mulai +5), inti 1 (mulai +10). Peluang berhasil 100% sampai +5, lalu 90 / 80 / 70 / 60 / 50 / 40 / 35 / 30 / 25 / 20%. Gagal di bawah +10: tetap; dari +10: turun 1. Nama item diberi awalan "+N".
+- **Asah ulang:** satu baris bonus diganti stat lain (yang belum ada di item) dengan nilai acak baru; 2 kristal + `5 × level item` koin.
+- **Permata** (Tukang Permata Sari, di Pandai Besi): Rubi (ATK), Zamrud (HP maks), Berlian (DEF), Topas (Kritis), Kecubung (Dmg kritis), Safir (CDR); tingkat Retak / Biasa / Jernih / Sempurna / Agung. Soket: Langka 1, Epik 1, Legendaris 2, Mitos 2. Pasang gratis; lepas 30 koin (permata kembali); gabung 3 → 1 tingkat lebih tinggi seharga `40 × tingkat`. Mengurai gear mengembalikan permata di soketnya.
+- **Save versi 7:** `mats { dust, crystal, core }`, `gems { jenis: [jumlah per tingkat 1–5] }`; item mendapat `plus` (0–15) dan `sockets` (panjang sesuai rarity, isi `null` atau `{ gem, tier }`). `migrate()` v6 → v7 mengisi nol / soket kosong.

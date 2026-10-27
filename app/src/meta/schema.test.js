@@ -9,7 +9,7 @@ const fresh = () => createCharacter(
 );
 const item = (over = {}) => ({
   id: 'it_a1', slot: 'helm', classId: null, variant: 0, rarity: 1, itemLevel: 3,
-  base: { maxHp: 20 }, bonuses: [{ stat: 'crit', value: 2 }], ...over,
+  base: { maxHp: 20 }, bonuses: [{ stat: 'crit', value: 2 }], plus: 0, sockets: [], ...over,
 });
 
 describe('validateSlot', () => {
@@ -41,6 +41,9 @@ describe('validateSlot', () => {
     ['rekor dungeon hilang', (c) => { delete c.records.dungeons.crystal; }],
     ['rekor lantai > 5', (c) => { c.records.dungeons.shadow.bestFloor = 6; }],
     ['jam negatif', (c) => { c.clock = -5; }],
+    ['tempa melebihi +15', (c) => { c.inventory = [item({ plus: 16 })]; }],
+    ['soket tidak sesuai rarity', (c) => { c.inventory = [item({ sockets: [null] })]; }],
+    ['material negatif', (c) => { c.mats.dust = -1; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 60', (c) => { c.inventory = Array.from({ length: 61 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
@@ -116,6 +119,16 @@ describe('save versi 2', () => {
     const r = readSlot(v5);
     expect(r.status).toBe('ok');
     expect(r.data.clock).toBe(7 * 60);
+  });
+
+  it('migrasi v6 → v7: material & permata kosong, item dapat tingkat tempa & soket', () => {
+    const v6 = { ...fresh(), version: 6, inventory: [{ ...item({ rarity: 4 }), plus: undefined, sockets: undefined }] };
+    delete v6.mats; delete v6.gems;
+    const r = readSlot(v6);
+    expect(r.status).toBe('ok');
+    expect(r.data.mats).toEqual({ dust: 0, crystal: 0, core: 0 });
+    expect(r.data.inventory[0].plus).toBe(0);
+    expect(r.data.inventory[0].sockets).toEqual([null, null]);
   });
 
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {

@@ -4,7 +4,7 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems } from './schema.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
@@ -25,6 +25,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     level: 1, exp: 0,
     gold: 0,
     clock: START_TIME,
+    mats: freshMats(), gems: freshGems(),
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),
@@ -141,7 +142,9 @@ export function usePotion(char, id, now) {
 // attrs: points spent during the trip (on levels gained in it). items: gear picked
 // up — after a death each piece survives with DEATH.gearKeepChance (rng decides);
 // what does not fit in the bag is left behind.
-// Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft }.
+// mats / gems: forge materials & gems found — a death keeps half the materials
+// (rounded down) and each gem with DEATH.gearKeepChance.
+// Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost }.
 export function applyTrip(char, trip, now, rng = Math.random) {
   const leveled = addExp(char, trip.exp);
   const levelsGained = leveled.levelsGained;
@@ -168,8 +171,19 @@ export function applyTrip(char, trip, now, rng = Math.random) {
     c.inventory.push(it);
     itemsKept.push(it);
   }
+  const matsLost = {};
+  for (const [m, n] of Object.entries(trip.mats || {})) {
+    const keep = trip.died ? Math.floor(n * DEATH.goldKeep) : n;
+    c.mats[m] += keep;
+    if (n - keep) matsLost[m] = n - keep;
+  }
+  const gemsLost = [];
+  for (const gm of trip.gems || []) {
+    if (trip.died && rng() >= DEATH.gearKeepChance) { gemsLost.push(gm); continue; }
+    c.gems[gm.gem][gm.tier - 1] += 1;
+  }
   c.updatedAt = now;
-  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft };
+  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost };
 }
 
 // Dungeons open one after another: the next once the previous has been cleared (spec §18.3).

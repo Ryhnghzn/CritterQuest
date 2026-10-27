@@ -446,6 +446,34 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .attr{border-radius:4px;background:rgba(0,0,0,.3)}
 .attr .plus{border-radius:4px}
 .attr .plus::before,.attr .plus::after{background:#f3dca0}
+
+/* ——— langkah 9A: forge, materials, gems ——— */
+.matsbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.hchip.mat{display:inline-flex;align-items:center;gap:6px}
+.hchip.mat i{width:9px;height:9px;transform:rotate(45deg);background:var(--c);box-shadow:0 0 6px var(--c)}
+.gtile .iplus{position:absolute;right:3px;top:1px;font-size:10px;font-weight:700;color:#ffd36b;text-shadow:0 1px 2px #000}
+.forge{display:flex;flex-direction:column;gap:10px;width:100%}
+.forge .gearbag{max-height:min(22vh,170px)}
+.fcard{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;border-color:color-mix(in srgb,var(--c,#fff) 45%,transparent)}
+.costs{display:flex;flex-wrap:wrap;gap:6px}
+.cost{font-size:12px;font-weight:600;padding:2px 8px;border-radius:3px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.cost.short{color:#f0909e;border-color:rgba(224,82,106,.5)}
+.chance{font-weight:600}.chance.risky{color:#ffb36b}
+.rerow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0}
+.rerow .bonus{color:#9fd0ff;font-size:14px}
+.socket{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:4px;background:rgba(0,0,0,.3)}
+.socket .btn{align-self:flex-start}
+.gemtag{font-weight:600;color:var(--c)}
+.gemopts{display:flex;flex-wrap:wrap;gap:5px}
+.gemopt{font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:3px;color:var(--c);
+  background:color-mix(in srgb,var(--c) 14%,rgba(0,0,0,.4));border:1px solid color-mix(in srgb,var(--c) 50%,transparent)}
+.gemtable{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left}
+.gemrow{display:grid;grid-template-columns:80px repeat(5,minmax(0,1fr));gap:4px;align-items:center}
+.gemrow.head span{font-size:11px;color:var(--dim);text-align:center}
+.gemcell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;border-radius:3px;background:rgba(0,0,0,.3)}
+.gemcell i{font-style:normal;font-weight:700}
+.gemcell .btn{padding:3px 6px;font-size:10px;letter-spacing:0}
+.gdlines .gem{color:#e6c27a}.gdlines .gem.empty{color:var(--dim)}
 </style>
 </head>
 <body>

@@ -10,6 +10,7 @@ import { ELITE, DROP, RARITIES } from '../data/items.js';
 import { ENEMIES } from '../data/enemies.js';
 import { dropItem, itemName, itemLevelFor } from '../meta/itemgen.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
+import { MAT_DROPS, MATS, GEM_IDS, GEMS } from '../data/forge.js';
 
 export const FLOOR_COUNT = DUNGEONS[0].floors.length; // every dungeon has 5 floors
 const IN_ROOM = 30;           // an enemy is "in the room" once this far inside the wall
@@ -133,6 +134,7 @@ function clearFloor(run) {
   run.clearT = 0;
   const bonus = COINS.floorBonus * run.floor;
   run.addGold(bonus);
+  addMats(run, { dust: MAT_DROPS.floor.dust * run.floor }, 0, -60);
   run.addFloater(run.px, run.py - 40, `+${bonus} koin`, '#ffd166');
   for (let i = 0; i < DROP.chestItems; i++) dropGear(run, 'chest', 0, 0);
   for (const g of run.gems) g.mag = true; // nothing left behind on the floor
@@ -175,11 +177,28 @@ export function gearPickedUp(run, item) {
   run.addFloater(run.px, run.py - 50, itemName(item), RARITIES[item.rarity].color);
 }
 
-// Loot from a defeated enemy: gear (bosses 2, elites 1, others rarely) and coins.
+// Forge materials found this trip (spec §20): straight into run.mats, with a floater.
+export function addMats(run, mats, dx = 0, dy = -50) {
+  for (const [m, n] of Object.entries(mats)) {
+    if (!n) continue;
+    run.mats[m] += n;
+    run.addFloater(run.px + dx, run.py + dy, `+${n} ${MATS[m].name}`, MATS[m].color);
+    dy -= 10;
+  }
+}
+
+// Loot from a defeated enemy: gear (bosses 2, elites 1, others rarely), materials, gems and coins.
 export function dropLoot(run, e) {
-  if (e.boss) for (let i = 0; i < DROP.bossItems; i++) dropGear(run, 'boss', e.x, e.y);
-  else if (e.elite) dropGear(run, 'elite', e.x, e.y);
-  else if (rand() < DROP.enemyChance) dropGear(run, 'enemy', e.x, e.y);
+  if (e.boss) {
+    for (let i = 0; i < DROP.bossItems; i++) dropGear(run, 'boss', e.x, e.y);
+    addMats(run, MAT_DROPS.boss);
+    const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)];
+    run.gemsFound.push({ gem, tier: 1 });
+    run.addFloater(run.px, run.py - 80, `+${GEMS[gem].name}`, GEMS[gem].color);
+  } else if (e.elite) {
+    dropGear(run, 'elite', e.x, e.y);
+    if (rand() < MAT_DROPS.eliteDustChance) addMats(run, { dust: 1 + Math.floor(rand() * 3) });
+  } else if (rand() < DROP.enemyChance) dropGear(run, 'enemy', e.x, e.y);
   dropCoins(run, e);
 }
 

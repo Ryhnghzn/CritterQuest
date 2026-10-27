@@ -56,6 +56,7 @@ export class Game {
   result() {
     return {
       time: this.time, kills: this.kills, exp: Math.floor(this.expGained), gold: this.gold, items: this.loot.slice(),
+      mats: { ...this.mats }, gems: this.gemsFound.slice(),
       bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
     };
   }
@@ -89,6 +90,7 @@ export class Game {
     this.time = 0; this.kills = 0;
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
+    this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
     // character level & EXP, live during the trip
     this.level = level; this.xp = exp; this.xpNeed = expToNext(level); this.levelsGained = 0;
     // dungeon progress (run/dungeon.js)

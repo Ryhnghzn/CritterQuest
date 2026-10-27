@@ -30,9 +30,11 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 6, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 7, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
+      mats: { dust: 0, crystal: 0, core: 0 },
+      gems: { ruby: [0, 0, 0, 0, 0], emerald: [0, 0, 0, 0, 0], diamond: [0, 0, 0, 0, 0], topaz: [0, 0, 0, 0, 0], amethyst: [0, 0, 0, 0, 0], sapphire: [0, 0, 0, 0, 0] },
       hp: null, potions: pots(), belt: ['red', 'big', 'shield', 'rage'],
       upgrades: { hp: 0, atk: 0, magnet: 0 },
       attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
@@ -230,5 +232,21 @@ describe('gear dari perjalanan', () => {
     expect(r.char.inventory).toHaveLength(60);
     expect(r.itemsKept[0].id).toBe('g1x');
     expect(r.itemsLeft.map((i) => i.id)).toEqual(['z']);
+  });
+});
+
+describe('material & permata dari perjalanan', () => {
+  const trip = (over) => ({ exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: false, hp: 50, potions: pots(), ...over });
+  it('pulang: semua dibawa; mati: material separuh, permata 50%', () => {
+    const t = { mats: { dust: 9, crystal: 3, core: 1 }, gems: [{ gem: 'ruby', tier: 1 }, { gem: 'topaz', tier: 1 }] };
+    const home = applyTrip(make(), trip(t), NOW).char;
+    expect(home.mats).toEqual({ dust: 9, crystal: 3, core: 1 });
+    expect(home.gems.ruby[0] + home.gems.topaz[0]).toBe(2);
+    const rolls = [0.2, 0.8];
+    const dead = applyTrip(make(), trip({ ...t, died: true }), NOW, () => rolls.shift());
+    expect(dead.char.mats).toEqual({ dust: 4, crystal: 1, core: 0 });
+    expect(dead.matsLost).toEqual({ dust: 5, crystal: 2, core: 1 });
+    expect(dead.char.gems.ruby[0]).toBe(1);
+    expect(dead.gemsLost).toEqual([{ gem: 'topaz', tier: 1 }]);
   });
 });

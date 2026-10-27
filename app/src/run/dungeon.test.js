@@ -240,3 +240,18 @@ describe('gear & elite', () => {
     expect(items[0]).toHaveProperty('rarity');
   });
 });
+
+describe('material', () => {
+  it('lantai bersih memberi debu; bos memberi kristal, inti & permata', () => {
+    const g = start();
+    clearFloor(g);
+    expect(g.mats.dust).toBeGreaterThanOrEqual(3);
+    g.spawnT = 1e9;
+    const b = g.spawnEnemy('boss'); b.x = 300; b.hp = 0;
+    step(g);
+    expect(g.mats.crystal).toBe(3);
+    expect(g.mats.core).toBe(1);
+    expect(g.gemsFound).toHaveLength(1);
+    expect(g.result().mats.crystal).toBe(3);
+  });
+});

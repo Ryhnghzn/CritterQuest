@@ -4,7 +4,7 @@ import { createCharacter, finalStats, currentHp } from './character.js';
 import { validateSlot } from './schema.js';
 
 const NOW = 1761436800000;
-const item = (id, over) => ({ id, slot: 'helm', classId: null, variant: 2, rarity: 2, itemLevel: 10, base: { maxHp: 30 }, bonuses: [{ stat: 'atk', value: 3 }], unique: null, ...over });
+const item = (id, over) => ({ id, slot: 'helm', classId: null, variant: 2, rarity: 2, itemLevel: 10, base: { maxHp: 30 }, bonuses: [{ stat: 'atk', value: 3 }], unique: null, plus: 0, sockets: Array([0, 0, 1, 1, 2, 2][over?.rarity ?? 2]).fill(null), ...over });
 const make = (inventory = []) => ({
   ...createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'warrior' }, NOW),
   inventory,
