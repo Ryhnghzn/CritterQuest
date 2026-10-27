@@ -14,9 +14,15 @@ import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from '
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
-import { innRest, buyPotion, setBelt } from './meta/shop.js';
+import { innRest, buyPotion, setBelt, buyChest, sellItems } from './meta/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
-import { itemName } from './meta/itemgen.js';
+import { itemName, makeItem } from './meta/itemgen.js';
+import { renderCheat, CHEAT_ON } from './ui/cheat.js';
+import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
+import { POTION_MAX } from './data/potions.js';
+import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
+import { FLOORS } from './data/dungeon.js';
+import { startFloor } from './run/dungeon.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
@@ -100,6 +106,7 @@ function setUI(hud, controls) {
   document.body.classList.toggle('playing', controls && hud === 'run');
   document.body.classList.toggle('intown', hud === 'town');
   if (!controls || hud !== 'town') $('prompt').classList.add('hidden');
+  if (cheatOpen) drawCheat(); // the cheat panel offers different things per scene
 }
 
 function showMenu(id) {
@@ -189,6 +196,10 @@ function openNpc(npc, message = null) {
     onInn: () => serve(innRest, 'Kamu tidur nyenyak. HP pulih penuh!'),
     onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), `${POTIONS[id].name}, segar dari kuali. Hehehe.`),
     onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
+    onBuyChest: (kind) => serve((c, now) => buyChest(c, kind, now), (r) => ({
+      text: `Kau mendapat ${itemName(r.item)} (${RARITIES[r.item.rarity].name})!`, color: RARITIES[r.item.rarity].color,
+    })),
+    onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => `Terjual! +${r.gold} koin.`),
     onEnter: enterDungeon,
     onClose: closeTownOverlay,
   });
@@ -196,7 +207,11 @@ function openNpc(npc, message = null) {
   showTownOverlay('npc');
 }
 
-const REFUSE = { full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' }, gold: 'Koinmu belum cukup.' };
+const REFUSE = {
+  full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' },
+  gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
+  equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Pilih barang dulu.',
+};
 
 // Belt slot cycles: empty → each potion type in turn → empty.
 function nextBeltPotion(char, slot) {
@@ -208,14 +223,15 @@ function nextBeltPotion(char, slot) {
 async function serve(action, okText) {
   const r = action(current, Date.now());
   if (!r.ok) {
-    openNpc(townNpc, { text: r.reason === 'gold' ? REFUSE.gold : REFUSE.full[townNpc.role], ok: false });
+    openNpc(townNpc, { text: REFUSE[r.reason] && typeof REFUSE[r.reason] === 'string' ? REFUSE[r.reason] : REFUSE.full[townNpc.role], ok: false });
     return;
   }
   current = r.char;
   town.hp = currentHp(current);
   if (okText) sfx.heart(); else sfx.pickCard();
   const err = await saveCurrent();
-  openNpc(townNpc, err ? { text: `Gagal menyimpan: ${err}`, ok: false } : okText && { text: okText, ok: true });
+  const ok = typeof okText === 'function' ? okText(r) : okText;
+  openNpc(townNpc, err ? { text: `Gagal menyimpan: ${err}`, ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
   updateTownHUD(current, town);
 }
 
@@ -394,8 +410,98 @@ $('mute').addEventListener('click', () => {
   saveSettings();
 });
 
+// ——— cheat panel (testing only, ui/cheat.js) ———
+let cheatOpen = false;
+const cheatScene = () => (scene === 'run' ? 'run' : scene === 'town' && current ? 'town' : 'menu');
+function drawCheat() { renderCheat($('cheat'), { scene: cheatScene(), god: !!game.god }, cheatActions, drawCheat); }
+function toggleCheat() {
+  cheatOpen = !cheatOpen;
+  $('cheat').classList.toggle('hidden', !cheatOpen);
+  if (cheatOpen) drawCheat();
+}
+
+// One piece of gear of a given rarity; slot 'acak' = any. Legendary / Mythic
+// become a unique that fits (slot and class), if there is one.
+function cheatItem(rarity, slot, level) {
+  const classId = current.classId;
+  const pickSlot = slot === 'acak' ? SLOT_IDS[Math.floor(Math.random() * SLOT_IDS.length)] : slot;
+  if (rarity >= LEGENDARY) {
+    const fits = UNIQUES.filter((u) => u.rarity === rarity && (u.classId === null || u.classId === classId) && (slot === 'acak' || u.slot === slot));
+    if (fits.length) {
+      const u = fits[Math.floor(Math.random() * fits.length)];
+      return makeItem({ slot: u.slot, classId, rarity, itemLevel: level, unique: u.id }, Math.random);
+    }
+    rarity = 3;
+  }
+  if (pickSlot === 'ring') rarity = Math.max(1, rarity);
+  return makeItem({ slot: pickSlot, classId, rarity, itemLevel: level }, Math.random);
+}
+
+// Change the character in town, save, refresh everything that shows it.
+async function cheatChar(change, msg) {
+  syncHp();
+  const c = structuredClone(current);
+  change(c);
+  c.updatedAt = Date.now();
+  current = c;
+  const s = finalStats(current);
+  town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
+  updateTownHUD(current, town);
+  await saveCurrent();
+  toast(msg);
+  drawCheat();
+  if (screen === 'charpanel') openCharPanel();
+}
+
+function addToBag(c, items) {
+  const room = INVENTORY_MAX - c.inventory.length;
+  c.inventory.push(...items.slice(0, room));
+  return Math.min(room, items.length);
+}
+
+const cheatActions = {
+  close: toggleCheat,
+  gold: (n) => cheatChar((c) => { c.gold += n; }, `+${n} koin`),
+  level: (n) => cheatChar((c) => { c.level = Math.min(CHAR_LEVEL_MAX, c.level + n); c.exp = 0; }, 'Level naik'),
+  potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),
+  heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
+  resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
+  unlockFloors: () => cheatChar((c) => { c.records.bestFloor = FLOORS.length; }, 'Lantai 1–5 terbuka di gerbang'),
+  gear: (rarity, slot, n) => {
+    let added = 0;
+    return cheatChar((c) => { added = addToBag(c, Array.from({ length: n }, () => cheatItem(rarity, slot, c.level))); }, `${n} gear dibuat`)
+      .then(() => { if (added < n) toast(`Tas penuh: hanya ${added} masuk`); });
+  },
+  uniques: () => cheatChar((c) => {
+    const mine = UNIQUES.filter((u) => u.classId === null || u.classId === c.classId);
+    addToBag(c, mine.map((u) => makeItem({ slot: u.slot, classId: c.classId, rarity: u.rarity, itemLevel: c.level, unique: u.id }, Math.random)));
+  }, 'Semua item unik masuk tas'),
+  clearBag: () => cheatChar((c) => { c.inventory = []; for (const k in c.equipped) c.equipped[k] = null; }, 'Tas dikosongkan'),
+  god: () => { game.god = !game.god; drawCheat(); },
+  killAll: () => { for (const e of game.enemies) e.hp = 0; },
+  clearFloor: () => {
+    if (game.floorClear) return;
+    game.wave = FLOORS[game.floor - 1].waves.length - 1;
+    game.queueI = game.queue.length;
+    for (const e of game.enemies) e.hp = 0;
+  },
+  exp: (n) => game.gems.push({ x: game.px, y: game.py, v: n, mag: true, big: true, t: 0 }),
+  floor: (f) => { startFloor(game, f); drawCheat(); },
+  drop: (rarity, n) => {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      game.gems.push({ x: game.px + Math.cos(a) * 50, y: game.py + Math.sin(a) * 50, v: 0, mag: false, big: false, gear: cheatItem(rarity, 'acak', game.level), t: i });
+    }
+  },
+};
+if (CHEAT_ON) {
+  $('cheatbtn').classList.remove('hidden');
+  $('cheatbtn').addEventListener('click', toggleCheat);
+}
+
 // ——— keyboard shortcuts ———
 input.onAction.push((code) => {
+  if (CHEAT_ON && code === 'Backquote') { toggleCheat(); return; }
   if (code === 'KeyM') { $('mute').click(); return; }
   const go = code === 'Space' || code === 'Enter';
   if (screen === 'title' && go) { $('play').click(); return; }

@@ -47,7 +47,7 @@ export const TOWN = {
     ] }),
     npc('patrol', 'talk', 'Prajurit Gani', 480, 300, { hair: 1, hairColor: 3 }, ['#4b5563', '#374151'], { title: 'Penjaga Kota', wander: { rx: 320, ry: 6, speed: 0.12 }, lines: [
       'Malam ini tenang. Semoga tetap begitu.',
-      'Pandai Brom sedang menyiapkan tungkunya. Sebentar lagi tokonya buka.',
+      'Pandai Brom menjual peti gear. Peti Agung mahal, tapi isinya bisa Mitos!',
       'Jangan berkeliaran di dekat gerbang kalau HP-mu tipis.',
     ] }),
     npc('sela', 'talk', 'Sela', 846, 372, { hair: 3, hairColor: 0 }, ['#d4a017', '#9c7410'], { title: 'Penyanyi Keliling', lines: [
@@ -135,8 +135,8 @@ export const INTERIORS = {
     npcs: [
       npc('gear', 'gear', 'Pandai Brom', 230, 148, { hair: 0, hairColor: 3 }, ['#7a6f66', '#57504a']),
       npc('tika', 'talk', 'Tika', 120, 150, { hair: 3, hairColor: 4 }, ['#a0522d', '#6e3a1f'], { title: 'Murid Pandai Besi', lines: [
-        'Tungkunya hampir panas. Guru Brom bilang sebentar lagi kami buka!',
-        'Senjata dari dungeon bisa dipasang sendiri lewat panel Karakter… nanti.',
+        'Gear rongsokan dari dungeon bisa dijual ke Guru Brom. Lumayan buat beli ramuan.',
+        'Gear dari dungeon dipasang lewat panel Karakter, tab Gear.',
         'Gear Mitos itu merah menyala. Aku belum pernah lihat langsung.',
       ] }),
     ],

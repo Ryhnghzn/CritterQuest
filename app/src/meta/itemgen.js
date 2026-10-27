@@ -66,8 +66,9 @@ export function makeItem({ slot, classId, rarity, itemLevel, unique = null }, rn
 
 // A random drop for a character: rarity by source (+ LUK), slot at random; a
 // Legendary / Mythic roll becomes one of the uniques that fit the class.
-export function dropItem({ source, classId, charLevel, floor, luk = 0 }, rng) {
-  const itemLevel = itemLevelFor(charLevel, floor, rng);
+// level: fixed item level (shop chests), otherwise rolled from character level + floor.
+export function dropItem({ source, classId, charLevel, floor, luk = 0, level = null }, rng) {
+  const itemLevel = level ?? itemLevelFor(charLevel, floor, rng);
   let rarity = rollRarity(source, luk, rng);
   if (rarity >= LEGENDARY) {
     const fits = UNIQUES.filter((u) => u.rarity === rarity && (u.classId === null || u.classId === classId));

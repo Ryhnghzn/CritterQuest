@@ -110,6 +110,7 @@ export const DROP_WEIGHTS = {
   elite: [36, 34, 20, 7.5, 2.5, 0],
   chest: [44, 32, 16, 6, 2, 0],
   boss: [0, 0, 55, 32, 11, 2],
+  grand: [0, 0, 50, 35, 12, 3],
 };
 export const LUK_RARITY = 0.01;
 export const DROP = {
@@ -124,3 +125,10 @@ export const DROP = {
 export const ELITE = { chance: [0.03, 0.04, 0.05, 0.06, 0.07], hpMul: 4, dmgMul: 1.4, size: 1.35, xpMul: 5, gold: 10 };
 
 export const SELL_PRICE = (item) => 5 * item.itemLevel * (1 + item.rarity);
+
+// Pandai Besi chests (spec §6.4, §14.2): price = base + perLevel × character level;
+// one item at the character's level with the source's rarity weights.
+export const CHESTS = {
+  chest: { name: 'Peti Gear', base: 30, perLevel: 10, source: 'chest' },
+  grand: { name: 'Peti Agung', base: 150, perLevel: 40, source: 'grand' },
+};

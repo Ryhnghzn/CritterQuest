@@ -1,22 +1,28 @@
 // NPC dialogs in town (spec §13.2, §15): Inn, potion shop (5 potions + belt),
-// gear shop (closed until langkah 5D), the dungeon gate (pick a floor) and
+// Pandai Besi (chests, selling gear), the dungeon gate (pick a floor) and
 // townsfolk who just talk.
 import { el, button, stage } from './screens.js';
 import { portrait } from '../art/doll.js';
 import { iconCanvas } from '../art/sprites.js';
 import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
-import { innPrice } from '../meta/shop.js';
+import { innPrice, chestPrice, junkIds } from '../meta/shop.js';
+import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
+import { gearIcon } from '../art/sprites.js';
+import { itemName } from '../meta/itemgen.js';
+import { isEquipped } from '../meta/gear.js';
+
+let toSell = new Set(); // Pandai Besi: items marked for selling
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
   potion: 'Hehehe… ramuan segar dari kuali. Mau yang mana?',
-  gear: 'Tungkuku belum menyala. Kembalilah nanti — barang bagus sedang kutempa.',
+  gear: 'Tungku sudah panas! Mau beli peti, atau menjual barang rongsokan dari dungeon?',
   gate: 'Di balik gerbang ini ada Ruang Bawah Tanah Bayangan. Kau sudah siap?',
 };
 const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', gate: 'Gerbang Dungeon', talk: 'Warga' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
-//        onInn, onBuyPotion(id), onBelt(slot), onEnter(floor), onClose }
+//        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onEnter(floor), onClose }
 export function renderNpc(box, npc, ctx) {
   const { char, hp, maxHp } = ctx;
   box.replaceChildren();
@@ -43,6 +49,8 @@ export function renderNpc(box, npc, ctx) {
     actions.append(b);
   } else if (npc.role === 'potion') {
     panel.append(potionList(char, ctx.onBuyPotion), beltEditor(char, ctx.onBelt));
+  } else if (npc.role === 'gear') {
+    panel.append(chestCards(char, ctx.onBuyChest), sellPanel(char, ctx.onSell, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gate') {
     const deepest = Math.max(1, char.records.bestFloor);
     const b = button(deepest > 1 ? `Lanjut ke Lantai ${deepest}` : 'Masuk Dungeon', 'btn big', () => ctx.onEnter(deepest));
@@ -62,7 +70,10 @@ export function renderNpc(box, npc, ctx) {
   if (actions.childElementCount && !actions.parentNode) panel.append(actions);
 
   const msg = el('div', 'npcmsg');
-  if (ctx.message) { msg.textContent = ctx.message.text; msg.classList.toggle('ok', ctx.message.ok); }
+  if (ctx.message) {
+    msg.textContent = ctx.message.text; msg.classList.toggle('ok', ctx.message.ok);
+    if (ctx.message.color) msg.style.color = ctx.message.color;
+  }
   else if (npc.role === 'gate' && hp < maxHp * 0.5) msg.textContent = 'HP-mu masih rendah. Istirahat dulu di Penginapan?';
 
   const close = button('Tutup', 'btn ghost', ctx.onClose);
@@ -105,5 +116,59 @@ function beltEditor(char, onBelt) {
     row.append(b);
   });
   wrap.append(row);
+  return wrap;
+}
+
+// rarity odds of a chest, e.g. "Langka 50% · Epik 35% · …"
+function odds(source) {
+  const w = DROP_WEIGHTS[source], total = w.reduce((a, b) => a + b, 0);
+  return w.map((x, r) => (x ? `${RARITIES[r].name} ${Math.round((x / total) * 1000) / 10}%` : null)).filter(Boolean).join(' · ');
+}
+
+function chestCards(char, onBuy) {
+  const row = el('div', 'chests');
+  for (const [kind, c] of Object.entries(CHESTS)) {
+    const card = el('div', `chest ${kind}`);
+    const price = chestPrice(char, kind);
+    const b = button(String(price), 'btn small buy', () => onBuy(kind));
+    b.prepend(el('span', 'coin'));
+    b.dataset.chest = kind;
+    b.disabled = char.gold < price;
+    card.append(el('b', null, c.name), el('span', 'note', `1 gear LV ${char.level}`), el('span', 'odds', odds(c.source)), b);
+    row.append(card);
+  }
+  return row;
+}
+
+function sellPanel(char, onSell, redraw) {
+  for (const id of toSell) if (!char.inventory.some((x) => x.id === id)) toSell.delete(id);
+  const wrap = el('div', 'sellbox');
+  const head = el('div', 'attrhead');
+  head.append(el('b', null, 'Jual gear'), el('span', 'pts', 'ketuk untuk memilih'));
+  const grid = el('div', 'gearbag');
+  const items = char.inventory.slice().sort((a, b) => a.rarity - b.rarity || a.itemLevel - b.itemLevel);
+  for (const it of items) {
+    const worn = isEquipped(char, it);
+    const t = button('', `gtile${toSell.has(it.id) ? ' sel' : ''}${worn ? ' empty' : ''}`, () => {
+      if (worn) return;
+      if (toSell.has(it.id)) toSell.delete(it.id); else toSell.add(it.id);
+      redraw();
+    });
+    t.style.setProperty('--c', RARITIES[it.rarity].color);
+    t.append(iconCanvas(gearIcon(it), 26), el('span', 'ilv', String(it.itemLevel)));
+    if (worn) t.append(el('span', 'eq', 'E'));
+    t.title = `${itemName(it)} — ${worn ? 'sedang dipakai' : `${SELL_PRICE(it)} koin`}`;
+    t.dataset.item = it.id;
+    grid.append(t);
+  }
+  if (!items.length) grid.append(el('div', 'note', 'Tasmu kosong.'));
+  const total = char.inventory.filter((it) => toSell.has(it.id)).reduce((n, it) => n + SELL_PRICE(it), 0);
+  const act = el('div', 'row');
+  const pickJunk = (r) => button(r === 0 ? 'Pilih semua Biasa' : 'Pilih ≤ Bagus', 'btn ghost small', () => { toSell = new Set(junkIds(char, r)); redraw(); });
+  const sell = button(`Jual ${toSell.size} — ${total} koin`, 'btn small', () => { const ids = [...toSell]; toSell.clear(); onSell(ids); });
+  sell.id = 'npc-sell';
+  sell.disabled = !toSell.size;
+  act.append(pickJunk(0), pickJunk(1), sell);
+  wrap.append(head, grid, act);
   return wrap;
 }

@@ -396,6 +396,7 @@ export class Game {
   }
 
   die() {
+    if (this.god) { this.stats.hp = this.stats.maxHp; return; } // cheat panel
     if (this.fx.phoenix && !this.revived) { // Cincin Phoenix: rise once per trip
       this.revived = true;
       this.stats.hp = this.stats.maxHp * this.fx.phoenix;

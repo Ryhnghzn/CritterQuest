@@ -6,7 +6,7 @@ Proyek game browser pribadi (bukan ERP). Bahasa komunikasi: Indonesia.
 
 - **Sedang dikerjakan:** Critter Quest — Arcade (roguelite, save IndexedDB).
 - **Spesifikasi (sumber kebenaran):** `docs/superpowers/specs/2026-10-26-critter-quest-arcade-design.md`
-- **Rencana kerja:** `docs/superpowers/plans/` — satu file per langkah §12; centang yang selesai. Langkah 1–4 selesai (3A–3D tampilan kartun vektor; 4A kota + 4B dungeon berlantai, spesifikasi §13, tema gelap). Berikutnya langkah 5 (item/gear).
+- **Rencana kerja:** `docs/superpowers/plans/` — satu file per langkah §12; centang yang selesai. Langkah 1–5 selesai (3A–3D tampilan kartun vektor; 4A kota + 4B dungeon berlantai §13; 5A–5D poin stat & gear §14, rumah/ramuan/lanjut dungeon §15, Toko Gear & panel cheat §16). Berikutnya langkah 6 (Pelatih, Tukang Cukur, ekspor/impor, polesan).
 - **Konsep jangka panjang (RPG penuh, masih draf):** `docs/2026-10-26-konsep-critter-quest.md`
 
 Mulai setiap sesi dengan membaca spesifikasi + rencana kerja, lalu `git log --oneline` untuk melihat langkah terakhir.
@@ -18,6 +18,7 @@ Mulai setiap sesi dengan membaca spesifikasi + rencana kerja, lalu `git log --on
   (`package-lock.json` menunjuk mirror `npm.mirrors.msh.team` yang tidak terjangkau; opsi itu mengalihkan ke registry npm resmi.)
 - Build: `npm run build` → `app/dist/`
 - Tes: `npm test` (Vitest, lingkungan Node; file `src/**/*.test.js` di samping modulnya)
+- Panel cheat untuk uji manual: tombol CHEAT / <kbd>`</kbd> saat `npm run dev` (atau `?cheat` di build)
 - Saat menambah paket, sebutkan versinya (`npm i -D paket@x.y.z --replace-registry-host=always`); tanpa versi, npm 10.8 bisa gagal dengan `Cannot read properties of null (reading 'edgesOut')`.
 
 ## Aturan

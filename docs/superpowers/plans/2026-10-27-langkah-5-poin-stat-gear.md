@@ -30,5 +30,8 @@ Empat bagian; tiap bagian dicek manual oleh pemilik sebelum commit.
 - [x] Paper doll: senjata, helm, armor, sepatu per varian; kilau Epik+
 
 ## 5D — Toko Gear
-- [ ] Jual item, Peti Gear (biasa & mahal) — tes
-- [ ] Verifikasi akhir: smoke (dapat gear → pasang → terlihat → simpan → muat ulang)
+- [x] Jual item, Peti Gear (biasa & mahal) — tes
+- [x] Verifikasi akhir: smoke (dapat gear → pasang → terlihat → simpan → muat ulang)
+
+## Tambahan — Panel cheat (permintaan 2026-10-27)
+- [x] Panel cheat untuk pengujian (hanya `npm run dev` atau `?cheat`): koin, level, ramuan, gear per rarity/slot, semua item unik, buka lantai; di dungeon kebal, bersihkan lantai, lompat lantai, jatuhkan gear

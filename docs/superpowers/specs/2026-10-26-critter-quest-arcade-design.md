@@ -497,3 +497,14 @@ Atas permintaan pemilik. Mengalahkan §13.2 bila bertentangan.
 ### 15.3 Lanjut dungeon
 
 Penjaga gerbang: tombol utama **"Lanjut ke Lantai X"** (X = lantai terdalam yang pernah dicapai, `records.bestFloor`), plus tombol untuk tiap lantai di atasnya. Perjalanan berjalan seperti biasa dari lantai itu.
+
+## 16. Toko Gear & Panel Cheat (2026-10-27)
+
+### 16.1 Pandai Besi (langkah 5D)
+- **Peti Gear:** `30 + 10 × level` koin, 1 gear selevel karakter, bobot rarity peti (`44/32/16/6/2/0`).
+- **Peti Agung:** `150 + 40 × level` koin, 1 gear selevel karakter, bobot `0/0/50/35/12/3` (bisa Mitos). LUK tetap berlaku. Peluang ditampilkan di kartu peti.
+- **Jual:** ketuk gear untuk memilih (bisa banyak), atau "Pilih semua Biasa" / "Pilih ≤ Bagus"; harga `5 × level item × (1 + rarity)`. Gear yang sedang dipakai tidak bisa dijual.
+- Tas penuh → peti ditolak.
+
+### 16.2 Panel cheat (khusus pengujian)
+Aktif hanya di `npm run dev` atau bila alamat diberi `?cheat`; dibuka dengan tombol CHEAT atau tombol <kbd>`</kbd>. Di kota: koin, level, ramuan penuh, HP penuh, reset poin, buka lantai 1–5, gear per rarity & slot, semua item unik kelas, kosongkan tas. Di dungeon: kebal, bunuh semua, bersihkan lantai, +EXP, lompat lantai, jatuhkan gear. Perubahan karakter disimpan seperti biasa.

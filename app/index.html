@@ -151,6 +151,21 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 .attr .plus:disabled{opacity:.3;pointer-events:none}
 .attrs .row{justify-content:flex-end;margin-top:4px}
 .stat b.up{color:var(--mint)}
+#cheatbtn{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:20;pointer-events:auto;font-family:inherit;font-size:11px;font-weight:700;
+  letter-spacing:1px;color:#ffb3c1;background:rgba(80,10,30,.7);border:1.5px solid rgba(255,107,139,.6);border-radius:999px;padding:5px 12px;cursor:pointer}
+#cheat{position:absolute;right:12px;top:64px;z-index:30;pointer-events:auto;width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow-y:auto;
+  display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:16px;background:rgba(20,10,30,.94);border:1.5px solid rgba(255,107,139,.5);font-size:13px}
+@media (max-width:560px){#cheat{top:auto;bottom:12px;max-height:46vh}}
+.chhead{display:flex;justify-content:space-between;align-items:center;color:#ffb3c1}
+.chx{font-family:inherit;font-size:18px;background:none;border:0;color:var(--ink);cursor:pointer}
+.chsec{display:flex;flex-direction:column;gap:6px}
+.chtitle{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+.chrow{display:flex;flex-wrap:wrap;gap:5px}
+.chb{font-family:inherit;font-size:12px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:9px;padding:5px 9px;cursor:pointer}
+.chb:hover{background:rgba(255,255,255,.16)}
+.chb.on{border-color:#ffb3c1;background:rgba(255,107,139,.25)}
+.chb.rar{color:var(--c);border-color:color-mix(in srgb,var(--c) 40%,transparent)}
+.chb.rar.on{background:color-mix(in srgb,var(--c) 25%,transparent);border-color:var(--c)}
 .tabs{display:flex;gap:6px;padding:4px;border-radius:999px;background:var(--glass2)}
 .tab{font-family:inherit;font-size:14px;font-weight:700;color:var(--dim);background:none;border:0;padding:7px 18px;border-radius:999px;cursor:pointer}
 .tab.on{color:#4a2600;background:linear-gradient(180deg,#ffe07a,#ffb21f)}
@@ -191,6 +206,16 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 .beltslot{position:relative;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;cursor:pointer;
   background:var(--glass2);border:1.5px dashed var(--line);font-family:inherit;color:var(--ink)}
 .beltslot kbd{position:absolute;right:-4px;bottom:-4px;font-size:10px;padding:0 5px}
+.chests{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.chest{display:flex;flex-direction:column;gap:4px;align-items:center;padding:10px;border-radius:14px;background:var(--glass2);border:1.5px solid var(--line)}
+.chest.grand{border-color:rgba(255,181,71,.6);background:linear-gradient(180deg,rgba(255,181,71,.12),var(--glass2))}
+.chest .odds{font-size:10.5px;color:var(--dim);line-height:1.35}
+.chest .buy{display:flex;align-items:center;gap:5px;margin-top:4px}
+.chest .buy:disabled{opacity:.4;pointer-events:none}
+.sellbox{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left}
+.sellbox .gearbag{max-height:min(26vh,200px)}
+.sellbox .row{justify-content:flex-end}
+#npc-sell:disabled{opacity:.4;pointer-events:none}
 .floors{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
 .loot{display:flex;flex-direction:column;gap:6px;width:min(460px,100%);max-height:34vh;overflow-y:auto;padding:2px}
 .lootrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;text-align:left;padding:5px 12px 5px 6px;border-radius:12px;
@@ -360,6 +385,8 @@ body.touch #prompt kbd{display:none}
   </div>
   <button id="prompt" class="hidden"><kbd>E</kbd><span id="prompttext"></span></button>
   <div id="toast"></div>
+  <button id="cheatbtn" class="hidden" title="Panel cheat (`)">CHEAT</button>
+  <div id="cheat" class="hidden"></div>
   <div id="hud" class="hidden">
     <div class="hpbar"><i id="hpfill"></i><span id="hptext"></span></div>
     <div class="xprow"><span class="lv" id="lvltext">LV 1</span><div class="xpbar"><i id="xpfill"></i></div></div>
