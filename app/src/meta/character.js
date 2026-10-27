@@ -1,7 +1,7 @@
 // Permanent character: creation, level/EXP and final stats (spec §4.1, §4.3).
 // Every function returns new objects; save data is never mutated in place.
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL } from '../data/balance.js';
+import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { POTION, DEATH } from '../data/dungeon.js';
 import { SAVE_VERSION, validateSlot, nameLength } from './schema.js';
 
@@ -110,9 +110,12 @@ export function usePotion(char, now) {
 }
 
 // End of a dungeon trip (spec §13.4).
-// trip: { exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs? }
-// attrs: points spent during the trip (on levels gained in it). Gear joins the inventory in langkah 5B.
-export function applyTrip(char, trip, now) {
+// trip: { exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs?, items? }
+// attrs: points spent during the trip (on levels gained in it). items: gear picked
+// up — after a death each piece survives with DEATH.gearKeepChance (rng decides);
+// what does not fit in the bag is left behind.
+// Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft }.
+export function applyTrip(char, trip, now, rng = Math.random) {
   const leveled = addExp(char, trip.exp);
   const levelsGained = leveled.levelsGained;
   const c = (trip.attrs && allocate(leveled.char, trip.attrs, now)) || leveled.char;
@@ -126,6 +129,17 @@ export function applyTrip(char, trip, now) {
   r.trips += 1;
   r.kills += trip.kills;
   r.bossKills += trip.bossKills;
+  const itemsKept = [], itemsLost = [], itemsLeft = [];
+  const ids = new Set(c.inventory.map((it) => it.id));
+  for (const item of trip.items || []) {
+    if (trip.died && rng() >= DEATH.gearKeepChance) { itemsLost.push(item); continue; }
+    if (c.inventory.length >= INVENTORY_MAX) { itemsLeft.push(item); continue; }
+    const it = structuredClone(item);
+    while (ids.has(it.id)) it.id += 'x'; // ids only need to be unique within the slot
+    ids.add(it.id);
+    c.inventory.push(it);
+    itemsKept.push(it);
+  }
   c.updatedAt = now;
-  return { char: c, levelsGained, goldLost: trip.gold - gold };
+  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft };
 }

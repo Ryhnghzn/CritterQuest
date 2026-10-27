@@ -1,9 +1,12 @@
 // Hasil Perjalanan (spec §13.4): shown after returning, dying or giving up.
 import { el, button } from './screens.js';
+import { iconCanvas, gearIcon } from '../art/sprites.js';
+import { RARITIES } from '../data/items.js';
+import { itemName } from '../meta/itemgen.js';
 
-// info: { char, trip, levelsGained, goldLost, newRecord, saveError }
+// info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
 export function renderResults(box, info, { onContinue }) {
-  const { char, trip, levelsGained, goldLost, newRecord, saveError } = info;
+  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError } = info;
   box.replaceChildren();
   const titleText = trip.died ? 'Tumbang!' : trip.cleared ? 'Dungeon Tamat!' : 'Pulang dengan Selamat';
   const title = el('h2', trip.died ? 'h bad' : 'h', titleText);
@@ -20,8 +23,26 @@ export function renderResults(box, info, { onContinue }) {
   if (levelsGained > 0) badges.append(el('span', 'badge mint', `Naik level! LV ${char.level}`));
   const notes = el('div', 'sub');
   if (trip.died) notes.textContent = `Kamu terbangun di kota dengan sisa tenaga.${goldLost > 0 ? ` ${goldLost} koin hilang.` : ''}`;
+  const loot = el('div', 'loot');
+  for (const [items, cls] of [[itemsKept, ''], [itemsLost, 'lost'], [itemsLeft, 'lost']]) {
+    for (const it of items) loot.append(lootRow(it, cls));
+  }
+  if (itemsLost.length) notes.append(el('div', null, `${itemsLost.length} gear hilang saat tumbang.`));
+  if (itemsLeft.length) notes.append(el('div', null, `Tas penuh: ${itemsLeft.length} gear ditinggal.`));
   const err = el('div', 'err', saveError ? `Gagal menyimpan: ${saveError}` : '');
   const next = button('Kembali ke Kota', 'btn', onContinue);
   next.id = 'tocamp';
-  box.append(title, tiles, badges, notes, err, next);
+  box.append(title, tiles, badges);
+  if (loot.childElementCount) box.append(loot);
+  box.append(notes, err, next);
+}
+
+function lootRow(it, cls) {
+  const r = RARITIES[it.rarity];
+  const row = el('div', `lootrow ${cls}`.trim());
+  row.style.setProperty('--c', r.color);
+  const ic = el('span', 'lic');
+  ic.append(iconCanvas(gearIcon(it), 26));
+  row.append(ic, el('b', null, itemName(it)), el('span', 'lr', `${r.name} · LV ${it.itemLevel}`));
+  return row;
 }

@@ -448,7 +448,15 @@ Stat akhir = dasar kelas + pertumbuhan level + atribut + gear (+ upgrade Pelatih
 | 4 Legendaris | `#ffb547` | 3 | ×1,30 | + 1 efek khusus, nama unik |
 | 5 Mitos | `#ff4d6d` | 4 | ×1,45 | + 1 efek khusus, hanya dari bos lantai 5 / peti mahal |
 
-Varian tampilan per slot berdasarkan rentang level item (puluhan model total); daftar varian, bonus, efek khusus, peluang drop, dan harga ditetapkan di `data/items.js` pada langkah 5B dan dicatat di sini setelah disetujui.
+**Ditetapkan di langkah 5B** (`data/items.js`):
+- **Varian:** 7 tingkat per slot (level item 1/5/10/16/23/31/40), senjata 7 per kelas → 63 model; nama = varian + akhiran bonus pertama (Ganas, Kokoh, Baja, Kilat, Tajam, Maut, Angin, Bijak, Pemikat).
+- **Bonus acak** (tanpa duplikat): atk, maxHp, def, atkSpd, crit, critDmg, moveSpd, cdr, magnet; nilai 70–100% dari maksimum yang tumbuh dengan level item.
+- **Item unik:** 13 Legendaris + 7 Mitos dengan nama & efek khusus (menghisap darah, duri, petir berantai, eksekusi, perisai, regenerasi, koin/EXP +, dodge cepat, amuk, damage bos, ledakan, bangkit sekali). Drop Legendaris/Mitos selalu salah satu item unik yang cocok dengan kelas. Efek aktif di langkah 5C.
+- **Level item** = level karakter − 1 + lantai ± 1, maks level karakter + 4.
+- **Sumber & bobot rarity** (Biasa…Mitos): musuh biasa 1,5% drop `60/27/10/2,4/0,6/0`; elite selalu 1 `36/34/20/7,5/2,5/0`; peti tiap lantai bersih 1 `44/32/16/6/2/0`; bos 2 item `0/0/55/32/11/2`. LUK: bobot Langka ke atas × (1 + 0,01 × LUK).
+- **Elite:** peluang 3–7% per musuh (naik per lantai), HP ×4, damage ×1,4, ukuran ×1,35, EXP ×5, 10 koin, aura emas.
+- Gear di tanah: sinar & cahaya warna rarity; dipungut seperti permata. Mati → tiap gear 50% hilang. Tas maks **60**; bila penuh, sisanya ditinggal (disebut di Hasil Perjalanan).
+- Item save mendapat field opsional `unique` (id item unik atau `null`).
 
 ### 14.3 Save versi 3
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
-import { waveQueue, LANES, FLOOR_COUNT } from './dungeon.js';
+import { waveQueue, LANES, FLOOR_COUNT, makeElite } from './dungeon.js';
+import { ELITE } from '../data/items.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { ROOM, FLOORS, WAVE, PORTAL, COINS } from '../data/dungeon.js';
@@ -184,5 +185,55 @@ describe('koin', () => {
     enter(g, 'down');
     expect(g.gold).toBe(gold + 7);
     expect(g.gems).toHaveLength(0);
+  });
+});
+
+describe('gear & elite', () => {
+  it('elite: HP ×4, lebih besar, selalu menjatuhkan gear dan 10 koin', () => {
+    const g = start();
+    g.spawnT = 1e9;
+    const e = g.spawnEnemy('slink');
+    makeElite(e);
+    expect(e.maxHp).toBeCloseTo(ENEMIES.slink.hp * ELITE.hpMul);
+    expect(e.r).toBeCloseTo(ENEMIES.slink.r * ELITE.size);
+    e.x = 300; e.hp = 0;
+    step(g);
+    expect(g.gems.filter((x) => x.gear)).toHaveLength(1);
+    expect(g.gold).toBe(ELITE.gold);
+  });
+
+  it('elite muncul di gelombang', () => {
+    const g = start();
+    let elites = 0;
+    for (let f = 1; f <= 3; f++) {
+      for (let i = 0; i < 60 * 600 && !g.floorClear; i++) {
+        for (const e of g.enemies) { if (e.elite) elites++; e.hp = 0; }
+        step(g);
+      }
+      if (f < 3) enter(g, 'down');
+    }
+    expect(elites).toBeGreaterThan(0);
+  });
+
+  it('bos menjatuhkan 2 gear minimal Langka; peti lantai 1 gear', () => {
+    const g = start();
+    g.spawnT = 1e9;
+    const b = g.spawnEnemy('boss'); b.x = 300; b.hp = 0;
+    step(g);
+    const drops = g.gems.filter((x) => x.gear);
+    expect(drops).toHaveLength(2);
+    for (const d of drops) expect(d.gear.rarity).toBeGreaterThanOrEqual(2);
+    const g2 = start();
+    clearFloor(g2);
+    expect(g2.gems.filter((x) => x.gear).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('gear yang dipungut masuk hasil perjalanan', () => {
+    const g = start();
+    clearFloor(g);
+    enter(g, 'home');
+    const items = g.result().items;
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    expect(items[0]).toHaveProperty('rarity');
   });
 });

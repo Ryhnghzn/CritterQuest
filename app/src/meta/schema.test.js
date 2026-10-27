@@ -34,7 +34,7 @@ describe('validateSlot', () => {
     ['potion melebihi batas', (c) => { c.potions = 6; }],
     ['rekor lantai hilang', (c) => { delete c.records.bestFloor; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
-    ['inventori > 30', (c) => { c.inventory = Array.from({ length: 31 }, (_, i) => item({ id: `it_${i}` })); }],
+    ['inventori > 60', (c) => { c.inventory = Array.from({ length: 61 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
     ['rarity tak dikenal', (c) => { c.inventory = [item({ rarity: 6 })]; }],
     ['atribut hilang', (c) => { delete c.attrs.luk; }],

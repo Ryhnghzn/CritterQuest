@@ -5,6 +5,7 @@ import {
   SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL,
 } from '../data/balance.js';
 import { POTION } from '../data/dungeon.js';
+import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
 
 export const SAVE_VERSION = 3;
 
@@ -34,8 +35,8 @@ const ATTR_IDS = ATTRS.map((a) => a.id);
 const UPGRADES = ['hp', 'atk', 'magnet'];
 const RECORDS = ['bestFloor', 'clears', 'trips', 'kills', 'bossKills'];
 const BASE_STATS = ['atk', 'maxHp', 'def', 'moveSpd', 'crit'];
-const BONUS_STATS = ['atk', 'maxHp', 'atkSpd', 'crit', 'moveSpd', 'cdr'];
-const RARITY_MAX = 5;
+const RARITY_MAX = RARITIES.length - 1;
+const UNIQUE_IDS = UNIQUES.map((u) => u.id);
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v, min = -Infinity, max = Infinity) => Number.isInteger(v) && v >= min && v <= max;
@@ -64,7 +65,8 @@ function validateItem(it) {
     && isInt(it.itemLevel, 1)
     && isObj(it.base) && Object.entries(it.base).every(([k, v]) => BASE_STATS.includes(k) && isNum(v))
     && Array.isArray(it.bonuses)
-    && it.bonuses.every((b) => isObj(b) && BONUS_STATS.includes(b.stat) && isNum(b.value));
+    && it.bonuses.every((b) => isObj(b) && BONUS_IDS.includes(b.stat) && isNum(b.value))
+    && (it.unique === undefined || it.unique === null || UNIQUE_IDS.includes(it.unique));
 }
 
 // Returns a list of problems; empty means the slot is valid for SAVE_VERSION.

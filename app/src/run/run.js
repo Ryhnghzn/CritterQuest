@@ -10,7 +10,7 @@ import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
-import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropCoins, hpMul } from './dungeon.js';
+import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 
@@ -42,7 +42,7 @@ export class Game {
   // Rewards earned so far; meta/character.js applyTrip turns them into save data (spec §13.4).
   result() {
     return {
-      time: this.time, kills: this.kills, exp: this.expGained, gold: this.gold, items: [],
+      time: this.time, kills: this.kills, exp: this.expGained, gold: this.gold, items: this.loot.slice(),
       bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared,
     };
   }
@@ -52,7 +52,7 @@ export class Game {
     this.state = ST.OVER;
   }
 
-  reset({ classId, stats, hp = stats.maxHp, potions = 0, level = 1, exp = 0 }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = 0, level = 1, exp = 0, luk = 0 }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -71,6 +71,7 @@ export class Game {
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0;
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
+    this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     // character level & EXP, live during the trip
     this.level = level; this.xp = exp; this.xpNeed = expToNext(level); this.levelsGained = 0;
     // dungeon progress (run/dungeon.js)
@@ -148,7 +149,7 @@ export class Game {
       speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg,
       r: base.r, xp: base.xp, sprite: base.sprite, score: base.score,
       wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
-      lane: null, entering: false,
+      lane: null, entering: false, elite: false,
     };
     this.enemies.push(e);
     if (typeId === 'boss') sfx.boss();
@@ -227,7 +228,7 @@ export class Game {
     this.kills += 1;
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.type === 'boss' ? '#c26bd8' : '#7a45c2', e.type === 'boss' ? 26 : 8);
-    dropCoins(this, e);
+    dropLoot(this, e);
     if (e.type === 'boss') {
       this.bossKills += 1;
       this.showBanner('RAJA MAW TUMBANG!');
@@ -270,6 +271,9 @@ export class Game {
       this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + 20);
       this.addFloater(g.x, g.y, '+20', '#ff5a6e');
       sfx.heart();
+    } else if (g.gear) {
+      gearPickedUp(this, g.gear);
+      sfx.pickCard();
     } else if (g.coin) {
       this.gold += g.v;
       this.addFloater(g.x, g.y, `+${g.v}`, '#ffd166');

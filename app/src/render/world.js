@@ -4,7 +4,8 @@
 // emissive effects (attacks, flames, portals) are drawn over it.
 import { ROOM, PORTAL } from '../data/dungeon.js';
 import { ENEMIES } from '../data/enemies.js';
-import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
+import { SPRITES, bakeAll, drawBaked, drawIcon, gearIcon, OUT } from '../art/sprites.js';
+import { RARITIES } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
 import { LANES } from '../run/dungeon.js';
@@ -18,6 +19,8 @@ const LANE_HALF = Math.asin(ROOM.laneWidth / 2 / ROOM.r); // half the angle a la
 const OUTER = ROOM.r + ROOM.wall;
 const PORTAL_RGB = { down: '90,170,255', home: '255,200,90' };
 const PORTAL_LABEL = { down: 'Turun', home: 'Pulang' };
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
+const RARITY_RGB = RARITIES.map((r) => hexRgb(r.color));
 
 // angle distance to the nearest lane
 const laneGap = (a) => {
@@ -206,6 +209,7 @@ export class Renderer {
     // pickups
     for (const gm of game.gems) {
       if (!visible(gm.x, gm.y)) continue;
+      if (gm.gear) { gearDrop(g, gm, t); continue; }
       const bob = Math.sin(gm.t) * 2;
       shadow(g, gm.x, gm.y + 6, 4, 1.4);
       const s = SPRITES[gm.heart ? 'heart' : gm.coin ? 'coin' : gm.big ? 'bigGem' : 'gem'];
@@ -218,8 +222,10 @@ export class Renderer {
       shadow(g, e.x, e.y + e.r * 0.75, e.r * 0.85, e.r * 0.3);
       const squash = 1 + Math.sin(e.wob) * 0.06;
       const sprite = SPRITES[e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type];
-      drawBaked(g, sprite, e.x, e.y, 1 / squash, squash, game.px < e.x);
-      if (e.type === 'boss' || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp);
+      const k = e.r / ENEMY_R[e.type]; // elites are drawn bigger
+      if (e.elite) eliteAura(g, e, t);
+      drawBaked(g, sprite, e.x, e.y, k / squash, k * squash, game.px < e.x);
+      if (e.type === 'boss' || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
     }
 
     // player
@@ -299,6 +305,8 @@ function roomLights(game, t, playing) {
   out.push({ x: 0, y: 0, r: (game.floorClear ? 200 : 90) * glow, rgb: '150,110,255', tint: game.floorClear ? 0.1 : 0.05 });
   if (playing) {
     for (const p of game.portals) out.push({ x: p.x, y: p.y - 10, r: 160, rgb: PORTAL_RGB[p.kind], tint: 0.22 });
+    for (const gm of game.gems) if (gm.gear) out.push({ x: gm.x, y: gm.y - 6, r: 50 + gm.gear.rarity * 14, rgb: RARITY_RGB[gm.gear.rarity], tint: 0.06 + gm.gear.rarity * 0.03 });
+    for (const e of game.enemies) if (e.elite) out.push({ x: e.x, y: e.y, r: e.r * 3, rgb: '255,200,80', tint: 0.08 });
     out.push({ x: game.px, y: game.py, r: 200, rgb: '255,200,140', tint: 0.06 });
   }
   return out;
@@ -586,14 +594,45 @@ function glow(g, x, y, r, rgb) {
   g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
-function hpPill(g, x, y, w, k) {
+function hpPill(g, x, y, w, k, elite = false) {
   const h = 3.2;
   g.beginPath(); g.roundRect(x - w / 2, y, w, h, h / 2);
   g.fillStyle = 'rgba(20,14,44,.75)'; g.fill();
   if (k > 0) {
     g.beginPath(); g.roundRect(x - w / 2 + 0.6, y + 0.6, Math.max(h - 1.2, (w - 1.2) * k), h - 1.2, (h - 1.2) / 2);
-    g.fillStyle = '#ff5f7e'; g.fill();
+    g.fillStyle = elite ? '#ffc94d' : '#ff5f7e'; g.fill();
   }
+}
+
+// golden ring and glow under an elite
+function eliteAura(g, e, t) {
+  const p = 1 + Math.sin(t * 4 + e.wob) * 0.08;
+  g.save();
+  const gr = g.createRadialGradient(e.x, e.y, e.r * 0.4, e.x, e.y, e.r * 1.7 * p);
+  gr.addColorStop(0, 'rgba(255,200,80,.35)'); gr.addColorStop(1, 'rgba(255,200,80,0)');
+  g.fillStyle = gr; g.fillRect(e.x - e.r * 2, e.y - e.r * 2, e.r * 4, e.r * 4);
+  g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.05 * p, e.r * 0.36 * p, 0, 0, TAU);
+  g.lineWidth = 2; g.strokeStyle = 'rgba(255,214,110,.85)'; g.stroke();
+  g.restore();
+}
+
+// gear lying on the floor: a beam in the rarity colour and the slot icon
+function gearDrop(g, gm, t) {
+  const item = gm.gear, rgb = RARITY_RGB[item.rarity];
+  const bob = Math.sin(gm.t) * 2;
+  const tall = 26 + item.rarity * 9;
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  const beam = g.createLinearGradient(0, gm.y - tall, 0, gm.y + 4);
+  beam.addColorStop(0, `rgba(${rgb},0)`); beam.addColorStop(1, `rgba(${rgb},${0.35 + item.rarity * 0.08})`);
+  g.fillStyle = beam; g.fillRect(gm.x - 5, gm.y - tall, 10, tall + 4);
+  g.beginPath(); g.ellipse(gm.x, gm.y + 5, 11, 4, 0, 0, TAU);
+  g.fillStyle = `rgba(${rgb},.45)`; g.fill();
+  g.restore();
+  g.beginPath(); g.arc(gm.x, gm.y - 4 + bob, 8.5, 0, TAU);
+  g.fillStyle = 'rgba(20,14,40,.85)'; g.fill();
+  g.lineWidth = 1.8; g.strokeStyle = RARITIES[item.rarity].color; g.stroke();
+  g.save(); g.translate(gm.x, gm.y - 4 + bob); drawIcon(g, gearIcon(item), 13); g.restore();
 }
 
 // jagged lightning between two points; deterministic per segment so it doesn't flicker

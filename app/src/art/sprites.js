@@ -270,6 +270,62 @@ const ICONS = {
     g.beginPath(); g.moveTo(0, -6); g.lineTo(0, 7); g.moveTo(-5.5, -2); g.lineTo(5.5, -2);
     g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,.75)'; g.stroke();
   },
+  // ——— gear (inventory, ground drops) ———
+  gearSword(g) { ICONS.pow(g); },
+  gearBow(g) {
+    g.save(); g.rotate(Math.PI / 4);
+    g.beginPath(); g.moveTo(-2, -11); g.quadraticCurveTo(9, 0, -2, 11);
+    g.lineCap = 'round'; g.lineWidth = 5; g.strokeStyle = OUT; g.stroke();
+    g.lineWidth = 3; g.strokeStyle = '#c8874e'; g.stroke();
+    g.beginPath(); g.moveTo(-2, -11); g.lineTo(-2, 11); g.lineWidth = 1; g.strokeStyle = '#f1e9d8'; g.stroke();
+    g.beginPath(); g.moveTo(-10, 0); g.lineTo(7, 0); g.lineWidth = 1.6; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.moveTo(10, 0); g.lineTo(6, -2.6); g.lineTo(6, 2.6); g.closePath(); ink(g, '#e6ecf5', 1);
+    g.restore();
+  },
+  gearStaff(g) {
+    g.save(); g.rotate(Math.PI / 5);
+    g.beginPath(); g.roundRect(-1.6, -6, 3.2, 18, 1.5); ink(g, '#8a5a3a', 1.2);
+    g.beginPath(); g.arc(0, -8, 5, 0, TAU); ink(g, grad(g, -13, -3, '#c9b8ff', '#7b5cff'), 1.4);
+    shine(g, -1.6, -9.6, 1.6, 1, -0.5, 0.8);
+    g.restore();
+  },
+  gearDagger(g) {
+    g.save(); g.rotate(Math.PI / 4);
+    g.beginPath(); g.moveTo(0, -11); g.lineTo(3, -3); g.lineTo(-3, -3); g.closePath(); ink(g, grad(g, -11, -3, '#ffffff', '#b8c4dc'), 1.2);
+    g.beginPath(); g.roundRect(-5, -3, 10, 2.4, 1.2); ink(g, '#ff4d5e', 1.1);
+    g.beginPath(); g.roundRect(-1.5, -0.6, 3, 6, 1); ink(g, '#3a2f4f', 1.1);
+    g.restore();
+  },
+  gearHelm(g) {
+    g.beginPath(); g.moveTo(-9, 4); g.quadraticCurveTo(-9, -9, 0, -9); g.quadraticCurveTo(9, -9, 9, 4); g.lineTo(9, 7); g.lineTo(-9, 7); g.closePath();
+    ink(g, grad(g, -9, 7, '#e2e8f0', '#8a94a8'), 1.5);
+    g.beginPath(); g.roundRect(-6, 0, 12, 3, 1.5); g.fillStyle = OUT; g.fill();
+    g.beginPath(); g.roundRect(-1.2, -9, 2.4, 9, 1); ink(g, '#ffc94d', 1);
+  },
+  gearArmor(g) {
+    g.beginPath(); g.moveTo(-5, -9); g.lineTo(-10, -6); g.lineTo(-8, 1); g.lineTo(-6, 0); g.lineTo(-6, 10); g.lineTo(6, 10); g.lineTo(6, 0);
+    g.lineTo(8, 1); g.lineTo(10, -6); g.lineTo(5, -9); g.quadraticCurveTo(0, -5, -5, -9);
+    ink(g, grad(g, -9, 10, '#cfd6e4', '#7d879c'), 1.5);
+    g.beginPath(); g.moveTo(0, -5); g.lineTo(0, 9); g.lineWidth = 1.2; g.strokeStyle = 'rgba(42,33,64,.6)'; g.stroke();
+  },
+  gearBoots(g) {
+    g.beginPath(); g.moveTo(-6, -10); g.lineTo(2, -10); g.lineTo(2, 2); g.quadraticCurveTo(10, 2, 10, 7); g.lineTo(10, 9); g.lineTo(-6, 9); g.closePath();
+    ink(g, grad(g, -10, 9, '#b07a50', '#6a4630'), 1.5);
+    g.beginPath(); g.roundRect(-7, -11, 10, 3.5, 1.5); ink(g, '#8a5a3a', 1.1);
+    g.beginPath(); g.rect(-6, 6.5, 16, 2.5); g.fillStyle = OUT; g.fill();
+  },
+  gearAmulet(g) {
+    g.beginPath(); g.arc(0, -4, 8, Math.PI * 0.15, Math.PI * 0.85, true); g.lineWidth = 1.6; g.strokeStyle = '#d6b25e'; g.stroke();
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(5, 5); g.lineTo(0, 11); g.lineTo(-5, 5); g.closePath();
+    ink(g, grad(g, 0, 11, '#ff9ab0', '#d0234f'), 1.4);
+    shine(g, -1.2, 4, 1.2, 0.8, -0.5, 0.8);
+  },
+  gearRing(g) {
+    g.beginPath(); g.arc(0, 3, 7, 0, TAU); g.arc(0, 3, 4.4, 0, TAU, true);
+    ink(g, grad(g, -4, 10, '#ffe7a0', '#d9a020'), 1.4);
+    g.beginPath(); g.moveTo(0, -10); g.lineTo(4, -5); g.lineTo(0, -2); g.lineTo(-4, -5); g.closePath();
+    ink(g, grad(g, -10, -2, '#c9f0ff', '#4fa8e8'), 1.2);
+  },
   // ——— town ———
   inn(g) { // frothy mug
     g.beginPath(); g.roundRect(-8, -5, 13, 15, 3); ink(g, grad(g, -5, 10, '#ffd36b', '#e09a2a'), 1.5);
@@ -369,6 +425,10 @@ const ICONS = {
   },
 };
 export const ICON_IDS = Object.keys(ICONS);
+
+const WEAPON_ICON = { warrior: 'gearSword', archer: 'gearBow', mage: 'gearStaff', assassin: 'gearDagger' };
+const SLOT_ICON = { helm: 'gearHelm', armor: 'gearArmor', boots: 'gearBoots', amulet: 'gearAmulet', ring: 'gearRing' };
+export const gearIcon = (item) => (item.slot === 'weapon' ? WEAPON_ICON[item.classId] : SLOT_ICON[item.slot]);
 
 // Accepts icon ids with or without the prototype "icon" prefix (iconEmber → ember).
 export function drawIcon(g, id, size) {

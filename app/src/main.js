@@ -244,7 +244,9 @@ async function allocateInTown(add) {
 function allocateInRun(add) {
   if (!allocate(tripChar(), add, 0)) return;
   for (const [k, n] of Object.entries(add)) tripAttrs[k] = (tripAttrs[k] || 0) + n;
-  game.setStats(finalStats(tripChar()));
+  const c = tripChar();
+  game.setStats(finalStats(c));
+  game.luk = c.attrs.luk;
   sfx.pickCard();
   openCharPanel();
 }
@@ -277,7 +279,10 @@ async function enterDungeon() {
   scene = 'run';
   ensureAudio(); startMusic();
   const stats = finalStats(current);
-  game.start({ classId: current.classId, stats, hp: currentHp(current), potions: current.potions, level: current.level, exp: current.exp });
+  game.start({
+    classId: current.classId, stats, hp: currentHp(current), potions: current.potions,
+    level: current.level, exp: current.exp, luk: current.attrs.luk,
+  });
   tripAttrs = {};
   CLASSES[current.classId].skills.forEach((sk, i) => {
     const btn = $(i ? 'act-e' : 'act-q');
@@ -299,13 +304,14 @@ async function endRun(died) {
   const r = game.result();
   const trip = {
     exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills,
-    floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions, attrs: tripAttrs,
+    floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
+    attrs: tripAttrs, items: r.items,
   };
   const newRecord = trip.floor > current.records.bestFloor;
-  const { char, levelsGained, goldLost } = applyTrip(current, trip, Date.now());
-  current = char; // keep progress in memory even if the write fails
+  const applied = applyTrip(current, trip, Date.now());
+  current = applied.char; // keep progress in memory even if the write fails
   const saveError = await saveCurrent();
-  renderResults($('results'), { char, trip, levelsGained, goldLost, newRecord, saveError },
+  renderResults($('results'), { ...applied, trip, newRecord, saveError },
     { onContinue: () => enterTown(current, 'gate') });
   showMenu('results');
 }

@@ -13,9 +13,9 @@ Empat bagian; tiap bagian dicek manual oleh pemilik sebelum commit.
 - [x] Verifikasi: tes, build, screenshot PC & HP
 
 ## 5B — Item & drop
-- [ ] `data/items.js`: 6 slot, 6 rarity, varian, bonus, efek khusus Legendaris/Mitos, peluang drop
-- [ ] `meta/itemgen.js` (RNG ber-seed) — tes
-- [ ] Musuh elite; drop gear di dungeon (sinar warna rarity), dibawa pulang; hilang 50% saat mati — tes
+- [x] `data/items.js`: 6 slot, 6 rarity, varian, bonus, efek khusus Legendaris/Mitos, peluang drop
+- [x] `meta/itemgen.js` (RNG ber-seed) — tes
+- [x] Musuh elite; drop gear di dungeon (sinar warna rarity), dibawa pulang; hilang 50% saat mati — tes
 
 ## 5C — Inventori & paper doll
 - [ ] Tab Gear di panel Karakter: daftar, pasang/lepas, perbandingan stat, buang

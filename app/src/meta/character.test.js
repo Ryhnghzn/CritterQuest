@@ -189,3 +189,29 @@ describe('poin stat', () => {
     expect(freePoints(char)).toBe(0);
   });
 });
+
+describe('gear dari perjalanan', () => {
+  const gear = (id) => ({ id, slot: 'helm', classId: null, variant: 0, rarity: 1, itemLevel: 2, base: { maxHp: 15 }, bonuses: [{ stat: 'crit', value: 1 }], unique: null });
+  const trip = (over) => ({ exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: false, hp: 50, potions: 0, ...over });
+
+  it('pulang: semua gear masuk tas', () => {
+    const r = applyTrip(make(), trip({ items: [gear('a'), gear('b')] }), NOW);
+    expect(r.char.inventory.map((i) => i.id)).toEqual(['a', 'b']);
+    expect(r.itemsLost).toEqual([]);
+  });
+
+  it('mati: tiap gear 50% hilang', () => {
+    const rolls = [0.2, 0.7, 0.49, 0.5];
+    const r = applyTrip(make(), trip({ died: true, items: ['a', 'b', 'c', 'd'].map(gear) }), NOW, () => rolls.shift());
+    expect(r.itemsKept.map((i) => i.id)).toEqual(['a', 'c']);
+    expect(r.itemsLost.map((i) => i.id)).toEqual(['b', 'd']);
+  });
+
+  it('tas penuh: sisanya ditinggal; id ganda dibuat unik', () => {
+    const full = { ...make(), inventory: Array.from({ length: 59 }, (_, i) => gear(`g${i}`)) };
+    const r = applyTrip(full, trip({ items: [gear('g1'), gear('z')] }), NOW);
+    expect(r.char.inventory).toHaveLength(60);
+    expect(r.itemsKept[0].id).toBe('g1x');
+    expect(r.itemsLeft.map((i) => i.id)).toEqual(['z']);
+  });
+});

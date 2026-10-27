@@ -17,7 +17,7 @@ export const HAIR_COLORS = 6;
 export const CHAR_EXP_BASE = 30;      // exp to next level = base + growth * level
 export const CHAR_EXP_GROWTH = 20;
 export const CHAR_LEVEL_MAX = 50;
-export const INVENTORY_MAX = 30;
+export const INVENTORY_MAX = 60;
 
 // Controls (spec §4.2 dodge, §5.1).
 export const DODGE = { distance: 150, duration: 0.18, invuln: 0.25, cooldown: 1.2 };
