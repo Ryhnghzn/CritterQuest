@@ -526,7 +526,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   </div>
   <button id="prompt" class="hidden"><kbd>E</kbd><span id="prompttext"></span></button>
   <div id="toast"></div>
-  <button id="cheatbtn" class="hidden" title="Panel cheat (`)">CHEAT</button>
+  <button id="cheatbtn" class="hidden" data-tr-title="Panel cheat (`)" title="Panel cheat (`)">CHEAT</button>
   <div id="cheat" class="hidden"></div>
   <div id="hud" class="hidden">
     <div class="hpbar"><i id="hpfill"></i><span id="hptext"></span></div>
@@ -546,21 +546,21 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
     <button class="act touchbtn" id="act-s3" data-action="skill3" aria-label="Skill 3"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>3</kbd><b class="cost"></b></button>
     <button class="act touchbtn" id="act-s4" data-action="skill4" aria-label="Skill 4"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>4</kbd><b class="cost"></b></button>
     <button class="act touchbtn" id="act-ult" data-action="ult" aria-label="Ultimate"><span class="ic"></span><i class="ultfill"></i><kbd>5</kbd></button>
-    <button class="act big touchbtn" id="act-talk" data-action="talk" aria-label="Bicara"><svg class="i"><use href="#i-chat"/></svg></button>
-    <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd>Spasi</kbd></button>
-    <button class="act big touchbtn" id="act-attack" data-hold="attackHeld" aria-label="Serang"><svg class="i"><use href="#i-sword"/></svg></button>
+    <button class="act big touchbtn" id="act-talk" data-action="talk" data-tr-label="Bicara" aria-label="Bicara"><svg class="i"><use href="#i-chat"/></svg></button>
+    <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd data-tr>Spasi</kbd></button>
+    <button class="act big touchbtn" id="act-attack" data-hold="attackHeld" data-tr-label="Serang" aria-label="Serang"><svg class="i"><use href="#i-sword"/></svg></button>
   </div>
   <div id="belt" class="hidden">
-    <button class="act touchbtn belt" id="pot0" data-action="pot0" aria-label="Ramuan slot 1"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>Z</kbd></button>
-    <button class="act touchbtn belt" id="pot1" data-action="pot1" aria-label="Ramuan slot 2"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>X</kbd></button>
-    <button class="act touchbtn belt" id="pot2" data-action="pot2" aria-label="Ramuan slot 3"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>C</kbd></button>
-    <button class="act touchbtn belt" id="pot3" data-action="pot3" aria-label="Ramuan slot 4"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>V</kbd></button>
+    <button class="act touchbtn belt" id="pot0" data-action="pot0" data-tr-label="Ramuan slot 1" aria-label="Ramuan slot 1"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>Z</kbd></button>
+    <button class="act touchbtn belt" id="pot1" data-action="pot1" data-tr-label="Ramuan slot 2" aria-label="Ramuan slot 2"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>X</kbd></button>
+    <button class="act touchbtn belt" id="pot2" data-action="pot2" data-tr-label="Ramuan slot 3" aria-label="Ramuan slot 3"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>C</kbd></button>
+    <button class="act touchbtn belt" id="pot3" data-action="pot3" data-tr-label="Ramuan slot 4" aria-label="Ramuan slot 4"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>V</kbd></button>
   </div>
   <div id="joy" class="hidden"><i></i></div>
-  <button id="pausebtn" class="touchbtn hidden" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>
-  <button id="charbtn" class="touchbtn hidden" title="Karakter (I)" aria-label="Karakter"><svg class="i"><use href="#i-user"/></svg></button>
-  <button id="autobtn" class="touchbtn hidden" title="Serang otomatis (F)"><span class="dot"></span>AUTO<kbd>F</kbd></button>
-  <button id="mute" title="Suara" aria-label="Suara"><svg class="i on"><use href="#i-sound-on"/></svg><svg class="i off"><use href="#i-sound-off"/></svg></button>
+  <button id="pausebtn" class="touchbtn hidden" data-tr-label="Jeda" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>
+  <button id="charbtn" class="touchbtn hidden" data-tr-title="Karakter (I)" title="Karakter (I)" data-tr-label="Karakter" aria-label="Karakter"><svg class="i"><use href="#i-user"/></svg></button>
+  <button id="autobtn" class="touchbtn hidden" data-tr-title="Serang otomatis (F)" title="Serang otomatis (F)"><span class="dot"></span>AUTO<kbd>F</kbd></button>
+  <button id="mute" data-tr-title="Suara" title="Suara" data-tr-label="Suara" aria-label="Suara"><svg class="i on"><use href="#i-sound-on"/></svg><svg class="i off"><use href="#i-sound-off"/></svg></button>
   <div id="banner"></div>
 
   <div id="title" class="screen title">
@@ -568,15 +568,16 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
       <h1 class="logo">Critter<br>Quest</h1>
       <span class="tag">ARCADE</span>
     </div>
-    <button class="btn big" id="play">Main</button>
-    <div class="help"><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto</div>
+    <button class="btn big" id="play" data-tr>Main</button>
+    <button class="btn ghost small" id="langbtn" title="Language / Bahasa">EN · ID</button>
+    <div class="help" data-tr><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto</div>
   </div>
 
   <div id="slots" class="screen hidden">
-    <h2 class="h">Pilih Petualang</h2>
-    <div class="sub">Tiga slot, progres tersimpan otomatis.</div>
+    <h2 class="h" data-tr>Pilih Petualang</h2>
+    <div class="sub" data-tr>Tiga slot, progres tersimpan otomatis.</div>
     <div class="row" id="slotlist"></div>
-    <button class="btn ghost" id="slotsback">Kembali</button>
+    <button class="btn ghost" id="slotsback" data-tr>Kembali</button>
   </div>
 
   <div id="create" class="screen hidden"></div>
@@ -584,13 +585,14 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   <div id="charpanel" class="screen hidden"></div>
 
   <div id="pause" class="screen hidden">
-    <h2 class="h">Jeda</h2>
+    <h2 class="h" data-tr>Jeda</h2>
     <div class="row">
-      <button class="btn" id="resume">Lanjut</button>
-      <button class="btn ghost" id="surrender">Menyerah</button>
-      <button class="btn ghost" id="toslots">Ganti Slot</button>
+      <button class="btn" id="resume" data-tr>Lanjut</button>
+      <button class="btn ghost" id="surrender" data-tr>Menyerah</button>
+      <button class="btn ghost" id="toslots" data-tr>Ganti Slot</button>
+      <button class="btn ghost" id="langbtn2" title="Language / Bahasa">EN · ID</button>
     </div>
-    <div class="sub" id="pausenote">Menyerah dihitung seperti tumbang: EXP tetap, separuh koin perjalanan hilang.</div>
+    <div class="sub" id="pausenote" data-tr>Menyerah dihitung seperti tumbang: EXP tetap, separuh koin perjalanan hilang.</div>
   </div>
 
   <div id="results" class="screen hidden"></div>
@@ -600,12 +602,12 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   <div class="panel">
     <div id="confirmtext"></div>
     <div class="row">
-      <button class="btn ghost" id="confirmno">Batal</button>
-      <button class="btn" id="confirmyes">Ya</button>
+      <button class="btn ghost" id="confirmno" data-tr>Batal</button>
+      <button class="btn" id="confirmyes" data-tr>Ya</button>
     </div>
   </div>
 </div>
-<div id="nosave" class="hidden">Progres tidak akan tersimpan di browser ini</div>
+<div id="nosave" class="hidden" data-tr>Progres tidak akan tersimpan di browser ini</div>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

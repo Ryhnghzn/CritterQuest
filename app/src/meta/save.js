@@ -1,6 +1,7 @@
 // Save storage (spec §9): IndexedDB, or an in-memory fallback when it is
 // unavailable (blocked, some private modes). No DOM; the IndexedDB factory is
 // injectable so tests can use fake-indexeddb.
+import { tr, t } from '../i18n.js';
 import { SLOT_COUNT } from '../data/balance.js';
 import { readSlot, readSettings, validateSlot } from './schema.js';
 
@@ -28,7 +29,7 @@ function idbBackend(db) {
     const req = fn(tx.objectStore(name));
     tx.oncomplete = () => resolve(req.result);
     tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error || new Error('transaksi dibatalkan'));
+    tx.onabort = () => reject(tx.error || new Error(tr('transaksi dibatalkan')));
   });
   return {
     get: (name, key) => run(name, 'readonly', (s) => s.get(key)),
@@ -62,10 +63,10 @@ function makeStore(b, persistent) {
 
     async saveSlot(data) {
       const err = validateSlot(data);
-      if (err.length) throw new Error(`data slot tidak sah: ${err.join(', ')}`);
+      if (err.length) throw new Error(t('data slot tidak sah: {list}', { list: err.join(', ') }));
       const prev = await b.get('slots', data.slot);
       if (prev !== undefined && readSlot(prev).status === 'corrupt') {
-        throw new Error(`slot ${data.slot} rusak; hapus dulu sebelum menyimpan`);
+        throw new Error(t('slot {n} rusak; hapus dulu sebelum menyimpan', { n: data.slot }));
       }
       await b.put('slots', data);
     },

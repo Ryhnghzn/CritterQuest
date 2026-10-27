@@ -3,6 +3,7 @@ import { DODGE, ENERGY, ULT } from '../data/balance.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
 import { clockText } from '../meta/clock.js';
+import { tr, t } from '../i18n.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,16 +14,16 @@ export function updateHUD(game) {
   $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
   $('lvltext').textContent = `LV ${game.level}`;
   const waves = game.dungeon.floors[game.floor - 1]?.waves.length ?? 0;
-  $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? 'bersih' : `G${game.wave + 1}/${waves}`}`;
+  $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? tr('bersih') : `G${game.wave + 1}/${waves}`}`;
   $('kills').textContent = game.kills;
   $('gold').textContent = game.gold;
   $('dmg').style.opacity = game.flash > 0 ? 0.9 : 0;
   $('enfill').style.transform = `scaleX(${game.energy / ENERGY.max})`;
-  $('entext').textContent = `Energi ${Math.floor(game.energy)}`;
+  $('entext').textContent = t('Energi {n}', { n: Math.floor(game.energy) });
   $('enbar').classList.toggle('empty', game.noEnergyT > 0);
   const chips = [];
-  if (game.shield > 0) chips.push(['shield', `Perisai ${Math.ceil(game.shield)}`]);
-  for (const id of ['wind', 'rage']) if (game.buffs[id] > 0) chips.push([id, `${POTIONS[id].name.replace('Ramuan ', '')} ${Math.ceil(game.buffs[id])}s`]);
+  if (game.shield > 0) chips.push(['shield', t('Perisai {n}', { n: Math.ceil(game.shield) })]);
+  for (const id of ['wind', 'rage']) if (game.buffs[id] > 0) chips.push([id, `${POTIONS[id].name.replace(/^Ramuan | Potion$/, '')} ${Math.ceil(game.buffs[id])}s`]);
   const box = $('buffs'), key = chips.map((c) => c[1]).join('|');
   if (box.dataset.key !== key) {
     box.dataset.key = key;
@@ -72,7 +73,7 @@ export function updateBelt(belt, potions, cd) {
     if (b.dataset.id !== String(id)) {
       b.dataset.id = String(id);
       b.querySelector('.ic').replaceChildren(...(id ? [iconCanvas(`pot_${id}`, 28)] : []));
-      b.title = id ? `${POTIONS[id].name}: ${POTIONS[id].desc} (${'ZXCV'[i]})` : `Slot ${'ZXCV'[i]} kosong`;
+      b.title = id ? `${POTIONS[id].name}: ${POTIONS[id].desc} (${'ZXCV'[i]})` : t('Slot {k} kosong', { k: 'ZXCV'[i] });
     }
     const n = id ? potions[id] : 0;
     b.querySelector('.cnt').textContent = n;
@@ -97,7 +98,7 @@ export function updateTownHUD(char, town) {
 const PHASE_MARK = { dawn: '◒', sun: '☀', dusk: '◓', moon: '☾' };
 export function updateClock(clock) {
   const c = clockText(clock);
-  const text = `${PHASE_MARK[c.phase.icon]} Hari ${c.day} · ${c.time} · ${c.phase.name}`;
+  const text = `${PHASE_MARK[c.phase.icon]} ${t('Hari {d}', { d: c.day })} · ${c.time} · ${c.phase.name}`;
   for (const id of ['tclock', 'clock']) {
     const el = $(id);
     if (el.textContent !== text) { el.textContent = text; el.dataset.phase = c.phase.icon; }

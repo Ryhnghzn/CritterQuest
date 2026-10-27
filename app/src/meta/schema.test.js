@@ -195,12 +195,12 @@ describe('readSlot', () => {
 
 describe('readSettings', () => {
   it('menerima pengaturan versi terkini', () => {
-    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true };
+    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id' };
     expect(readSettings(s)).toEqual(s);
   });
-  it('memigrasi versi 1 (tanpa autoAttack) ke versi 2', () => {
+  it('memigrasi versi 1 → 3 (autoAttack mati, bahasa Inggris)', () => {
     expect(readSettings({ version: 1, muted: true, lastSlot: 1 }))
-      .toEqual({ version: 2, muted: true, lastSlot: 1, autoAttack: false });
+      .toEqual({ version: 3, muted: true, lastSlot: 1, autoAttack: false, lang: 'en' });
   });
   it.each([
     [null],
@@ -208,5 +208,7 @@ describe('readSettings', () => {
     [{ version: 2, muted: false, lastSlot: 3, autoAttack: false }],
     [{ version: 2, muted: false, lastSlot: 0, autoAttack: 'ya' }],
     [{ version: 3, muted: false, lastSlot: 0, autoAttack: false }],
+    [{ version: 3, muted: false, lastSlot: 0, autoAttack: false, lang: 'fr' }],
+    [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' }],
   ])('menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); });
 });

@@ -1,5 +1,6 @@
 // Save format (spec §9.2–9.3): version migration and validation. Pure — never
 // touches storage, so corrupt data is only ever reported, never rewritten.
+import { tr, t } from '../i18n.js';
 import { CLASSES } from '../data/classes.js';
 import {
   SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL, SKILL_SLOTS,
@@ -87,12 +88,12 @@ const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 export const nameLength = (s) => [...s].length; // counts emoji as one character
 
 export function migrate(data, steps = MIGRATIONS, target = SAVE_VERSION) {
-  if (!isObj(data) || !isInt(data.version, 1)) throw new Error('versi tidak dikenal');
-  if (data.version > target) throw new Error(`versi ${data.version} lebih baru dari game (${target})`);
+  if (!isObj(data) || !isInt(data.version, 1)) throw new Error(tr('versi tidak dikenal'));
+  if (data.version > target) throw new Error(t('versi {v} lebih baru dari game ({max})', { v: data.version, max: target }));
   let out = structuredClone(data);
   while (out.version < target) {
     const step = steps[out.version];
-    if (!step) throw new Error(`tidak ada migrasi dari versi ${out.version}`);
+    if (!step) throw new Error(t('tidak ada migrasi dari versi {v}', { v: out.version }));
     out = step(out);
   }
   return out;
@@ -181,21 +182,23 @@ export function readSlot(raw) {
   let data;
   try { data = migrate(raw); } catch (e) { return { status: 'corrupt', reason: e.message, raw }; }
   const err = validateSlot(data);
-  if (err.length) return { status: 'corrupt', reason: `field tidak sah: ${err.join(', ')}`, raw };
+  if (err.length) return { status: 'corrupt', reason: t('field tidak sah: {list}', { list: err.join(', ') }), raw };
   return { status: 'ok', data };
 }
 
 // Settings (spec §9.2) have their own version: v2 added autoAttack.
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 const SETTINGS_MIGRATIONS = {
   1: (d) => ({ ...d, version: 2, autoAttack: false }),
+  2: (d) => ({ ...d, version: 3, lang: 'en' }), // spec §23: English by default
 };
+const SETTINGS_LANGS = ['en', 'id'];
 
 // Raw settings → current-version settings, or null when unusable (caller uses defaults).
 export function readSettings(raw) {
   let s;
   try { s = migrate(raw, SETTINGS_MIGRATIONS, SETTINGS_VERSION); } catch (_) { return null; }
   if (typeof s.muted !== 'boolean' || !isInt(s.lastSlot, 0, SLOT_COUNT - 1)
-    || typeof s.autoAttack !== 'boolean') return null;
-  return { version: SETTINGS_VERSION, muted: s.muted, lastSlot: s.lastSlot, autoAttack: s.autoAttack };
+    || typeof s.autoAttack !== 'boolean' || !SETTINGS_LANGS.includes(s.lang)) return null;
+  return { version: SETTINGS_VERSION, muted: s.muted, lastSlot: s.lastSlot, autoAttack: s.autoAttack, lang: s.lang };
 }

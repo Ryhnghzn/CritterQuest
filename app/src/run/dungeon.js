@@ -2,6 +2,7 @@
 // (run/room.js) of the chosen dungeon; waves walk in through the 4 lanes, a
 // cleared floor opens portals in the centre (blue = down, gold = home). Pure
 // logic on the run state (run/run.js); the run decides what an exit means.
+import { tr, t } from '../i18n.js';
 import { rand, rrange } from '../core/rng.js';
 import { ROOM, WAVE, PORTAL, COINS, FLOOR_HP_STEP } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
@@ -49,7 +50,7 @@ export function startFloor(run, floor) {
   run.room = makeRoom(floor === 1 && run.dungeon === DUNGEONS[0] ? 'round' : SHAPES[Math.floor(rand() * SHAPES.length)], rand);
   beginWave(run, 0);
   run.spawnT = FIRST_SPAWN;
-  run.showBanner(`Lantai ${floor}`);
+  run.showBanner(t('Lantai {n}', { n: floor }));
 }
 
 function beginWave(run, i) {
@@ -72,7 +73,7 @@ export function spawnFromLane(run, type) {
   e.y = lane.y + lane.dy * along + lane.dx * side;
   e.lane = lane;
   e.entering = true;
-  if (e.boss) run.showBanner(`${ENEMIES[type].name.toUpperCase()} DATANG!`);
+  if (e.boss) run.showBanner(t('{name} DATANG!', { name: ENEMIES[type].name.toUpperCase() }));
   return e;
 }
 
@@ -121,7 +122,7 @@ export function stepDungeon(run, dt) {
       run.waveGap += dt;
       if (run.waveGap >= WAVE.gap) {
         beginWave(run, run.wave + 1);
-        run.showBanner(`Gelombang ${run.wave + 1}/${waves.length}`);
+        run.showBanner(t('Gelombang {a}/{b}', { a: run.wave + 1, b: waves.length }));
       }
     }
   } else if (run.enemies.length === 0) {
@@ -135,19 +136,19 @@ function clearFloor(run) {
   const bonus = COINS.floorBonus * run.floor;
   run.addGold(bonus);
   addMats(run, { dust: MAT_DROPS.floor.dust * run.floor }, 0, -60);
-  run.addFloater(run.px, run.py - 40, `+${bonus} koin`, '#ffd166');
+  run.addFloater(run.px, run.py - 40, t('+{n} koin', { n: bonus }), '#ffd166');
   for (let i = 0; i < DROP.chestItems; i++) dropGear(run, 'chest', 0, 0);
   for (const g of run.gems) g.mag = true; // nothing left behind on the floor
   if (run.floor >= FLOOR_COUNT) {
     run.cleared = true;
     run.portals = [{ kind: 'home', x: 0, y: 0, armed: false }];
-    run.showBanner('Dungeon tamat!');
+    run.showBanner(tr('Dungeon tamat!'));
   } else {
     run.portals = [
       { kind: 'down', x: -PORTAL.gap, y: 0, armed: false },
       { kind: 'home', x: PORTAL.gap, y: 0, armed: false },
     ];
-    run.showBanner(`Lantai ${run.floor} bersih!`);
+    run.showBanner(t('Lantai {n} bersih!', { n: run.floor }));
   }
 }
 
@@ -207,7 +208,7 @@ export function dropCoins(run, e) {
   if (e.boss || e.elite) {
     const v = e.boss ? COINS.boss : ELITE.gold;
     run.addGold(v);
-    run.addFloater(e.x, e.y - e.r - 10, `+${v} koin`, '#ffd166');
+    run.addFloater(e.x, e.y - e.r - 10, t('+{n} koin', { n: v }), '#ffd166');
     return;
   }
   if (rand() >= COINS.chance) return;

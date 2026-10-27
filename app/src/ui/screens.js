@@ -1,4 +1,5 @@
 // Screen manager + small DOM helpers shared by the menu screens.
+import { tr } from '../i18n.js';
 const $ = (id) => document.getElementById(id);
 const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'pause', 'results'];
 
@@ -26,8 +27,8 @@ export function button(label, cls, onClick) {
 // In-game yes/no dialog → Promise<boolean>.
 export function confirmDialog(text, yesLabel = 'YA') {
   const box = $('confirm');
-  $('confirmtext').textContent = text;
-  $('confirmyes').textContent = yesLabel;
+  $('confirmtext').textContent = tr(text);
+  $('confirmyes').textContent = tr(yesLabel);
   box.classList.remove('hidden');
   return new Promise((resolve) => {
     const done = (v) => () => {

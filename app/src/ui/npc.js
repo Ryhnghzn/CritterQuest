@@ -15,6 +15,7 @@ import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
+import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
 let newLook = null;     // Tukang Cukur: style being tried on
@@ -44,21 +45,21 @@ export function renderNpc(box, npc, ctx) {
 
   const head = el('div', 'npchead');
   const info = el('div', 'info');
-  const role = el('span', 'pill', npc.title || TITLES[npc.role]);
+  const role = el('span', 'pill', npc.title || tr(TITLES[npc.role]));
   role.style.setProperty('--c', npc.outfit[0]);
   info.append(el('div', 'nm', npc.name), role);
   head.append(stage(portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
-  panel.append(head, el('div', 'npcline', `“${npc.role === 'talk' ? ctx.line : LINES[npc.role]}”`));
+  panel.append(head, el('div', 'npcline', `“${npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
 
   if (npc.role !== 'talk') {
     const wallet = el('div', 'records');
-    for (const text of [`${char.gold} koin`, `HP ${Math.ceil(hp)} / ${Math.round(maxHp)}`]) wallet.append(el('span', 'hchip', text));
+    for (const text of [t('{n} koin', { n: char.gold }), `HP ${Math.ceil(hp)} / ${Math.round(maxHp)}`]) wallet.append(el('span', 'hchip', text));
     panel.append(wallet);
   }
 
   const actions = el('div', 'row');
   if (npc.role === 'inn') {
-    const b = button(`Tidur — ${innPrice(char)} koin`, 'btn', ctx.onInn);
+    const b = button(t('Tidur — {n} koin', { n: innPrice(char) }), 'btn', ctx.onInn);
     b.id = 'npc-inn';
     actions.append(b);
   } else if (npc.role === 'potion') {
@@ -69,14 +70,14 @@ export function renderNpc(box, npc, ctx) {
     panel.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gear') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    panel.append(tabBar([['peti', 'Peti'], ['jual', 'Jual'], ['tempa', 'Tempa'], ['urai', 'Urai']], smithTab, (t) => { smithTab = t; redraw(); }));
+    panel.append(tabBar([['peti', 'Peti'], ['jual', 'Jual'], ['tempa', 'Tempa'], ['urai', 'Urai']], smithTab, (tab) => { smithTab = tab; redraw(); }));
     if (smithTab === 'peti') panel.append(chestCards(char, ctx.onBuyChest));
     else if (smithTab === 'jual') panel.append(sellPanel(char, ctx.onSell, redraw));
     else if (smithTab === 'tempa') panel.append(forgePanel(char, ctx, redraw));
     else panel.append(salvagePanel(char, ctx.onSalvage, redraw));
   } else if (npc.role === 'jeweler') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    panel.append(tabBar([['pasang', 'Pasang'], ['gabung', 'Gabung']], gemTab, (t) => { gemTab = t; redraw(); }));
+    panel.append(tabBar([['pasang', 'Soket'], ['gabung', 'Gabung']], gemTab, (tab) => { gemTab = tab; redraw(); }));
     panel.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
   } else if (npc.role === 'gate') {
     const open = unlockedDungeons(char);
@@ -84,15 +85,15 @@ export function renderNpc(box, npc, ctx) {
     panel.append(dungeonPicker(char, open, () => renderNpc(box, npc, { ...ctx, message: null })));
     const rec = char.records.dungeons[gateDungeon];
     const deepest = Math.max(1, rec.bestFloor);
-    const b = button(deepest > 1 ? `Lanjut ke Lantai ${deepest}` : 'Masuk Dungeon', 'btn big', () => ctx.onEnter(gateDungeon, deepest));
+    const b = button(deepest > 1 ? t('Lanjut ke Lantai {n}', { n: deepest }) : tr('Masuk Dungeon'), 'btn big', () => ctx.onEnter(gateDungeon, deepest));
     b.id = 'npc-enter';
     actions.append(b);
     panel.append(actions);
     if (deepest > 1) {
       const floors = el('div', 'floors');
-      floors.append(el('span', 'note', 'atau mulai dari:'));
+      floors.append(el('span', 'note', tr('atau mulai dari:')));
       for (let f = 1; f < deepest; f++) {
-        const fb = button(`Lantai ${f}`, 'btn ghost small', () => ctx.onEnter(gateDungeon, f));
+        const fb = button(t('Lantai {n}', { n: f }), 'btn ghost small', () => ctx.onEnter(gateDungeon, f));
         fb.dataset.floor = f;
         floors.append(fb);
       }
@@ -106,9 +107,9 @@ export function renderNpc(box, npc, ctx) {
     msg.textContent = ctx.message.text; msg.classList.toggle('ok', ctx.message.ok);
     if (ctx.message.color) msg.style.color = ctx.message.color;
   }
-  else if (npc.role === 'gate' && hp < maxHp * 0.5) msg.textContent = 'HP-mu masih rendah. Istirahat dulu di Penginapan?';
+  else if (npc.role === 'gate' && hp < maxHp * 0.5) msg.textContent = tr('HP-mu masih rendah. Istirahat dulu di Penginapan?');
 
-  const close = button('Tutup', 'btn ghost', ctx.onClose);
+  const close = button(tr('Tutup'), 'btn ghost', ctx.onClose);
   close.id = 'npc-close';
   panel.append(msg, close);
   box.append(panel);
@@ -137,14 +138,14 @@ function potionList(char, onBuy) {
 // Four belt slots; tapping one puts the next potion type in it.
 function beltEditor(char, onBelt) {
   const wrap = el('div', 'beltedit');
-  wrap.append(el('span', 'note', 'Sabuk (tombol Z X C V) — ketuk untuk ganti:'));
+  wrap.append(el('span', 'note', tr('Sabuk (tombol Z X C V) — ketuk untuk ganti:')));
   const row = el('div', 'row');
   char.belt.forEach((id, i) => {
     const b = button('', 'beltslot', () => onBelt(i));
     b.dataset.slot = i;
     if (id) b.append(iconCanvas(`pot_${id}`, 26));
     b.append(el('kbd', null, 'ZXCV'[i]));
-    b.title = id ? POTIONS[id].name : 'Kosong';
+    b.title = id ? POTIONS[id].name : tr('Kosong');
     row.append(b);
   });
   wrap.append(row);
@@ -154,7 +155,7 @@ function beltEditor(char, onBelt) {
 // rarity odds of a chest, e.g. "Langka 50% · Epik 35% · …"
 function odds(source) {
   const w = DROP_WEIGHTS[source], total = w.reduce((a, b) => a + b, 0);
-  return w.map((x, r) => (x ? `${RARITIES[r].name} ${Math.round((x / total) * 1000) / 10}%` : null)).filter(Boolean).join(' · ');
+  return w.map((x, r) => (x ? `${RARITIES[r].name} ${num(Math.round((x / total) * 1000) / 10)}%` : null)).filter(Boolean).join(' · ');
 }
 
 function chestCards(char, onBuy) {
@@ -166,7 +167,7 @@ function chestCards(char, onBuy) {
     b.prepend(el('span', 'coin'));
     b.dataset.chest = kind;
     b.disabled = char.gold < price;
-    card.append(el('b', null, c.name), el('span', 'note', `1 gear LV ${char.level}`), el('span', 'odds', odds(c.source)), b);
+    card.append(el('b', null, c.name), el('span', 'note', t('1 gear LV {n}', { n: char.level })), el('span', 'odds', odds(c.source)), b);
     row.append(card);
   }
   return row;
@@ -176,28 +177,28 @@ function sellPanel(char, onSell, redraw) {
   for (const id of toSell) if (!char.inventory.some((x) => x.id === id)) toSell.delete(id);
   const wrap = el('div', 'sellbox');
   const head = el('div', 'attrhead');
-  head.append(el('b', null, 'Jual gear'), el('span', 'pts', 'ketuk untuk memilih'));
+  head.append(el('b', null, tr('Jual gear')), el('span', 'pts', tr('ketuk untuk memilih')));
   const grid = el('div', 'gearbag');
   const items = char.inventory.slice().sort((a, b) => a.rarity - b.rarity || a.itemLevel - b.itemLevel);
   for (const it of items) {
     const worn = isEquipped(char, it);
-    const t = button('', `gtile${toSell.has(it.id) ? ' sel' : ''}${worn ? ' empty' : ''}`, () => {
+    const g = button('', `gtile${toSell.has(it.id) ? ' sel' : ''}${worn ? ' empty' : ''}`, () => {
       if (worn) return;
       if (toSell.has(it.id)) toSell.delete(it.id); else toSell.add(it.id);
       redraw();
     });
-    t.style.setProperty('--c', RARITIES[it.rarity].color);
-    t.append(gearCanvas(it, 26), el('span', 'ilv', String(it.itemLevel)));
-    if (worn) t.append(el('span', 'eq', 'E'));
-    t.title = `${itemName(it)} — ${worn ? 'sedang dipakai' : `${SELL_PRICE(it)} koin`}`;
-    t.dataset.item = it.id;
-    grid.append(t);
+    g.style.setProperty('--c', RARITIES[it.rarity].color);
+    g.append(gearCanvas(it, 26), el('span', 'ilv', String(it.itemLevel)));
+    if (worn) g.append(el('span', 'eq', 'E'));
+    g.title = `${itemName(it)} — ${worn ? tr('sedang dipakai') : t('{n} koin', { n: SELL_PRICE(it) })}`;
+    g.dataset.item = it.id;
+    grid.append(g);
   }
-  if (!items.length) grid.append(el('div', 'note', 'Tasmu kosong.'));
+  if (!items.length) grid.append(el('div', 'note', tr('Tasmu kosong.')));
   const total = char.inventory.filter((it) => toSell.has(it.id)).reduce((n, it) => n + SELL_PRICE(it), 0);
   const act = el('div', 'row');
-  const pickJunk = (r) => button(r === 0 ? 'Pilih semua Biasa' : 'Pilih ≤ Bagus', 'btn ghost small', () => { toSell = new Set(junkIds(char, r)); redraw(); });
-  const sell = button(`Jual ${toSell.size} — ${total} koin`, 'btn small', () => { const ids = [...toSell]; toSell.clear(); onSell(ids); });
+  const pickJunk = (r) => button(tr(r === 0 ? 'Pilih semua Biasa' : 'Pilih ≤ Bagus'), 'btn ghost small', () => { toSell = new Set(junkIds(char, r)); redraw(); });
+  const sell = button(t('Jual {n} — {g} koin', { n: toSell.size, g: total }), 'btn small', () => { const ids = [...toSell]; toSell.clear(); onSell(ids); });
   sell.id = 'npc-sell';
   sell.disabled = !toSell.size;
   act.append(pickJunk(0), pickJunk(1), sell);
@@ -213,9 +214,9 @@ function trainerList(char, onUpgrade, onRespec, onTalentRespec) {
     const ic = el('span', 'sic');
     ic.append(iconCanvas(id === 'hp' ? 'vit' : id === 'atk' ? 'pow' : 'mag', 28));
     const txt = el('div', 'stx');
-    txt.append(el('b', null, u.name), el('span', null, `${u.desc} per tingkat`));
+    txt.append(el('b', null, u.name), el('span', null, t('{d} per tingkat', { d: u.desc })));
     const price = upgradePrice(id, tier);
-    const b = button(maxed ? 'Maks' : String(price), 'btn small buy', () => onUpgrade(id));
+    const b = button(maxed ? tr('Maks') : String(price), 'btn small buy', () => onUpgrade(id));
     if (!maxed) b.prepend(el('span', 'coin'));
     b.dataset.upgrade = id;
     b.disabled = maxed || char.gold < price;
@@ -226,25 +227,25 @@ function trainerList(char, onUpgrade, onRespec, onTalentRespec) {
   const ic = el('span', 'sic');
   ic.append(iconCanvas('trainer', 28));
   const txt = el('div', 'stx');
-  txt.append(el('b', null, 'Atur Ulang Poin'), el('span', null, 'Semua poin atribut kembali, bisa dibagi lagi'));
+  txt.append(el('b', null, tr('Atur Ulang Poin')), el('span', null, tr('Semua poin atribut kembali, bisa dibagi lagi')));
   const price = respecPrice(char);
   const b = button(String(price), 'btn small buy', onRespec);
   b.prepend(el('span', 'coin'));
   b.id = 'npc-respec';
   b.disabled = !spentPoints(char) || char.gold < price;
-  row.append(ic, txt, el('span', 'have', `${spentPoints(char)} poin`), b);
+  row.append(ic, txt, el('span', 'have', t('{n} poin', { n: spentPoints(char) })), b);
   list.append(row);
   // talents (spec §21)
   const trow = el('div', 'shoprow');
   const tic = el('span', 'sic'); tic.append(iconCanvas('hst', 28));
   const ttx = el('div', 'stx');
-  ttx.append(el('b', null, 'Atur Ulang Bakat'), el('span', null, 'Semua poin bakat kembali, bisa dibagi lagi'));
+  ttx.append(el('b', null, tr('Atur Ulang Bakat')), el('span', null, tr('Semua poin bakat kembali, bisa dibagi lagi')));
   const tp = talentRespecPrice(char);
   const tb = button(String(tp), 'btn small buy', onTalentRespec);
   tb.prepend(el('span', 'coin'));
   tb.id = 'npc-talent-respec';
   tb.disabled = !spentTalents(char) || char.gold < tp;
-  trow.append(tic, ttx, el('span', 'have', `${spentTalents(char)} poin`), tb);
+  trow.append(tic, ttx, el('span', 'have', t('{n} poin', { n: spentTalents(char) })), tb);
   list.append(trow);
   return list;
 }
@@ -269,10 +270,10 @@ function barberPanel(char, onHaircut, redraw) {
     colors.append(b);
   });
   const same = newLook.hair === char.look.hair && newLook.hairColor === char.look.hairColor;
-  const go = button(same ? 'Pilih gaya baru' : `Potong — ${BARBER_PRICE} koin`, 'btn small', () => { const l = newLook; newLook = null; onHaircut(l); });
+  const go = button(same ? tr('Pilih gaya baru') : t('Potong — {n} koin', { n: BARBER_PRICE }), 'btn small', () => { const l = newLook; newLook = null; onHaircut(l); });
   go.id = 'npc-haircut';
   go.disabled = same || char.gold < BARBER_PRICE;
-  opts.append(el('span', 'note', 'Gaya'), hair, el('span', 'note', 'Warna'), colors, go);
+  opts.append(el('span', 'note', tr('Gaya')), hair, el('span', 'note', tr('Warna')), colors, go);
   wrap.append(pv, opts);
   return wrap;
 }
@@ -292,8 +293,8 @@ function dungeonPicker(char, open, redraw) {
     card.dataset.dungeon = d.id;
     card.style.setProperty('--c', `rgb(${d.theme.light})`);
     card.append(el('b', null, d.name));
-    if (isOpen) card.append(el('span', null, `Lantai ${rec.bestFloor}/5${rec.clears ? ` · tamat ${rec.clears}×` : ''}`));
-    else card.append(el('span', null, `Terkunci — tamatkan ${DUNGEONS[i - 1].short}`));
+    if (isOpen) card.append(el('span', null, `${t('Lantai {n}/5', { n: rec.bestFloor })}${rec.clears ? ` · ${t('tamat {n}×', { n: rec.clears })}` : ''}`));
+    else card.append(el('span', null, t('Terkunci — tamatkan {d}', { d: DUNGEONS[i - 1].short })));
     row.append(card);
   });
   return row;
@@ -302,7 +303,7 @@ function dungeonPicker(char, open, redraw) {
 function tabBar(tabs, current, onPick) {
   const bar = el('div', 'tabs');
   for (const [id, label] of tabs) {
-    const b = button(label, `tab${id === current ? ' on' : ''}`, () => onPick(id));
+    const b = button(tr(label), `tab${id === current ? ' on' : ''}`, () => onPick(id));
     b.dataset.tab = id;
     bar.append(b);
   }

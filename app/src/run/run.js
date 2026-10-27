@@ -1,5 +1,6 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
+import { tr, t } from '../i18n.js';
 import { rand, rrange, rint, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT } from '../data/balance.js';
 import { expToNext } from '../meta/character.js';
@@ -263,11 +264,11 @@ export class Game {
     } else if (p.shield) {
       this.shieldMax = this.shield = s.maxHp * p.shield;
       this.shieldT = p.dur;
-      this.addFloater(this.px, this.py - 30, 'Perisai!', p.light);
+      this.addFloater(this.px, this.py - 30, tr('Perisai!'), p.light);
     } else {
       this.buffs[id] = p.dur;
       this.applyBuffs();
-      this.addFloater(this.px, this.py - 30, p.name.replace('Ramuan ', '') + '!', p.light);
+      this.addFloater(this.px, this.py - 30, `${p.name.replace('Ramuan ', '').replace(/ Potion$/, '')}!`, p.light);
     }
     return true;
   }
@@ -385,7 +386,7 @@ export class Game {
     }
     if (e.boss) {
       this.bossKills += 1;
-      this.showBanner(`${ENEMIES[e.type].name.toUpperCase()} TUMBANG!`);
+      this.showBanner(t('{name} TUMBANG!', { name: ENEMIES[e.type].name.toUpperCase() }));
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2;
         this.gems.push({ x: e.x + Math.cos(a) * 30, y: e.y + Math.sin(a) * 30, v: 5, mag: false, big: true, t: rand() * 6 });
@@ -443,8 +444,8 @@ export class Game {
         this.level++;
         this.levelsGained++;
         this.xpNeed = expToNext(this.level);
-        this.showBanner(`Naik level! LV ${this.level}`);
-        this.addFloater(this.px, this.py - 44, `+${POINTS_PER_LEVEL} poin`, '#8fffc0');
+        this.showBanner(t('Naik level! LV {n}', { n: this.level }));
+        this.addFloater(this.px, this.py - 44, t('+{n} poin', { n: POINTS_PER_LEVEL }), '#8fffc0');
         sfx.levelup();
       }
     }
@@ -456,7 +457,7 @@ export class Game {
       this.revived = true;
       this.stats.hp = this.stats.maxHp * this.fx.phoenix;
       this.invuln = FX.phoenixInvuln;
-      this.showBanner('Bangkit dari abu!');
+      this.showBanner(tr('Bangkit dari abu!'));
       this.spawnBurst(this.px, this.py, '#ff9a3c', 30);
       sfx.levelup();
       return;

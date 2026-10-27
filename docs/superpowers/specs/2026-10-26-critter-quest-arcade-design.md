@@ -617,3 +617,21 @@ Atas permintaan pemilik: skill maksimal 4 terpasang + 1 ultimate; teks game teta
   - Mage **Hujan Meteor**: 2,4 dtk di titik bidik, 6 × 600% radius 220, mendorong.
   - Assassin **Tarian Seribu Bayangan**: kebal 2 dtk, 12 × 260% radius 130 di sekeliling.
 - **Save versi 9:** `skills` menjadi 4 slot (`null` = kosong); `migrate()` v8 → v9 menambah dua slot kosong.
+
+## 23. Dua Bahasa: Inggris & Indonesia (2026-10-27)
+
+- Game tampil dalam **bahasa Inggris (bawaan)** atau **bahasa Indonesia**. Tombol **EN · ID** ada di layar judul dan menu jeda; memilih bahasa menyimpan pengaturan lalu memuat ulang halaman.
+- **Teks sumber tetap bahasa Indonesia di kode.** Bahasa Inggris diambil dari kamus `src/i18n/` yang memakai teks Indonesia sebagai kunci:
+  - `en-ui.js` untuk `ui/*` dan `index.html`;
+  - `en-game.js` untuk pesan `main.js`, `run/`, `render/` dan `meta/`;
+  - `data-en.js` (`localizeData()`) mengganti nama dan deskripsi di `data/` ke bahasa Inggris saat game dimulai.
+- **Cara menulis teks baru:**
+  - teks biasa memakai `tr('…')`;
+  - teks berisi angka memakai `t('… {n} …', { n })`;
+  - angka desimal memakai `num()`, yang menampilkan koma di bahasa Indonesia dan titik di bahasa Inggris;
+  - di HTML pakai atribut `data-tr`, `data-tr-title` atau `data-tr-label`;
+  - lalu tambahkan terjemahannya ke kamus yang sesuai.
+- Satu teks Indonesia hanya bisa punya satu terjemahan. Jika artinya harus berbeda, pakai kata Indonesia yang berbeda; misalnya tab soket di Tukang Permata berlabel "Soket", bukan "Pasang".
+- Di bahasa Inggris, akhiran bonus di nama item ditaruh di depan (misalnya "Swift Iron Sword").
+- Modul `i18n` bawaannya bahasa Indonesia, sehingga tes Vitest tetap memakai teks Indonesia. Tes `data-en.test.js` memeriksa bahwa semua data punya terjemahan.
+- **Pengaturan versi 3:** menambah `lang` (`'en'` | `'id'`). `migrate()` v2 → v3 mengisi `'en'`. Save karakter tidak berubah.

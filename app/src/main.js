@@ -2,6 +2,8 @@
 // screens together and runs the fixed-timestep loop.
 // Flow (spec §13.1): Judul → Pilih Slot → [Buat Karakter] → KOTA ⇄ DUNGEON → Hasil Perjalanan → KOTA.
 // Scenes: 'menu' (title/slots/create/results over the town backdrop), 'town', 'run'.
+import { setLang, getLang, applyDom, tr, t, num } from './i18n.js';
+import { localizeData } from './i18n/data-en.js';
 import { Game, ST } from './run/run.js';
 import { View } from './render/view.js';
 import { Lighting } from './render/light.js';
@@ -66,7 +68,21 @@ if (!store.persistent) $('nosave').classList.remove('hidden');
 function legacyMuted() {
   try { return localStorage.getItem('cs-muted') === '1'; } catch (_) { return false; }
 }
-const settings = (await store.loadSettings()) ?? { version: 2, muted: legacyMuted(), lastSlot: 0, autoAttack: false };
+const settings = (await store.loadSettings()) ?? { version: 3, muted: legacyMuted(), lastSlot: 0, autoAttack: false, lang: 'en' };
+// language first: everything below renders in it (spec §23)
+setLang(settings.lang);
+localizeData();
+applyDom();
+document.documentElement.lang = settings.lang;
+// switching language saves the setting and reloads, so every screen is rebuilt in it
+function switchLang() {
+  settings.lang = getLang() === 'en' ? 'id' : 'en';
+  store.saveSettings(settings).finally(() => location.reload());
+}
+for (const id of ['langbtn', 'langbtn2']) {
+  $(id).textContent = getLang() === 'en' ? 'EN · ID' : 'ID · EN';
+  $(id).addEventListener('click', switchLang);
+}
 setMuted(settings.muted);
 $('mute').classList.toggle('muted', settings.muted);
 
@@ -97,7 +113,7 @@ function toast(text) {
 // Writes the character; a failed write keeps playing from memory and says so.
 async function saveCurrent() {
   current = { ...current, clock: Math.floor(worldClock) };
-  try { await store.saveSlot(current); return null; } catch (e) { toast(`Gagal menyimpan: ${e.message}`); return e.message; }
+  try { await store.saveSlot(current); return null; } catch (e) { toast(t('Gagal menyimpan: {err}', { err: e.message })); return e.message; }
 }
 
 // ——— scene + HUD visibility ———
@@ -167,8 +183,8 @@ async function createChar(slot, form) {
 
 async function deleteSlot(slot) {
   const e = slots[slot];
-  const what = e.status === 'ok' ? `${e.data.name} (LV ${e.data.level})` : `data rusak di slot ${slot + 1}`;
-  if (!(await confirmDialog(`Hapus ${what}? Tidak bisa dibatalkan.`, 'Hapus'))) return;
+  const what = e.status === 'ok' ? `${e.data.name} (LV ${e.data.level})` : t('data rusak di slot {n}', { n: slot + 1 });
+  if (!(await confirmDialog(t('Hapus {what}? Tidak bisa dibatalkan.', { what }), tr('Hapus')))) return;
   await store.deleteSlot(slot);
   await toSlots();
 }
@@ -201,33 +217,33 @@ function openNpc(npc, message = null) {
   renderNpc($('npc'), npc, {
     char: current, hp: town.hp, maxHp: town.maxHp, message,
     line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
-    onInn: () => serve(innRest, 'Kamu tidur nyenyak. HP pulih penuh!'),
-    onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), `${POTIONS[id].name}, segar dari kuali. Hehehe.`),
+    onInn: () => serve(innRest, tr('Kamu tidur nyenyak. HP pulih penuh!')),
+    onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), t('{name}, segar dari kuali. Hehehe.', { name: POTIONS[id].name })),
     onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
     onBuyChest: (kind) => serve((c, now) => buyChest(c, kind, now), (r) => ({
-      text: `Kau mendapat ${itemName(r.item)} (${RARITIES[r.item.rarity].name})!`, color: RARITIES[r.item.rarity].color,
+      text: t('Kau mendapat {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color,
     })),
-    onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => `Terjual! +${r.gold} koin.`),
+    onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => t('Terjual! +{n} koin.', { n: r.gold })),
     onEnhance: (id) => serve((c, now) => enhance(c, id, now), (r) => (r.success
-      ? { text: `Berhasil! Sekarang +${r.plus}.`, color: '#e6c27a' }
-      : { text: `Gagal… ${r.plus >= 10 || r.plus === 9 ? `turun ke +${r.plus}.` : 'tingkatnya tetap.'}`, color: '#e0526a' })),
-    onReroll: (id, line) => serve((c, now) => reroll(c, id, line, now), (r) => `Bonus baru: ${statText(r.bonus.stat, r.bonus.value)}`),
-    onSalvage: (ids) => serve((c, now) => salvage(c, ids, now), (r) => `Diurai! ${Object.entries(r.mats).filter(([, n]) => n).map(([m, n]) => `+${n} ${MATS[m].name}`).join(', ')}${r.gems.length ? ` + ${r.gems.length} permata` : ''}`),
-    onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), 'Permata terpasang. Berkilau, bukan?'),
-    onUnsocket: (id, slot) => serve((c, now) => unsocket(c, id, slot, now), 'Permata dilepas dan kembali ke tasmu.'),
-    onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), 'Tiga menjadi satu — permata naik tingkat!'),
+      ? { text: t('Berhasil! Sekarang +{n}.', { n: r.plus }), color: '#e6c27a' }
+      : { text: r.plus >= 10 || r.plus === 9 ? t('Gagal… turun ke +{n}.', { n: r.plus }) : tr('Gagal… tingkatnya tetap.'), color: '#e0526a' })),
+    onReroll: (id, line) => serve((c, now) => reroll(c, id, line, now), (r) => t('Bonus baru: {stat}', { stat: statText(r.bonus.stat, r.bonus.value) })),
+    onSalvage: (ids) => serve((c, now) => salvage(c, ids, now), (r) => t('Diurai! {mats}', { mats: Object.entries(r.mats).filter(([, n]) => n).map(([m, n]) => `+${n} ${MATS[m].name}`).join(', ') }) + (r.gems.length ? t(' + {n} permata', { n: r.gems.length }) : '')),
+    onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), tr('Permata terpasang. Berkilau, bukan?')),
+    onUnsocket: (id, slot) => serve((c, now) => unsocket(c, id, slot, now), tr('Permata dilepas dan kembali ke tasmu.')),
+    onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), tr('Tiga menjadi satu — permata naik tingkat!')),
     onTalentRespec: async () => {
-      if (await confirmDialog(`Atur ulang semua bakat seharga ${talentRespecPrice(current)} koin?`, 'Atur ulang')) {
-        serve(respecTalents, 'Bakatmu kembali. Bagi lagi di tab Skill.');
+      if (await confirmDialog(t('Atur ulang semua bakat seharga {n} koin?', { n: talentRespecPrice(current) }), tr('Atur ulang'))) {
+        serve(respecTalents, tr('Bakatmu kembali. Bagi lagi di tab Skill.'));
       } else openNpc(townNpc);
     },
-    onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), `${UPGRADES[id].name} selesai. Kau makin kuat!`),
+    onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), t('{name} selesai. Kau makin kuat!', { name: UPGRADES[id].name })),
     onRespec: async () => {
-      if (await confirmDialog(`Atur ulang semua poin atribut seharga ${respecPrice(current)} koin?`, 'Atur ulang')) {
-        serve(respec, 'Poinmu kembali. Bagi lagi di panel Karakter (I).');
+      if (await confirmDialog(t('Atur ulang semua poin atribut seharga {n} koin?', { n: respecPrice(current) }), tr('Atur ulang'))) {
+        serve(respec, tr('Poinmu kembali. Bagi lagi di panel Karakter (I).'));
       } else openNpc(townNpc);
     },
-    onHaircut: (look) => serve((c, now) => changeLook(c, look, now), 'Nah, rapi sekali! Cocok untukmu.'),
+    onHaircut: (look) => serve((c, now) => changeLook(c, look, now), tr('Nah, rapi sekali! Cocok untukmu.')),
     onEnter: enterDungeon,
     onClose: closeTownOverlay,
   });
@@ -255,7 +271,7 @@ async function serve(action, okText) {
   const r = action(current, Date.now());
   if (r.ok && r.char.clock !== current.clock) worldClock = r.char.clock; // slept at the Inn
   if (!r.ok) {
-    openNpc(townNpc, { text: REFUSE[r.reason] && typeof REFUSE[r.reason] === 'string' ? REFUSE[r.reason] : REFUSE.full[townNpc.role], ok: false });
+    openNpc(townNpc, { text: tr(REFUSE[r.reason] && typeof REFUSE[r.reason] === 'string' ? REFUSE[r.reason] : REFUSE.full[townNpc.role]), ok: false });
     return;
   }
   current = r.char;
@@ -264,7 +280,7 @@ async function serve(action, okText) {
   if (okText) sfx.heart(); else sfx.pickCard();
   const err = await saveCurrent();
   const ok = typeof okText === 'function' ? okText(r) : okText;
-  openNpc(townNpc, err ? { text: `Gagal menyimpan: ${err}`, ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
+  openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
   updateTownHUD(current, town);
 }
 
@@ -300,7 +316,7 @@ function openCharPanel() {
       onUnequip: (slot) => changeGear((c, now) => unequip(c, slot, now)),
       onDiscard: async (id) => {
         const it = current.inventory.find((x) => x.id === id);
-        if (await confirmDialog(`Buang ${itemName(it)}? Tidak bisa dikembalikan.`, 'Buang')) changeGear((c, now) => discard(c, id, now));
+        if (await confirmDialog(t('Buang {item}? Tidak bisa dikembalikan.', { item: itemName(it) }), tr('Buang'))) changeGear((c, now) => discard(c, id, now));
         else openCharPanel();
       },
     },
@@ -362,8 +378,8 @@ async function drinkInTown(slot) {
   const id = current.belt[slot];
   const next = usePotion(current, id, Date.now());
   if (next === current) {
-    toast(!id ? 'Slot sabuk kosong.' : current.potions[id] <= 0 ? 'Tidak punya ramuan itu.'
-      : !isHeal(id) ? 'Ramuan ini hanya berguna di dungeon.' : 'HP sudah penuh.');
+    toast(tr(!id ? 'Slot sabuk kosong.' : current.potions[id] <= 0 ? 'Tidak punya ramuan itu.'
+      : !isHeal(id) ? 'Ramuan ini hanya berguna di dungeon.' : 'HP sudah penuh.'));
     return;
   }
   current = next;
@@ -393,7 +409,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
     const btn = $(`act-s${i + 1}`);
     btn.classList.toggle('none', !sk);
     btn.querySelector('.ic').replaceChildren(...(sk ? [iconCanvas(sk.icon || sk.id, 30)] : []));
-    btn.title = sk ? `${sk.name} (${i + 1})` : `Slot ${i + 1} kosong`;
+    btn.title = sk ? `${sk.name} (${i + 1})` : t('Slot {n} kosong', { n: i + 1 });
   });
   const ult = ultimateOf(current);
   $('act-ult').classList.toggle('locked', !ult);
@@ -491,7 +507,7 @@ async function cheatChar(change, msg) {
   town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
   updateTownHUD(current, town);
   await saveCurrent();
-  toast(msg);
+  toast(tr(msg));
   drawCheat();
   if (screen === 'charpanel') openCharPanel();
 }
@@ -504,12 +520,12 @@ function addToBag(c, items) {
 
 const cheatActions = {
   close: toggleCheat,
-  gold: (n) => cheatChar((c) => { c.gold += n; }, `+${n} koin`),
+  gold: (n) => cheatChar((c) => { c.gold += n; }, t('+{n} koin', { n })),
   level: (n) => cheatChar((c) => { c.level = Math.min(CHAR_LEVEL_MAX, c.level + n); c.exp = 0; }, 'Level naik'),
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),
   heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
   resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
-  hours: (n) => { worldClock += n * 60; toast(`+${n} jam`); },
+  hours: (n) => { worldClock += n * 60; toast(t('+{n} jam', { n })); },
   mats: () => cheatChar((c) => { c.mats.dust += 500; c.mats.crystal += 100; c.mats.core += 20; }, 'Material bertambah'),
   gems: () => cheatChar((c) => { for (const g in c.gems) c.gems[g][0] += 6; }, 'Permata bertambah'),
   unlockFloors: () => cheatChar((c) => {
@@ -517,8 +533,8 @@ const cheatActions = {
   }, 'Semua dungeon & lantai terbuka di gerbang'),
   gear: (rarity, slot, n) => {
     let added = 0;
-    return cheatChar((c) => { added = addToBag(c, Array.from({ length: n }, () => cheatItem(rarity, slot, c.level))); }, `${n} gear dibuat`)
-      .then(() => { if (added < n) toast(`Tas penuh: hanya ${added} masuk`); });
+    return cheatChar((c) => { added = addToBag(c, Array.from({ length: n }, () => cheatItem(rarity, slot, c.level))); }, t('{n} gear dibuat', { n }))
+      .then(() => { if (added < n) toast(t('Tas penuh: hanya {n} masuk', { n: added })); });
   },
   uniques: () => cheatChar((c) => {
     const mine = UNIQUES.filter((u) => u.classId === null || u.classId === c.classId);
@@ -630,7 +646,7 @@ function frame(dt) {
       const near = screen === null ? town.near : null;
       $('prompt').classList.toggle('hidden', !near);
       document.body.classList.toggle('near', !!near);
-      if (near) $('prompttext').textContent = `Bicara dengan ${near.name}`;
+      if (near) $('prompttext').textContent = t('Bicara dengan {name}', { name: near.name });
     }
   }
   updateJoystick((scene === 'run' && game.state === ST.PLAY) || (scene === 'town' && screen === null));

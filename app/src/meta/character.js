@@ -1,5 +1,6 @@
 // Permanent character: creation, level/EXP and final stats (spec §4.1, §4.3).
 // Every function returns new objects; save data is never mutated in place.
+import { tr, t } from '../i18n.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
@@ -39,7 +40,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     records: { trips: 0, kills: 0, bossKills: 0, dungeons: freshDungeonRecords() },
   };
   const err = validateSlot(c);
-  if (err.length) throw new Error(`karakter tidak sah: ${err.join(', ')}`);
+  if (err.length) throw new Error(t('karakter tidak sah: {list}', { list: err.join(', ') }));
   return c;
 }
 

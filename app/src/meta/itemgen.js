@@ -6,6 +6,7 @@ import {
 } from '../data/items.js';
 import { SOCKETS, ENHANCE, GEMS } from '../data/forge.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
+import { getLang, num } from '../i18n.js';
 
 const ROUND = { atk: 0, maxHp: 0, moveSpd: 1, def: 1, crit: 1, cdr: 1, magnet: 0, atkSpd: 3, critDmg: 3 };
 const round = (stat, v) => { const k = 10 ** ROUND[stat]; return Math.round(v * k) / k; };
@@ -87,7 +88,11 @@ export function itemName(item) {
   const names = item.slot === 'weapon' ? VARIANTS.weapon[item.classId] : VARIANTS[item.slot];
   const first = item.bonuses[0];
   const plus = item.plus ? `+${item.plus} ` : '';
-  return plus + (u ? u.name : first ? `${names[item.variant]} ${BONUSES[first.stat].suffix}` : names[item.variant]);
+  if (u) return plus + u.name;
+  if (!first) return plus + names[item.variant];
+  // the bonus word follows the noun in Indonesian, precedes it in English
+  const suffix = BONUSES[first.stat].suffix;
+  return plus + (getLang() === 'en' ? `${suffix} ${names[item.variant]}` : `${names[item.variant]} ${suffix}`);
 }
 
 // Every stat the item adds: base (× forge level) + bonuses + socketed gems, summed per stat.
@@ -105,12 +110,12 @@ export function effectText(item) {
   const u = uniqueOf(item);
   if (!u) return null;
   const v = Math.round(u.v * 1000) / 10; // every effect value is a fraction
-  return EFFECTS[u.effect].desc.replace('{v}', String(v).replace('.', ','));
+  return EFFECTS[u.effect].desc.replace('{v}', num(v));
 }
 
 // "+12 ATK", "+4,5% Kec. serang" …
 export function statText(stat, value) {
   const b = BONUSES[stat];
   const shown = b.pct ? `${Math.round(value * 1000) / 10}%` : `${value}${b.unit || ''}`;
-  return `+${shown.replace('.', ',')} ${b.label}`;
+  return `+${num(shown)} ${b.label}`;
 }

@@ -1,6 +1,7 @@
 // Building interiors (spec §15.1): a room seen from above with a tall back wall,
 // themed furniture, shopkeepers and townsfolk, lit warmly from fireplaces,
 // forges and cauldrons.
+import { tr } from '../i18n.js';
 import { INTERIORS } from '../data/town.js';
 import { OUT } from '../art/sprites.js';
 import { npcAt } from '../town/town.js';
@@ -122,7 +123,7 @@ export class InteriorRenderer {
     glow(g, r, t);
     for (const p of npcs) tag(g, p.n, p.x, p.y, t, town.near === p.n);
     if (town && avatar) auraFront(g, town.x, town.y + 10, avatar.fx, bestRarity(avatar.look.gear), t);
-    plate(g, 'Keluar', r.w / 2, r.h - 6, '#2a2440');
+    plate(g, tr('Keluar'), r.w / 2, r.h - 6, '#2a2440');
     v.vignetteOverlay();
     doorFade(v, town);
   }

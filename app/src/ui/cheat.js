@@ -3,6 +3,7 @@
 // The panel only builds buttons — every action lives in main.js (`actions`).
 import { el, button } from './screens.js';
 import { RARITIES, SLOT_IDS, SLOTS } from '../data/items.js';
+import { tr, t } from '../i18n.js';
 
 export const CHEAT_ON = import.meta.env.DEV || new URLSearchParams(location.search).has('cheat');
 
@@ -12,17 +13,17 @@ let rarity = 3, slot = 'acak';
 export function renderCheat(box, ctx, actions, redraw) {
   box.replaceChildren();
   const head = el('div', 'chhead');
-  head.append(el('b', null, 'Panel Cheat'), button('×', 'chx', actions.close));
+  head.append(el('b', null, tr('Panel Cheat')), button('×', 'chx', actions.close));
   box.append(head);
   const section = (title, ...rows) => {
     const s = el('div', 'chsec');
-    s.append(el('span', 'chtitle', title), ...rows);
+    s.append(el('span', 'chtitle', tr(title)), ...rows);
     box.append(s);
   };
   const row = (...btns) => { const r = el('div', 'chrow'); r.append(...btns); return r; };
-  const b = (label, fn) => button(label, 'chb', fn);
+  const b = (label, fn) => button(tr(label), 'chb', fn);
 
-  if (ctx.scene === 'menu') { box.append(el('div', 'note', 'Muat karakter dulu.')); return; }
+  if (ctx.scene === 'menu') { box.append(el('div', 'note', tr('Muat karakter dulu.'))); return; }
 
   if (ctx.scene === 'town') {
     section('Karakter',
@@ -41,7 +42,7 @@ export function renderCheat(box, ctx, actions, redraw) {
   });
   const slots = el('div', 'chrow');
   for (const s of ['acak', ...SLOT_IDS]) {
-    slots.append(button(s === 'acak' ? 'Acak' : SLOTS[s].name, `chb${s === slot ? ' on' : ''}`, () => { slot = s; redraw(); }));
+    slots.append(button(s === 'acak' ? tr('Acak') : SLOTS[s].name, `chb${s === slot ? ' on' : ''}`, () => { slot = s; redraw(); }));
   }
   if (ctx.scene === 'town') {
     section('Gear (masuk tas)', rar, slots,
@@ -51,7 +52,7 @@ export function renderCheat(box, ctx, actions, redraw) {
     section('Dungeon',
       row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),
       row(b('Bersihkan lantai', actions.clearFloor), b('+100 EXP', () => actions.exp(100))),
-      row(...[1, 2, 3, 4, 5].map((f) => b(`Lantai ${f}`, () => actions.floor(f)))));
+      row(...[1, 2, 3, 4, 5].map((f) => button(t('Lantai {n}', { n: f }), 'chb', () => actions.floor(f)))));
     section('Jatuhkan gear di dekatku', rar,
       row(b('Jatuhkan 1', () => actions.drop(rarity, 1)), b('Jatuhkan 5', () => actions.drop(rarity, 5))));
   }

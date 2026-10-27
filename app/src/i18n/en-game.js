@@ -1,0 +1,99 @@
+// English for the game texts (spec §23): main.js messages, dungeon banners &
+// floaters (run/), canvas labels (render/), save errors (meta/).
+// Indonesian source text → English; {name} placeholders must match.
+export default {
+  // ——— dungeon banners & floaters (run/) ———
+  'Lantai {n}': 'Floor {n}',
+  '{name} DATANG!': '{name} APPROACHES!',
+  '{name} TUMBANG!': '{name} HAS FALLEN!',
+  'Gelombang {a}/{b}': 'Wave {a}/{b}',
+  '+{n} koin': '+{n} coins',
+  'Dungeon tamat!': 'Dungeon cleared!',
+  'Lantai {n} bersih!': 'Floor {n} cleared!',
+  'Perisai!': 'Shield!',
+  'Naik level! LV {n}': 'Level up! LV {n}',
+  '+{n} poin': '+{n} points',
+  'Bangkit dari abu!': 'Risen from the ashes!',
+
+  // ——— canvas labels (render/) ———
+  Turun: 'Descend',
+  Pulang: 'Return',
+  Keluar: 'Exit',
+
+  // ——— save & data errors (meta/) ———
+  'versi tidak dikenal': 'unknown version',
+  'versi {v} lebih baru dari game ({max})': 'version {v} is newer than the game ({max})',
+  'tidak ada migrasi dari versi {v}': 'no migration from version {v}',
+  'field tidak sah: {list}': 'invalid fields: {list}',
+  'transaksi dibatalkan': 'transaction aborted',
+  'data slot tidak sah: {list}': 'invalid slot data: {list}',
+  'slot {n} rusak; hapus dulu sebelum menyimpan': 'slot {n} is corrupt; delete it before saving',
+  'karakter tidak sah: {list}': 'invalid character: {list}',
+
+  // ——— main.js: saving, slots, prompts ———
+  'Gagal menyimpan: {err}': 'Save failed: {err}',
+  'data rusak di slot {n}': 'corrupt data in slot {n}',
+  'Hapus {what}? Tidak bisa dibatalkan.': 'Delete {what}? This cannot be undone.',
+  Hapus: 'Delete',
+  'Bicara dengan {name}': 'Talk to {name}',
+  'Slot {n} kosong': 'Slot {n} empty',
+
+  // ——— NPC services ———
+  'Kamu tidur nyenyak. HP pulih penuh!': 'You slept soundly. HP fully restored!',
+  '{name}, segar dari kuali. Hehehe.': '{name}, fresh from the cauldron. Heh heh heh.',
+  'Kau mendapat {item} ({rarity})!': 'You got {item} ({rarity})!',
+  'Terjual! +{n} koin.': 'Sold! +{n} coins.',
+  'Berhasil! Sekarang +{n}.': 'Success! Now +{n}.',
+  'Gagal… turun ke +{n}.': 'Failed… dropped to +{n}.',
+  'Gagal… tingkatnya tetap.': 'Failed… the level stays.',
+  'Bonus baru: {stat}': 'New bonus: {stat}',
+  'Diurai! {mats}': 'Salvaged! {mats}',
+  ' + {n} permata': ' + {n} gems',
+  'Permata terpasang. Berkilau, bukan?': 'Gem socketed. Shiny, isn\'t it?',
+  'Permata dilepas dan kembali ke tasmu.': 'Gem removed and returned to your bag.',
+  'Tiga menjadi satu — permata naik tingkat!': 'Three become one — the gem grows stronger!',
+  'Atur ulang semua bakat seharga {n} koin?': 'Reset all talents for {n} coins?',
+  'Atur ulang': 'Reset',
+  'Bakatmu kembali. Bagi lagi di tab Skill.': 'Your talents are back. Spend them again in the Skills tab.',
+  '{name} selesai. Kau makin kuat!': '{name} complete. You grow stronger!',
+  'Atur ulang semua poin atribut seharga {n} koin?': 'Reset all attribute points for {n} coins?',
+  'Poinmu kembali. Bagi lagi di panel Karakter (I).': 'Your points are back. Spend them again in the Character panel (I).',
+  'Nah, rapi sekali! Cocok untukmu.': 'There, nice and neat! It suits you.',
+  'Buang {item}? Tidak bisa dikembalikan.': 'Discard {item}? It cannot be recovered.',
+  Buang: 'Discard',
+
+  // ——— refusals ———
+  'HP-mu sudah penuh.': 'Your HP is already full.',
+  'Tasmu sudah penuh ramuan itu.': 'You can\'t carry any more of that potion.',
+  'Koinmu belum cukup.': 'Not enough coins.',
+  'Tasmu penuh. Jual dulu beberapa barang.': 'Your bag is full. Sell something first.',
+  'Lepas dulu gear yang sedang dipakai.': 'Unequip that gear first.',
+  'Tidak ada yang perlu diubah.': 'Nothing to change.',
+  'Sudah mentok.': 'Already at the maximum.',
+  'Itu gaya rambutmu sekarang.': 'That\'s already your hairstyle.',
+  'Tidak bisa.': 'Can\'t do that.',
+  'Bahanmu belum cukup.': 'Not enough materials.',
+  'Soket itu tidak bisa dipakai.': 'That socket can\'t be used.',
+  'Permatamu belum cukup.': 'Not enough gems.',
+  'Barang itu tidak ada.': 'That item doesn\'t exist.',
+
+  // ——— potions in town ———
+  'Slot sabuk kosong.': 'That belt slot is empty.',
+  'Tidak punya ramuan itu.': 'You don\'t have that potion.',
+  'Ramuan ini hanya berguna di dungeon.': 'This potion only works in the dungeon.',
+  'HP sudah penuh.': 'HP is already full.',
+
+  // ——— cheat panel toasts ———
+  'Level naik': 'Level up',
+  'Ramuan penuh': 'Potions refilled',
+  'HP penuh': 'HP full',
+  'Poin dikembalikan': 'Points refunded',
+  '+{n} jam': '+{n} hours',
+  'Material bertambah': 'Materials added',
+  'Permata bertambah': 'Gems added',
+  'Semua dungeon & lantai terbuka di gerbang': 'All dungeons & floors unlocked at the gate',
+  'Tas penuh: hanya {n} masuk': 'Bag full: only {n} added',
+  '{n} gear dibuat': '{n} gear created',
+  'Semua item unik masuk tas': 'All unique items added to the bag',
+  'Tas dikosongkan': 'Bag emptied',
+};

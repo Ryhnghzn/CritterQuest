@@ -10,18 +10,19 @@ import { dollGear } from '../meta/gear.js';
 import { renderGearTab } from './gear.js';
 import { renderSkillTab } from './skilltab.js';
 import { DUNGEONS } from '../data/dungeons.js';
+import { tr, t, num } from '../i18n.js';
 
 let tab = 'status'; // 'status' | 'gear', kept between openings
 
 const STAT_ROWS = [
   ['maxHp', 'HP maks', (v) => Math.round(v)],
   ['atk', 'ATK', (v) => Math.round(v)],
-  ['def', 'DEF', (v) => (Math.round(v * 10) / 10).toString().replace('.', ',')],
+  ['def', 'DEF', (v) => num(Math.round(v * 10) / 10)],
   ['atkSpd', 'Kec. serang', (v) => `×${v.toFixed(2)}`],
-  ['crit', 'Kritis', (v) => `${+v.toFixed(1)}%`],
+  ['crit', 'Kritis', (v) => `${num(+v.toFixed(1))}%`],
   ['critDmg', 'Dmg kritis', (v) => `×${v.toFixed(2)}`],
   ['moveSpd', 'Gerak', (v) => Math.round(v)],
-  ['cdr', 'CDR', (v) => `${+v.toFixed(1)}%`],
+  ['cdr', 'CDR', (v) => `${num(+v.toFixed(1))}%`],
   ['magnet', 'Magnet', (v) => Math.round(v)],
 ];
 
@@ -56,8 +57,8 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   const cls = el('span', 'pill', CLASSES[char.classId].name);
   cls.style.setProperty('--c', color);
   const line = el('div', 'note');
-  line.append(maxed ? 'Level maks' : `EXP ${char.exp} / ${need}`, ' · ');
-  line.append(el('span', 'gold', `${char.gold} koin`), ` · Ramuan ${POTION_IDS.reduce((n, id) => n + char.potions[id], 0)}`);
+  line.append(maxed ? tr('Level maks') : `EXP ${char.exp} / ${need}`, ' · ');
+  line.append(el('span', 'gold', t('{n} koin', { n: char.gold })), ` · ${t('Ramuan {n}', { n: POTION_IDS.reduce((n, id) => n + char.potions[id], 0) })}`);
   const info = el('div', 'info');
   const top = el('div');
   top.append(cls);
@@ -67,7 +68,7 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
 
   const attrs = el('div', 'panel attrs');
   const attrHead = el('div', 'attrhead');
-  attrHead.append(el('b', null, 'Atribut'), el('span', free > 0 ? 'pts on' : 'pts', `${free} poin`));
+  attrHead.append(el('b', null, tr('Atribut')), el('span', free > 0 ? 'pts on' : 'pts', t('{n} poin', { n: free })));
   attrs.append(attrHead);
   for (const a of ATTRS) {
     const row = el('div', 'attr');
@@ -76,15 +77,15 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
     const plus = button('+', 'btn small plus', () => onAdd(a.id));
     plus.disabled = free <= 0;
     plus.dataset.attr = a.id;
-    plus.setAttribute('aria-label', `Tambah ${a.name}`);
+    plus.setAttribute('aria-label', t('Tambah {a}', { a: a.name }));
     row.append(el('span', 'an', a.name), val, el('span', 'ad', a.desc), plus);
     attrs.append(row);
   }
   if (marked) {
     const act = el('div', 'row');
-    const save = button('Simpan', 'btn small', onSave);
+    const save = button(tr('Simpan'), 'btn small', onSave);
     save.id = 'attr-save';
-    act.append(save, button('Batal', 'btn ghost small', onCancel));
+    act.append(save, button(tr('Batal'), 'btn ghost small', onCancel));
     attrs.append(act);
   }
 
@@ -97,24 +98,24 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   for (const [key, label, fmt] of STAT_ROWS) {
     const cell = el('div', 'stat');
     const v = el('b', s[key] > base[key] + 1e-9 ? 'up' : null, String(fmt(s[key])));
-    cell.append(el('span', null, label), v);
+    cell.append(el('span', null, tr(label)), v);
     grid.append(cell);
   }
   const r = char.records;
   const rec = el('div', 'records');
   const reached = DUNGEONS.filter((d) => r.dungeons[d.id].bestFloor > 0)
-    .map((d) => ['trophy', `${d.short} ${r.dungeons[d.id].bestFloor}/5${r.dungeons[d.id].clears ? ` · tamat ${r.dungeons[d.id].clears}×` : ''}`]);
-  for (const [icon, text] of [...reached, ['clock', `${r.trips} perjalanan`], ['skull', `${r.kills} kill`], ['skull', `${r.bossKills} bos`]]) {
+    .map((d) => ['trophy', `${d.short} ${r.dungeons[d.id].bestFloor}/5${r.dungeons[d.id].clears ? ` · ${t('tamat {n}×', { n: r.dungeons[d.id].clears })}` : ''}`]);
+  for (const [icon, text] of [...reached, ['clock', t('{n} perjalanan', { n: r.trips })], ['skull', t('{n} kill', { n: r.kills })], ['skull', t('{n} bos', { n: r.bossKills })]]) {
     const chip = el('span', 'hchip');
     chip.append(svgIcon(icon), text);
     rec.append(chip);
   }
   const panel = el('div', 'panel');
   panel.append(grid, rec);
-  const close = button('Tutup', 'btn ghost', onClose);
+  const close = button(tr('Tutup'), 'btn ghost', onClose);
   close.id = 'char-close';
   const tabs = el('div', 'tabs');
-  for (const [id, label] of [['status', 'Status'], ['skill', 'Skill'], ['gear', `Gear (${char.inventory.length})`]]) {
+  for (const [id, label] of [['status', tr('Status')], ['skill', tr('Skill')], ['gear', t('Gear ({n})', { n: char.inventory.length })]]) {
     const b = button(label, `tab${tab === id ? ' on' : ''}`, () => { tab = id; redraw(); });
     b.dataset.tab = id;
     tabs.append(b);

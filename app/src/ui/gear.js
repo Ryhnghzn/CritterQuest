@@ -10,6 +10,7 @@ import { INVENTORY_MAX } from '../data/balance.js';
 import { EQUIP_SLOTS } from '../meta/schema.js';
 import { itemName, statText, effectText } from '../meta/itemgen.js';
 import { equippedItem, isEquipped, canEquip, compare } from '../meta/gear.js';
+import { tr, t, num } from '../i18n.js';
 
 const SLOT_ICON = { weapon: 'gearSword', helm: 'gearHelm', armor: 'gearArmor', boots: 'gearBoots', amulet: 'gearAmulet', ring: 'gearRing' };
 let selected = null; // id of the item shown in the detail card (kept across redraws)
@@ -30,54 +31,54 @@ export function renderGearTab(char, opts, redraw) {
   const worn = el('div', 'gearworn');
   for (const slot of EQUIP_SLOTS) {
     const it = equippedItem(char, slot);
-    const t = tile(it, it ? () => pick(it.id) : null, slot);
-    t.classList.add('slot');
-    if (it && it.id === selected) t.classList.add('sel');
-    worn.append(t);
+    const g = tile(it, it ? () => pick(it.id) : null, slot);
+    g.classList.add('slot');
+    if (it && it.id === selected) g.classList.add('sel');
+    worn.append(g);
   }
 
   const bag = el('div', 'gearbag');
   for (const it of sorted(char.inventory)) {
-    const t = tile(it, () => pick(it.id));
-    if (it.id === selected) t.classList.add('sel');
-    if (isEquipped(char, it)) t.append(el('span', 'eq', 'E'));
-    bag.append(t);
+    const g = tile(it, () => pick(it.id));
+    if (it.id === selected) g.classList.add('sel');
+    if (isEquipped(char, it)) g.append(el('span', 'eq', 'E'));
+    bag.append(g);
   }
-  if (!char.inventory.length) bag.append(el('div', 'note', 'Tas kosong. Gear didapat di dungeon.'));
+  if (!char.inventory.length) bag.append(el('div', 'note', tr('Tas kosong. Gear didapat di dungeon.')));
 
   const head = el('div', 'attrhead');
-  head.append(el('b', null, 'Terpasang'), el('span', 'pts', `Tas ${char.inventory.length}/${INVENTORY_MAX}`));
+  head.append(el('b', null, tr('Terpasang')), el('span', 'pts', t('Tas {n}/{m}', { n: char.inventory.length, m: INVENTORY_MAX })));
   const left = el('div', 'panel gearside');
-  left.append(head, worn, el('b', 'bagtitle', 'Tas'), bag);
+  left.append(head, worn, el('b', 'bagtitle', tr('Tas')), bag);
   const right = el('div', 'panel gdetail');
   const it = selected && char.inventory.find((x) => x.id === selected);
   if (it) detail(right, char, it, opts);
-  else right.append(el('div', 'note', 'Pilih gear untuk melihat detailnya.'));
+  else right.append(el('div', 'note', tr('Pilih gear untuk melihat detailnya.')));
   wrap.append(left, right);
   return wrap;
 }
 
 function tile(it, onClick, slot = null) {
-  const t = button('', 'gtile', onClick || (() => {}));
+  const g = button('', 'gtile', onClick || (() => {}));
   if (it) {
-    t.style.setProperty('--c', RARITIES[it.rarity].color);
-    t.append(gearCanvas(it, 28), el('span', 'ilv', String(it.itemLevel)));
-    if (it.plus) t.append(el('span', 'iplus', `+${it.plus}`));
-    t.title = itemName(it);
-    t.dataset.item = it.id;
+    g.style.setProperty('--c', RARITIES[it.rarity].color);
+    g.append(gearCanvas(it, 28), el('span', 'ilv', String(it.itemLevel)));
+    if (it.plus) g.append(el('span', 'iplus', `+${it.plus}`));
+    g.title = itemName(it);
+    g.dataset.item = it.id;
   } else {
-    t.classList.add('empty');
-    t.append(iconCanvas(SLOT_ICON[slot], 24));
-    t.title = `${SLOTS[slot].name} kosong`;
-    t.disabled = true;
+    g.classList.add('empty');
+    g.append(iconCanvas(SLOT_ICON[slot], 24));
+    g.title = t('{s} kosong', { s: SLOTS[slot].name });
+    g.disabled = true;
   }
-  return t;
+  return g;
 }
 
 const signed = (stat, d) => {
   const b = BONUSES[stat];
   const v = b.pct ? Math.round(Math.abs(d) * 1000) / 10 : Math.round(Math.abs(d) * 10) / 10;
-  return `${d > 0 ? '+' : '−'}${String(v).replace('.', ',')}${b.pct || b.unit === '%' ? '%' : ''} ${b.label}`;
+  return `${d > 0 ? '+' : '−'}${num(v)}${b.pct || b.unit === '%' ? '%' : ''} ${b.label}`;
 };
 
 function detail(box, char, it, opts) {
@@ -96,7 +97,7 @@ function detail(box, char, it, opts) {
   for (const b of it.bonuses) lines.append(el('div', 'bonus', statText(b.stat, b.value)));
   it.sockets.forEach((s) => lines.append(s
     ? el('div', 'gem', `◆ ${GEMS[s.gem].name} ${GEM_TIER_NAMES[s.tier - 1]}: ${statText(GEMS[s.gem].stat, GEMS[s.gem].values[s.tier - 1])}`)
-    : el('div', 'gem empty', '◇ Soket kosong')));
+    : el('div', 'gem empty', `◇ ${tr('Soket kosong')}`)));
   const fx = effectText(it);
   if (fx) lines.append(el('div', 'fx', `★ ${fx}`));
   box.append(lines);
@@ -105,7 +106,7 @@ function detail(box, char, it, opts) {
   const diff = compare(char, it.id);
   if (Object.keys(diff).length && canEquip(char, it)) {
     const cmp = el('div', 'gdcmp');
-    cmp.append(el('span', 'note', worn ? 'Sumbangan saat ini:' : 'Bila dipakai:'));
+    cmp.append(el('span', 'note', tr(worn ? 'Sumbangan saat ini:' : 'Bila dipakai:')));
     for (const [k, d] of Object.entries(diff)) {
       if (!BONUSES[k]) continue;
       cmp.append(el('span', `delta ${d > 0 ? 'up' : 'down'}`, signed(k, d)));
@@ -113,12 +114,12 @@ function detail(box, char, it, opts) {
     box.append(cmp);
   }
 
-  if (!opts.editable) { box.append(el('div', 'note', 'Ganti gear di kota.')); return; }
+  if (!opts.editable) { box.append(el('div', 'note', tr('Ganti gear di kota.'))); return; }
   const act = el('div', 'row');
-  if (!canEquip(char, it)) act.append(el('span', 'note', 'Bukan senjata kelasmu.'));
-  else if (worn) { const b = button('Lepas', 'btn small', () => opts.onUnequip(it.slot)); b.id = 'gear-unequip'; act.append(b); }
-  else { const b = button('Pasang', 'btn small', () => opts.onEquip(it.id)); b.id = 'gear-equip'; act.append(b); }
-  const del = button('Buang', 'btn ghost small danger', () => opts.onDiscard(it.id));
+  if (!canEquip(char, it)) act.append(el('span', 'note', tr('Bukan senjata kelasmu.')));
+  else if (worn) { const b = button(tr('Lepas'), 'btn small', () => opts.onUnequip(it.slot)); b.id = 'gear-unequip'; act.append(b); }
+  else { const b = button(tr('Pasang'), 'btn small', () => opts.onEquip(it.id)); b.id = 'gear-equip'; act.append(b); }
+  const del = button(tr('Buang'), 'btn ghost small danger', () => opts.onDiscard(it.id));
   del.id = 'gear-discard';
   act.append(del);
   box.append(act);

@@ -70,14 +70,14 @@ describe('openStore (IndexedDB)', () => {
     const idb = new IDBFactory();
     const store = await openStore(idb);
     expect(await store.loadSettings()).toBeNull();
-    await store.saveSettings({ version: 2, muted: true, lastSlot: 2, autoAttack: true });
-    expect(await (await openStore(idb)).loadSettings()).toEqual({ version: 2, muted: true, lastSlot: 2, autoAttack: true });
+    await store.saveSettings({ version: 3, muted: true, lastSlot: 2, autoAttack: true, lang: 'id' });
+    expect(await (await openStore(idb)).loadSettings()).toEqual({ version: 3, muted: true, lastSlot: 2, autoAttack: true, lang: 'id' });
   });
 
   it('pengaturan versi 1 dimigrasi saat dimuat', async () => {
     const store = await openStore(new IDBFactory());
     await store.saveSettings({ version: 1, muted: true, lastSlot: 1 });
-    expect(await store.loadSettings()).toEqual({ version: 2, muted: true, lastSlot: 1, autoAttack: false });
+    expect(await store.loadSettings()).toEqual({ version: 3, muted: true, lastSlot: 1, autoAttack: false, lang: 'en' });
   });
 });
 
@@ -99,8 +99,8 @@ describe('openStore (fallback memori)', () => {
     };
     const store = await openStore(failing);
     expect(store.persistent).toBe(false);
-    await store.saveSettings({ version: 2, muted: false, lastSlot: 0, autoAttack: false });
-    expect(await store.loadSettings()).toEqual({ version: 2, muted: false, lastSlot: 0, autoAttack: false });
+    await store.saveSettings({ version: 3, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' });
+    expect(await store.loadSettings()).toEqual({ version: 3, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' });
   });
 
   it('salinan data terpisah dari objek pemanggil', async () => {

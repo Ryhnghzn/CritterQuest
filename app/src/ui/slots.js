@@ -3,6 +3,7 @@ import { el, button, svgIcon, stage } from './screens.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
+import { tr, t } from '../i18n.js';
 
 // entries: from store.loadSlots(); handlers receive the slot number.
 export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
@@ -22,19 +23,19 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
       const rec = el('div', 'ds');
       // deepest dungeon reached
       const far = [...DUNGEONS].reverse().find((d) => c.records.dungeons[d.id].bestFloor > 0);
-      rec.append(svgIcon('trophy'), far ? ` ${far.short} · Lantai ${c.records.dungeons[far.id].bestFloor}` : ' Belum ke dungeon');
+      rec.append(svgIcon('trophy'), far ? ` ${t('{d} · Lantai {n}', { d: far.short, n: c.records.dungeons[far.id].bestFloor })}` : ` ${tr('Belum ke dungeon')}`);
       card.append(
         st, el('div', 'nm', c.name), cls, rec,
-        button('Hapus', 'btn ghost small danger', (ev) => { ev.stopPropagation(); onDelete(e.slot); }),
+        button(tr('Hapus'), 'btn ghost small danger', (ev) => { ev.stopPropagation(); onDelete(e.slot); }),
       );
       card.addEventListener('click', () => onOpen(e.slot));
     } else if (e.status === 'empty') {
       card.classList.add('empty');
       card.append(
         el('div', 'plus', '+'),
-        el('div', 'nm', `Slot ${e.slot + 1}`),
-        el('div', 'ds', 'Kosong — buat petualang baru'),
-        button('Buat', 'btn small', (ev) => { ev.stopPropagation(); onCreate(e.slot); }),
+        el('div', 'nm', t('Slot {n}', { n: e.slot + 1 })),
+        el('div', 'ds', tr('Kosong — buat petualang baru')),
+        button(tr('Buat'), 'btn small', (ev) => { ev.stopPropagation(); onCreate(e.slot); }),
       );
       card.addEventListener('click', () => onCreate(e.slot));
     } else {
@@ -45,9 +46,9 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
       w.append(svgIcon('warn'));
       card.append(
         w,
-        el('div', 'nm', 'Data rusak'),
-        el('div', 'ds', `Slot ${e.slot + 1} tidak bisa dibaca.`),
-        button('Hapus', 'btn ghost small danger', () => onDelete(e.slot)),
+        el('div', 'nm', tr('Data rusak')),
+        el('div', 'ds', t('Slot {n} tidak bisa dibaca.', { n: e.slot + 1 })),
+        button(tr('Hapus'), 'btn ghost small danger', () => onDelete(e.slot)),
       );
     }
     box.appendChild(card);

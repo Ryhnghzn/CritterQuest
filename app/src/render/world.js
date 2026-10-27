@@ -2,6 +2,7 @@
 // theme (render/dungeonroom.js), actors, portals once a floor is clear. Camera
 // follows the player; darkness with light holes comes from render/light.js and
 // emissive effects (attacks, flames, portals) are drawn over it.
+import { tr } from '../i18n.js';
 import { PORTAL } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
@@ -246,8 +247,9 @@ function roomGlow(g, game, t) {
   for (const p of game.portals || []) {
     g.globalAlpha = p.armed ? 1 : 0.45;
     g.lineWidth = 3; g.strokeStyle = 'rgba(20,14,40,.9)';
-    g.strokeText(PORTAL_LABEL[p.kind], p.x, p.y - 48);
-    g.fillStyle = '#fff'; g.fillText(PORTAL_LABEL[p.kind], p.x, p.y - 48);
+    const label = tr(PORTAL_LABEL[p.kind]);
+    g.strokeText(label, p.x, p.y - 48);
+    g.fillStyle = '#fff'; g.fillText(label, p.x, p.y - 48);
   }
   g.globalAlpha = 1;
 }
