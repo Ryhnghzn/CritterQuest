@@ -593,3 +593,14 @@ Tujuan: setiap drop berguna dan ada alasan grinding jangka panjang. Angka di `da
 - **Asah ulang:** satu baris bonus diganti stat lain (yang belum ada di item) dengan nilai acak baru; 2 kristal + `5 × level item` koin.
 - **Permata** (Tukang Permata Sari, di Pandai Besi): Rubi (ATK), Zamrud (HP maks), Berlian (DEF), Topas (Kritis), Kecubung (Dmg kritis), Safir (CDR); tingkat Retak / Biasa / Jernih / Sempurna / Agung. Soket: Langka 1, Epik 1, Legendaris 2, Mitos 2. Pasang gratis; lepas 30 koin (permata kembali); gabung 3 → 1 tingkat lebih tinggi seharga `40 × tingkat`. Mengurai gear mengembalikan permata di soketnya.
 - **Save versi 7:** `mats { dust, crystal, core }`, `gems { jenis: [jumlah per tingkat 1–5] }`; item mendapat `plus` (0–15) dan `sockets` (panjang sesuai rarity, isi `null` atau `{ gem, tier }`). `migrate()` v6 → v7 mengisi nol / soket kosong.
+
+## 21. Pool Skill & Bakat (langkah 9B, 2026-10-27)
+
+- **Skill:** tiap kelas punya 6 skill (`data/classes.js`); dua bawaan terbuka di LV 1, lalu LV 5 / 10 / 15 / 20. Dua skill dipasang di Q & E (tab **Skill** di panel Karakter, hanya di kota; memilih skill yang sudah di tombol lain = tukar).
+  - Warrior: Putaran Pedang, Teriakan Baja, Hantaman Bumi (area di titik bidik, 450%, beku sesaat), Terjang (dash 220, 320%), Lempar Kapak (tembus, 300%), Amarah Perang (ATK +35%, kec. serang +30%).
+  - Archer: Hujan Panah, Tembakan Tembus, Panah Beruntun (5 × 200%), Lompatan Mundur (lompat menjauh + ledakan es), Ladang Jebakan (8 × 90%, 4 dtk), Mata Elang (kritis +30%, kec. serang +25%).
+  - Mage: Nova Es, Petir Berantai, Meteor (600% area besar), Teleportasi (230 px), Bola Api Raksasa (400% meledak luas), Perisai Mana (damage diterima −55%, ATK +20%).
+  - Assassin: Langkah Bayangan, Kipas Belati, Kabut Racun (8 × 90%), Bom Asap (beku 1,2 dtk + damage diterima −40%), Shuriken (3 × 300%, tembus 2), Naluri Pembunuh (kritis +40%, dmg kritis +60%).
+  - Semua serangan dari skill (termasuk ledakannya) tidak mengisi energi, menembus perisai, dan mendapat bonus "damage skill".
+- **Bakat** (`data/talents.js`): 1 poin tiap 2 level; 8 bakat × maks 5 tingkat — Kekuatan (ATK +3%), Ketahanan (HP +4%), Ketajaman (kritis +1,5%), Fokus Sihir (damage skill +8%), Aliran Energi (energi +10%), Kegesitan (jeda dodge −6%), Dahaga Darah (hisap 0,6%), Keberuntungan (koin & EXP +5%). Efek perjalanan dijumlah dengan efek item unik. Atur ulang bakat di Pelatih: `80 + 15 × level` koin.
+- **Save versi 8:** `skills: [Q, E]` (id skill kelas), `talents: { id: tingkat }`; `migrate()` v7 → v8 memasang dua skill bawaan, bakat nol.

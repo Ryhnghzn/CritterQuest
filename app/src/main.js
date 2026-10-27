@@ -16,6 +16,7 @@ import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
+import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice } from './meta/talents.js';
 import { MATS } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
@@ -215,6 +216,11 @@ function openNpc(npc, message = null) {
     onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), 'Permata terpasang. Berkilau, bukan?'),
     onUnsocket: (id, slot) => serve((c, now) => unsocket(c, id, slot, now), 'Permata dilepas dan kembali ke tasmu.'),
     onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), 'Tiga menjadi satu — permata naik tingkat!'),
+    onTalentRespec: async () => {
+      if (await confirmDialog(`Atur ulang semua bakat seharga ${talentRespecPrice(current)} koin?`, 'Atur ulang')) {
+        serve(respecTalents, 'Bakatmu kembali. Bagi lagi di tab Skill.');
+      } else openNpc(townNpc);
+    },
     onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), `${UPGRADES[id].name} selesai. Kau makin kuat!`),
     onRespec: async () => {
       if (await confirmDialog(`Atur ulang semua poin atribut seharga ${respecPrice(current)} koin?`, 'Atur ulang')) {
@@ -276,13 +282,18 @@ function tripChar() {
 function openCharPanel() {
   if (scene === 'run') {
     game.state = ST.PAUSE;
-    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false } });
+    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false }, skill: { editable: false } });
     showOverlay('charpanel');
     return;
   }
   syncHp();
   renderCharPanel($('charpanel'), current, town.hp, {
     onClose: closeTownOverlay, onAllocate: allocateInTown,
+    skill: {
+      editable: true,
+      onEquip: (slot, id) => changeGear((c, now) => equipSkill(c, slot, id, now)),
+      onTalents: (add) => changeGear((c, now) => { const n = allocateTalents(c, add, now); return n ? { ok: true, char: n } : { ok: false }; }),
+    },
     gear: {
       editable: true,
       onEquip: (id) => changeGear((c, now) => equip(c, id, now)),
@@ -374,12 +385,13 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   const stats = finalStats(current);
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
-    level: current.level, exp: current.exp, luk: current.attrs.luk, effects: gearEffects(current),
+    level: current.level, exp: current.exp, luk: current.attrs.luk,
+    effects: mergeFx(gearEffects(current), talentFx(current)), skills: current.skills,
   });
   tripAttrs = {};
-  CLASSES[current.classId].skills.forEach((sk, i) => {
+  wornSkills(current).forEach((sk, i) => {
     const btn = $(i ? 'act-e' : 'act-q');
-    btn.querySelector('.ic').replaceChildren(iconCanvas(sk.id, 30));
+    btn.querySelector('.ic').replaceChildren(iconCanvas(sk.icon || sk.id, 30));
     btn.title = `${sk.name} (${i ? 'E' : 'Q'})`;
   });
   R.avatar = avatarOf(current);

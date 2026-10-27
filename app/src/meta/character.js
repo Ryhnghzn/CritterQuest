@@ -4,7 +4,8 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshTalents } from './schema.js';
+import { TALENTS } from '../data/talents.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
@@ -26,6 +27,8 @@ export function createCharacter({ slot, name, look, classId }, now) {
     gold: 0,
     clock: START_TIME,
     mats: freshMats(), gems: freshGems(),
+    skills: CLASSES[classId] ? CLASSES[classId].skills.slice(0, 2).map((s) => s.id) : ['', ''],
+    talents: freshTalents(),
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),
@@ -80,6 +83,11 @@ export function finalStats(char) {
     for (const [stat, v] of Object.entries(a.per)) s[stat] += v * n;
   }
   for (const [stat, v] of Object.entries(gearStats(char))) s[stat] += v;
+  for (const t of TALENTS) { // talents (spec §21)
+    const n = char.talents?.[t.id] || 0;
+    for (const [stat, v] of Object.entries(t.pct || {})) s[stat] *= 1 + v * n;
+    for (const [stat, v] of Object.entries(t.add || {})) s[stat] += v * n;
+  }
   for (const [id, u] of Object.entries(UPGRADES)) {
     const n = char.upgrades[id];
     for (const [stat, v] of Object.entries(u.pct || {})) s[stat] *= 1 + v * n;

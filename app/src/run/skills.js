@@ -44,7 +44,8 @@ export function stepSkills(run, intent, dt) {
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
   run.energy = Math.min(ENERGY.max, run.energy + ENERGY.regen * dt);
   if (run.noEnergyT > 0) run.noEnergyT -= dt;
-  const skills = CLASSES[run.classId].skills;
+  const skills = run.skillDefs;
+  if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
   const pressed = [intent.skill1, intent.skill2];
   for (let i = 0; i < 2; i++) {
     if (!pressed[i] || run.skillCd[i] > 0) continue;
@@ -52,7 +53,9 @@ export function stepSkills(run, intent, dt) {
     run.energy -= skills[i].cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
+    const before = run.hits.length;
     castSkill(run, skills[i]);
+    for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true; // skill damage bonus, no energy, pierces shields
     run.attackT = ATTACK_POSE;
     sfx.skill(skills[i].id);
   }
@@ -71,7 +74,7 @@ function castSkill(run, s) {
       }
       run.hits.push(makeArea({
         x, y, r: s.r, mult: s.mult, ticks: s.ticks ?? 1, duration: s.duration ?? 0,
-        follow: !!s.follow, freeze: s.freeze ?? 0, fx: s.id,
+        follow: !!s.follow, freeze: s.freeze ?? 0, fx: s.look || s.id,
       }));
       run.hits[run.hits.length - 1].knock = s.knock || 0;
       break;
@@ -79,38 +82,49 @@ function castSkill(run, s) {
     case 'proj':
       run.hits.push(makeProjectile({
         x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
-        speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, fx: s.id,
+        speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, explode: s.explode || null, fx: s.look || s.id,
       }));
       break;
     case 'fan':
       for (let k = 0; k < s.count; k++) {
         const a = angle + (k / (s.count - 1) - 0.5) * s.spread * DEG;
         run.hits.push(makeProjectile({
-          x: run.px, y: run.py, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult, fx: 'dagger',
+          x: run.px, y: run.py, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce || 0, fx: s.look || 'dagger',
         }));
       }
       break;
     case 'chain':
       chain(run, s);
       break;
-    case 'dash':
+    case 'dash': {
+      const dir = s.back ? -1 : 1; // Lompatan Mundur jumps away from the aim
+      if (s.blast) blast(run, s.blast);
       run.dodgeT = s.duration;
       run.dashSpeed = s.distance / s.duration;
-      run.dodgeX = run.aimX; run.dodgeY = run.aimY;
+      run.dodgeX = run.aimX * dir; run.dodgeY = run.aimY * dir;
       run.dodgeInv = Math.max(run.dodgeInv, s.duration + 0.1);
-      run.hits.push(makeSweep({ x: run.px, y: run.py, r: s.r, mult: s.mult, duration: s.duration + 0.05, follow: true, fx: s.id }));
+      if (s.mult > 0) run.hits.push(makeSweep({ x: run.px, y: run.py, r: s.r, mult: s.mult, duration: s.duration + 0.05, follow: true, fx: s.look || s.id }));
       break;
+    }
     case 'buff':
       run.buffT = s.duration;
       run.dmgTakenMul = s.dmgTaken;
-      if (s.blast) {
-        run.hits.push(makeArea({ x: run.px, y: run.py, r: s.blast.r, mult: s.blast.mult, fx: 'shout', duration: 0.35 }));
-        run.hits[run.hits.length - 1].knock = s.blast.knock;
+      if (s.atk || s.atkSpd || s.crit || s.critDmg) {
+        run.skillBuff = { atk: s.atk, atkSpd: s.atkSpd, crit: s.crit, critDmg: s.critDmg };
+        run.skillBuffT = s.duration;
+        run.applyBuffs();
       }
+      if (s.blast) blast(run, s.blast);
       break;
     default:
       throw new Error(`unknown skill kind ${s.kind}`);
   }
+}
+
+// shockwave around the player (Teriakan Baja, Bom Asap, Lompatan Mundur)
+function blast(run, b) {
+  run.hits.push(makeArea({ x: run.px, y: run.py, r: b.r, mult: b.mult, fx: b.freeze ? 'nova' : 'shout', duration: 0.35, freeze: b.freeze || 0 }));
+  run.hits[run.hits.length - 1].knock = b.knock || 0;
 }
 
 // Petir Berantai: first target = enemy nearest the aim point within range,

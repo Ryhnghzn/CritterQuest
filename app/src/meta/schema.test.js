@@ -44,6 +44,9 @@ describe('validateSlot', () => {
     ['tempa melebihi +15', (c) => { c.inventory = [item({ plus: 16 })]; }],
     ['soket tidak sesuai rarity', (c) => { c.inventory = [item({ sockets: [null] })]; }],
     ['material negatif', (c) => { c.mats.dust = -1; }],
+    ['skill kelas lain', (c) => { c.skills = ['spin', 'nova']; }],
+    ['skill sama di Q & E', (c) => { c.skills = ['nova', 'nova']; }],
+    ['bakat melebihi level', (c) => { c.talents.might = 3; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 60', (c) => { c.inventory = Array.from({ length: 61 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
@@ -129,6 +132,15 @@ describe('save versi 2', () => {
     expect(r.data.mats).toEqual({ dust: 0, crystal: 0, core: 0 });
     expect(r.data.inventory[0].plus).toBe(0);
     expect(r.data.inventory[0].sockets).toEqual([null, null]);
+  });
+
+  it('migrasi v7 → v8: skill bawaan kelas di Q/E, bakat nol', () => {
+    const v7 = { ...fresh(), version: 7 };
+    delete v7.skills; delete v7.talents;
+    const r = readSlot(v7);
+    expect(r.status).toBe('ok');
+    expect(r.data.skills).toEqual(['nova', 'chain']);
+    expect(r.data.talents.might).toBe(0);
   });
 
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {

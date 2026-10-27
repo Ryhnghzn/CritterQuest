@@ -85,7 +85,9 @@ function stepProjectile(h, enemies, dt, ctx) {
     if (e.hp <= 0 || h.hitSet.has(e) || !inShape(h, e)) continue;
     h.hitSet.add(e);
     if (h.explode) {
-      ctx.add(makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom' }));
+      const blast = makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom' });
+      blast.skill = h.skill; // a skill's explosion still counts as the skill
+      ctx.add(blast);
       h.dead = true;
       return;
     }

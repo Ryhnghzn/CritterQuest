@@ -30,11 +30,13 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 7, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 8, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
       mats: { dust: 0, crystal: 0, core: 0 },
       gems: { ruby: [0, 0, 0, 0, 0], emerald: [0, 0, 0, 0, 0], diamond: [0, 0, 0, 0, 0], topaz: [0, 0, 0, 0, 0], amethyst: [0, 0, 0, 0, 0], sapphire: [0, 0, 0, 0, 0] },
+      skills: ['spin', 'shout'],
+      talents: { might: 0, vigor: 0, precision: 0, focus: 0, flow: 0, evasion: 0, vamp: 0, fortune: 0 },
       hp: null, potions: pots(), belt: ['red', 'big', 'shield', 'rage'],
       upgrades: { hp: 0, atk: 0, magnet: 0 },
       attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },

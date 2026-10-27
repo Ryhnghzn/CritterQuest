@@ -9,8 +9,9 @@ import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
 import { DUNGEON_IDS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js';
+import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -56,8 +57,15 @@ export const MIGRATIONS = {
       ? d.inventory.map((it) => (isObj(it) ? { ...it, plus: 0, sockets: Array(SOCKETS[it.rarity] ?? 0).fill(null) } : it))
       : d.inventory,
   }),
+  // v8 (spec §21): skills worn on Q / E chosen from the class pool; talent ranks.
+  7: (d) => ({
+    ...d, version: 8,
+    skills: Object.hasOwn(CLASSES, d.classId) ? CLASSES[d.classId].skills.slice(0, 2).map((s) => s.id) : ['', ''],
+    talents: freshTalents(),
+  }),
 };
 
+export const freshTalents = () => Object.fromEntries(TALENT_IDS.map((id) => [id, 0]));
 export const freshMats = () => Object.fromEntries(MAT_IDS.map((id) => [id, 0]));
 export const freshGems = () => Object.fromEntries(GEM_IDS.map((id) => [id, Array(GEM_TIERS).fill(0)]));
 
@@ -123,6 +131,11 @@ export function validateSlot(d) {
   need(isInt(d.gold, 0), 'gold');
   need(isInt(d.clock, 0), 'clock');
   need(isObj(d.mats) && MAT_IDS.every((k) => isInt(d.mats[k], 0)), 'mats');
+  const pool = Object.hasOwn(CLASSES, d.classId) ? CLASSES[d.classId].skills.map((s) => s.id) : [];
+  need(Array.isArray(d.skills) && d.skills.length === 2 && d.skills[0] !== d.skills[1] && d.skills.every((id) => pool.includes(id)), 'skills');
+  const talentsOk = isObj(d.talents) && TALENTS.every((t) => isInt(d.talents[t.id], 0, t.max));
+  need(talentsOk, 'talents');
+  if (talentsOk && isInt(d.level, 1)) need(Object.values(d.talents).reduce((a, b) => a + b, 0) <= Math.floor(d.level / TALENT_EVERY), 'talents: poin melebihi level');
   need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
   need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))

@@ -265,3 +265,59 @@ describe('skill assassin', () => {
   });
 });
 
+
+describe('pool skill (6 per kelas)', () => {
+  it('tiap skill bisa dipakai di Q dan bekerja', () => {
+    for (const [classId, cls] of Object.entries(CLASSES)) {
+      for (const s of cls.skills) {
+        const other = cls.skills.find((x) => x.id !== s.id).id;
+        const g = new Game();
+        g.start({ classId, stats: { ...CLASS_BASE, ...cls.stats, crit: 0 }, skills: [s.id, other] });
+        g.spawnT = 1e9;
+        const e = g.spawnEnemy('tank');
+        Object.assign(e, { x: 80, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+        g.energy = 100;
+        const atk = g.stats.atk;
+        hold(g, DT, { attack: false, skill1: true, aimAt: { x: 80, y: 0 } });
+        expect(g.energy, s.id).toBeLessThan(100);
+        hold(g, 2, { attack: false, aimAt: { x: 80, y: 0 } });
+        if (s.kind === 'buff' && (s.atk || s.crit)) {
+          const g2 = new Game();
+          g2.start({ classId, stats: { ...CLASS_BASE, ...cls.stats }, skills: [s.id, other] });
+          g2.energy = 100;
+          const c0 = g2.stats.crit;
+          hold(g2, DT, { attack: false, skill1: true });
+          expect(g2.stats.atk > atk || g2.stats.crit > c0, s.id).toBe(true);
+          hold(g2, s.duration + 0.5, { attack: false });
+          expect(g2.stats.atk, s.id).toBeCloseTo(atk);
+        } else if (s.mult > 0 || s.blast) {
+          expect(1e6 - e.hp, s.id).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('bakat Fokus Sihir menaikkan damage skill; serangan dasar tidak', () => {
+    const g = new Game();
+    g.start({ classId: 'mage', stats: { ...CLASS_BASE, ...CLASSES.mage.stats, crit: 0 }, effects: { skillDmg: 0.4 } });
+    g.spawnT = 1e9;
+    const e = g.spawnEnemy('tank'); Object.assign(e, { x: 300, hp: 1e6, maxHp: 1e6 });
+    g.damageEnemy({ mult: 1, skill: true }, e);
+    expect(1e6 - e.hp).toBeCloseTo(16 * 1.4);
+    e.hp = 1e6;
+    g.damageEnemy({ mult: 1, fx: 'fireball' }, e);
+    expect(1e6 - e.hp).toBeCloseTo(16);
+  });
+
+  it('bakat Aliran Energi menambah energi dari serangan dasar; skill tidak mengisi energi', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, effects: { energy: 0.5 } });
+    g.spawnT = 1e9;
+    const e = g.spawnEnemy('tank'); Object.assign(e, { x: 300, hp: 1e6, maxHp: 1e6 });
+    g.energy = 0;
+    g.damageEnemy({ mult: 1, fx: 'slash' }, e);
+    expect(g.energy).toBeCloseTo(7 * 1.5);
+    g.damageEnemy({ mult: 1, fx: 'slash', skill: true }, e);
+    expect(g.energy).toBeCloseTo(7 * 1.5);
+  });
+});

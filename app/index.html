@@ -474,6 +474,22 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .gemcell i{font-style:normal;font-weight:700}
 .gemcell .btn{padding:3px 6px;font-size:10px;letter-spacing:0}
 .gdlines .gem{color:#e6c27a}.gdlines .gem.empty{color:var(--dim)}
+
+/* ——— langkah 9B: skill tab ——— */
+.skills{display:flex;flex-direction:column;gap:6px;text-align:left;width:min(440px,100%)}
+.skill{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 8px;border-radius:4px;background:rgba(0,0,0,.3);border:1px solid transparent}
+.skill.worn{border-color:rgba(217,178,94,.55);background:rgba(217,178,94,.08)}
+.skill.locked{opacity:.45}
+.skill .stx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.talents .attr{grid-template-columns:118px 52px minmax(0,1fr) auto}
+.skill .stx b{font-family:'Cinzel',serif;font-size:14px}
+.skill .stx span{font-size:12px;color:var(--dim)}
+.skill .stx .meta{color:#7fb8e8}
+.skbtns{display:flex;gap:4px}
+.skbtns .skkey{padding:6px 10px}
+.skbtns .skkey.on{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;border-color:#e6c27a}
+.skbtns .skkey:disabled{opacity:1;cursor:default}
+.skill .lock{font-size:12px;font-weight:700;color:var(--dim);padding:4px 8px;border:1px dashed var(--line);border-radius:3px}
 </style>
 </head>
 <body>

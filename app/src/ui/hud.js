@@ -1,6 +1,5 @@
 // In-run HUD (DOM): bars, counters and banner (~10×/s), action cooldown rings (every frame).
 import { DODGE, ENERGY } from '../data/balance.js';
-import { CLASSES } from '../data/classes.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
 import { clockText } from '../meta/clock.js';
@@ -43,7 +42,7 @@ export function updateHUD(game) {
 export function updateActions(game) {
   ring($('act-dodge'), game.dodgeCd, DODGE.cooldown);
   updateBelt(game.belt, game.potions, game.potionCd);
-  const skills = CLASSES[game.classId].skills;
+  const skills = game.skillDefs;
   for (const [i, id] of [[0, 'act-q'], [1, 'act-e']]) {
     $(id).querySelector('.cost').textContent = skills[i].cost;
     $(id).classList.toggle('noen', game.energy < skills[i].cost);

@@ -11,7 +11,15 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Pandai Brom: tab Peti / Jual / Tempa / Urai; Tukang Permata Sari: tab Pasang / Gabung; detail gear menampilkan soket; cheat +Material / +Permata
 - [x] Verifikasi: tes, build, screenshot PC & HP
 
-## 9B — Pool skill & pasif (6 skill per kelas, pilih yang dipasang, poin bakat)
+## 9B — Pool skill & bakat
+- [x] 4 skill baru per kelas (24 total), terbuka di LV 5/10/15/20; pilih 2 untuk Q & E — tes
+- [x] 8 bakat × 5 tingkat, 1 poin tiap 2 level; efek stat & efek perjalanan (damage skill, energi, dodge, hisap darah, koin/EXP) — tes
+- [x] Save v8: `skills`, `talents`; atur ulang bakat di Pelatih — tes
+- [x] Tab Skill di panel Karakter (kota: ubah; dungeon: lihat saja)
+- [x] Verifikasi: tes, build, screenshot PC & HP
 ## 9C — Papan Tugas & koleksi
 ## 9D — Open world (biome, kota lain, harta karun & mini bos, portal bos)
 ## 9E — Tingkat kesulitan & Celah tanpa batas
+
+## 9F — Semua teks game dalam bahasa Inggris (permintaan pemilik 2026-10-27, "nanti")
+- [ ] Teks UI, NPC, item, skill, monster, spanduk → bahasa Inggris (komunikasi dengan pemilik tetap bahasa Indonesia)

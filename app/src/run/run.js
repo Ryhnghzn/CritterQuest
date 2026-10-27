@@ -30,6 +30,7 @@ const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, a
 const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
 // potion buffs: stat → multiplier field on the potion (spec §15.2)
 const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
+const BUFFED = ['moveSpd', 'atk', 'atkSpd', 'crit', 'critDmg']; // stats potions & skill buffs can change
 
 export class Game {
   constructor() {
@@ -68,7 +69,8 @@ export class Game {
 
   // effects: special effects of the equipped unique gear, { effect: value } (meta/gear.js)
   // dungeon: id from data/dungeons.js (spec §18.3)
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow' }) {
+  // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -83,7 +85,10 @@ export class Game {
     this.aimPX = 0; this.aimPY = 0;
     this.skillCd = [0, 0];
     this.energy = ENERGY.start; this.noEnergyT = 0;
-    this.skillCdMax = CLASSES[classId].skills.map((sk) => skillCooldown(stats, sk));
+    const pool = CLASSES[classId].skills;
+    this.skillDefs = (skills || pool.slice(0, 2).map((s) => s.id)).map((id) => pool.find((s) => s.id === id));
+    this.skillCdMax = this.skillDefs.map((sk) => skillCooldown(stats, sk));
+    this.skillBuff = null; this.skillBuffT = 0; // atk / atkSpd / crit / critDmg from a buff skill
     this.buffT = 0; this.dmgTakenMul = 1;
     this.dashSpeed = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
@@ -129,19 +134,22 @@ export class Game {
     this.baseStats = { ...stats };
     this.stats = { ...stats, hp };
     this.applyBuffs();
-    this.skillCdMax = CLASSES[this.classId].skills.map((sk) => skillCooldown(stats, sk));
+    this.skillCdMax = this.skillDefs.map((sk) => skillCooldown(stats, sk));
   }
 
   // stats = base stats × active potion buffs
   applyBuffs() {
-    for (const [id, keys] of Object.entries(BUFF_STATS)) {
-      for (const k of keys) this.stats[k] = this.baseStats[k];
-    }
+    for (const k of BUFFED) this.stats[k] = this.baseStats[k];
     for (const [id, keys] of Object.entries(BUFF_STATS)) {
       if (this.buffs[id] <= 0) continue;
       for (const k of keys) this.stats[k] *= 1 + POTIONS[id][k];
     }
     if (this.frenzyOn) this.stats.atkSpd *= 1 + this.fx.frenzy;
+    const sb = this.skillBuffT > 0 && this.skillBuff;
+    if (sb) {
+      this.stats.atk *= 1 + (sb.atk || 0); this.stats.atkSpd *= 1 + (sb.atkSpd || 0);
+      this.stats.crit += sb.crit || 0; this.stats.critDmg += sb.critDmg || 0;
+    }
     this.dodgeCdMul = (this.buffs.wind > 0 ? POTIONS.wind.dodgeCd : 1) * (1 - (this.fx.dodgecd || 0));
   }
 
@@ -267,11 +275,11 @@ export class Game {
     const s = this.stats;
     const crit = rand() * 100 < s.crit;
     const fx = this.fx;
-    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h);
+    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) : 1);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
-    if (BASIC_FX.has(h.fx)) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy);
+    if (BASIC_FX.has(h.fx) && !h.skill) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy * (1 + (fx.energy || 0)));
     if (h.knock && !e.boss) { // push away from (or pull toward) the area's centre
       const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy) || 1;
       e.kx += (dx / d) * h.knock; e.ky += (dy / d) * h.knock;

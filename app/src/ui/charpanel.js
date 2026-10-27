@@ -8,6 +8,7 @@ import { POTION_IDS } from '../data/potions.js';
 import { expToNext, finalStats, freePoints, allocate } from '../meta/character.js';
 import { dollGear } from '../meta/gear.js';
 import { renderGearTab } from './gear.js';
+import { renderSkillTab } from './skilltab.js';
 import { DUNGEONS } from '../data/dungeons.js';
 
 let tab = 'status'; // 'status' | 'gear', kept between openings
@@ -27,10 +28,10 @@ const STAT_ROWS = [
 // hp: current HP (live, not yet saved); onAllocate(add): spend points (add = { str: n, … }).
 // Points are only marked with [+] until Simpan, so a stray tap costs nothing.
 // gear: options for the Gear tab (ui/gear.js).
-export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear }) {
+export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skill }) {
   const pending = Object.fromEntries(ATTRS.map((a) => [a.id, 0]));
   const draw = () => drawPanel(box, char, hp, pending, {
-    onClose, gear, redraw: () => draw(),
+    onClose, gear, skill, redraw: () => draw(),
     onAdd: (id) => { pending[id] += 1; draw(); },
     onCancel: () => { for (const k in pending) pending[k] = 0; draw(); },
     onSave: () => onAllocate({ ...pending }),
@@ -38,7 +39,7 @@ export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear }) {
   draw();
 }
 
-function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, redraw }) {
+function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, redraw }) {
   box.replaceChildren();
   const marked = Object.values(pending).reduce((a, b) => a + b, 0);
   const preview = (marked && allocate(char, pending, char.updatedAt)) || char;
@@ -113,13 +114,14 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   const close = button('Tutup', 'btn ghost', onClose);
   close.id = 'char-close';
   const tabs = el('div', 'tabs');
-  for (const [id, label] of [['status', 'Status'], ['gear', `Gear (${char.inventory.length})`]]) {
+  for (const [id, label] of [['status', 'Status'], ['skill', 'Skill'], ['gear', `Gear (${char.inventory.length})`]]) {
     const b = button(label, `tab${tab === id ? ' on' : ''}`, () => { tab = id; redraw(); });
     b.dataset.tab = id;
     tabs.append(b);
   }
-  const body = el('div', 'cpbody');
+  let body = el('div', 'cpbody');
   if (tab === 'gear') body.append(renderGearTab(char, gear, redraw));
+  else if (tab === 'skill') body = renderSkillTab(char, skill, redraw);
   else body.append(attrs, panel);
   box.append(head, tabs, body, close);
 }

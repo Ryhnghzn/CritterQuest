@@ -9,6 +9,7 @@ import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints, unlockedDungeons } from '../meta/character.js';
+import { spentTalents, talentRespecPrice } from '../meta/talents.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
@@ -63,7 +64,7 @@ export function renderNpc(box, npc, ctx) {
   } else if (npc.role === 'potion') {
     panel.append(potionList(char, ctx.onBuyPotion), beltEditor(char, ctx.onBelt));
   } else if (npc.role === 'trainer') {
-    panel.append(trainerList(char, ctx.onUpgrade, ctx.onRespec));
+    panel.append(trainerList(char, ctx.onUpgrade, ctx.onRespec, ctx.onTalentRespec));
   } else if (npc.role === 'barber') {
     panel.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gear') {
@@ -204,7 +205,7 @@ function sellPanel(char, onSell, redraw) {
   return wrap;
 }
 
-function trainerList(char, onUpgrade, onRespec) {
+function trainerList(char, onUpgrade, onRespec, onTalentRespec) {
   const list = el('div', 'shoplist');
   for (const [id, u] of Object.entries(UPGRADES)) {
     const tier = char.upgrades[id], maxed = tier >= u.max;
@@ -233,6 +234,18 @@ function trainerList(char, onUpgrade, onRespec) {
   b.disabled = !spentPoints(char) || char.gold < price;
   row.append(ic, txt, el('span', 'have', `${spentPoints(char)} poin`), b);
   list.append(row);
+  // talents (spec §21)
+  const trow = el('div', 'shoprow');
+  const tic = el('span', 'sic'); tic.append(iconCanvas('hst', 28));
+  const ttx = el('div', 'stx');
+  ttx.append(el('b', null, 'Atur Ulang Bakat'), el('span', null, 'Semua poin bakat kembali, bisa dibagi lagi'));
+  const tp = talentRespecPrice(char);
+  const tb = button(String(tp), 'btn small buy', onTalentRespec);
+  tb.prepend(el('span', 'coin'));
+  tb.id = 'npc-talent-respec';
+  tb.disabled = !spentTalents(char) || char.gold < tp;
+  trow.append(tic, ttx, el('span', 'have', `${spentTalents(char)} poin`), tb);
+  list.append(trow);
   return list;
 }
 
