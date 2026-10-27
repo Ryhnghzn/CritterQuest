@@ -7,8 +7,9 @@ import {
 import { POTION_IDS, POTION_MAX, BELT_SIZE, DEFAULT_BELT } from '../data/potions.js';
 import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
 import { DUNGEON_IDS } from '../data/dungeons.js';
+import { START_TIME } from '../data/time.js';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -45,6 +46,8 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v6 (spec §18.4): the in-game clock is saved.
+  5: (d) => ({ ...d, version: 6, clock: START_TIME }),
 };
 
 export const freshDungeonRecords = () => Object.fromEntries(DUNGEON_IDS.map((id) => [id, { bestFloor: 0, clears: 0 }]));
@@ -104,6 +107,7 @@ export function validateSlot(d) {
   need(isInt(d.level, 1, CHAR_LEVEL_MAX), 'level');
   need(isInt(d.exp, 0), 'exp');
   need(isInt(d.gold, 0), 'gold');
+  need(isInt(d.clock, 0), 'clock');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
   need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))
     && Object.keys(d.potions).length === POTION_IDS.length, 'potions');

@@ -20,3 +20,7 @@ Spesifikasi: `../specs/2026-10-26-critter-quest-arcade-design.md` §18. Tiap bag
 - [x] Gambar: lantai/dinding/dekor per tema, pilar; gerbang pilih dungeon; HUD, Hasil, slot, panel Karakter
 - [x] Verifikasi: tes, build, screenshot 4 dungeon & bos
 ## 7D — Siang–malam di kota
+- [x] `data/time.js` + `meta/clock.js`: jam, bagian hari, cahaya per jam, bangun pagi — tes
+- [x] Save v6: `clock`; tidur di Penginapan sampai 07:00 — tes
+- [x] Kota: gelap/terang, fajar & senja, lentera & jendela hanya malam, kabut malam; jendela interior siang/malam
+- [x] HUD kota & dungeon: "Hari N · JJ:MM · Pagi/Siang/Sore/Malam"; cheat +3/+12 jam

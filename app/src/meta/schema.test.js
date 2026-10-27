@@ -40,6 +40,7 @@ describe('validateSlot', () => {
     ['sabuk berisi jenis asing', (c) => { c.belt[0] = 'teh'; }],
     ['rekor dungeon hilang', (c) => { delete c.records.dungeons.crystal; }],
     ['rekor lantai > 5', (c) => { c.records.dungeons.shadow.bestFloor = 6; }],
+    ['jam negatif', (c) => { c.clock = -5; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 60', (c) => { c.inventory = Array.from({ length: 61 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
@@ -107,6 +108,14 @@ describe('save versi 2', () => {
     expect(r.data.records.dungeons.shadow).toEqual({ bestFloor: 4, clears: 2 });
     expect(r.data.records.dungeons.lava).toEqual({ bestFloor: 0, clears: 0 });
     expect(r.data.records.bestFloor).toBeUndefined();
+  });
+
+  it('migrasi v5 → v6: jam dalam game mulai pukul 07:00', () => {
+    const v5 = { ...fresh(), version: 5 };
+    delete v5.clock;
+    const r = readSlot(v5);
+    expect(r.status).toBe('ok');
+    expect(r.data.clock).toBe(7 * 60);
   });
 
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {

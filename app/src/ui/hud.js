@@ -3,6 +3,7 @@ import { DODGE, ENERGY } from '../data/balance.js';
 import { CLASSES } from '../data/classes.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
+import { clockText } from '../meta/clock.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -84,4 +85,15 @@ export function updateTownHUD(char, town) {
   $('tgold').textContent = char.gold;
   $('tpot').textContent = POTION_IDS.reduce((n, id) => n + char.potions[id], 0);
   updateBelt(char.belt, char.potions, 0);
+}
+
+// In-game clock in both HUDs: "Hari 3 · 18:40 · Sore" (spec §18.4).
+const PHASE_MARK = { dawn: '◒', sun: '☀', dusk: '◓', moon: '☾' };
+export function updateClock(clock) {
+  const c = clockText(clock);
+  const text = `${PHASE_MARK[c.phase.icon]} Hari ${c.day} · ${c.time} · ${c.phase.name}`;
+  for (const id of ['tclock', 'clock']) {
+    const el = $(id);
+    if (el.textContent !== text) { el.textContent = text; el.dataset.phase = c.phase.icon; }
+  }
 }

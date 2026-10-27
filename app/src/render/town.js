@@ -6,8 +6,8 @@ import { drawIcon, OUT } from '../art/sprites.js';
 import { npcAt } from '../town/town.js';
 import { TAU, ink, lin, shadow, shade, actor, tag, plate } from './paint.js';
 import { InteriorRenderer } from './interior.js';
+import { skyAt } from '../meta/clock.js';
 const WARM = '255,170,80';
-const AMBIENT = 'rgba(8,6,26,.8)';
 
 const houses = TOWN.buildings.filter((b) => b.kind === 'house');
 const gate = TOWN.buildings.find((b) => b.kind === 'gate');
@@ -80,8 +80,10 @@ export class TownRenderer {
   screenToWorld(x, y) { return this.view.screenToWorld(x, y, this.camX, this.camY); }
 
   // town: state from town/town.js, or null behind the menus; avatar: { classId, look }
-  draw(town, t, avatar) {
-    if (town && town.map !== 'town') { this.inside.draw(town, t, avatar); return; }
+  // clock: in-game minutes (spec §18.4) — the town is lit by the hour
+  draw(town, t, avatar, clock) {
+    const sky = skyAt(clock);
+    if (town && town.map !== 'town') { this.inside.draw(town, t, avatar, sky); return; }
     const v = this.view, g = v.ctx;
     let tx, ty;
     if (town) { tx = town.x; ty = town.y - 20; }
@@ -126,9 +128,21 @@ export class TownRenderer {
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.draw();
     for (const p of PINES) if (p.y > TOWN.h) pine(g, p);
-    fog(g, t);
+    fog(g, t, sky.night);
 
-    this.lighting.draw(cx, cy, lights(t, town), AMBIENT);
+    this.lighting.draw(cx, cy, lights(t, town, sky.night), `rgba(${sky.rgb.join(',')},${sky.dark.toFixed(3)})`);
+    if (sky.night < 0.95) { // sunlight lifts the dark palette by day
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalCompositeOperation = 'screen';
+      g.fillStyle = `rgba(255,236,200,${(0.22 * (1 - sky.night)).toFixed(3)})`; g.fillRect(0, 0, v.c.width, v.c.height);
+      g.globalCompositeOperation = 'source-over';
+    }
+    if (sky.warm > 0.005) { // dawn / dusk glow
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalCompositeOperation = 'lighter';
+      g.fillStyle = `rgba(255,130,60,${sky.warm.toFixed(3)})`; g.fillRect(0, 0, v.c.width, v.c.height);
+      g.globalCompositeOperation = 'source-over';
+    }
 
     // emissive layer
     v.begin(cx, cy);
@@ -156,9 +170,16 @@ export function doorFade(v, town) {
   g.fillRect(0, 0, v.c.width, v.c.height);
 }
 
-function lights(t, town) {
+// night: 0 (day) … 1 (night) — lamps and windows glow only after dark
+function lights(t, town, night) {
   const f = 1 + Math.sin(t * 9) * 0.04 + Math.sin(t * 23) * 0.03;
-  const out = [{ x: fireX, y: fireY, r: 200 * f, rgb: WARM, tint: 0.16 }];
+  const out = lightList(t, town, f);
+  for (const l of out) if (!l.always) l.tint *= night;
+  return out;
+}
+
+function lightList(t, town, f) {
+  const out = [{ x: fireX, y: fireY, r: 200 * f, rgb: WARM, tint: 0.16, always: true }];
   for (const l of TOWN.lamps) out.push({ x: l.x, y: l.y - 40, r: 130, rgb: WARM, tint: 0.1 });
   for (const b of houses) for (const w of windowsOf(b)) out.push({ x: w.x, y: w.y + 20, r: 70, rgb: WARM, tint: 0.08 });
   for (const b of houses) out.push({ x: b.x + b.w / 2, y: b.y + b.h + 10, r: 60, rgb: WARM, tint: 0.05 });
@@ -168,7 +189,7 @@ function lights(t, town) {
   }
   out.push({ x: gate.x + 18, y: gate.y + 4, r: 95 * f, rgb: WARM, tint: 0.12 });
   out.push({ x: gate.x + gate.w - 18, y: gate.y + 4, r: 95 * f, rgb: WARM, tint: 0.12 });
-  out.push({ x: gate.x + gate.w / 2, y: gate.y + 55, r: 120, rgb: '150,100,255', tint: 0.16 });
+  out.push({ x: gate.x + gate.w / 2, y: gate.y + 55, r: 120, rgb: '150,100,255', tint: 0.16, always: true });
   if (town) out.push({ x: town.x, y: town.y - 10, r: 120, rgb: '255,220,180', tint: 0.04 });
   return out;
 }
@@ -445,11 +466,12 @@ function decor(g, d) {
 
 
 
-function fog(g, t) {
+function fog(g, t, night = 1) {
+  if (night < 0.05) return; // mist only after dark
   for (let i = 0; i < 4; i++) {
     const x = ((t * 8 + i * 300) % (TOWN.w + 400)) - 200, y = 150 + i * 160;
     const gr = g.createRadialGradient(x, y, 0, x, y, 160);
-    gr.addColorStop(0, 'rgba(140,130,190,.07)'); gr.addColorStop(1, 'rgba(140,130,190,0)');
+    gr.addColorStop(0, `rgba(140,130,190,${(0.07 * night).toFixed(3)})`); gr.addColorStop(1, 'rgba(140,130,190,0)');
     g.fillStyle = gr; g.fillRect(x - 160, y - 160, 320, 320);
   }
 }

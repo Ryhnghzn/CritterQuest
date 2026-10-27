@@ -566,4 +566,9 @@ Empat dungeon terbuka berurutan — dungeon berikutnya terbuka setelah yang sebe
 - **Save versi 5:** `records` menjadi `{ trips, kills, bossKills, dungeons: { shadow|crystal|fungus|lava: { bestFloor, clears } } }`; `migrate()` v4 → v5 memindahkan rekor lama ke dungeon pertama.
 
 ### 18.4 Siang–malam (langkah 7D)
-Kota berputar pagi → siang → sore → malam (± 8 menit nyata); dungeon tetap gelap dengan suasana per tema.
+- 1 hari dalam game = 8 menit nyata (3 menit game per detik). Jam berjalan saat berjalan di kota dan saat bertarung di dungeon; berhenti di menu, dialog, dan jeda.
+- Bagian hari: **Pagi** 05:00, **Siang** 10:00, **Sore** 15:00, **Malam** 18:00. HUD kota & dungeon: "Hari 3 · 18:40 · Sore".
+- Kota: lapisan gelap & warnanya mengikuti jam (`data/time.js` `SKY`), cahaya matahari di siang hari, cahaya jingga saat fajar/senja, lentera/jendela/obor gerbang menyala hanya saat gelap, kabut hanya malam. Jendela di dalam rumah menampilkan langit siang atau bulan.
+- Dungeon tetap gelap (bawah tanah) dengan suasana per tema.
+- Tidur di Penginapan: waktu maju ke 07:00 berikutnya.
+- **Save versi 6:** tambah `clock` (menit sejak Hari 1 00:00); karakter baru mulai 07:00; `migrate()` v5 → v6 mengisi 07:00.

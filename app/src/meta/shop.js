@@ -9,6 +9,7 @@ import { UPGRADES, upgradePrice, RESPEC, BARBER_PRICE } from '../data/shop.js';
 import { dropItem } from './itemgen.js';
 import { isEquipped } from './gear.js';
 import { currentHp, finalStats } from './character.js';
+import { nextMorning } from './clock.js';
 
 export function innPrice(char) { return INN.base + INN.perLevel * char.level; }
 
@@ -19,6 +20,7 @@ export function innRest(char, now) {
   const c = structuredClone(char);
   c.gold -= price;
   c.hp = null;
+  c.clock = nextMorning(c.clock); // a night's sleep
   c.updatedAt = now;
   return { ok: true, char: c };
 }

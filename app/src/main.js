@@ -24,6 +24,7 @@ import { POTION_MAX } from './data/potions.js';
 import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
+import { GAME_MIN_PER_SEC } from './data/time.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
@@ -32,7 +33,7 @@ import { renderCreate } from './ui/create.js';
 import { renderResults } from './ui/results.js';
 import { renderNpc } from './ui/npc.js';
 import { renderCharPanel } from './ui/charpanel.js';
-import { updateHUD, updateActions, updateTownHUD } from './ui/hud.js';
+import { updateHUD, updateActions, updateTownHUD, updateClock } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
 
 const $ = (id) => document.getElementById(id);
@@ -53,6 +54,7 @@ let townNpc = null;    // NPC whose dialog is open
 const talkIdx = {};    // townsfolk: which line they say next (npc id → index)
 let townSaveT = 0;
 let tripAttrs = {};    // points spent in the dungeon, saved with the trip result
+let worldClock = 0;    // in-game minutes since day 1 (spec §18.4); written to the save on every save
 
 // ——— save + settings ———
 const store = await openStore();
@@ -91,6 +93,7 @@ function toast(text) {
 
 // Writes the character; a failed write keeps playing from memory and says so.
 async function saveCurrent() {
+  current = { ...current, clock: Math.floor(worldClock) };
   try { await store.saveSlot(current); return null; } catch (e) { toast(`Gagal menyimpan: ${e.message}`); return e.message; }
 }
 
@@ -170,6 +173,7 @@ async function deleteSlot(slot) {
 // ——— town ———
 function enterTown(char, at) {
   current = char;
+  worldClock = char.clock;
   settings.lastSlot = char.slot;
   saveSettings();
   stopMusic();
@@ -230,7 +234,9 @@ function nextBeltPotion(char, slot) {
 
 // Runs a shop action (char, now) → { ok, char } | { ok: false, reason }, saves, redraws the dialog.
 async function serve(action, okText) {
+  current = { ...current, clock: Math.floor(worldClock) };
   const r = action(current, Date.now());
+  if (r.ok && r.char.clock !== current.clock) worldClock = r.char.clock; // slept at the Inn
   if (!r.ok) {
     openNpc(townNpc, { text: REFUSE[r.reason] && typeof REFUSE[r.reason] === 'string' ? REFUSE[r.reason] : REFUSE.full[townNpc.role], ok: false });
     return;
@@ -476,6 +482,7 @@ const cheatActions = {
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),
   heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
   resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
+  hours: (n) => { worldClock += n * 60; toast(`+${n} jam`); },
   unlockFloors: () => cheatChar((c) => {
     for (const d of DUNGEONS) { const r = c.records.dungeons[d.id]; r.bestFloor = 5; r.clears = Math.max(1, r.clears); }
   }, 'Semua dungeon & lantai terbuka di gerbang'),
@@ -573,6 +580,8 @@ function tick() {
   simT += STEP;
   pollMove();
   const pressed = consumePressed(); // one-shot actions go to the first step of the frame
+  // the clock runs while walking in town and while fighting (not in menus or paused)
+  if ((scene === 'town' && screen === null) || (scene === 'run' && game.state === ST.PLAY)) worldClock += GAME_MIN_PER_SEC * STEP;
   if (scene === 'town') { tickTown(pressed); return false; }
   if (scene === 'run') return tickRun(pressed);
   return false;
@@ -582,12 +591,12 @@ function frame(dt) {
   hudT += dt;
   if (scene === 'run') {
     R.draw(game, simT);
-    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); }
+    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); }
     if (game.state === ST.PLAY) updateActions(game);
   } else {
-    TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current));
+    TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60);
     if (scene === 'town') {
-      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); }
+      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); updateClock(worldClock); }
       const near = screen === null ? town.near : null;
       $('prompt').classList.toggle('hidden', !near);
       document.body.classList.toggle('near', !!near);

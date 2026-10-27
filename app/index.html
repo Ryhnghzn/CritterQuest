@@ -151,6 +151,8 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 .attr .plus:disabled{opacity:.3;pointer-events:none}
 .attrs .row{justify-content:flex-end;margin-top:4px}
 .stat b.up{color:var(--mint)}
+.clock{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.2px}
+.clock[data-phase=sun]{color:#ffd36b}.clock[data-phase=dawn]{color:#ffb3c1}.clock[data-phase=dusk]{color:#ff9a5c}.clock[data-phase=moon]{color:#9fb8ff}
 #cheatbtn{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:20;pointer-events:auto;font-family:inherit;font-size:11px;font-weight:700;
   letter-spacing:1px;color:#ffb3c1;background:rgba(80,10,30,.7);border:1.5px solid rgba(255,107,139,.6);border-radius:999px;padding:5px 12px;cursor:pointer}
 #cheat{position:absolute;right:12px;top:64px;z-index:30;pointer-events:auto;width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow-y:auto;
@@ -401,6 +403,7 @@ body.touch #prompt kbd{display:none}
     <div class="trow"><b id="tname"></b><span class="lv" id="tlv">LV 1</span></div>
     <div class="hpbar"><i id="thpfill"></i><span id="thptext"></span></div>
     <div id="tmeta"><span class="hchip gold"><span class="coin"></span><b id="tgold">0</b></span><span class="hchip"><svg class="i"><use href="#i-flask"/></svg><b id="tpot">0</b></span></div>
+    <div class="clock" id="tclock"></div>
   </div>
   <button id="prompt" class="hidden"><kbd>E</kbd><span id="prompttext"></span></button>
   <div id="toast"></div>
@@ -416,6 +419,7 @@ body.touch #prompt kbd{display:none}
       <span class="hchip gold"><span class="coin"></span><b id="gold">0</b></span>
     </div>
     <div id="buffs"></div>
+    <div class="clock" id="clock"></div>
   </div>
   <div id="actions" class="hidden">
     <button class="act touchbtn" id="act-q" data-action="skill1" aria-label="Skill Q"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>Q</kbd><b class="cost"></b></button>

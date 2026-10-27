@@ -21,6 +21,7 @@ describe('Penginapan', () => {
     const r = innRest(make({ hp: 20, gold: 50 }), NOW + 1);
     expect(r.ok).toBe(true);
     expect(r.char.hp).toBeNull();
+    expect(r.char.clock).toBe(1440 + 7 * 60); // tidur sampai pukul 07:00 besok
     expect(r.char.gold).toBe(38);
     expect(r.char.updatedAt).toBe(NOW + 1);
   });

@@ -8,6 +8,7 @@ import { TAU, ink, lin, shadow, shade, actor, tag, plate } from './paint.js';
 import { drawNpc, doorFade } from './town.js';
 
 const AMBIENT = 'rgba(10,6,22,.5)';
+let daylight = 0; // 0 night … 1 day, for windows
 
 function planks(scale) {
   const T = 96;
@@ -71,7 +72,9 @@ export class InteriorRenderer {
     }
   }
 
-  draw(town, t, avatar) {
+  // sky: town light from meta/clock.js skyAt — windows show day or night
+  draw(town, t, avatar, sky) {
+    daylight = sky ? 1 - sky.night : 0;
     const v = this.view, g = v.ctx, r = INTERIORS[town.map];
     const clamp = (val, size, view) => (size <= view ? size / 2 : Math.max(view / 2 - 30, Math.min(size - view / 2 + 30, val)));
     const cx = clamp(town.x, r.w, v.viewW), cy = clamp(town.y - 20, r.h, v.viewH);
@@ -107,6 +110,7 @@ export class InteriorRenderer {
     const lights = r.lights.map((l, i) => ({ ...l, r: l.r * (1 + Math.sin(t * 7 + i * 2) * 0.03), tint: 0.12 }));
     lights.push({ x: town.x, y: town.y - 10, r: 110, rgb: '255,220,180', tint: 0.03 });
     lights.push({ x: r.w / 2, y: r.h, r: 60, rgb: '120,130,220', tint: 0.05 });
+    for (const f of r.furniture) if (f.kind === 'window' && daylight > 0.3) lights.push({ x: f.x + f.w / 2, y: f.y + f.h + 40, r: 150, rgb: '200,230,255', tint: 0.1 * daylight });
     this.lighting.draw(cx, cy, lights, AMBIENT);
 
     v.begin(cx, cy);
@@ -212,9 +216,10 @@ function furniture(g, f, t) {
       }
       break;
     case 'window':
-      g.beginPath(); g.roundRect(x, y, w, h, [16, 16, 3, 3]); ink(g, lin(g, y, y + h, '#2b3a78', '#141c40'), 2);
-      g.fillStyle = '#e8ecff';
-      g.beginPath(); g.arc(x + w * 0.7, y + h * 0.3, 4, 0, TAU); g.fill(); // moon
+      g.beginPath(); g.roundRect(x, y, w, h, [16, 16, 3, 3]);
+      ink(g, daylight > 0.5 ? lin(g, y, y + h, '#9fd8ff', '#e8f4ff') : lin(g, y, y + h, '#2b3a78', '#141c40'), 2);
+      g.fillStyle = daylight > 0.5 ? '#fff3b0' : '#e8ecff';
+      g.beginPath(); g.arc(x + w * 0.7, y + h * 0.3, daylight > 0.5 ? 5 : 4, 0, TAU); g.fill(); // sun / moon
       g.strokeStyle = '#3a2620'; g.lineWidth = 2;
       g.beginPath(); g.moveTo(x + w / 2, y); g.lineTo(x + w / 2, y + h); g.moveTo(x, y + h / 2); g.lineTo(x + w, y + h / 2); g.stroke();
       break;

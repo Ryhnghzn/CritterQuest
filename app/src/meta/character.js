@@ -6,6 +6,7 @@ import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
 import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords } from './schema.js';
 import { DUNGEONS } from '../data/dungeons.js';
+import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
 import { UPGRADES } from '../data/shop.js';
 
@@ -23,6 +24,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     classId,
     level: 1, exp: 0,
     gold: 0,
+    clock: START_TIME,
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),
