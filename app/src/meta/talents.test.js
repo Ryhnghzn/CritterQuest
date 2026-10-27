@@ -1,22 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { equipSkill, allocateTalents, freeTalents, talentFx, respecTalents, wornSkills, mergeFx } from './talents.js';
+import { equipSkill, allocateTalents, freeTalents, talentFx, respecTalents, wornSkills, mergeFx, ultimateOf } from './talents.js';
 import { createCharacter, finalStats } from './character.js';
 import { validateSlot } from './schema.js';
 
 const NOW = 1761436800000;
 const make = (over = {}) => ({ ...createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'warrior' }, NOW), ...over });
 
-describe('pool skill', () => {
-  it('skill baru terbuka sesuai level dan bisa dipasang di Q/E', () => {
-    expect(equipSkill(make(), 0, 'quake', NOW).reason).toBe('locked');
-    const r = equipSkill(make({ level: 5 }), 0, 'quake', NOW);
-    expect(r.char.skills).toEqual(['quake', 'shout']);
-    expect(wornSkills(r.char).map((s) => s.id)).toEqual(['quake', 'shout']);
+describe('pool skill (4 slot + ultimate)', () => {
+  it('skill terbuka sesuai level dan bisa dipasang di slot 1–4', () => {
+    expect(equipSkill(make(), 2, 'quake', NOW).reason).toBe('locked');
+    const r = equipSkill(make({ level: 5 }), 2, 'quake', NOW);
+    expect(r.char.skills).toEqual(['spin', 'shout', 'quake', null]);
+    expect(wornSkills(r.char).map((s) => s?.id ?? null)).toEqual(['spin', 'shout', 'quake', null]);
     expect(validateSlot(r.char)).toEqual([]);
   });
-  it('memasang skill yang ada di tombol lain menukarnya', () => {
-    expect(equipSkill(make(), 0, 'shout', NOW).char.skills).toEqual(['shout', 'spin']);
+  it('skill yang sudah di slot lain pindah (tukar); slot bisa dikosongkan, minimal satu skill', () => {
+    expect(equipSkill(make(), 0, 'shout', NOW).char.skills).toEqual(['shout', 'spin', null, null]);
+    expect(equipSkill(make({ level: 5 }), 3, 'spin', NOW).char.skills).toEqual([null, 'shout', null, 'spin']);
+    expect(equipSkill(make(), 1, null, NOW).char.skills).toEqual(['spin', null, null, null]);
+    const one = equipSkill(make(), 1, null, NOW).char;
+    expect(equipSkill(one, 0, null, NOW).reason).toBe('bad');
     expect(equipSkill(make(), 0, 'nova', NOW).reason).toBe('bad');
+    expect(equipSkill(make(), 4, 'spin', NOW).reason).toBe('bad');
+  });
+  it('ultimate terbuka di level 25', () => {
+    expect(ultimateOf(make({ level: 24 }))).toBeNull();
+    expect(ultimateOf(make({ level: 25 })).id).toBe('bladestorm');
   });
 });
 

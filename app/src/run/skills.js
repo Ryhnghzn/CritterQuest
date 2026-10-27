@@ -2,7 +2,7 @@
 // mode) whose hits fill energy, and the two skills Q / E that spend it (short
 // cooldowns, reduced by cdr).
 import { CLASSES } from '../data/classes.js';
-import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY } from '../data/balance.js';
+import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/balance.js';
 import { makeArea, makeSweep, makeProjectile } from './hits.js';
 import { sfx } from '../core/audio.js';
 
@@ -40,15 +40,15 @@ export function stepAttack(run, intent, dt) {
 }
 
 export function stepSkills(run, intent, dt) {
-  for (let i = 0; i < 2; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
+  for (let i = 0; i < SKILL_SLOTS; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
   run.energy = Math.min(ENERGY.max, run.energy + ENERGY.regen * dt);
   if (run.noEnergyT > 0) run.noEnergyT -= dt;
   const skills = run.skillDefs;
   if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
-  const pressed = [intent.skill1, intent.skill2];
-  for (let i = 0; i < 2; i++) {
-    if (!pressed[i] || run.skillCd[i] > 0) continue;
+  const pressed = [intent.skill1, intent.skill2, intent.skill3, intent.skill4];
+  for (let i = 0; i < SKILL_SLOTS; i++) {
+    if (!pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
     if (run.energy < skills[i].cost) { run.noEnergyT = 0.4; continue; }
     run.energy -= skills[i].cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
@@ -59,6 +59,25 @@ export function stepSkills(run, intent, dt) {
     run.attackT = ATTACK_POSE;
     sfx.skill(skills[i].id);
   }
+  // ultimate (key 5): its own charge bar, no energy, no cooldown (spec §22)
+  if (intent.ult && run.ult && run.ultCharge >= ULT.max) {
+    run.ultCharge = 0;
+    const u = run.ult;
+    const before = run.hits.length;
+    castSkill(run, u);
+    for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true;
+    if (u.dmgTaken) { run.buffT = u.duration; run.dmgTakenMul = u.dmgTaken; }
+    if (u.invuln) run.dodgeInv = Math.max(run.dodgeInv, u.invuln);
+    run.attackT = ATTACK_POSE;
+    run.showBanner(u.name.toUpperCase());
+    run.shake = 0.8;
+    sfx.boss();
+  }
+}
+
+// Ultimate charge from kills and from damage taken.
+export function chargeUlt(run, amount) {
+  if (run.ult) run.ultCharge = Math.min(ULT.max, run.ultCharge + amount);
 }
 
 function castSkill(run, s) {

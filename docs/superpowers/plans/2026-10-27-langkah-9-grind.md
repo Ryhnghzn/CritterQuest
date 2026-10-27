@@ -17,9 +17,12 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Save v8: `skills`, `talents`; atur ulang bakat di Pelatih — tes
 - [x] Tab Skill di panel Karakter (kota: ubah; dungeon: lihat saja)
 - [x] Verifikasi: tes, build, screenshot PC & HP
+## 9B+ — 4 slot skill, ultimate, tombol baru (§22, permintaan 2026-10-27)
+- [x] Save v9: 4 slot skill; pasang/lepas di tab Skill — tes
+- [x] Ultimate per kelas (LV 25) dengan bar dari kill & damage diterima — tes
+- [x] Tombol: skill 1–4, ultimate 5, ramuan Z X C V, bicara E, Karakter I; HUD & tombol HP
+- [x] Verifikasi: tes, build, screenshot PC & HP
+
 ## 9C — Papan Tugas & koleksi
 ## 9D — Open world (biome, kota lain, harta karun & mini bos, portal bos)
 ## 9E — Tingkat kesulitan & Celah tanpa batas
-
-## 9F — Semua teks game dalam bahasa Inggris (permintaan pemilik 2026-10-27, "nanti")
-- [ ] Teks UI, NPC, item, skill, monster, spanduk → bahasa Inggris (komunikasi dengan pemilik tetap bahasa Indonesia)

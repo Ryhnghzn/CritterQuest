@@ -137,13 +137,13 @@ function potionList(char, onBuy) {
 // Four belt slots; tapping one puts the next potion type in it.
 function beltEditor(char, onBelt) {
   const wrap = el('div', 'beltedit');
-  wrap.append(el('span', 'note', 'Sabuk (tombol 1–4) — ketuk untuk ganti:'));
+  wrap.append(el('span', 'note', 'Sabuk (tombol Z X C V) — ketuk untuk ganti:'));
   const row = el('div', 'row');
   char.belt.forEach((id, i) => {
     const b = button('', 'beltslot', () => onBelt(i));
     b.dataset.slot = i;
     if (id) b.append(iconCanvas(`pot_${id}`, 26));
-    b.append(el('kbd', null, String(i + 1)));
+    b.append(el('kbd', null, 'ZXCV'[i]));
     b.title = id ? POTIONS[id].name : 'Kosong';
     row.append(b);
   });

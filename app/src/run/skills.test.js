@@ -321,3 +321,42 @@ describe('pool skill (6 per kelas)', () => {
     expect(g.energy).toBeCloseTo(7 * 1.5);
   });
 });
+
+describe('4 slot skill & ultimate', () => {
+  const mk = (over = {}) => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats, crit: 0 }, ...over });
+    g.spawnT = 1e9;
+    return g;
+  };
+  it('skill di slot 3 & 4 dipakai dengan tombolnya; slot kosong tidak berbuat apa-apa', () => {
+    const g = mk({ skills: ['spin', 'shout', 'quake', 'axe'] });
+    g.energy = 100;
+    hold(g, DT, { attack: false, skill3: true, aimAt: { x: 80, y: 0 } });
+    expect(g.energy).toBeCloseTo(100 - 45, 0);
+    const h = mk({ skills: ['spin', null, null, null] });
+    h.energy = 100;
+    hold(h, DT, { attack: false, skill2: true, skill4: true });
+    expect(h.energy).toBeCloseTo(100, 0);
+  });
+  it('ultimate: terisi dari kill & damage, dipakai saat penuh lalu kosong', () => {
+    const g = mk({ ult: CLASSES.warrior.ult });
+    expect(g.ultCharge).toBe(0);
+    const e = g.spawnEnemy('slink'); e.x = 300; e.hp = 0;
+    hold(g, DT, { attack: false });
+    expect(g.ultCharge).toBeGreaterThan(0);
+    hold(g, DT, { attack: false, ult: true });
+    expect(g.hits.some((x) => x.fx === 'spin' && x.r === CLASSES.warrior.ult.r)).toBe(false); // belum penuh
+    g.ultCharge = 100;
+    hold(g, DT, { attack: false, ult: true });
+    expect(g.ultCharge).toBe(0);
+    expect(g.dmgTakenMul).toBe(CLASSES.warrior.ult.dmgTaken);
+    expect(g.hits.some((x) => x.skill && x.r === CLASSES.warrior.ult.r)).toBe(true);
+  });
+  it('tanpa ultimate (di bawah LV 25) bar tidak terisi', () => {
+    const g = mk();
+    const e = g.spawnEnemy('slink'); e.x = 300; e.hp = 0;
+    hold(g, DT, { attack: false });
+    expect(g.ultCharge).toBe(0);
+  });
+});

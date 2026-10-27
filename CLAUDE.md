@@ -6,7 +6,7 @@ Proyek game browser pribadi (bukan ERP). Bahasa komunikasi: Indonesia.
 
 - **Sedang dikerjakan:** Critter Quest — Arcade (roguelite, save IndexedDB).
 - **Spesifikasi (sumber kebenaran):** `docs/superpowers/specs/2026-10-26-critter-quest-arcade-design.md`
-- **Rencana kerja:** `docs/superpowers/plans/` — satu file per langkah; centang yang selesai. Langkah 1–8 selesai (kota & 4 dungeon bertema, poin stat & gear 6 rarity, rumah/ramuan, Pelatih & Tukang Cukur, monster & bos berpola, energi skill, siang–malam, desain ulang dark fantasy). Langkah 9 (konten grinding) sedang dikerjakan: 9A tempa/material/permata, 9B pool skill & bakat; berikutnya 9C–9E, lalu 9F semua teks game ke bahasa Inggris. Ekspor/impor save (6B) ditunda.
+- **Rencana kerja:** `docs/superpowers/plans/` — satu file per langkah; centang yang selesai. Langkah 1–8 selesai (kota & 4 dungeon bertema, poin stat & gear 6 rarity, rumah/ramuan, Pelatih & Tukang Cukur, monster & bos berpola, energi skill, siang–malam, desain ulang dark fantasy). Langkah 9 (konten grinding) sedang dikerjakan: 9A tempa/material/permata, 9B pool skill & bakat + 4 slot skill & ultimate (tombol 1–4, 5); berikutnya 9C–9E. Teks game tetap bahasa Indonesia. Ekspor/impor save (6B) ditunda.
 - **Konsep jangka panjang (RPG penuh, masih draf):** `docs/2026-10-26-konsep-critter-quest.md`
 
 Mulai setiap sesi dengan membaca spesifikasi + rencana kerja, lalu `git log --oneline` untuk melihat langkah terakhir.

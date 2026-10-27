@@ -17,7 +17,8 @@ export const CLASS_BASE = { atkSpd: 1, critDmg: 1.5, cdr: 0, magnet: 70 };
 //   'buff'  — for `duration`: dmgTaken multiplier and/or atk, atkSpd (fractions), crit, critDmg (added);
 //             optional `blast` shockwave { r, mult, knock, freeze }
 // knock on an area pushes enemies away from its centre (negative = pulls them in).
-// Pool (spec §21): 6 skills per class, `unlock` = character level; two are worn on Q / E.
+// Pool (spec §21): 6 skills per class, `unlock` = character level; up to four are worn on keys 1–4.
+// ult: the class ultimate on key 5, unlocked at LV 25, fired from its own charge bar (spec §22).
 // look: visual (render/world.js drawHit) when it differs from the id; icon: button icon; desc: shown in the Skill tab.
 export const CLASSES = {
   warrior: {
@@ -25,6 +26,7 @@ export const CLASSES = {
     stats: { maxHp: 140, atk: 14, def: 2, crit: 5, moveSpd: 105 },
     growth: { maxHp: 12, atk: 1.4 },
     attack: { kind: 'arc', fx: 'slash', interval: 0.55, mult: 1, r: 46, arc: 100, energy: 7 },
+    ult: { id: 'bladestorm', name: 'Badai Pedang', unlock: 25, icon: 'spin', look: 'spin', desc: 'Berputar liar 2,5 detik: 10×300% di area besar, menarik musuh, damage diterima −50%.', kind: 'area', follow: true, r: 150, ticks: 10, duration: 2.5, mult: 3, knock: -200, dmgTaken: 0.5 },
     skills: [
       { id: 'spin', name: 'Putaran Pedang', unlock: 1, desc: 'Berputar menebas sekeliling 5×220%, menarik musuh.', kind: 'area', cost: 35, cd: 3, r: 95, ticks: 5, duration: 1, mult: 2.2, follow: true, knock: -140 },
       { id: 'shout', name: 'Teriakan Baja', unlock: 1, desc: 'Damage diterima −60% selama 5 detik + gelombang kejut 250%.', kind: 'buff', cost: 50, cd: 8, duration: 5, dmgTaken: 0.4, blast: { r: 115, mult: 2.5, knock: 320 } },
@@ -39,6 +41,7 @@ export const CLASSES = {
     stats: { maxHp: 95, atk: 11, def: 0, crit: 8, moveSpd: 115 },
     growth: { maxHp: 8, atk: 1.2 },
     attack: { kind: 'proj', fx: 'arrow', interval: 0.45, mult: 1, speed: 380, range: 450, r: 4, pierce: 0, energy: 8 },
+    ult: { id: 'starfall', name: 'Hujan Bintang', unlock: 25, icon: 'rain', look: 'rain', desc: 'Hujan panah bintang 3 detik di area sangat luas: 12×250%, memperlambat.', kind: 'area', at: 'aim', maxDist: 350, r: 200, ticks: 12, duration: 3, mult: 2.5, freeze: 0.3 },
     skills: [
       { id: 'rain', name: 'Hujan Panah', unlock: 1, desc: 'Hujan panah di titik bidik, 6×160%.', kind: 'area', at: 'aim', maxDist: 320, cost: 40, cd: 3, r: 85, ticks: 6, duration: 1.5, mult: 1.6 },
       { id: 'pierce', name: 'Tembakan Tembus', unlock: 1, desc: 'Panah besar menembus semua musuh, 600%.', kind: 'proj', cost: 35, cd: 2.5, speed: 560, range: 650, r: 14, mult: 6, pierce: Infinity },
@@ -53,6 +56,7 @@ export const CLASSES = {
     stats: { maxHp: 85, atk: 16, def: 0, crit: 5, moveSpd: 100 },
     growth: { maxHp: 7, atk: 1.6 },
     attack: { kind: 'proj', fx: 'fireball', interval: 0.8, mult: 1, speed: 260, range: 420, r: 6, pierce: 0, explode: { r: 36 }, energy: 9 },
+    ult: { id: 'meteorstorm', name: 'Hujan Meteor', unlock: 25, icon: 'ember', look: 'boom', desc: 'Meteor berjatuhan 2,4 detik: 6×600% di area luas, mendorong.', kind: 'area', at: 'aim', maxDist: 340, r: 220, ticks: 6, duration: 2.4, mult: 6, knock: 120 },
     skills: [
       { id: 'nova', name: 'Nova Es', unlock: 1, desc: 'Ledakan es di sekeliling: 300%, membekukan 2,2 detik, mendorong.', kind: 'area', cost: 45, cd: 4, r: 125, mult: 3, freeze: 2.2, duration: 0.4, knock: 160 },
       { id: 'chain', name: 'Petir Berantai', unlock: 1, desc: 'Petir melompat ke 8 musuh, 350%.', kind: 'chain', cost: 35, cd: 2.5, count: 8, mult: 3.5, range: 450, jump: 200 },
@@ -67,6 +71,7 @@ export const CLASSES = {
     stats: { maxHp: 90, atk: 9, def: 0, crit: 20, moveSpd: 125 },
     growth: { maxHp: 8, atk: 1.0 },
     attack: { kind: 'arc', fx: 'stab', interval: 0.3, mult: 1, r: 34, arc: 50, energy: 4 },
+    ult: { id: 'thousandshadows', name: 'Tarian Seribu Bayangan', unlock: 25, icon: 'shadow', look: 'spin', desc: 'Kebal 2 detik sambil menebas semua di sekitar: 12×260%.', kind: 'area', follow: true, r: 130, ticks: 12, duration: 2, mult: 2.6, invuln: 2 },
     skills: [
       { id: 'shadow', name: 'Langkah Bayangan', unlock: 1, desc: 'Melesat 180 px, 500% ke yang dilewati, kebal.', kind: 'dash', cost: 30, cd: 2, distance: 180, duration: 0.16, r: 26, mult: 5 },
       { id: 'fan', name: 'Kipas Belati', unlock: 1, desc: '11 belati menyebar, masing-masing 180%.', kind: 'fan', cost: 40, cd: 3, count: 11, spread: 80, speed: 440, range: 320, r: 5, mult: 1.8 },

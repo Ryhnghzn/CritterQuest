@@ -1,26 +1,35 @@
 // Skill pool & talents (spec §21). Pure — changes return { ok, char } or { ok: false, reason }.
 import { CLASSES } from '../data/classes.js';
 import { TALENTS, TALENT_EVERY, TALENT_RESPEC } from '../data/talents.js';
+import { SKILL_SLOTS } from '../data/balance.js';
 
 export const talentPoints = (level) => Math.floor(level / TALENT_EVERY);
 export const spentTalents = (char) => Object.values(char.talents).reduce((a, b) => a + b, 0);
 export const freeTalents = (char) => talentPoints(char.level) - spentTalents(char);
 
-// The two skills worn on Q / E, as data.
+// The skills worn on keys 1–4, as data (null = empty slot).
 export function wornSkills(char) {
   const pool = CLASSES[char.classId].skills;
-  return char.skills.map((id) => pool.find((s) => s.id === id));
+  return char.skills.map((id) => (id ? pool.find((s) => s.id === id) : null));
 }
 
-// Wear a skill in slot 0 (Q) or 1 (E); a skill already on the other key swaps over.
+export const ultimateOf = (char) => (char.level >= CLASSES[char.classId].ult.unlock ? CLASSES[char.classId].ult : null);
+
+// Wear a skill in slot 0–3 (keys 1–4); a skill already on another key swaps over. id null = clear.
 export function equipSkill(char, slot, id, now) {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= SKILL_SLOTS) return { ok: false, reason: 'bad' };
+  if (id === null) {
+    if (!char.skills[slot] || char.skills.filter(Boolean).length <= 1) return { ok: false, reason: 'bad' }; // keep one skill
+    const c = structuredClone(char); c.skills[slot] = null; c.updatedAt = now;
+    return { ok: true, char: c };
+  }
   const s = CLASSES[char.classId].skills.find((x) => x.id === id);
-  if (!s || (slot !== 0 && slot !== 1)) return { ok: false, reason: 'bad' };
+  if (!s) return { ok: false, reason: 'bad' };
   if (s.unlock > char.level) return { ok: false, reason: 'locked' };
   if (char.skills[slot] === id) return { ok: false, reason: 'same' };
   const c = structuredClone(char);
-  const other = 1 - slot;
-  if (c.skills[other] === id) c.skills[other] = c.skills[slot];
+  const other = c.skills.indexOf(id);
+  if (other >= 0) c.skills[other] = c.skills[slot];
   c.skills[slot] = id;
   c.updatedAt = now;
   return { ok: true, char: c };

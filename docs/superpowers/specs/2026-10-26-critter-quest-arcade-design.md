@@ -604,3 +604,16 @@ Tujuan: setiap drop berguna dan ada alasan grinding jangka panjang. Angka di `da
   - Semua serangan dari skill (termasuk ledakannya) tidak mengisi energi, menembus perisai, dan mendapat bonus "damage skill".
 - **Bakat** (`data/talents.js`): 1 poin tiap 2 level; 8 bakat × maks 5 tingkat — Kekuatan (ATK +3%), Ketahanan (HP +4%), Ketajaman (kritis +1,5%), Fokus Sihir (damage skill +8%), Aliran Energi (energi +10%), Kegesitan (jeda dodge −6%), Dahaga Darah (hisap 0,6%), Keberuntungan (koin & EXP +5%). Efek perjalanan dijumlah dengan efek item unik. Atur ulang bakat di Pelatih: `80 + 15 × level` koin.
 - **Save versi 8:** `skills: [Q, E]` (id skill kelas), `talents: { id: tingkat }`; `migrate()` v7 → v8 memasang dua skill bawaan, bakat nol.
+
+## 22. Empat Slot Skill, Ultimate & Tombol Baru (2026-10-27)
+
+Atas permintaan pemilik: skill maksimal 4 terpasang + 1 ultimate; teks game tetap bahasa Indonesia (rencana terjemahan dibatalkan).
+
+- **Tombol (PC):** gerak WASD, serang klik kiri, **skill 1–4**, **ultimate 5**, dodge Spasi, **ramuan Z X C V**, bicara **E**, panel Karakter **I**, auto F, menu Esc. HP: joystick + 4 tombol skill, tombol ultimate (cincin emas terisi), dodge, serang.
+- **Skill:** dari pool 6 skill kelas (§21) pasang maksimal 4 di slot 1–4 (tab Skill: tombol 1–4 per skill, "×" untuk melepas; minimal 1 skill terpasang). Slot kosong tidak berbuat apa-apa.
+- **Ultimate** (satu per kelas, terbuka LV 25, `ult` di `data/classes.js`): tanpa energi & cooldown, memakai **bar ultimate** sendiri (0–100, `ULT` di `data/balance.js`): +3 per kill, +10 elite, +25 bos, +40 per 100% HP maks yang hilang; mulai 0 tiap perjalanan; penuh → tombol 5 menyala.
+  - Warrior **Badai Pedang**: 2,5 dtk berputar, 10 × 300% radius 150, menarik musuh, damage diterima −50%.
+  - Archer **Hujan Bintang**: 3 dtk di titik bidik, 12 × 250% radius 200, memperlambat.
+  - Mage **Hujan Meteor**: 2,4 dtk di titik bidik, 6 × 600% radius 220, mendorong.
+  - Assassin **Tarian Seribu Bayangan**: kebal 2 dtk, 12 × 260% radius 130 di sekeliling.
+- **Save versi 9:** `skills` menjadi 4 slot (`null` = kosong); `migrate()` v8 → v9 menambah dua slot kosong.

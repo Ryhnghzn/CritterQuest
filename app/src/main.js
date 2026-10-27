@@ -16,7 +16,7 @@ import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
-import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice } from './meta/talents.js';
+import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf } from './meta/talents.js';
 import { MATS } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
@@ -224,7 +224,7 @@ function openNpc(npc, message = null) {
     onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), `${UPGRADES[id].name} selesai. Kau makin kuat!`),
     onRespec: async () => {
       if (await confirmDialog(`Atur ulang semua poin atribut seharga ${respecPrice(current)} koin?`, 'Atur ulang')) {
-        serve(respec, 'Poinmu kembali. Bagi lagi di panel Karakter (C).');
+        serve(respec, 'Poinmu kembali. Bagi lagi di panel Karakter (I).');
       } else openNpc(townNpc);
     },
     onHaircut: (look) => serve((c, now) => changeLook(c, look, now), 'Nah, rapi sekali! Cocok untukmu.'),
@@ -386,14 +386,18 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(gearEffects(current), talentFx(current)), skills: current.skills,
+    effects: mergeFx(gearEffects(current), talentFx(current)), skills: current.skills, ult: ultimateOf(current),
   });
   tripAttrs = {};
   wornSkills(current).forEach((sk, i) => {
-    const btn = $(i ? 'act-e' : 'act-q');
-    btn.querySelector('.ic').replaceChildren(iconCanvas(sk.icon || sk.id, 30));
-    btn.title = `${sk.name} (${i ? 'E' : 'Q'})`;
+    const btn = $(`act-s${i + 1}`);
+    btn.classList.toggle('none', !sk);
+    btn.querySelector('.ic').replaceChildren(...(sk ? [iconCanvas(sk.icon || sk.id, 30)] : []));
+    btn.title = sk ? `${sk.name} (${i + 1})` : `Slot ${i + 1} kosong`;
   });
+  const ult = ultimateOf(current);
+  $('act-ult').classList.toggle('locked', !ult);
+  if (ult) { $('act-ult').querySelector('.ic').replaceChildren(iconCanvas(ult.icon, 30)); $('act-ult').title = `${ult.name} (5)`; }
   R.avatar = avatarOf(current);
   $('surrender').classList.remove('hidden');
   $('toslots').classList.add('hidden');
@@ -552,13 +556,13 @@ input.onAction.push((code) => {
   if (screen === 'results' && go) { $('tocamp').click(); return; }
   if (scene === 'town') {
     if (code === 'Escape') { if (screen === null) townPause(); else closeTownOverlay(); return; }
-    if (code === 'KeyC') { if (screen === null) openCharPanel(); else if (screen === 'charpanel') closeTownOverlay(); return; }
+    if (code === 'KeyI') { if (screen === null) openCharPanel(); else if (screen === 'charpanel') closeTownOverlay(); return; }
     if (code === 'Enter' && screen === null && town.near) openNpc(town.near);
     return;
   }
   if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
-  if (code === 'KeyC' && game.state === ST.PLAY) { openCharPanel(); return; }
-  if (code === 'KeyC' && screen === 'charpanel') { resume(); return; }
+  if (code === 'KeyI' && game.state === ST.PLAY) { openCharPanel(); return; }
+  if (code === 'KeyI' && screen === 'charpanel') { resume(); return; }
   if (screen === 'charpanel' && code === 'Escape') { resume(); return; }
   if (game.state === ST.PLAY && code === 'Escape') { pause(); return; }
   if (game.state === ST.PAUSE && code === 'Escape') { resume(); return; }
@@ -571,7 +575,7 @@ function tickTown(pressed) {
   if (screen !== null) return;
   stepTown(town, { move: { x: input.x, y: input.y } }, STEP);
   if (town.entered) sfx.dodge();
-  if ((pressed.has('skill2') || pressed.has('talk')) && town.near) { openNpc(town.near); return; }
+  if (pressed.has('talk') && town.near) { openNpc(town.near); return; }
   const slot = potionSlot(pressed);
   if (slot >= 0) drinkInTown(slot);
   // regen is only written to the save now and then
@@ -591,7 +595,8 @@ function tickRun(pressed) {
   const attack = input.touch ? input.attackHeld : input.mouse.down;
   game.intent = {
     move: { x: input.x, y: input.y }, aimAt, attack, auto,
-    dodge: pressed.has('dodge'), skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), potion: potionSlot(pressed),
+    dodge: pressed.has('dodge'), potion: potionSlot(pressed), ult: pressed.has('ult'),
+    skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'),
   };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);

@@ -295,9 +295,17 @@ h2.h.bad{color:var(--coral)}
 #mute.muted .off{display:inline}
 /* action buttons (dodge now; attack + skills in 3C/3D), pause, joystick */
 #actions{position:absolute;right:16px;bottom:16px;display:grid;gap:14px 12px;align-items:end;justify-items:center;
-  grid-template-areas:"q e dodge"}
-#act-q{grid-area:q}#act-e{grid-area:e}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}#act-talk{grid-area:atk}
-body.touch #actions{grid-template-areas:". q e" ". dodge atk";right:14px;bottom:14px}
+  grid-template-areas:"s1 s2 s3 s4 ult dodge"}
+#act-s1{grid-area:s1}#act-s2{grid-area:s2}#act-s3{grid-area:s3}#act-s4{grid-area:s4}#act-ult{grid-area:ult}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}#act-talk{grid-area:atk}
+body.touch #actions{grid-template-areas:". s3 s4 ult" "s1 s2 dodge atk";right:14px;bottom:14px;gap:10px 8px}
+body.touch #actions .act:not(.big){width:50px;height:50px}
+#act-ult{border-color:#e6c27a}
+#act-ult .ultfill{position:absolute;inset:-2px;border-radius:50%;pointer-events:none;
+  background:conic-gradient(rgba(230,194,122,.9) calc(var(--u,0)*360deg),transparent 0);-webkit-mask:radial-gradient(circle,transparent 62%,#000 64%);mask:radial-gradient(circle,transparent 62%,#000 64%)}
+#act-ult.ready{box-shadow:0 0 18px rgba(230,194,122,.75);animation:ultpulse 1.2s ease-in-out infinite}
+#act-ult.locked{display:none}
+@keyframes ultpulse{50%{box-shadow:0 0 30px rgba(255,214,110,.95)}}
+.act.none{opacity:.25}
 #belt{position:absolute;left:16px;bottom:16px;display:flex;gap:10px}
 #belt .act{width:50px;height:50px}
 #belt .act.none{opacity:.3}
@@ -308,12 +316,11 @@ body.intown.touch #belt{bottom:110px}
 #buffs{display:flex;gap:6px;flex-wrap:wrap;min-height:0}
 #buffs:empty{display:none}
 .buff{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;color:#14102a;background:var(--c)}
-body.intown #act-q,body.intown #act-e,body.intown #act-dodge,body.intown #act-attack{display:none}
+body.intown #act-s1,body.intown #act-s2,body.intown #act-s3,body.intown #act-s4,body.intown #act-ult,body.intown #act-dodge,body.intown #act-attack{display:none}
 body:not(.intown) #act-talk,body:not(.touch) #act-talk,body.intown:not(.near) #act-talk{display:none}
 .act .cnt{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;display:grid;place-items:center;
   font-size:12px;font-weight:700;background:#ff6b8b;color:#fff;box-shadow:0 2px 0 #b8334f}
 .act.empty{opacity:.45}
-body.touch #act-q{transform:translate(10px,40px)}
 body.touch #act-dodge{transform:translateY(6px)}
 .act .ic{display:grid;place-items:center}
 .act .cdt{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;font-weight:700;text-shadow:0 1px 3px #000;pointer-events:none}
@@ -534,21 +541,24 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
     <div class="clock" id="clock"></div>
   </div>
   <div id="actions" class="hidden">
-    <button class="act touchbtn" id="act-q" data-action="skill1" aria-label="Skill Q"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>Q</kbd><b class="cost"></b></button>
-    <button class="act touchbtn" id="act-e" data-action="skill2" aria-label="Skill E"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>E</kbd><b class="cost"></b></button>
+    <button class="act touchbtn" id="act-s1" data-action="skill1" aria-label="Skill 1"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>1</kbd><b class="cost"></b></button>
+    <button class="act touchbtn" id="act-s2" data-action="skill2" aria-label="Skill 2"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>2</kbd><b class="cost"></b></button>
+    <button class="act touchbtn" id="act-s3" data-action="skill3" aria-label="Skill 3"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>3</kbd><b class="cost"></b></button>
+    <button class="act touchbtn" id="act-s4" data-action="skill4" aria-label="Skill 4"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>4</kbd><b class="cost"></b></button>
+    <button class="act touchbtn" id="act-ult" data-action="ult" aria-label="Ultimate"><span class="ic"></span><i class="ultfill"></i><kbd>5</kbd></button>
     <button class="act big touchbtn" id="act-talk" data-action="talk" aria-label="Bicara"><svg class="i"><use href="#i-chat"/></svg></button>
     <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd>Spasi</kbd></button>
     <button class="act big touchbtn" id="act-attack" data-hold="attackHeld" aria-label="Serang"><svg class="i"><use href="#i-sword"/></svg></button>
   </div>
   <div id="belt" class="hidden">
-    <button class="act touchbtn belt" id="pot0" data-action="pot0" aria-label="Ramuan slot 1"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>1</kbd></button>
-    <button class="act touchbtn belt" id="pot1" data-action="pot1" aria-label="Ramuan slot 2"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>2</kbd></button>
-    <button class="act touchbtn belt" id="pot2" data-action="pot2" aria-label="Ramuan slot 3"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>3</kbd></button>
-    <button class="act touchbtn belt" id="pot3" data-action="pot3" aria-label="Ramuan slot 4"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>4</kbd></button>
+    <button class="act touchbtn belt" id="pot0" data-action="pot0" aria-label="Ramuan slot 1"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>Z</kbd></button>
+    <button class="act touchbtn belt" id="pot1" data-action="pot1" aria-label="Ramuan slot 2"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>X</kbd></button>
+    <button class="act touchbtn belt" id="pot2" data-action="pot2" aria-label="Ramuan slot 3"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>C</kbd></button>
+    <button class="act touchbtn belt" id="pot3" data-action="pot3" aria-label="Ramuan slot 4"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>V</kbd></button>
   </div>
   <div id="joy" class="hidden"><i></i></div>
   <button id="pausebtn" class="touchbtn hidden" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>
-  <button id="charbtn" class="touchbtn hidden" title="Karakter (C)" aria-label="Karakter"><svg class="i"><use href="#i-user"/></svg></button>
+  <button id="charbtn" class="touchbtn hidden" title="Karakter (I)" aria-label="Karakter"><svg class="i"><use href="#i-user"/></svg></button>
   <button id="autobtn" class="touchbtn hidden" title="Serang otomatis (F)"><span class="dot"></span>AUTO<kbd>F</kbd></button>
   <button id="mute" title="Suara" aria-label="Suara"><svg class="i on"><use href="#i-sound-on"/></svg><svg class="i off"><use href="#i-sound-off"/></svg></button>
   <div id="banner"></div>
@@ -559,7 +569,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
       <span class="tag">ARCADE</span>
     </div>
     <button class="btn big" id="play">Main</button>
-    <div class="help"><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>R</kbd> ramuan &nbsp; <kbd>C</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>Q</kbd>/<kbd>E</kbd> skill &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto</div>
+    <div class="help"><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto</div>
   </div>
 
   <div id="slots" class="screen hidden">

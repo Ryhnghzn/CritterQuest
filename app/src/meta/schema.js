@@ -2,7 +2,7 @@
 // touches storage, so corrupt data is only ever reported, never rewritten.
 import { CLASSES } from '../data/classes.js';
 import {
-  SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL,
+  SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL, SKILL_SLOTS,
 } from '../data/balance.js';
 import { POTION_IDS, POTION_MAX, BELT_SIZE, DEFAULT_BELT } from '../data/potions.js';
 import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
@@ -11,7 +11,7 @@ import { START_TIME } from '../data/time.js';
 import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js';
 import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -63,6 +63,8 @@ export const MIGRATIONS = {
     skills: Object.hasOwn(CLASSES, d.classId) ? CLASSES[d.classId].skills.slice(0, 2).map((s) => s.id) : ['', ''],
     talents: freshTalents(),
   }),
+  // v9 (spec §22): four skill slots (keys 1–4); empty slots are null.
+  8: (d) => ({ ...d, version: 9, skills: Array.isArray(d.skills) ? [...d.skills, null, null] : d.skills }),
 };
 
 export const freshTalents = () => Object.fromEntries(TALENT_IDS.map((id) => [id, 0]));
@@ -132,7 +134,8 @@ export function validateSlot(d) {
   need(isInt(d.clock, 0), 'clock');
   need(isObj(d.mats) && MAT_IDS.every((k) => isInt(d.mats[k], 0)), 'mats');
   const pool = Object.hasOwn(CLASSES, d.classId) ? CLASSES[d.classId].skills.map((s) => s.id) : [];
-  need(Array.isArray(d.skills) && d.skills.length === 2 && d.skills[0] !== d.skills[1] && d.skills.every((id) => pool.includes(id)), 'skills');
+  const worn = Array.isArray(d.skills) ? d.skills.filter((id) => id !== null) : [];
+  need(Array.isArray(d.skills) && d.skills.length === SKILL_SLOTS && new Set(worn).size === worn.length && worn.every((id) => pool.includes(id)), 'skills');
   const talentsOk = isObj(d.talents) && TALENTS.every((t) => isInt(d.talents[t.id], 0, t.max));
   need(talentsOk, 'talents');
   if (talentsOk && isInt(d.level, 1)) need(Object.values(d.talents).reduce((a, b) => a + b, 0) <= Math.floor(d.level / TALENT_EVERY), 'talents: poin melebihi level');

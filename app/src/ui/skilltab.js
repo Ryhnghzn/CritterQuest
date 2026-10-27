@@ -1,5 +1,6 @@
-// Skill tab of the Karakter panel (spec §21): the class's 6 skills (locked ones
-// show their level) with "Q" / "E" buttons, and the talents with [+] / Simpan.
+// Skill tab of the Karakter panel (spec §21, §22): the ultimate (key 5), the
+// class's 6 skills (locked ones show their level) with slot buttons 1–4, and the
+// talents with [+] / Simpan.
 // Changes only in town; in the dungeon the tab is read-only.
 import { el, button } from './screens.js';
 import { iconCanvas } from '../art/sprites.js';
@@ -13,7 +14,15 @@ const pending = {}; // talent id → ranks marked but not saved
 export function renderSkillTab(char, opts, redraw) {
   const wrap = el('div', 'cpbody');
   const skills = el('div', 'panel skills');
-  skills.append(el('div', 'attrhead', 'Skill — pilih 2 untuk Q & E'));
+  const ult = CLASSES[char.classId].ult;
+  const urow = el('div', `skill ult${ult.unlock > char.level ? ' locked' : ' worn'}`);
+  const uic = el('span', 'sic'); uic.append(iconCanvas(ult.icon, 30));
+  const utx = el('div', 'stx');
+  utx.append(el('b', null, `${ult.name} · Ultimate`), el('span', null, ult.desc), el('span', 'meta', 'Tombol 5 · bar terisi dari kill & damage diterima'));
+  const ubox = el('div', 'skbtns');
+  ubox.append(el('span', 'lock', ult.unlock > char.level ? `LV ${ult.unlock}` : '5'));
+  urow.append(uic, utx, ubox);
+  skills.append(urow, el('div', 'attrhead', 'Skill — pasang maksimal 4 (tombol 1–4)'));
   for (const s of CLASSES[char.classId].skills) {
     const locked = s.unlock > char.level, slot = char.skills.indexOf(s.id);
     const row = el('div', `skill${locked ? ' locked' : ''}${slot >= 0 ? ' worn' : ''}`);
@@ -23,11 +32,19 @@ export function renderSkillTab(char, opts, redraw) {
     txt.append(el('b', null, s.name), el('span', null, s.desc), el('span', 'meta', `Energi ${s.cost} · jeda ${s.cd} dtk`));
     const act = el('div', 'skbtns');
     if (locked) act.append(el('span', 'lock', `LV ${s.unlock}`));
-    else for (const [i, key] of [[0, 'Q'], [1, 'E']]) {
-      const b = button(key, `btn small skkey${slot === i ? ' on' : ''}`, () => opts.onEquip(i, s.id));
-      b.dataset.skill = `${s.id}-${key}`;
-      b.disabled = !opts.editable || slot === i;
-      act.append(b);
+    else {
+      for (let i = 0; i < 4; i++) {
+        const b = button(String(i + 1), `btn small skkey${slot === i ? ' on' : ''}`, () => opts.onEquip(i, s.id));
+        b.dataset.skill = `${s.id}-${i + 1}`;
+        b.disabled = !opts.editable || slot === i;
+        act.append(b);
+      }
+      if (slot >= 0 && opts.editable) {
+        const off = button('×', 'btn ghost small skkey', () => opts.onEquip(slot, null));
+        off.title = 'Lepas dari tombol';
+        off.dataset.skill = `${s.id}-off`;
+        act.append(off);
+      }
     }
     row.append(ic, txt, act);
     skills.append(row);

@@ -1,5 +1,5 @@
 // In-run HUD (DOM): bars, counters and banner (~10×/s), action cooldown rings (every frame).
-import { DODGE, ENERGY } from '../data/balance.js';
+import { DODGE, ENERGY, ULT } from '../data/balance.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
 import { clockText } from '../meta/clock.js';
@@ -43,11 +43,18 @@ export function updateActions(game) {
   ring($('act-dodge'), game.dodgeCd, DODGE.cooldown);
   updateBelt(game.belt, game.potions, game.potionCd);
   const skills = game.skillDefs;
-  for (const [i, id] of [[0, 'act-q'], [1, 'act-e']]) {
-    $(id).querySelector('.cost').textContent = skills[i].cost;
-    $(id).classList.toggle('noen', game.energy < skills[i].cost);
-    const left = ring($(id), game.skillCd[i], game.skillCdMax[i]);
-    $(id).querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
+  for (let i = 0; i < 4; i++) {
+    const b = $(`act-s${i + 1}`), sk = skills[i];
+    b.querySelector('.cost').textContent = sk ? sk.cost : '';
+    b.classList.toggle('noen', !!sk && game.energy < sk.cost);
+    const left = ring(b, game.skillCd[i], game.skillCdMax[i]);
+    b.querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
+  }
+  // ultimate: gold ring fills with its charge (spec §22)
+  const u = $('act-ult');
+  if (game.ult) {
+    u.style.setProperty('--u', (game.ultCharge / ULT.max).toFixed(3));
+    u.classList.toggle('ready', game.ultCharge >= ULT.max);
   }
 }
 
@@ -65,7 +72,7 @@ export function updateBelt(belt, potions, cd) {
     if (b.dataset.id !== String(id)) {
       b.dataset.id = String(id);
       b.querySelector('.ic').replaceChildren(...(id ? [iconCanvas(`pot_${id}`, 28)] : []));
-      b.title = id ? `${POTIONS[id].name}: ${POTIONS[id].desc} (${i + 1})` : `Slot ${i + 1} kosong`;
+      b.title = id ? `${POTIONS[id].name}: ${POTIONS[id].desc} (${'ZXCV'[i]})` : `Slot ${'ZXCV'[i]} kosong`;
     }
     const n = id ? potions[id] : 0;
     b.querySelector('.cnt').textContent = n;

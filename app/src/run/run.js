@@ -1,14 +1,14 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
 import { rand, rrange, rint, resetRng } from '../core/rng.js';
-import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT } from '../data/balance.js';
 import { expToNext } from '../meta/character.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
-import { stepAttack, stepSkills, skillCooldown } from './skills.js';
+import { stepAttack, stepSkills, skillCooldown, chargeUlt } from './skills.js';
 import { stepHits } from './hits.js';
 import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
@@ -26,7 +26,7 @@ const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.w
 // hits from basic attacks fill energy (spec §18.2)
 const BASIC_FX = new Set(['slash', 'stab', 'arrow', 'fireball', 'boom']);
 // potion: belt slot to drink from this step (0–3), or -1
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, potion: -1 };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false, potion: -1 };
 const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
 // potion buffs: stat → multiplier field on the potion (spec §15.2)
 const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
@@ -70,7 +70,8 @@ export class Game {
   // effects: special effects of the equipped unique gear, { effect: value } (meta/gear.js)
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null }) {
+  // ult: the class ultimate when unlocked (meta/talents.js ultimateOf), else null
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -83,11 +84,13 @@ export class Game {
     this.aimX = 1; this.aimY = 0;
     this.atkCd = 0; this.attackT = 0;
     this.aimPX = 0; this.aimPY = 0;
-    this.skillCd = [0, 0];
+    this.skillCd = [0, 0, 0, 0];
     this.energy = ENERGY.start; this.noEnergyT = 0;
     const pool = CLASSES[classId].skills;
-    this.skillDefs = (skills || pool.slice(0, 2).map((s) => s.id)).map((id) => pool.find((s) => s.id === id));
-    this.skillCdMax = this.skillDefs.map((sk) => skillCooldown(stats, sk));
+    this.skillDefs = (skills || [pool[0].id, pool[1].id, null, null]).map((id) => (id ? pool.find((s) => s.id === id) : null));
+    while (this.skillDefs.length < 4) this.skillDefs.push(null);
+    this.skillCdMax = this.skillDefs.map((sk) => (sk ? skillCooldown(stats, sk) : 0));
+    this.ult = ult; this.ultCharge = 0;
     this.skillBuff = null; this.skillBuffT = 0; // atk / atkSpd / crit / critDmg from a buff skill
     this.buffT = 0; this.dmgTakenMul = 1;
     this.dashSpeed = 0;
@@ -134,7 +137,7 @@ export class Game {
     this.baseStats = { ...stats };
     this.stats = { ...stats, hp };
     this.applyBuffs();
-    this.skillCdMax = this.skillDefs.map((sk) => skillCooldown(stats, sk));
+    this.skillCdMax = this.skillDefs.map((sk) => (sk ? skillCooldown(stats, sk) : 0));
   }
 
   // stats = base stats × active potion buffs
@@ -359,6 +362,7 @@ export class Game {
     let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul;
     if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; }
     this.stats.hp -= dmg;
+    chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
     this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
     sfx.hurt();
     this.spawnBurst(this.px, this.py, '#ff5a6e', 8);
@@ -369,6 +373,7 @@ export class Game {
   killEnemy(e) {
     onDeath(this, e);
     this.kills += 1;
+    chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);
     dropLoot(this, e);
