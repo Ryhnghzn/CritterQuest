@@ -1,5 +1,4 @@
 // In-run HUD (DOM): bars, counters and banner (~10×/s), action cooldown rings (every frame).
-import { FLOORS } from '../data/dungeon.js';
 import { DODGE, ENERGY } from '../data/balance.js';
 import { CLASSES } from '../data/classes.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
@@ -13,8 +12,8 @@ export function updateHUD(game) {
   $('hptext').textContent = `${Math.ceil(Math.max(0, s.hp))} / ${Math.round(s.maxHp)}`;
   $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
   $('lvltext').textContent = `LV ${game.level}`;
-  const waves = FLOORS[game.floor - 1]?.waves.length ?? 0;
-  $('floor').textContent = game.floorClear ? `Lantai ${game.floor} · bersih` : `Lantai ${game.floor} · G${game.wave + 1}/${waves}`;
+  const waves = game.dungeon.floors[game.floor - 1]?.waves.length ?? 0;
+  $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? 'bersih' : `G${game.wave + 1}/${waves}`}`;
   $('kills').textContent = game.kills;
   $('gold').textContent = game.gold;
   $('dmg').style.opacity = game.flash > 0 ? 0.9 : 0;

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { SAVE_VERSION, SETTINGS_VERSION, migrate, validateSlot, readSlot, readSettings } from './schema.js';
 import { createCharacter } from './character.js';
 
+// an older save keeps its records in the pre-v5 shape
+const legacy = (c) => ({ ...c, records: { bestFloor: 0, clears: 0, trips: 0, kills: 0, bossKills: 0 } });
 const fresh = () => createCharacter(
   { slot: 1, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'mage' }, 1761436800000,
 );
@@ -36,7 +38,8 @@ describe('validateSlot', () => {
     ['jenis potion asing', (c) => { c.potions.teh = 1; }],
     ['sabuk tidak 4 slot', (c) => { c.belt = ['red']; }],
     ['sabuk berisi jenis asing', (c) => { c.belt[0] = 'teh'; }],
-    ['rekor lantai hilang', (c) => { delete c.records.bestFloor; }],
+    ['rekor dungeon hilang', (c) => { delete c.records.dungeons.crystal; }],
+    ['rekor lantai > 5', (c) => { c.records.dungeons.shadow.bestFloor = 6; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 60', (c) => { c.inventory = Array.from({ length: 61 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
@@ -73,11 +76,13 @@ describe('save versi 2', () => {
     expect(r.data.hp).toBeNull();
     expect(r.data.potions.red).toBe(0);
     expect(r.data.upgrades).toEqual({ hp: 2, atk: 1, magnet: 0 });
-    expect(r.data.records).toEqual({ bestFloor: 0, clears: 0, trips: 7, kills: 400, bossKills: 2 });
+    expect(r.data.records.trips).toBe(7);
+    expect(r.data.records.kills).toBe(400);
+    expect(r.data.records.dungeons.shadow).toEqual({ bestFloor: 0, clears: 0 });
   });
 
   it('migrasi v2 → v3: atribut nol, slot sepatu & kalung kosong, gear lama tetap', () => {
-    const v2 = { ...fresh(), version: 2, level: 6, inventory: [item()], equipped: { weapon: null, helm: 'it_a1', armor: null, ring: null } };
+    const v2 = { ...legacy(fresh()), version: 2, level: 6, inventory: [item()], equipped: { weapon: null, helm: 'it_a1', armor: null, ring: null } };
     delete v2.attrs; delete v2.belt; v2.potions = 0;
     const r = readSlot(v2);
     expect(r.status).toBe('ok');
@@ -87,12 +92,21 @@ describe('save versi 2', () => {
   });
 
   it('migrasi v3 → v4: ramuan lama menjadi Ramuan Merah, sabuk bawaan', () => {
-    const v3 = { ...fresh(), version: 3, potions: 4 };
+    const v3 = { ...legacy(fresh()), version: 3, potions: 4 };
     delete v3.belt;
     const r = readSlot(v3);
     expect(r.status).toBe('ok');
     expect(r.data.potions).toEqual({ red: 4, big: 0, shield: 0, wind: 0, rage: 0 });
     expect(r.data.belt).toEqual(['red', 'big', 'shield', 'rage']);
+  });
+
+  it('migrasi v4 → v5: rekor lantai lama menjadi rekor dungeon pertama', () => {
+    const v4 = { ...fresh(), version: 4, records: { bestFloor: 4, clears: 2, trips: 9, kills: 50, bossKills: 2 } };
+    const r = readSlot(v4);
+    expect(r.status).toBe('ok');
+    expect(r.data.records.dungeons.shadow).toEqual({ bestFloor: 4, clears: 2 });
+    expect(r.data.records.dungeons.lava).toEqual({ bestFloor: 0, clears: 0 });
+    expect(r.data.records.bestFloor).toBeUndefined();
   });
 
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {

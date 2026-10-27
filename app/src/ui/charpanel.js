@@ -8,6 +8,7 @@ import { POTION_IDS } from '../data/potions.js';
 import { expToNext, finalStats, freePoints, allocate } from '../meta/character.js';
 import { dollGear } from '../meta/gear.js';
 import { renderGearTab } from './gear.js';
+import { DUNGEONS } from '../data/dungeons.js';
 
 let tab = 'status'; // 'status' | 'gear', kept between openings
 
@@ -100,7 +101,9 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   }
   const r = char.records;
   const rec = el('div', 'records');
-  for (const [icon, text] of [['trophy', `Lantai terdalam ${r.bestFloor}`], ['trophy', `${r.clears}× tamat`], ['clock', `${r.trips} perjalanan`], ['skull', `${r.kills} kill`], ['skull', `${r.bossKills} bos`]]) {
+  const reached = DUNGEONS.filter((d) => r.dungeons[d.id].bestFloor > 0)
+    .map((d) => ['trophy', `${d.short} ${r.dungeons[d.id].bestFloor}/5${r.dungeons[d.id].clears ? ` · tamat ${r.dungeons[d.id].clears}×` : ''}`]);
+  for (const [icon, text] of [...reached, ['clock', `${r.trips} perjalanan`], ['skull', `${r.kills} kill`], ['skull', `${r.bossKills} bos`]]) {
     const chip = el('span', 'hchip');
     chip.append(svgIcon(icon), text);
     rec.append(chip);

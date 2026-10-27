@@ -33,7 +33,7 @@ export const ENEMIES = {
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {
-    name: 'Raja Maw', hp: 900, speed: 38, dmg: 24, r: 30, xp: 0, sprite: 'boss', score: 100,
+    name: 'Raja Maw', boss: true, hp: 900, speed: 38, dmg: 24, r: 30, xp: 0, sprite: 'boss', score: 100,
     ai: 'boss', every: 2.8, enrageAt: 0.5, enragedEvery: 1.8,
     patterns: ['ring', 'spiral', 'slam', 'charge', 'summon'],
     ring: { count: 14, speed: 140, dmg: 12, waves: 2, gap: 0.45, r: 7, color: '#c26bd8' },
@@ -41,6 +41,39 @@ export const ENEMIES = {
     slam: { count: 3, gap: 0.45, fuse: 0.9, radius: 70, dmg: 26 },
     windup: 0.9, dash: { speed: 420, time: 0.6 }, rest: 0.6,
     summon: { type: 'mini', count: 4, max: 8 },
+  },
+  // Golem Kristal (Gua Kristal): crystal shards in rings, slams, charges.
+  crystalboss: {
+    name: 'Golem Kristal', boss: true, hp: 900, speed: 30, dmg: 26, r: 32, xp: 0, sprite: 'crystalboss', score: 100,
+    ai: 'boss', every: 2.6, enrageAt: 0.5, enragedEvery: 1.7,
+    patterns: ['ring', 'slam', 'charge', 'ring'],
+    ring: { count: 18, speed: 130, dmg: 13, waves: 3, gap: 0.4, r: 7, color: '#7fd8ff' },
+    spiral: { arms: 2, time: 2, every: 0.12, speed: 140, dmg: 10, turn: 2, r: 6, color: '#7fd8ff' },
+    slam: { count: 4, gap: 0.4, fuse: 0.85, radius: 75, dmg: 28 },
+    windup: 0.8, dash: { speed: 460, time: 0.55 }, rest: 0.7,
+    summon: { type: 'shielder', count: 2, max: 4 },
+  },
+  // Ratu Spora (Hutan Jamur Busuk): spore spirals, calls bombers.
+  sporeboss: {
+    name: 'Ratu Spora', boss: true, hp: 900, speed: 36, dmg: 24, r: 30, xp: 0, sprite: 'sporeboss', score: 100,
+    ai: 'boss', every: 2.4, enrageAt: 0.5, enragedEvery: 1.6,
+    patterns: ['spiral', 'summon', 'ring', 'spiral'],
+    ring: { count: 16, speed: 120, dmg: 12, waves: 2, gap: 0.5, r: 8, color: '#b7ff6a' },
+    spiral: { arms: 4, time: 2.8, every: 0.13, speed: 125, dmg: 11, turn: 1.6, r: 7, color: '#d98aff' },
+    slam: { count: 3, gap: 0.5, fuse: 0.9, radius: 70, dmg: 24 },
+    windup: 0.9, dash: { speed: 400, time: 0.6 }, rest: 0.6,
+    summon: { type: 'bomber', count: 3, max: 6 },
+  },
+  // Raja Lava (Benteng Lava): heavy fire slams and fire rings.
+  lavaboss: {
+    name: 'Raja Lava', boss: true, hp: 900, speed: 34, dmg: 30, r: 34, xp: 0, sprite: 'lavaboss', score: 100,
+    ai: 'boss', every: 2.3, enrageAt: 0.5, enragedEvery: 1.5,
+    patterns: ['slam', 'ring', 'spiral', 'charge'],
+    ring: { count: 20, speed: 150, dmg: 14, waves: 2, gap: 0.4, r: 8, color: '#ff8a3c' },
+    spiral: { arms: 3, time: 2.4, every: 0.1, speed: 160, dmg: 12, turn: 2.6, r: 7, color: '#ffc04a' },
+    slam: { count: 5, gap: 0.35, fuse: 0.8, radius: 85, dmg: 32 },
+    windup: 0.75, dash: { speed: 480, time: 0.55 }, rest: 0.6,
+    summon: { type: 'charger', count: 2, max: 4 },
   },
 };
 

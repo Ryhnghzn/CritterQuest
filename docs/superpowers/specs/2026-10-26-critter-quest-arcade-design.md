@@ -552,7 +552,18 @@ Serangan dasar yang kena mengisi **energi** (maks 100, mulai 50 tiap perjalanan,
 | Assassin | 4 | Langkah Bayangan 30, 2 s — 180 px, 500% | Kipas Belati 40, 3 s — 11 belati × 180% |
 
 ### 18.3 Dungeon bertema (langkah 7C)
-Empat dungeon terbuka berurutan (Ruang Bawah Tanah Bayangan → Gua Kristal → Hutan Jamur Busuk → Benteng Lava), masing-masing 5 lantai + bos sendiri; bentuk ruangan tiap lantai diacak dengan rintangan. Detail di 7C.
+Empat dungeon terbuka berurutan — dungeon berikutnya terbuka setelah yang sebelumnya tamat. Angka di `data/dungeons.js`:
+
+| Dungeon | HP musuh | Damage | EXP & koin | Level gear | Bos | Tema |
+|---|---|---|---|---|---|---|
+| Ruang Bawah Tanah Bayangan | ×1 | ×1 | ×1 | +0 | Raja Maw | obor & jamur bercahaya |
+| Gua Kristal | ×2,2 | ×1,5 | ×2 | +8 | Golem Kristal (cincin kristal rapat, hentakan, seruduk, panggil Kura Baja) | kristal biru |
+| Hutan Jamur Busuk | ×4 | ×2,1 | ×3,5 | +16 | Ratu Spora (spiral spora, panggil Jamur Bom) | jamur raksasa hijau/ungu |
+| Benteng Lava | ×7 | ×2,9 | ×5 | +26 | Raja Lava (hentakan api beruntun, cincin & spiral api) | retakan lava & anglo |
+
+- **Bentuk ruangan** diacak tiap lantai (`run/room.js`): bundar, aula berpilar, salib, dua ruang bersambung (dengan pilar), gua tak beraturan. Lantai 1 dungeon pertama selalu bundar. Lorong masuk musuh dicari otomatis di tepi; tengah selalu kosong untuk portal.
+- **Gerbang:** kartu dungeon (terbuka / terkunci + syaratnya), lalu "Lanjut ke Lantai X" atau lantai lain.
+- **Save versi 5:** `records` menjadi `{ trips, kills, bossKills, dungeons: { shadow|crystal|fungus|lava: { bestFloor, clears } } }`; `migrate()` v4 → v5 memindahkan rekor lama ke dungeon pertama.
 
 ### 18.4 Siang–malam (langkah 7D)
 Kota berputar pagi → siang → sore → malam (± 8 menit nyata); dungeon tetap gelap dengan suasana per tema.

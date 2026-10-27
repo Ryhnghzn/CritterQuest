@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
-import { waveQueue, LANES, FLOOR_COUNT, makeElite } from './dungeon.js';
+import { waveQueue, FLOOR_COUNT, makeElite } from './dungeon.js';
+import { inside } from './room.js';
+import { DUNGEONS } from '../data/dungeons.js';
 import { ELITE } from '../data/items.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
-import { ROOM, FLOORS, WAVE, PORTAL, COINS } from '../data/dungeon.js';
+import { ROOM, WAVE, PORTAL, COINS } from '../data/dungeon.js';
+const FLOORS = DUNGEONS[0].floors;
 
 const DT = 1 / 60;
 const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false };
@@ -53,15 +56,15 @@ describe('gelombang', () => {
     const g = start();
     for (let i = 0; i < 60 * 3; i++) step(g);
     const e = g.enemies[0];
-    expect(Math.hypot(e.x, e.y)).toBeGreaterThan(ROOM.r);
+    expect(inside(g.room, e.x, e.y, 0)).toBe(false);
     expect(e.entering).toBe(true);
-    const lane = LANES.find((l) => l === e.lane);
-    const side = Math.abs(-lane.y * e.x + lane.x * e.y);
+    const lane = e.lane;
+    const side = Math.abs(-lane.dy * (e.x - lane.x) + lane.dx * (e.y - lane.y));
     expect(side).toBeLessThanOrEqual(ROOM.laneWidth / 2);
     for (let i = 0; i < 60 * 20 && e.entering; i++) step(g);
     expect(e.entering).toBe(false);
     for (let i = 0; i < 60 * 5; i++) step(g);
-    for (const m of g.enemies) if (!m.entering) expect(Math.hypot(m.x, m.y)).toBeLessThanOrEqual(ROOM.r - m.r + 1e-6);
+    for (const m of g.enemies) if (!m.entering) expect(inside(g.room, m.x, m.y, m.r - 1e-6)).toBe(true);
   });
 
   it('gelombang berikut menunggu sampai musuh tersisa sedikit', () => {

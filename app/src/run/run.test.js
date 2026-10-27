@@ -45,7 +45,7 @@ describe('hasil ronde', () => {
     for (let l = 1; l < g.level; l++) total += expToNext(l);
     const r = g.result();
     expect(r.exp).toBe(total);
-    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, floor: g.deepest, cleared: false });
+    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, floor: g.deepest, cleared: false, dungeon: 'shadow' });
   });
 
   it('menghitung bos yang dikalahkan', () => {

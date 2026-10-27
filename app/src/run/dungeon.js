@@ -1,27 +1,29 @@
-// Dungeon floors (spec §13.3): waves walk in through the 4 lanes, a cleared floor
-// opens portals in the centre (blue = down, gold = home). Pure logic on the run
-// state (run/run.js); the run decides what an exit means.
+// Dungeon floors (spec §13.3, §18.3): each floor is a randomly shaped room
+// (run/room.js) of the chosen dungeon; waves walk in through the 4 lanes, a
+// cleared floor opens portals in the centre (blue = down, gold = home). Pure
+// logic on the run state (run/run.js); the run decides what an exit means.
 import { rand, rrange } from '../core/rng.js';
-import { ROOM, FLOORS, WAVE, PORTAL, COINS, FLOOR_HP_STEP } from '../data/dungeon.js';
+import { ROOM, WAVE, PORTAL, COINS, FLOOR_HP_STEP } from '../data/dungeon.js';
+import { DUNGEONS } from '../data/dungeons.js';
+import { makeRoom, inside, confine, SHAPES } from './room.js';
 import { ELITE, DROP, RARITIES } from '../data/items.js';
-import { dropItem, itemName } from '../meta/itemgen.js';
+import { ENEMIES } from '../data/enemies.js';
+import { dropItem, itemName, itemLevelFor } from '../meta/itemgen.js';
+import { CHAR_LEVEL_MAX } from '../data/balance.js';
 
-export const FLOOR_COUNT = FLOORS.length;
-// lane directions: N, E, S, W
-export const LANES = [0, 1, 2, 3].map((i) => {
-  const a = (i * Math.PI) / 2 - Math.PI / 2;
-  return { a, x: Math.round(Math.cos(a)), y: Math.round(Math.sin(a)) };
-});
-const MOUTH = ROOM.r - 40;    // an enemy is "in the room" once this close to the centre
+export const FLOOR_COUNT = DUNGEONS[0].floors.length; // every dungeon has 5 floors
+const IN_ROOM = 30;           // an enemy is "in the room" once this far inside the wall
 const FIRST_SPAWN = 1.2;      // seconds of calm at the start of a floor
 
-export const hpMul = (floor) => 1 + FLOOR_HP_STEP * (floor - 1);
+// enemy HP multiplier: floor step × the dungeon's difficulty
+export const hpMul = (floor, dungeon = DUNGEONS[0]) => (1 + FLOOR_HP_STEP * (floor - 1)) * dungeon.hpMul;
+const floorsOf = (run) => run.dungeon.floors;
 
 // Spawn order of one wave: bosses first, everything else shuffled.
 export function waveQueue(wave) {
   const lead = [], rest = [];
   for (const [type, n] of Object.entries(wave.mix)) {
-    for (let i = 0; i < n; i++) (type === 'boss' ? lead : rest).push(type);
+    for (let i = 0; i < n; i++) (ENEMIES[type].boss ? lead : rest).push(type);
   }
   for (let i = rest.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
@@ -42,6 +44,8 @@ export function startFloor(run, floor) {
   run.floorClear = false; run.clearT = 0;
   run.portals = [];
   run.exit = null;
+  // floor 1 of the first dungeon is always the round room; after that, any shape
+  run.room = makeRoom(floor === 1 && run.dungeon === DUNGEONS[0] ? 'round' : SHAPES[Math.floor(rand() * SHAPES.length)], rand);
   beginWave(run, 0);
   run.spawnT = FIRST_SPAWN;
   run.showBanner(`Lantai ${floor}`);
@@ -49,7 +53,7 @@ export function startFloor(run, floor) {
 
 function beginWave(run, i) {
   run.wave = i;
-  run.queue = waveQueue(FLOORS[run.floor - 1].waves[i]);
+  run.queue = waveQueue(floorsOf(run)[run.floor - 1].waves[i]);
   run.queueI = 0;
   run.spawnT = 0;
   run.waveGap = 0;
@@ -57,16 +61,17 @@ function beginWave(run, i) {
 
 // One enemy at the far end of a random lane; it walks in before chasing.
 export function spawnFromLane(run, type) {
-  const lane = LANES[Math.floor(rand() * LANES.length)];
-  const along = ROOM.r + ROOM.wall + ROOM.laneLen * rrange(0.5, 1);
+  const lanes = run.room.lanes;
+  const lane = lanes[Math.floor(rand() * lanes.length)];
+  const along = ROOM.wall + ROOM.laneLen * rrange(0.5, 1);
   const side = rrange(-1, 1) * (ROOM.laneWidth / 2 - 14);
   const e = run.spawnEnemy(type);
-  if (type !== 'boss' && rand() < ELITE.chance[run.floor - 1]) makeElite(e);
-  e.x = lane.x * along - lane.y * side;
-  e.y = lane.y * along + lane.x * side;
+  if (!e.boss && rand() < ELITE.chance[run.floor - 1]) makeElite(e);
+  e.x = lane.x + lane.dx * along - lane.dy * side;
+  e.y = lane.y + lane.dy * along + lane.dx * side;
   e.lane = lane;
   e.entering = true;
-  if (type === 'boss') run.showBanner('RAJA MAW DATANG!');
+  if (e.boss) run.showBanner(`${ENEMIES[type].name.toUpperCase()} DATANG!`);
   return e;
 }
 
@@ -83,27 +88,27 @@ export function makeElite(e) {
 // Also keeps enemies already in the room inside the wall.
 export function enemyGoal(run, e) {
   if (e.entering) {
-    if (Math.hypot(e.x, e.y) < MOUTH) e.entering = false;
-    else return { x: e.lane.x * (MOUTH - 30), y: e.lane.y * (MOUTH - 30) };
+    if (inside(run.room, e.x, e.y, IN_ROOM)) e.entering = false;
+    else return { x: e.lane.x - e.lane.dx * (IN_ROOM + 30), y: e.lane.y - e.lane.dy * (IN_ROOM + 30) };
   }
   return { x: run.px, y: run.py };
 }
 
-export function confineEnemy(e) {
-  if (e.entering) return;
-  const max = ROOM.r - e.r, d = Math.hypot(e.x, e.y);
-  if (d > max) { e.x *= max / d; e.y *= max / d; }
+export function confineEnemy(run, e) {
+  if (!e.entering) confine(run.room, e, e.r);
 }
 
+const player = { x: 0, y: 0 };
 export function confinePlayer(run) {
-  const max = ROOM.r - 12, d = Math.hypot(run.px, run.py);
-  if (d > max) { run.px *= max / d; run.py *= max / d; }
+  player.x = run.px; player.y = run.py;
+  confine(run.room, player, 12);
+  run.px = player.x; run.py = player.y;
 }
 
 export function stepDungeon(run, dt) {
   run.floorT += dt;
   if (run.floorClear) { stepPortals(run, dt); return; }
-  const waves = FLOORS[run.floor - 1].waves;
+  const waves = floorsOf(run)[run.floor - 1].waves;
   if (run.queueI < run.queue.length) {
     run.spawnT -= dt;
     if (run.spawnT <= 0) {
@@ -157,7 +162,9 @@ function stepPortals(run, dt) {
 
 // A piece of gear on the ground; picked up like a gem (run.pickup).
 export function dropGear(run, source, x, y) {
-  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk }, rand);
+  // deeper dungeons give higher-level gear
+  const level = Math.min(CHAR_LEVEL_MAX, itemLevelFor(run.level, run.floor, rand) + run.dungeon.itemLevel);
+  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level }, rand);
   const a = rand() * Math.PI * 2;
   run.gems.push({ x: x + Math.cos(a) * 18, y: y + Math.sin(a) * 18, v: 0, mag: false, big: false, gear: item, t: rand() * 6 });
   return item;
@@ -170,7 +177,7 @@ export function gearPickedUp(run, item) {
 
 // Loot from a defeated enemy: gear (bosses 2, elites 1, others rarely) and coins.
 export function dropLoot(run, e) {
-  if (e.type === 'boss') for (let i = 0; i < DROP.bossItems; i++) dropGear(run, 'boss', e.x, e.y);
+  if (e.boss) for (let i = 0; i < DROP.bossItems; i++) dropGear(run, 'boss', e.x, e.y);
   else if (e.elite) dropGear(run, 'elite', e.x, e.y);
   else if (rand() < DROP.enemyChance) dropGear(run, 'enemy', e.x, e.y);
   dropCoins(run, e);
@@ -178,8 +185,8 @@ export function dropLoot(run, e) {
 
 // Coins from a defeated enemy: bosses and elites always pay, others sometimes drop a pickup.
 export function dropCoins(run, e) {
-  if (e.type === 'boss' || e.elite) {
-    const v = e.type === 'boss' ? COINS.boss : ELITE.gold;
+  if (e.boss || e.elite) {
+    const v = e.boss ? COINS.boss : ELITE.gold;
     run.addGold(v);
     run.addFloater(e.x, e.y - e.r - 10, `+${v} koin`, '#ffd166');
     return;

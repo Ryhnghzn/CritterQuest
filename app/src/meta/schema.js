@@ -6,8 +6,9 @@ import {
 } from '../data/balance.js';
 import { POTION_IDS, POTION_MAX, BELT_SIZE, DEFAULT_BELT } from '../data/potions.js';
 import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
+import { DUNGEON_IDS } from '../data/dungeons.js';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -34,12 +35,24 @@ export const MIGRATIONS = {
     potions: { ...Object.fromEntries(POTION_IDS.map((id) => [id, 0])), red: d.potions },
     belt: DEFAULT_BELT.slice(),
   }),
+  // v5 (spec §18.3): records per dungeon; the old floor record belongs to the first one.
+  4: (d) => {
+    const out = { ...d, version: 5 };
+    if (isObj(d.records)) {
+      const { bestFloor, clears, ...rest } = d.records;
+      out.records = { ...rest, dungeons: freshDungeonRecords() };
+      out.records.dungeons.shadow = { bestFloor, clears };
+    }
+    return out;
+  },
 };
+
+export const freshDungeonRecords = () => Object.fromEntries(DUNGEON_IDS.map((id) => [id, { bestFloor: 0, clears: 0 }]));
 
 export const EQUIP_SLOTS = ['weapon', 'helm', 'armor', 'boots', 'amulet', 'ring'];
 const ATTR_IDS = ATTRS.map((a) => a.id);
 const UPGRADES = ['hp', 'atk', 'magnet'];
-const RECORDS = ['bestFloor', 'clears', 'trips', 'kills', 'bossKills'];
+const RECORDS = ['trips', 'kills', 'bossKills'];
 const BASE_STATS = ['atk', 'maxHp', 'def', 'moveSpd', 'crit'];
 const RARITY_MAX = RARITIES.length - 1;
 const UNIQUE_IDS = UNIQUES.map((u) => u.id);
@@ -98,6 +111,10 @@ export function validateSlot(d) {
     && d.belt.every((id) => id === null || POTION_IDS.includes(id)), 'belt');
   need(isObj(d.upgrades) && UPGRADES.every((k) => isInt(d.upgrades[k], 0)), 'upgrades');
   need(isObj(d.records) && RECORDS.every((k) => isInt(d.records[k], 0)), 'records');
+  need(isObj(d.records) && isObj(d.records.dungeons) && DUNGEON_IDS.every((id) => {
+    const r = d.records.dungeons[id];
+    return isObj(r) && isInt(r.bestFloor, 0, 5) && isInt(r.clears, 0);
+  }), 'records.dungeons');
   const attrsOk = isObj(d.attrs) && ATTR_IDS.every((k) => isInt(d.attrs[k], 0));
   need(attrsOk, 'attrs');
   if (attrsOk && isInt(d.level, 1)) {

@@ -3,6 +3,7 @@ import { el, button } from './screens.js';
 import { iconCanvas, gearIcon } from '../art/sprites.js';
 import { RARITIES } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
+import { dungeonById } from '../data/dungeons.js';
 
 // info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
 export function renderResults(box, info, { onContinue }) {
@@ -10,6 +11,7 @@ export function renderResults(box, info, { onContinue }) {
   box.replaceChildren();
   const titleText = trip.died ? 'Tumbang!' : trip.cleared ? 'Dungeon Tamat!' : 'Pulang dengan Selamat';
   const title = el('h2', trip.died ? 'h bad' : 'h', titleText);
+  const where = el('div', 'sub', dungeonById(trip.dungeon).name);
   const tiles = el('div', 'tiles');
   const floor = trip.floor > 0 ? String(trip.floor) : '—';
   for (const [label, value] of [['Lantai', floor], ['Kill', String(trip.kills)], ['EXP', `+${trip.exp}`], ['Koin', `+${trip.gold - goldLost}`]]) {
@@ -32,7 +34,7 @@ export function renderResults(box, info, { onContinue }) {
   const err = el('div', 'err', saveError ? `Gagal menyimpan: ${saveError}` : '');
   const next = button('Kembali ke Kota', 'btn', onContinue);
   next.id = 'tocamp';
-  box.append(title, tiles, badges);
+  box.append(title, where, tiles, badges);
   if (loot.childElementCount) box.append(loot);
   box.append(notes, err, next);
 }

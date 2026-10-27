@@ -165,6 +165,42 @@ export const ENEMY_ART = {
     for (const x of [-0.45, 0.05, 0.5]) { g.beginPath(); g.arc(x * r, -r * 0.25, r * 0.2, 0, TAU); g.lineWidth = r * 0.06; g.strokeStyle = 'rgba(42,33,64,.5)'; g.stroke(); }
     shine(g, -r * 0.4, -r * 0.5, r * 0.25, r * 0.1, -0.3, 0.4);
   },
+  crystalboss(g, r) { // golem of blue crystal with glowing core
+    for (const x of [-0.55, 0.5]) { g.beginPath(); g.roundRect(x * r - r * 0.18, r * 0.35, r * 0.36, r * 0.55, r * 0.1); ink(g, '#3a5a80', r * 0.06); }
+    g.beginPath(); g.moveTo(-r * 0.95, r * 0.45); g.lineTo(-r * 0.8, -r * 0.55); g.lineTo(-r * 0.3, -r * 0.95); g.lineTo(r * 0.35, -r * 0.9);
+    g.lineTo(r * 0.9, -r * 0.45); g.lineTo(r * 0.95, r * 0.45); g.closePath();
+    ink(g, grad(g, -r, r, '#9fd0ff', '#2f5a9a'), r * 0.07);
+    for (const [x, y, h] of [[-0.55, -0.9, 0.55], [-0.1, -1.05, 0.75], [0.45, -0.85, 0.5]]) { // crystal spikes
+      g.beginPath(); g.moveTo(x * r - r * 0.13, y * r + r * 0.15); g.lineTo(x * r, (y - h) * r); g.lineTo(x * r + r * 0.13, y * r + r * 0.15); g.closePath();
+      ink(g, grad(g, (y - h) * r, y * r, '#e8f7ff', '#62b2ff'), r * 0.05);
+    }
+    g.beginPath(); g.moveTo(-r * 0.15, -r * 0.05); g.lineTo(0, -r * 0.3); g.lineTo(r * 0.15, -r * 0.05); g.lineTo(0, r * 0.2); g.closePath();
+    g.fillStyle = '#c9f0ff'; g.shadowColor = '#7fd8ff'; g.shadowBlur = r * 0.6; g.fill(); g.shadowBlur = 0;
+    for (const x of [-0.35, 0.4]) { ellipse(g, x * r, -r * 0.45, r * 0.12, r * 0.08); g.fillStyle = '#e8f7ff'; g.shadowColor = '#7fd8ff'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0; }
+  },
+  sporeboss(g, r) { // bloated purple mushroom queen
+    g.beginPath(); g.roundRect(-r * 0.5, -r * 0.1, r * 1.0, r * 0.95, r * 0.35); ink(g, grad(g, 0, r, '#efe2c8', '#b8a07a'), r * 0.07);
+    for (const x of [-0.18, 0.25]) { ellipse(g, x * r, r * 0.25, r * 0.1, r * 0.13); g.fillStyle = '#b7ff6a'; g.shadowColor = '#b7ff6a'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0; }
+    g.beginPath(); g.arc(r * 0.04, r * 0.55, r * 0.18, 0.2, Math.PI - 0.2); g.lineWidth = r * 0.06; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.moveTo(-r * 1.1, -r * 0.05); g.quadraticCurveTo(-r * 1.05, -r * 1.2, 0, -r * 1.2); g.quadraticCurveTo(r * 1.05, -r * 1.2, r * 1.1, -r * 0.05);
+    g.quadraticCurveTo(0, r * 0.15, -r * 1.1, -r * 0.05); ink(g, grad(g, -r * 1.2, 0, '#d98aff', '#6d2fa8'), r * 0.07);
+    for (const [x, y, rr] of [[-0.6, -0.55, 0.14], [-0.15, -0.85, 0.12], [0.35, -0.7, 0.15], [0.7, -0.35, 0.1]]) { g.beginPath(); g.arc(x * r, y * r, rr * r, 0, TAU); g.fillStyle = '#b7ff6a'; g.fill(); }
+    g.beginPath(); g.moveTo(-r * 0.3, -r * 1.15); g.lineTo(-r * 0.4, -r * 1.45); g.lineTo(-r * 0.12, -r * 1.25); g.lineTo(0, -r * 1.5); g.lineTo(r * 0.12, -r * 1.25); g.lineTo(r * 0.4, -r * 1.45); g.lineTo(r * 0.3, -r * 1.15); g.closePath();
+    ink(g, grad(g, -r * 1.5, -r * 1.1, '#ffe27a', '#f0a91a'), r * 0.05);
+  },
+  lavaboss(g, r) { // molten rock king with cracks of fire
+    g.beginPath(); g.moveTo(-r, r * 0.6); g.bezierCurveTo(-r * 1.1, -r * 0.6, -r * 0.5, -r * 1.05, 0, -r); g.bezierCurveTo(r * 0.5, -r * 1.05, r * 1.1, -r * 0.6, r, r * 0.6);
+    g.quadraticCurveTo(0, r * 0.9, -r, r * 0.6); ink(g, grad(g, -r, r, '#5a3a33', '#2a1612'), r * 0.08);
+    g.lineCap = 'round'; g.lineWidth = r * 0.07; g.strokeStyle = '#ff8a3c'; g.shadowColor = '#ff6a1a'; g.shadowBlur = r * 0.35;
+    for (const pts of [[[-0.7, 0.2], [-0.4, -0.1], [-0.5, -0.5]], [[0.6, 0.3], [0.35, 0], [0.55, -0.45]], [[-0.1, 0.55], [0.1, 0.3]]]) {
+      g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x * r, y * r) : g.moveTo(x * r, y * r))); g.stroke();
+    }
+    g.shadowBlur = 0;
+    g.beginPath(); g.moveTo(-r * 0.5, -r * 0.85); g.lineTo(-r * 0.6, -r * 1.4); g.lineTo(-r * 0.25, -r * 1.05); g.lineTo(0, -r * 1.5); g.lineTo(r * 0.25, -r * 1.05); g.lineTo(r * 0.6, -r * 1.4); g.lineTo(r * 0.5, -r * 0.85); g.closePath();
+    ink(g, grad(g, -r * 1.5, -r * 0.8, '#ffc04a', '#e0501a'), r * 0.05);
+    for (const x of [-0.2, 0.35]) { ellipse(g, x * r, -r * 0.35, r * 0.14, r * 0.1); g.fillStyle = '#ffd36b'; g.shadowColor = '#ff8a3c'; g.shadowBlur = r * 0.5; g.fill(); g.shadowBlur = 0; }
+    ellipse(g, r * 0.08, r * 0.15, r * 0.4, r * 0.16); g.fillStyle = '#ff6a1a'; g.shadowColor = '#ff6a1a'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0;
+  },
   boss(g, r) {
     g.beginPath();
     g.moveTo(-r, r * 0.6);

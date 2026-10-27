@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateName, createCharacter, expToNext, addExp, finalStats, currentHp, usePotion, applyTrip,
-  freePoints, allocate,
+  freePoints, allocate, unlockedDungeons,
 } from './character.js';
 
 const NOW = 1761436800000;
+const dungeonRecs = (shadow = { bestFloor: 0, clears: 0 }, more = {}) => ({
+  shadow, crystal: { bestFloor: 0, clears: 0 }, fungus: { bestFloor: 0, clears: 0 }, lava: { bestFloor: 0, clears: 0 }, ...more,
+});
 const pots = (o = {}) => ({ red: 0, big: 0, shield: 0, wind: 0, rage: 0, ...o });
 const make = (over = {}) => createCharacter(
   { slot: 0, name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior', ...over }, NOW,
@@ -27,7 +30,7 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 4, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 5, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0,
       hp: null, potions: pots(), belt: ['red', 'big', 'shield', 'rage'],
@@ -35,7 +38,7 @@ describe('createCharacter', () => {
       attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
       inventory: [],
       equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
-      records: { bestFloor: 0, clears: 0, trips: 0, kills: 0, bossKills: 0 },
+      records: { trips: 0, kills: 0, bossKills: 0, dungeons: dungeonRecs() },
     });
   });
   it('menolak masukan tidak sah', () => {
@@ -114,7 +117,7 @@ const trip = (over = {}) => ({
 
 describe('applyTrip', () => {
   it('pulang: semua hadiah dibawa, HP disimpan, rekor naik', () => {
-    const before = { ...make(), gold: 5, records: { bestFloor: 2, clears: 0, trips: 4, kills: 10, bossKills: 0 } };
+    const before = { ...make(), gold: 5, records: { trips: 4, kills: 10, bossKills: 0, dungeons: dungeonRecs({ bestFloor: 2, clears: 0 }) } };
     const { char, levelsGained, goldLost } = applyTrip(before, trip({ exp: 55, gold: 40, kills: 30, bossKills: 1, floor: 3, hp: 77, potions: pots({ red: 2, wind: 1 }) }), NOW + 5);
     expect(char.level).toBe(2);
     expect(levelsGained).toBe(1);
@@ -122,7 +125,7 @@ describe('applyTrip', () => {
     expect(goldLost).toBe(0);
     expect(char.hp).toBe(77);
     expect(char.potions).toEqual(pots({ red: 2, wind: 1 }));
-    expect(char.records).toEqual({ bestFloor: 3, clears: 0, trips: 5, kills: 40, bossKills: 1 });
+    expect(char.records).toEqual({ trips: 5, kills: 40, bossKills: 1, dungeons: dungeonRecs({ bestFloor: 3, clears: 0 }) });
     expect(char.updatedAt).toBe(NOW + 5);
     expect(before.records.trips).toBe(4);
   });
@@ -130,7 +133,10 @@ describe('applyTrip', () => {
   it('pulang dengan HP penuh disimpan sebagai null; tamat menambah clears', () => {
     const { char } = applyTrip(make(), trip({ hp: 140, floor: 5, cleared: true }), NOW);
     expect(char.hp).toBeNull();
-    expect(char.records.clears).toBe(1);
+    expect(char.records.dungeons.shadow.clears).toBe(1);
+    const crystal = applyTrip(make(), trip({ dungeon: 'crystal', floor: 3 }), NOW).char;
+    expect(crystal.records.dungeons.crystal.bestFloor).toBe(3);
+    expect(crystal.records.dungeons.shadow.bestFloor).toBe(0);
   });
 
   it('mati: EXP tetap, koin perjalanan separuh, bangun dengan HP 10%', () => {
@@ -140,12 +146,18 @@ describe('applyTrip', () => {
     expect(char.gold).toBe(120);
     expect(goldLost).toBe(21);
     expect(char.hp).toBe(14);
-    expect(char.records.bestFloor).toBe(2);
+    expect(char.records.dungeons.shadow.bestFloor).toBe(2);
   });
 
   it('rekor lantai terdalam tidak turun', () => {
-    const before = { ...make(), records: { bestFloor: 4, clears: 1, trips: 9, kills: 0, bossKills: 0 } };
-    expect(applyTrip(before, trip({ floor: 1 }), NOW).char.records.bestFloor).toBe(4);
+    const before = { ...make(), records: { trips: 9, kills: 0, bossKills: 0, dungeons: dungeonRecs({ bestFloor: 4, clears: 1 }) } };
+    expect(applyTrip(before, trip({ floor: 1 }), NOW).char.records.dungeons.shadow.bestFloor).toBe(4);
+  });
+
+  it('dungeon terbuka berurutan: berikutnya setelah yang sebelumnya tamat', () => {
+    expect(unlockedDungeons(make()).map((d) => d.id)).toEqual(['shadow']);
+    const one = { ...make(), records: { ...make().records, dungeons: dungeonRecs({ bestFloor: 5, clears: 1 }) } };
+    expect(unlockedDungeons(one).map((d) => d.id)).toEqual(['shadow', 'crystal']);
   });
 });
 

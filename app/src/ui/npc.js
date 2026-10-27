@@ -7,19 +7,21 @@ import { iconCanvas, gearIcon } from '../art/sprites.js';
 import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
-import { spentPoints } from '../meta/character.js';
+import { spentPoints, unlockedDungeons } from '../meta/character.js';
+import { DUNGEONS } from '../data/dungeons.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
 let newLook = null;     // Tukang Cukur: style being tried on
+let gateDungeon = null; // Penjaga gerbang: dungeon picked
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
   potion: 'Hehehe… ramuan segar dari kuali. Mau yang mana?',
   gear: 'Tungku sudah panas! Mau beli peti, atau menjual barang rongsokan dari dungeon?',
-  gate: 'Di balik gerbang ini ada Ruang Bawah Tanah Bayangan. Kau sudah siap?',
+  gate: 'Gerbang ini membuka jalan ke semua dungeon yang sudah kau taklukkan. Mau ke mana?',
   trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
 };
@@ -27,7 +29,7 @@ const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', 
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
-//        onHaircut(look), onEnter(floor), onClose }
+//        onHaircut(look), onEnter(dungeonId, floor), onClose }
 export function renderNpc(box, npc, ctx) {
   if (npc.role !== 'barber') newLook = null;
   const { char, hp, maxHp } = ctx;
@@ -62,19 +64,24 @@ export function renderNpc(box, npc, ctx) {
   } else if (npc.role === 'gear') {
     panel.append(chestCards(char, ctx.onBuyChest), sellPanel(char, ctx.onSell, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gate') {
-    const deepest = Math.max(1, char.records.bestFloor);
-    const b = button(deepest > 1 ? `Lanjut ke Lantai ${deepest}` : 'Masuk Dungeon', 'btn big', () => ctx.onEnter(deepest));
+    const open = unlockedDungeons(char);
+    if (!open.some((d) => d.id === gateDungeon)) gateDungeon = open[open.length - 1].id;
+    panel.append(dungeonPicker(char, open, () => renderNpc(box, npc, { ...ctx, message: null })));
+    const rec = char.records.dungeons[gateDungeon];
+    const deepest = Math.max(1, rec.bestFloor);
+    const b = button(deepest > 1 ? `Lanjut ke Lantai ${deepest}` : 'Masuk Dungeon', 'btn big', () => ctx.onEnter(gateDungeon, deepest));
     b.id = 'npc-enter';
     actions.append(b);
+    panel.append(actions);
     if (deepest > 1) {
       const floors = el('div', 'floors');
       floors.append(el('span', 'note', 'atau mulai dari:'));
       for (let f = 1; f < deepest; f++) {
-        const fb = button(`Lantai ${f}`, 'btn ghost small', () => ctx.onEnter(f));
+        const fb = button(`Lantai ${f}`, 'btn ghost small', () => ctx.onEnter(gateDungeon, f));
         fb.dataset.floor = f;
         floors.append(fb);
       }
-      panel.append(actions, floors);
+      panel.append(floors);
     }
   }
   if (actions.childElementCount && !actions.parentNode) panel.append(actions);
@@ -241,4 +248,26 @@ function barberPanel(char, onHaircut, redraw) {
   opts.append(el('span', 'note', 'Gaya'), hair, el('span', 'note', 'Warna'), colors, go);
   wrap.append(pv, opts);
   return wrap;
+}
+
+// one card per dungeon: open ones can be picked, the next locked one shows what opens it
+function dungeonPicker(char, open, redraw) {
+  const row = el('div', 'dungeons');
+  DUNGEONS.forEach((d, i) => {
+    const isOpen = open.includes(d);
+    if (!isOpen && i > open.length) return;
+    const rec = char.records.dungeons[d.id];
+    const card = button('', `dcard ${d.id}${d.id === gateDungeon ? ' sel' : ''}${isOpen ? '' : ' locked'}`, () => {
+      if (!isOpen) return;
+      gateDungeon = d.id;
+      redraw();
+    });
+    card.dataset.dungeon = d.id;
+    card.style.setProperty('--c', `rgb(${d.theme.light})`);
+    card.append(el('b', null, d.name));
+    if (isOpen) card.append(el('span', null, `Lantai ${rec.bestFloor}/5${rec.clears ? ` · tamat ${rec.clears}×` : ''}`));
+    else card.append(el('span', null, `Terkunci — tamatkan ${DUNGEONS[i - 1].short}`));
+    row.append(card);
+  });
+  return row;
 }

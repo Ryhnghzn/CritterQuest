@@ -10,7 +10,9 @@ import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
-import { FX, ROOM } from '../data/dungeon.js';
+import { FX } from '../data/dungeon.js';
+import { dungeonById } from '../data/dungeons.js';
+import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 
@@ -54,7 +56,7 @@ export class Game {
   result() {
     return {
       time: this.time, kills: this.kills, exp: Math.floor(this.expGained), gold: this.gold, items: this.loot.slice(),
-      bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared,
+      bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
     };
   }
 
@@ -64,7 +66,8 @@ export class Game {
   }
 
   // effects: special effects of the equipped unique gear, { effect: value } (meta/gear.js)
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {} }) {
+  // dungeon: id from data/dungeons.js (spec §18.3)
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow' }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -89,6 +92,8 @@ export class Game {
     // character level & EXP, live during the trip
     this.level = level; this.xp = exp; this.xpNeed = expToNext(level); this.levelsGained = 0;
     // dungeon progress (run/dungeon.js)
+    this.dungeon = dungeonById(dungeon);
+    this.room = makeRoom('round', rand);
     this.floor = 0; this.deepest = 0; this.cleared = false; this.returned = false;
     this.wave = 0; this.queue = []; this.queueI = 0; this.spawnT = 0; this.waveGap = 0;
     this.floorT = 0; this.floorClear = false; this.clearT = 0;
@@ -138,7 +143,8 @@ export class Game {
     this.dodgeCdMul = (this.buffs.wind > 0 ? POTIONS.wind.dodgeCd : 1) * (1 - (this.fx.dodgecd || 0));
   }
 
-  addGold(n) { this.gold += Math.round(n * (1 + (this.fx.goldfind || 0))); }
+  // coins are worth more in harder dungeons (and with Liontin Keserakahan)
+  addGold(n) { this.gold += Math.round(n * this.dungeon.rewardMul * (1 + (this.fx.goldfind || 0))); }
 
   // Unique gear that works over time: regeneration, periodic shield, frenzy at low HP.
   stepEffects(dt) {
@@ -174,7 +180,7 @@ export class Game {
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
     stepDungeon(this, dt);
     this.updateEnemies(dt);
-    if (this.state === ST.PLAY) stepShots(this, dt, ROOM.r);
+    if (this.state === ST.PLAY) stepShots(this, dt, this.room.bound);
     if (this.state === ST.PLAY) stepHazards(this, dt);
     if (this.state !== ST.PLAY) return; // died this step: no gem pickup after death
     this.updateGems(dt);
@@ -199,18 +205,18 @@ export class Game {
   // Placed at the player; run/dungeon.js spawnFromLane moves it into a lane.
   spawnEnemy(typeId) {
     const base = ENEMIES[typeId];
-    const hp = base.hp * hpMul(Math.max(1, this.floor));
+    const hp = base.hp * hpMul(Math.max(1, this.floor), this.dungeon);
     const e = {
       type: typeId, x: this.px, y: this.py,
       hp, maxHp: hp,
-      speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg,
-      r: base.r, xp: base.xp, sprite: base.sprite, score: base.score,
+      speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg * this.dungeon.dmgMul,
+      r: base.r, xp: Math.round(base.xp * this.dungeon.rewardMul), sprite: base.sprite, score: base.score,
       wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
-      lane: null, entering: false, elite: false,
+      lane: null, entering: false, elite: false, boss: !!base.boss,
     };
     initAi(e);
     this.enemies.push(e);
-    if (typeId === 'boss') sfx.boss();
+    if (e.boss) sfx.boss();
     return e;
   }
 
@@ -261,10 +267,10 @@ export class Game {
     const fx = this.fx;
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
-    if (fx.bossdmg && (e.type === 'boss' || e.elite)) dmg *= 1 + fx.bossdmg;
+    if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
     if (BASIC_FX.has(h.fx)) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy);
-    if (h.knock && e.type !== 'boss') { // push away from (or pull toward) the area's centre
+    if (h.knock && !e.boss) { // push away from (or pull toward) the area's centre
       const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy) || 1;
       e.kx += (dx / d) * h.knock; e.ky += (dy / d) * h.knock;
     }
@@ -324,7 +330,7 @@ export class Game {
       e.x += (vx + e.kx) * dt;
       e.y += (vy + e.ky) * dt;
       e.kx *= 0.86; e.ky *= 0.86;
-      confineEnemy(e);
+      confineEnemy(this, e);
       // touch damage
       const rr = e.r + 10;
       if (e.dmg > 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg)) {
@@ -354,7 +360,7 @@ export class Game {
     onDeath(this, e);
     this.kills += 1;
     sfx.enemyDie();
-    this.spawnBurst(e.x, e.y, e.type === 'boss' ? '#c26bd8' : '#7a45c2', e.type === 'boss' ? 26 : 8);
+    this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);
     dropLoot(this, e);
     if (this.fx.explode) {
       this.spawnBurst(e.x, e.y, '#ff9a3c', 12);
@@ -362,9 +368,9 @@ export class Game {
         if (o !== e && o.hp > 0 && (o.x - e.x) ** 2 + (o.y - e.y) ** 2 < FX.explodeRadius ** 2) { o.hp -= this.stats.atk * this.fx.explode; o.flash = 0.12; }
       }
     }
-    if (e.type === 'boss') {
+    if (e.boss) {
       this.bossKills += 1;
-      this.showBanner('RAJA MAW TUMBANG!');
+      this.showBanner(`${ENEMIES[e.type].name.toUpperCase()} TUMBANG!`);
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2;
         this.gems.push({ x: e.x + Math.cos(a) * 30, y: e.y + Math.sin(a) * 30, v: 5, mag: false, big: true, t: rand() * 6 });

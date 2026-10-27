@@ -4,7 +4,8 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords } from './schema.js';
+import { DUNGEONS } from '../data/dungeons.js';
 import { itemStats } from './itemgen.js';
 import { UPGRADES } from '../data/shop.js';
 
@@ -29,7 +30,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
     inventory: [],
     equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
-    records: { bestFloor: 0, clears: 0, trips: 0, kills: 0, bossKills: 0 },
+    records: { trips: 0, kills: 0, bossKills: 0, dungeons: freshDungeonRecords() },
   };
   const err = validateSlot(c);
   if (err.length) throw new Error(`karakter tidak sah: ${err.join(', ')}`);
@@ -134,7 +135,7 @@ export function usePotion(char, id, now) {
 }
 
 // End of a dungeon trip (spec §13.4).
-// trip: { exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs?, items? }
+// trip: { dungeon, exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs?, items? }
 // attrs: points spent during the trip (on levels gained in it). items: gear picked
 // up — after a death each piece survives with DEATH.gearKeepChance (rng decides);
 // what does not fit in the bag is left behind.
@@ -148,8 +149,9 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   c.potions = { ...trip.potions };
   withHp(c, trip.died ? Math.max(1, finalStats(c).maxHp * DEATH.wakeHp) : trip.hp);
   const r = c.records;
-  r.bestFloor = Math.max(r.bestFloor, trip.floor);
-  r.clears += trip.cleared ? 1 : 0;
+  const dr = r.dungeons[trip.dungeon || 'shadow'];
+  dr.bestFloor = Math.max(dr.bestFloor, trip.floor);
+  dr.clears += trip.cleared ? 1 : 0;
   r.trips += 1;
   r.kills += trip.kills;
   r.bossKills += trip.bossKills;
@@ -166,4 +168,14 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   }
   c.updatedAt = now;
   return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft };
+}
+
+// Dungeons open one after another: the next once the previous has been cleared (spec §18.3).
+export function unlockedDungeons(char) {
+  const out = [];
+  for (const d of DUNGEONS) {
+    out.push(d);
+    if (!char.records.dungeons[d.id].clears) break;
+  }
+  return out;
 }

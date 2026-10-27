@@ -1,100 +1,23 @@
-// Dungeon rendering (spec §13.3): a round stone room with torches and glowing
-// mushrooms, lanes cut through the wall, portals once a floor is clear. Camera
+// Dungeon rendering (spec §13.3, §18.3): the floor's room in its dungeon's
+// theme (render/dungeonroom.js), actors, portals once a floor is clear. Camera
 // follows the player; darkness with light holes comes from render/light.js and
 // emissive effects (attacks, flames, portals) are drawn over it.
-import { ROOM, PORTAL } from '../data/dungeon.js';
+import { PORTAL } from '../data/dungeon.js';
+import { DUNGEONS } from '../data/dungeons.js';
+import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
 import { ENEMIES } from '../data/enemies.js';
 import { SPRITES, bakeAll, drawBaked, drawIcon, gearIcon, OUT } from '../art/sprites.js';
 import { RARITIES } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
-import { LANES } from '../run/dungeon.js';
 
 const DOLL_SCALE = 0.82;   // player doll size in world units
 const TAU = Math.PI * 2;
 const ENEMY_R = Object.fromEntries(Object.entries(ENEMIES).map(([k, e]) => [k, e.r]));
-const AMBIENT = 'rgba(4,3,14,.82)';
-const WARM = '255,160,70';
-const LANE_HALF = Math.asin(ROOM.laneWidth / 2 / ROOM.r); // half the angle a lane cuts from the wall
-const OUTER = ROOM.r + ROOM.wall;
 const PORTAL_RGB = { down: '90,170,255', home: '255,200,90' };
 const PORTAL_LABEL = { down: 'Turun', home: 'Pulang' };
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
 const RARITY_RGB = RARITIES.map((r) => hexRgb(r.color));
-
-// angle distance to the nearest lane
-const laneGap = (a) => {
-  let best = 9;
-  for (const l of LANES) best = Math.min(best, Math.abs(Math.atan2(Math.sin(a - l.a), Math.cos(a - l.a))));
-  return best;
-};
-
-// static room dressing, deterministic (own PRNG so it never touches the sim's rng)
-const TORCHES = [], SHROOMS = [], RUBBLE = [], BLOCKS = [];
-(function dress() {
-  let s = 1337;
-  const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  for (let i = 0; i < 8; i++) {
-    const a = (i * TAU) / 8 + TAU / 16;
-    TORCHES.push({ a, x: Math.cos(a) * (ROOM.r - 4), y: Math.sin(a) * (ROOM.r - 4) });
-  }
-  while (SHROOMS.length < 14) {
-    const a = r() * TAU;
-    if (laneGap(a) < LANE_HALF + 0.12) continue;
-    const d = ROOM.r - 26 - r() * 60;
-    const cool = r() < 0.6;
-    const caps = [];
-    for (let k = 0, n = 2 + Math.floor(r() * 3); k < n; k++) caps.push({ dx: (r() - 0.5) * 22, dy: (r() - 0.5) * 12, s: 0.6 + r() * 0.7 });
-    caps.sort((p, q) => p.dy - q.dy);
-    SHROOMS.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, rgb: cool ? '90,230,255' : '200,130,255', cap: cool ? '#4fd8ef' : '#b17bf0', caps });
-  }
-  for (let i = 0; i < 70; i++) {
-    const a = r() * TAU, d = Math.sqrt(r()) * (ROOM.r - 30);
-    RUBBLE.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, s: 1.5 + r() * 3.5, bone: r() < 0.18, rot: r() * TAU });
-  }
-  // wall blocks: two courses of stones around the ring, skipping the lanes
-  for (const [r0, r1, n, off] of [[ROOM.r, ROOM.r + ROOM.wall * 0.55, 72, 0], [ROOM.r + ROOM.wall * 0.55, OUTER, 64, 0.5]]) {
-    for (let i = 0; i < n; i++) {
-      const a0 = ((i + off) * TAU) / n, a1 = ((i + off + 1) * TAU) / n;
-      if (laneGap((a0 + a1) / 2) < LANE_HALF + TAU / n / 2) continue;
-      const tone = 52 + Math.floor(r() * 16);
-      BLOCKS.push({ r0, r1, a0: a0 + 0.004, a1: a1 - 0.004, fill: `rgb(${tone - 6},${tone - 8},${tone + 18})` });
-    }
-  }
-})();
-
-// Dark flagstones: big irregular slabs with worn edges and a few cracks.
-function flagTile(scale) {
-  const T = 128;
-  const c = document.createElement('canvas');
-  c.width = c.height = Math.ceil(T * scale);
-  const g = c.getContext('2d');
-  g.scale(c.width / T, c.height / T);
-  g.fillStyle = '#100e1a'; g.fillRect(0, 0, T, T);
-  let s = 31;
-  const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  for (let row = 0; row < 4; row++) {
-    const y = row * 32, shift = row % 2 ? 20 : 0;
-    let x = 0;
-    while (x < T) {
-      const w = Math.min(T - x, 26 + Math.floor(r() * 18));
-      const tone = 34 + Math.floor(r() * 12);
-      for (const ox of [shift, shift - T]) {
-        g.beginPath(); g.roundRect(x + ox + 1.2, y + 1.2, w - 2.4, 29.6, 5);
-        g.fillStyle = `rgb(${tone - 2},${tone - 4},${tone + 14})`; g.fill();
-        g.beginPath(); g.roundRect(x + ox + 3, y + 2.5, w - 7, 4, 2);
-        g.fillStyle = 'rgba(255,255,255,.045)'; g.fill();
-      }
-      if (r() < 0.3) {
-        const cx = x + shift + 6 + r() * (w - 12), cy = y + 6 + r() * 20;
-        g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + 5, cy + 4); g.lineTo(cx + 3, cy + 9);
-        g.lineWidth = 0.8; g.strokeStyle = 'rgba(0,0,0,.45)'; g.stroke();
-      }
-      x += w;
-    }
-  }
-  return { canvas: c, T };
-}
 
 export class Renderer {
   constructor(view, lighting) {
@@ -112,9 +35,13 @@ export class Renderer {
   rebake() {
     const v = this.view;
     bakeAll(v.S, ENEMY_R);
-    const tile = flagTile(v.S);
-    this.ground = v.ctx.createPattern(tile.canvas, 'repeat');
-    this.ground.setTransform(new DOMMatrix().scale(tile.T / tile.canvas.width));
+    this.grounds = {}; // dungeon id → floor pattern
+    for (const d of DUNGEONS) {
+      const tile = flagTile(v.S, d.theme.floor);
+      const pat = v.ctx.createPattern(tile.canvas, 'repeat');
+      pat.setTransform(new DOMMatrix().scale(tile.T / tile.canvas.width));
+      this.grounds[d.id] = pat;
+    }
   }
 
   // CSS pixel → world point (for mouse aim); ignores screen shake on purpose.
@@ -147,7 +74,7 @@ export class Renderer {
 
     this.drawRoom(g, game, t, visible);
     if (playing) this.drawRun(g, game, t, visible);
-    this.lighting.draw(cx, cy, roomLights(game, t, playing), AMBIENT);
+    this.lighting.draw(cx, cy, roomLights(game, t, playing), game.dungeon.theme.ambient);
     v.begin(cx, cy);
     roomGlow(g, game, t);
     if (playing) this.drawFx(g, game, t);
@@ -158,50 +85,8 @@ export class Renderer {
   }
 
   drawRoom(g, game, t, visible) {
-    // lanes: stone corridors fading into the dark
-    for (const l of LANES) {
-      g.save();
-      g.rotate(l.a);
-      const x0 = ROOM.r - 20, x1 = OUTER + ROOM.laneLen, w = ROOM.laneWidth / 2;
-      g.fillStyle = this.ground; g.fillRect(x0, -w, x1 - x0, w * 2);
-      const gr = g.createLinearGradient(OUTER, 0, x1, 0);
-      gr.addColorStop(0, 'rgba(5,4,12,0)'); gr.addColorStop(1, 'rgba(5,4,12,1)');
-      g.fillStyle = gr; g.fillRect(OUTER, -w - 1, x1 - OUTER + 1, w * 2 + 2);
-      for (const sd of [-1, 1]) {
-        g.beginPath(); g.rect(OUTER - ROOM.wall, sd > 0 ? w : -w - 14, ROOM.laneLen * 0.7 + ROOM.wall, 14);
-        g.fillStyle = '#2b2740'; g.fill();
-      }
-      g.restore();
-    }
-    // floor
-    g.beginPath(); g.arc(0, 0, ROOM.r + 2, 0, TAU);
-    g.fillStyle = this.ground; g.fill();
-    const worn = g.createRadialGradient(0, 0, 0, 0, 0, ROOM.r);
-    worn.addColorStop(0, 'rgba(120,110,170,.07)'); worn.addColorStop(0.7, 'rgba(0,0,0,0)'); worn.addColorStop(1, 'rgba(0,0,0,.35)');
-    g.fillStyle = worn; g.fill();
+    drawRoom(g, game.room, game.dungeon.theme, this.grounds[game.dungeon.id], t, visible);
     runeCircle(g, t, game.floorClear);
-    for (const d of RUBBLE) {
-      if (!visible(d.x, d.y)) continue;
-      if (d.bone) {
-        g.save(); g.translate(d.x, d.y); g.rotate(d.rot);
-        g.beginPath(); g.roundRect(-d.s * 1.6, -0.9, d.s * 3.2, 1.8, 0.9);
-        g.arc(-d.s * 1.6, -1, 1.3, 0, TAU); g.arc(d.s * 1.6, 1, 1.3, 0, TAU);
-        g.fillStyle = '#8f8aa3'; g.fill();
-        g.restore();
-      } else {
-        g.beginPath(); g.ellipse(d.x, d.y, d.s, d.s * 0.7, d.rot, 0, TAU);
-        g.fillStyle = '#2a2638'; g.fill(); g.lineWidth = 0.8; g.strokeStyle = 'rgba(0,0,0,.5)'; g.stroke();
-      }
-    }
-    // wall
-    for (const b of BLOCKS) {
-      g.beginPath(); g.arc(0, 0, b.r1, b.a0, b.a1); g.arc(0, 0, b.r0, b.a1, b.a0, true); g.closePath();
-      g.fillStyle = b.fill; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
-    }
-    g.beginPath(); g.arc(0, 0, ROOM.r, 0, TAU);
-    g.lineWidth = 5; g.strokeStyle = 'rgba(0,0,0,.35)'; g.stroke();
-    for (const s of SHROOMS) if (visible(s.x, s.y)) shroom(g, s);
-    for (const tc of TORCHES) if (visible(tc.x, tc.y)) sconce(g, tc);
     if (game.portals) for (const p of game.portals) portalBase(g, p, game.clearT, t);
   }
 
@@ -231,7 +116,7 @@ export class Renderer {
       const flip = e.mode === 'dash' ? e.dirX < 0 : game.px < e.x;
       drawBaked(g, look, e.x, e.y, k / squash, k * squash, flip);
       if (e.ai === 'shield') guard(g, e);
-      if (e.type === 'boss' || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
+      if (e.boss || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.boss ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
     }
 
     // player
@@ -303,12 +188,7 @@ export class Renderer {
 
 function roomLights(game, t, playing) {
   const out = [];
-  for (let i = 0; i < TORCHES.length; i++) {
-    const tc = TORCHES[i];
-    const f = 1 + Math.sin(t * 9 + i * 1.7) * 0.05 + Math.sin(t * 23 + i) * 0.03;
-    out.push({ x: tc.x * 0.96, y: tc.y * 0.96 - 8, r: 190 * f, rgb: WARM, tint: 0.14 });
-  }
-  for (const s of SHROOMS) out.push({ x: s.x, y: s.y - 4, r: 75, rgb: s.rgb, tint: 0.12 });
+  decorLights(game.room, game.dungeon.theme, t, out);
   const glow = 1 + Math.sin(t * 2) * 0.1;
   out.push({ x: 0, y: 0, r: (game.floorClear ? 200 : 90) * glow, rgb: '150,110,255', tint: game.floorClear ? 0.1 : 0.05 });
   if (playing) {
@@ -344,27 +224,6 @@ function runeCircle(g, t, lit) {
   g.restore();
 }
 
-function sconce(g, tc) {
-  const x = tc.x, y = tc.y;
-  g.beginPath(); g.ellipse(x, y, 7, 5, 0, 0, TAU); g.fillStyle = '#3a3346'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
-  g.beginPath(); g.roundRect(x - 2.5, y - 16, 5, 16, 2); g.fillStyle = '#6a4630'; g.fill(); g.stroke();
-  g.beginPath(); g.moveTo(x - 6, y - 16); g.lineTo(x + 6, y - 16); g.lineTo(x + 4, y - 21); g.lineTo(x - 4, y - 21); g.closePath();
-  g.fillStyle = '#2f2c40'; g.fill(); g.stroke();
-}
-
-function shroom(g, s) {
-  for (const c of s.caps) {
-    const x = s.x + c.dx, y = s.y + c.dy, k = c.s;
-    g.beginPath(); g.roundRect(x - 1.6 * k, y - 7 * k, 3.2 * k, 7 * k, 1.5 * k);
-    g.fillStyle = '#d9d2ea'; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
-    g.beginPath(); g.ellipse(x, y - 7 * k, 6 * k, 4 * k, 0, Math.PI, 0); g.closePath();
-    g.fillStyle = s.cap; g.fill(); g.lineWidth = 1.2; g.stroke();
-    g.beginPath(); g.arc(x - 2 * k, y - 8.5 * k, 1 * k, 0, TAU); g.arc(x + 2.2 * k, y - 9 * k, 0.8 * k, 0, TAU);
-    g.fillStyle = 'rgba(255,255,255,.8)'; g.fill();
-  }
-}
-
-// stone ring on the floor under a portal; the swirl itself is in roomGlow
 function portalBase(g, p, clearT, t) {
   const k = Math.min(1, clearT * 2);
   g.beginPath(); g.ellipse(p.x, p.y + 6, (PORTAL.r + 8) * k, (PORTAL.r * 0.45 + 4) * k, 0, 0, TAU);
@@ -374,23 +233,7 @@ function portalBase(g, p, clearT, t) {
 // Emissive room layer: torch flames, mushroom spores, portals and their labels.
 function roomGlow(g, game, t) {
   g.save(); g.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < TORCHES.length; i++) {
-    const tc = TORCHES[i], x = tc.x, y = tc.y - 22;
-    const k = 1 + Math.sin(t * 11 + i * 2) * 0.12;
-    g.beginPath(); g.moveTo(x, y - 14 * k);
-    g.bezierCurveTo(x + 6.5, y - 5, x + 6, y + 3, x, y + 3.5);
-    g.bezierCurveTo(x - 6, y + 3, x - 6.5, y - 5, x, y - 14 * k);
-    const gr = g.createLinearGradient(0, y - 14, 0, y + 3);
-    gr.addColorStop(0, 'rgba(255,90,40,0)'); gr.addColorStop(0.4, 'rgba(255,140,50,.85)'); gr.addColorStop(1, 'rgba(255,230,140,.95)');
-    g.fillStyle = gr; g.fill();
-  }
-  for (const s of SHROOMS) {
-    for (let i = 0; i < 2; i++) {
-      const ph = (t * 0.25 + i * 0.5 + s.x * 0.01) % 1;
-      g.beginPath(); g.arc(s.x + Math.sin(t + i * 3 + s.y) * 8, s.y - 10 - ph * 26, 1.3 * (1 - ph), 0, TAU);
-      g.fillStyle = `rgba(${s.rgb},${1 - ph})`; g.fill();
-    }
-  }
+  decorGlow(g, game.room, game.dungeon.theme, t);
   for (const p of game.portals || []) portalSwirl(g, p, game.clearT, t);
   g.restore();
   g.font = '600 9px Fredoka, system-ui, sans-serif';

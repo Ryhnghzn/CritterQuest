@@ -1,5 +1,6 @@
 // Pilih Slot: three save slots — open, create, or delete (spec §3).
 import { el, button, svgIcon, stage } from './screens.js';
+import { DUNGEONS } from '../data/dungeons.js';
 import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 
@@ -19,7 +20,9 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
       const cls = el('span', 'pill', CLASSES[c.classId].name);
       cls.style.setProperty('--c', color);
       const rec = el('div', 'ds');
-      rec.append(svgIcon('trophy'), c.records.bestFloor > 0 ? ` Lantai ${c.records.bestFloor}` : ' Belum ke dungeon');
+      // deepest dungeon reached
+      const far = [...DUNGEONS].reverse().find((d) => c.records.dungeons[d.id].bestFloor > 0);
+      rec.append(svgIcon('trophy'), far ? ` ${far.short} · Lantai ${c.records.dungeons[far.id].bestFloor}` : ' Belum ke dungeon');
       card.append(
         st, el('div', 'nm', c.name), cls, rec,
         button('Hapus', 'btn ghost small danger', (ev) => { ev.stopPropagation(); onDelete(e.slot); }),

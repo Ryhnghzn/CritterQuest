@@ -22,7 +22,7 @@ import { renderCheat, CHEAT_ON } from './ui/cheat.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
 import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
-import { FLOORS } from './data/dungeon.js';
+import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
@@ -348,7 +348,7 @@ async function drinkInTown(slot) {
 // ——— dungeon ———
 // The character is saved at the gate; closing the browser mid-dungeon returns
 // to this state (spec §13.4).
-async function enterDungeon(floor = 1) {
+async function enterDungeon(dungeon = 'shadow', floor = 1) {
   syncHp();
   await saveCurrent();
   townNpc = null;
@@ -356,7 +356,7 @@ async function enterDungeon(floor = 1) {
   ensureAudio(); startMusic();
   const stats = finalStats(current);
   game.start({
-    classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor,
+    classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk, effects: gearEffects(current),
   });
   tripAttrs = {};
@@ -380,10 +380,10 @@ async function endRun(died) {
   const r = game.result();
   const trip = {
     exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills,
-    floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
+    dungeon: r.dungeon, floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
     attrs: tripAttrs, items: r.items,
   };
-  const newRecord = trip.floor > current.records.bestFloor;
+  const newRecord = trip.floor > current.records.dungeons[r.dungeon].bestFloor;
   const applied = applyTrip(current, trip, Date.now());
   current = applied.char; // keep progress in memory even if the write fails
   const saveError = await saveCurrent();
@@ -476,7 +476,9 @@ const cheatActions = {
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),
   heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
   resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
-  unlockFloors: () => cheatChar((c) => { c.records.bestFloor = FLOORS.length; }, 'Lantai 1–5 terbuka di gerbang'),
+  unlockFloors: () => cheatChar((c) => {
+    for (const d of DUNGEONS) { const r = c.records.dungeons[d.id]; r.bestFloor = 5; r.clears = Math.max(1, r.clears); }
+  }, 'Semua dungeon & lantai terbuka di gerbang'),
   gear: (rarity, slot, n) => {
     let added = 0;
     return cheatChar((c) => { added = addToBag(c, Array.from({ length: n }, () => cheatItem(rarity, slot, c.level))); }, `${n} gear dibuat`)
@@ -491,7 +493,7 @@ const cheatActions = {
   killAll: () => { for (const e of game.enemies) e.hp = 0; },
   clearFloor: () => {
     if (game.floorClear) return;
-    game.wave = FLOORS[game.floor - 1].waves.length - 1;
+    game.wave = game.dungeon.floors[game.floor - 1].waves.length - 1;
     game.queueI = game.queue.length;
     for (const e of game.enemies) e.hp = 0;
   },
