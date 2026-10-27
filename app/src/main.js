@@ -32,6 +32,10 @@ import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
+import { FIELD, TOWNS, regionById } from './data/world.js';
+import { applyField, fieldDeath, encodeFog, decodeFog, explored } from './meta/world.js';
+import { phaseOf } from './meta/clock.js';
+import { drawRegionMap } from './render/regionmap.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
@@ -61,6 +65,8 @@ let townNpc = null;    // NPC whose dialog is open
 const talkIdx = {};    // townsfolk: which line they say next (npc id → index)
 let townSaveT = 0;
 let tripAttrs = {};    // points spent in the dungeon, saved with the trip result
+let fieldSaveT = 0;    // seconds since the last save in a region (spec §25.1)
+let minimapT = 0;
 let worldClock = 0;    // in-game minutes since day 1 (spec §18.4); written to the save on every save
 
 // ——— save + settings ———
@@ -128,6 +134,7 @@ function setUI(hud, controls) {
   $('charbtn').classList.toggle('hidden', !controls);
   $('actions').classList.toggle('hidden', !controls);
   $('belt').classList.toggle('hidden', !controls);
+  $('minimap').classList.toggle('hidden', !(controls && hud === 'run' && game.field));
   document.body.classList.toggle('playing', controls && hud === 'run');
   document.body.classList.toggle('intown', hud === 'town');
   if (!controls || hud !== 'town') $('prompt').classList.add('hidden');
@@ -157,6 +164,7 @@ function showTownOverlay(id) {
 async function toSlots() {
   stopMusic();
   if (scene === 'town') { syncHp(); await saveCurrent(); }
+  if (scene === 'run' && game.field) await commitField();
   slots = await store.loadSlots();
   renderSlots($('slotlist'), slots, { onOpen: openSlot, onCreate: toCreate, onDelete: deleteSlot });
   showMenu('slots');
@@ -255,6 +263,7 @@ function openNpc(npc, message = null) {
       ? { text: t('Kau mendapat {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color }
       : r.gem ? t('Kau mendapat {gem}!', { gem: `${GEMS[r.gem.gem].name} ${GEM_TIER_NAMES[r.gem.tier - 1]}` }) : tr('Bahan masuk ke tasmu.'))),
     onEnter: enterDungeon,
+    onExplore: (id) => explore(id),
     onClose: closeTownOverlay,
   });
   if (screen !== 'npc') { ensureAudio(); sfx.pickCard(); }
@@ -416,6 +425,11 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
     effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
   });
   tripAttrs = {};
+  setupRunUI();
+}
+
+// Skill / ultimate buttons, the avatar and the pause menu for a dungeon trip or a region.
+function setupRunUI() {
   wornSkills(current).forEach((sk, i) => {
     const btn = $(`act-s${i + 1}`);
     btn.classList.toggle('none', !sk);
@@ -426,15 +440,93 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   $('act-ult').classList.toggle('locked', !ult);
   if (ult) { $('act-ult').querySelector('.ic').replaceChildren(iconCanvas(ult.icon, 30)); $('act-ult').title = `${ult.name} (5)`; }
   R.avatar = avatarOf(current);
-  $('surrender').classList.remove('hidden');
-  $('toslots').classList.add('hidden');
-  $('pausenote').classList.remove('hidden');
+  // regions save as you go: no giving up, but back to the slots is fine (spec §25.1)
+  $('surrender').classList.toggle('hidden', game.field);
+  $('toslots').classList.toggle('hidden', !game.field);
+  $('pausenote').classList.toggle('hidden', game.field);
   showOverlay(null);
 }
+
+// ——— open world (spec §25.1) ———
+async function explore(regionId, at = 'west') {
+  syncHp();
+  await saveCurrent();
+  townNpc = null;
+  scene = 'run';
+  ensureAudio(); startMusic();
+  const region = regionById(regionId);
+  game.explore({
+    classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
+    level: current.level, exp: current.exp, luk: current.attrs.luk,
+    effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
+    region: regionId, at, fog: decodeFog(current.regions[regionId]?.fog, region),
+  });
+  game.clock = worldClock;
+  tripAttrs = {};
+  fieldSaveT = 0;
+  setupRunUI();
+}
+
+// Writes what was earned in the region so far (EXP, coins, loot, bestiary, bounties, fog).
+async function commitField() {
+  const part = game.takeProgress();
+  const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), attrs: tripAttrs }, Date.now());
+  tripAttrs = {};
+  current = r.char;
+  fieldSaveT = 0;
+  if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
+  else if (r.bountiesDone > 0) toast(t('{n} tugas selesai — klaim di Balai Petualang', { n: r.bountiesDone }));
+  return saveCurrent();
+}
+
+// Leaving a region: through the west edge (home) or by falling (wake in the last town).
+async function endField(died) {
+  screen = 'ending';
+  stopMusic();
+  const region = game.region;
+  await commitField();
+  let text = t('Kembali ke {town}.', { town: TOWNS[current.location].name });
+  if (died) {
+    const r = fieldDeath(current, Date.now());
+    current = r.char;
+    await saveCurrent();
+    text = t('Kamu tumbang di {region} dan terbangun di {town}. −{n} koin.', { region: region.name, town: TOWNS[current.location].name, n: r.goldLost });
+  }
+  enterTown(current, 'gate');
+  toast(text);
+}
+
+function openMap() {
+  if (!game.field) return;
+  game.state = ST.PAUSE;
+  showOverlay('fieldmap');
+  const c = $('mapcanvas');
+  const w = c.clientWidth, h = c.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2);
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false });
+  $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
+  $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, game.region) * 100) });
+}
+
+function drawMinimap() {
+  const c = $('minimap');
+  const w = c.clientWidth, h = c.clientHeight;
+  if (!w) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false });
+}
+$('minimap').addEventListener('click', openMap);
+$('mapclose').addEventListener('click', () => resume());
 
 // End of a trip — gold portal (died = false), death or giving up (died = true):
 // apply rewards/penalty, auto-save, show Hasil Perjalanan (spec §13.4).
 async function endRun(died) {
+  if (game.field) { endField(died); return; }
   screen = 'ending';
   stopMusic();
   const r = game.result();
@@ -455,6 +547,7 @@ async function endRun(died) {
 function pause() { game.state = ST.PAUSE; showOverlay('pause'); }
 function resume() {
   if (scene === 'town') { closeTownOverlay(); return; }
+  if (game.field && screen === 'charpanel') commitField(); // points spent / stats seen: write them now
   game.state = ST.PLAY; showOverlay(null);
 }
 
@@ -483,7 +576,7 @@ $('mute').addEventListener('click', () => {
 // ——— cheat panel (testing only, ui/cheat.js) ———
 let cheatOpen = false;
 const cheatScene = () => (scene === 'run' ? 'run' : scene === 'town' && current ? 'town' : 'menu');
-function drawCheat() { renderCheat($('cheat'), { scene: cheatScene(), god: !!game.god }, cheatActions, drawCheat); }
+function drawCheat() { renderCheat($('cheat'), { scene: cheatScene(), god: !!game.god, field: scene === 'run' && game.field }, cheatActions, drawCheat); }
 function toggleCheat() {
   cheatOpen = !cheatOpen;
   $('cheat').classList.toggle('hidden', !cheatOpen);
@@ -555,6 +648,8 @@ const cheatActions = {
   }, 'Semua item unik masuk tas'),
   clearBag: () => cheatChar((c) => { c.inventory = []; for (const k in c.equipped) c.equipped[k] = null; }, 'Tas dikosongkan'),
   god: () => { game.god = !game.god; drawCheat(); },
+  revealMap: () => { if (game.fog) game.fog.fill(255); toast(tr('Peta terbuka')); },
+  warp: (k) => { if (!game.field) return; game.px = game.fmap.w * k; game.py = game.region.path.reduce((b, p) => (Math.abs(p[0] - game.px) < Math.abs(b[0] - game.px) ? p : b))[1]; },
   killAll: () => { for (const e of game.enemies) e.hp = 0; },
   clearFloor: () => {
     if (game.floorClear) return;
@@ -579,7 +674,10 @@ if (CHEAT_ON) {
 // ——— keyboard shortcuts ———
 input.onAction.push((code) => {
   if (CHEAT_ON && code === 'Backquote') { toggleCheat(); return; }
-  if (code === 'KeyM') { $('mute').click(); return; }
+  if (code === 'KeyM') { // the map in a region, mute elsewhere
+    if (scene === 'run' && game.field && (game.state === ST.PLAY || screen === 'fieldmap')) { if (screen === 'fieldmap') resume(); else openMap(); } else $('mute').click();
+    return;
+  }
   const go = code === 'Space' || code === 'Enter';
   if (screen === 'title' && go) { $('play').click(); return; }
   if (screen === 'results' && go) { $('tocamp').click(); return; }
@@ -592,7 +690,7 @@ input.onAction.push((code) => {
   if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
   if (code === 'KeyI' && game.state === ST.PLAY) { openCharPanel(); return; }
   if (code === 'KeyI' && screen === 'charpanel') { resume(); return; }
-  if (screen === 'charpanel' && code === 'Escape') { resume(); return; }
+  if ((screen === 'charpanel' || screen === 'fieldmap') && code === 'Escape') { resume(); return; }
   if (game.state === ST.PLAY && code === 'Escape') { pause(); return; }
   if (game.state === ST.PAUSE && code === 'Escape') { resume(); return; }
 });
@@ -627,6 +725,11 @@ function tickRun(pressed) {
     dodge: pressed.has('dodge'), potion: potionSlot(pressed), ult: pressed.has('ult'),
     skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'),
   };
+  if (game.field) {
+    game.clock = worldClock;
+    game.night = phaseOf(worldClock).icon === 'moon';
+    if (game.state === ST.PLAY && (fieldSaveT += STEP) >= FIELD.saveEvery) commitField();
+  }
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
   // react only on the PLAY -> OVER transition
@@ -652,6 +755,7 @@ function frame(dt) {
     R.draw(game, simT);
     if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); }
     if (game.state === ST.PLAY) updateActions(game);
+    if (game.field && game.state === ST.PLAY && (minimapT += dt) > 0.25) { minimapT = 0; drawMinimap(); }
   } else {
     TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60);
     if (scene === 'town') {

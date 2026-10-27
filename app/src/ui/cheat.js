@@ -49,10 +49,17 @@ export function renderCheat(box, ctx, actions, redraw) {
       row(b('Beri 1', () => actions.gear(rarity, slot, 1)), b('Beri 10', () => actions.gear(rarity, slot, 10))),
       row(b('Semua item unik kelasku', actions.uniques), b('Kosongkan tas', actions.clearBag)));
   } else {
-    section('Dungeon',
-      row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),
-      row(b('Bersihkan lantai', actions.clearFloor), b('+100 EXP', () => actions.exp(100))),
-      row(...[1, 2, 3, 4, 5].map((f) => button(t('Lantai {n}', { n: f }), 'chb', () => actions.floor(f)))));
+    if (ctx.field) {
+      section('Wilayah',
+        row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),
+        row(b('Buka seluruh peta', actions.revealMap), b('+100 EXP', () => actions.exp(100))),
+        row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5))));
+    } else {
+      section('Dungeon',
+        row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),
+        row(b('Bersihkan lantai', actions.clearFloor), b('+100 EXP', () => actions.exp(100))),
+        row(...[1, 2, 3, 4, 5].map((f) => button(t('Lantai {n}', { n: f }), 'chb', () => actions.floor(f)))));
+    }
     section('Jatuhkan gear di dekatku', rar,
       row(b('Jatuhkan 1', () => actions.drop(rarity, 1)), b('Jatuhkan 5', () => actions.drop(rarity, 5))));
   }

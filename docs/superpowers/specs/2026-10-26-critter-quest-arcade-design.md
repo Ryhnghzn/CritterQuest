@@ -662,3 +662,60 @@ Tujuan: target jangka pendek di setiap perjalanan dan bonus permanen kecil untuk
   - `records.bestiary` (kill per jenis musuh);
   - `records.uniques` (id unik yang ditemukan).
   - `migrate()` v9 → v10 mengisi 3 tugas awal, nol Lencana, bestiari kosong, dan kodeks dari item unik yang ada di tas.
+
+## 25. Dunia Terbuka: Wilayah, Kota Besar & Pedagang (langkah 9D, 2026-10-27)
+
+Keputusan pemilik (2026-10-27):
+- **Perjalanan:** wilayah tersambung. Gerbang kota mengarah ke peta wilayah biome, dan di ujung wilayah ada kota besar.
+- **Urutan wilayah bebas.** Setiap wilayah punya **rentang level tetap**:
+  - Hutan Kelam LV 1–15;
+  - Padang Es LV 10–25;
+  - Gurun Merah LV 20–35;
+  - Gunung Api LV 30–50.
+- **Musuh:** varian biome dari perilaku yang ada, ditambah 1–2 musuh khas per biome, ditambah 1 mini bos penjaga harta per wilayah.
+- **Pedagang:** etalase gear yang terlihat (stok baru tiap pagi di jam game) ditambah peti. Kota di wilayah sulit punya etalase lebih banyak, rarity lebih tinggi, dan harga lebih mahal. Kota besar juga punya:
+  - toko gear khusus: Pandai Senjata, Penjahit Zirah, Toko Perhiasan;
+  - pedagang keliling malam;
+  - Gudang;
+  - pedagang bahan & permata.
+- **Tumbang di wilayah:** bangun di kota terakhir yang dikunjungi, kehilangan 10% koin; barang aman. Dungeon tetap memakai aturan §13.4.
+- **Peta wilayah:** bagian yang belum dilewati gelap (kabut), dengan peta mini di HUD.
+
+### 25.1 Dunia & perjalanan (9D-1)
+- `data/world.js`: daftar wilayah (biome, rentang level, ukuran, jalan, rintangan, titik masuk/keluar, daftar musuh). Bentuk peta tetap, tidak acak.
+- **Hutan Kelam** berukuran 4000 × 2400 dan memuat:
+  - jalan setapak berkelok dari barat (kota awal) ke timur (Kota Rimbawana);
+  - rumpun pohon dan batu sebagai rintangan;
+  - sungai dengan jembatan;
+  - reruntuhan.
+- **Mode wilayah** (`run/field.js`):
+  - Memakai mesin pertarungan dungeon: skill, ultimate, ramuan, dodge, energi, siang–malam.
+  - Musuh muncul berkelompok 3–6 di luar layar dekat pemain, maksimal 25 sekaligus. Musuh yang tertinggal jauh dihapus.
+  - Kekuatan musuh naik dari level bawah ke level atas rentang, dari barat ke timur. Jalan setapak lebih jarang didatangi kelompok musuh, dan malam hari kelompoknya lebih banyak.
+- **Drop dan EXP** langsung disimpan ke karakter:
+  - setiap 60 detik;
+  - saat keluar wilayah;
+  - saat tumbang (dikurangi 10% koin).
+- **Peta:**
+  - Tombol M membuka peta layar penuh; peta mini ada di HUD.
+  - Kabut berupa kisi petak 100 × 100 dan terbuka dalam radius 300 di sekitar pemain.
+- **Gerbang kota awal** menawarkan dua pilihan: Dungeon (seperti sebelumnya) atau Wilayah (dengan rentang level; wilayah yang belum dibuat bertanda "Segera").
+- **Save versi 11:**
+  - `location` (kota terakhir);
+  - `towns` (kota yang sudah dikunjungi);
+  - `regions { id: { fog } }`, dengan fog berupa string base64 bit per petak.
+
+### 25.2 Kota besar & pedagang (9D-2)
+- Kota Rimbawana di ujung Hutan Kelam, lebih besar dan ramai.
+- Etalase gear berstok harian per pedagang dan tingkat kota, ditambah peti.
+- Toko gear khusus, pedagang keliling malam, Gudang bersama, pedagang bahan & permata.
+- Teleport cepat antar kota yang sudah dikunjungi.
+
+### 25.3 Isi wilayah (9D-3)
+- Harta karun tersembunyi yang dijaga mini bos.
+- Portal bos ke dungeon wilayah; dungeon tidak lagi dibuka berurutan dari gerbang kota awal.
+
+### 25.4 Tiga biome lain (9D-4)
+- Wilayah Padang Es, Gurun Merah, dan Gunung Api, masing-masing dengan musuh biome.
+- Dungeon baru Makam Pasir dengan bosnya.
+- Tiga kota besar dengan tingkat barang yang makin tinggi.

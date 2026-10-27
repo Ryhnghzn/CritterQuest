@@ -497,6 +497,14 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .skbtns .skkey.on{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;border-color:#e6c27a}
 .skbtns .skkey:disabled{opacity:1;cursor:default}
 .skill .lock{font-size:12px;font-weight:700;color:var(--dim);padding:4px 8px;border:1px dashed var(--line);border-radius:3px}
+/* 9D: regions — minimap & full map (spec §25.1) */
+#minimap{position:absolute;right:12px;top:66px;z-index:5;pointer-events:auto;width:180px;height:108px;border-radius:10px;border:1px solid var(--line);background:#07060c;box-shadow:0 4px 18px rgba(0,0,0,.5);cursor:pointer}
+@media (max-width:560px){#minimap{top:222px;right:12px;width:132px;height:80px}}
+.mappanel{width:min(960px,100%);display:flex;flex-direction:column;align-items:center;gap:8px}
+#mapcanvas{width:100%;aspect-ratio:5/3;border-radius:10px;border:1px solid var(--line);background:#07060c}
+.regions{display:flex;flex-direction:column;gap:6px;width:100%;margin-top:8px}
+.regions .btn.region{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.regions .btn.region small{font-size:11px;opacity:.75;text-transform:none;letter-spacing:0}
 /* 9C: bounty board, Lencana shop, collection (spec §24) */
 .shoprow.bounty{grid-template-columns:38px minmax(0,1fr) auto}
 .shoprow.bounty.done{box-shadow:inset 0 0 0 1.5px #e6c27a}
@@ -541,6 +549,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></symbol>
   <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 3h4M10 3v5l-5 9a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-5-9V3"/><path d="M7.5 14h9"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
 </svg>
 <canvas id="game"></canvas>
@@ -586,6 +595,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   </div>
   <div id="joy" class="hidden"><i></i></div>
   <button id="pausebtn" class="touchbtn hidden" data-tr-label="Jeda" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>
+  <canvas id="minimap" class="hidden" data-tr-title="Peta (M)" title="Peta (M)"></canvas>
   <button id="charbtn" class="touchbtn hidden" data-tr-title="Karakter (I)" title="Karakter (I)" data-tr-label="Karakter" aria-label="Karakter"><svg class="i"><use href="#i-user"/></svg></button>
   <button id="autobtn" class="touchbtn hidden" data-tr-title="Serang otomatis (F)" title="Serang otomatis (F)"><span class="dot"></span>AUTO<kbd>F</kbd></button>
   <button id="mute" data-tr-title="Suara" title="Suara" data-tr-label="Suara" aria-label="Suara"><svg class="i on"><use href="#i-sound-on"/></svg><svg class="i off"><use href="#i-sound-off"/></svg></button>
@@ -598,7 +608,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
     </div>
     <button class="btn big" id="play" data-tr>Main</button>
     <button class="btn ghost small" id="langbtn" title="Language / Bahasa">EN · ID</button>
-    <div class="help" data-tr><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto</div>
+    <div class="help" data-tr><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Bertarung: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto &nbsp; <kbd>M</kbd> peta</div>
   </div>
 
   <div id="slots" class="screen hidden">
@@ -611,6 +621,14 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   <div id="create" class="screen hidden"></div>
   <div id="npc" class="screen hidden"></div>
   <div id="charpanel" class="screen hidden"></div>
+  <div id="fieldmap" class="screen hidden">
+    <div class="panel mappanel">
+      <h2 class="h" id="maptitle"></h2>
+      <canvas id="mapcanvas"></canvas>
+      <div class="note" id="mapnote"></div>
+      <button class="btn ghost" id="mapclose" data-tr="Tutup">Tutup</button>
+    </div>
+  </div>
 
   <div id="pause" class="screen hidden">
     <h2 class="h" data-tr>Jeda</h2>

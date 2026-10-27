@@ -1,7 +1,7 @@
 // Screen manager + small DOM helpers shared by the menu screens.
 import { tr } from '../i18n.js';
 const $ = (id) => document.getElementById(id);
-const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'pause', 'results'];
+const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'pause', 'results', 'fieldmap'];
 
 // Shows one screen (null = none, during play) and returns its id.
 export function showScreen(id) {

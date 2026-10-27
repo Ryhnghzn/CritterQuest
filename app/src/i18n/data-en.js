@@ -17,6 +17,7 @@ import { PHASES } from '../data/time.js';
 import { TOWN, INTERIORS } from '../data/town.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { MARK_SHOP } from '../data/bounties.js';
+import { REGIONS, TOWNS } from '../data/world.js';
 
 export const CLASS_EN = {
   'Tebal darah, tebasan jarak dekat.': 'Thick-blooded, cleaves up close.',
@@ -137,6 +138,9 @@ const UNIQUE_EN = {
 };
 const CHEST_EN = { 'Peti Gear': 'Gear Chest', 'Peti Agung': 'Grand Chest' };
 
+const REGION_EN = { 'Hutan Kelam': 'Gloomwood', 'Padang Es': 'Frost Plains', 'Gurun Merah': 'Red Desert', 'Gunung Api': 'Fire Mountain' };
+const TOWN_EN = { 'Kota Awal': 'Hometown' };
+
 const MARK_EN = {
   'Peti Lencana': ['Badge Chest', '1 Epic gear piece'],
   'Kristal Arkana ×5': ['Arcane Crystal ×5', 'Forging material for +5 and up'],
@@ -247,6 +251,8 @@ export function localizeData() {
   for (const [id, e] of Object.entries(EFFECTS)) if (EFFECT_EN[id]) e.desc = EFFECT_EN[id];
   for (const u of UNIQUES) swap(u, 'name', UNIQUE_EN);
   for (const c of Object.values(CHESTS)) swap(c, 'name', CHEST_EN);
+  for (const r of REGIONS) swap(r, 'name', REGION_EN);
+  for (const tw of Object.values(TOWNS)) swap(tw, 'name', TOWN_EN);
   for (const o of MARK_SHOP) { const en = MARK_EN[o.name]; if (en) [o.name, o.desc] = en; }
   for (const e of Object.values(ENEMIES)) swap(e, 'name', ENEMY_EN);
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }

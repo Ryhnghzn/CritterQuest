@@ -4,6 +4,7 @@
 // Also keeps run.aimPX/aimPY: the world point skills target (mouse, auto target, or ahead).
 import { DODGE, AUTO_AIM_RANGE } from '../data/balance.js';
 import { confinePlayer } from './dungeon.js';
+import { confineFieldPlayer } from './field.js';
 import { sfx } from '../core/audio.js';
 
 const DODGE_SPEED = DODGE.distance / DODGE.duration;
@@ -52,5 +53,5 @@ export function stepPlayer(run, intent, dt) {
     run.py += my * run.stats.moveSpd * dt;
   }
 
-  confinePlayer(run);
+  if (run.field) confineFieldPlayer(run); else confinePlayer(run);
 }

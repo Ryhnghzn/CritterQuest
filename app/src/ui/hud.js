@@ -1,5 +1,6 @@
 // In-run HUD (DOM): bars, counters and banner (~10×/s), action cooldown rings (every frame).
 import { DODGE, ENERGY, ULT } from '../data/balance.js';
+import { fieldHere } from '../run/field.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
 import { clockText } from '../meta/clock.js';
@@ -13,8 +14,11 @@ export function updateHUD(game) {
   $('hptext').textContent = `${Math.ceil(Math.max(0, s.hp))} / ${Math.round(s.maxHp)}`;
   $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
   $('lvltext').textContent = `LV ${game.level}`;
-  const waves = game.dungeon.floors[game.floor - 1]?.waves.length ?? 0;
-  $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? tr('bersih') : `G${game.wave + 1}/${waves}`}`;
+  if (game.field) $('floor').textContent = fieldHere(game); // region & enemy level here (spec §25.1)
+  else {
+    const waves = game.dungeon.floors[game.floor - 1]?.waves.length ?? 0;
+    $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? tr('bersih') : `G${game.wave + 1}/${waves}`}`;
+  }
   $('kills').textContent = game.kills;
   $('gold').textContent = game.gold;
   $('dmg').style.opacity = game.flash > 0 ? 0.9 : 0;

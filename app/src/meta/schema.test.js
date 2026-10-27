@@ -162,6 +162,19 @@ describe('save versi 2', () => {
     expect(validateSlot(c)).toContain('bounties');
   });
 
+  it('migrasi v10 → v11: di kota awal, belum menjelajah', () => {
+    const v10 = { ...fresh(), version: 10 };
+    delete v10.location; delete v10.towns; delete v10.regions;
+    const r = readSlot(v10);
+    expect(r.status).toBe('ok');
+    expect(r.data).toMatchObject({ location: 'home', towns: ['home'], regions: {} });
+  });
+
+  it('menolak wilayah atau kota yang tidak dikenal', () => {
+    expect(validateSlot({ ...fresh(), regions: { mars: { fog: '' } } })).toContain('regions');
+    expect(validateSlot({ ...fresh(), location: 'atlantis' })).toContain('location/towns');
+  });
+
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {
     const v1 = { ...fresh(), version: 1, records: 'hilang' };
     delete v1.hp; delete v1.potions;

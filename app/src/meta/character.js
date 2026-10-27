@@ -33,6 +33,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     skills: CLASSES[classId] ? [...CLASSES[classId].skills.slice(0, 2).map((s) => s.id), null, null] : [null, null, null, null],
     talents: freshTalents(),
     bounties: freshBounties(), marks: 0,
+    location: 'home', towns: ['home'], regions: {},
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),

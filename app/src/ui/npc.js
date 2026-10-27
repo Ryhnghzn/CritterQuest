@@ -11,6 +11,7 @@ import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints, unlockedDungeons } from '../meta/character.js';
 import { spentTalents, talentRespecPrice } from '../meta/talents.js';
 import { DUNGEONS } from '../data/dungeons.js';
+import { REGIONS } from '../data/world.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
@@ -108,6 +109,17 @@ export function renderNpc(box, npc, ctx) {
       }
       panel.append(floors);
     }
+    // open world (spec §25.1): out through the gate into a region
+    const regs = el('div', 'regions');
+    regs.append(el('span', 'note', tr('Atau keluar ke wilayah:')));
+    for (const r of REGIONS) {
+      const b = button('', 'btn ghost small region', () => ctx.onExplore(r.id));
+      b.append(el('span', null, r.name), el('small', null, r.ready ? `LV ${r.levels[0]}–${r.levels[1]}` : t('LV {a}–{b} · segera', { a: r.levels[0], b: r.levels[1] })));
+      b.dataset.region = r.id;
+      b.disabled = !r.ready;
+      regs.append(b);
+    }
+    panel.append(regs);
   }
   if (actions.childElementCount && !actions.parentNode) panel.append(actions);
 

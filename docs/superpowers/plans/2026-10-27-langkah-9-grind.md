@@ -29,5 +29,16 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Run mencatat kill per jenis, elite, lantai bersih; `applyTrip` memajukan tugas & koleksi — tes
 - [x] Kapten Vera: tab Tugas / Lencana; tab Koleksi di panel Karakter; hasil perjalanan menampilkan progres tugas; kamus EN
 - [x] Verifikasi: tes, build, screenshot PC & HP
-## 9D — Open world (biome, kota lain, harta karun & mini bos, portal bos)
+## 9D — Open world (§25)
+### 9D-1 — Dunia & perjalanan
+- [x] `data/world.js`: Hutan Kelam (jalan, rintangan, sungai & jembatan, reruntuhan, musuh, rentang level)
+- [x] `run/field.js`: mode wilayah — kelompok musuh, batas jumlah, rintangan, skala level barat→timur, keluar wilayah — tes
+- [x] `meta/world.js`: kabut (kisi bit base64), tumbang −10% koin, simpan berkala — tes
+- [x] Save v11: `location`, `towns`, `regions` — tes
+- [x] Render wilayah (tanah, jalan, pohon, sungai), peta M berkabut, peta mini HUD
+- [x] Gerbang: Dungeon / Wilayah; masuk & keluar wilayah; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
+### 9D-2 — Kota besar & pedagang
+### 9D-3 — Harta karun, mini bos, portal bos
+### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir
 ## 9E — Tingkat kesulitan & Celah tanpa batas

@@ -4,8 +4,8 @@
 export default {
   // ——— index.html (data-tr: innerHTML; data-tr-title / data-tr-label) ———
   Main: 'Play',
-  '<kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto':
-    '<kbd>WASD</kbd> move &nbsp; <kbd>E</kbd> talk &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> potions &nbsp; <kbd>I</kbd> character &nbsp; <kbd>Esc</kbd> menu<br>In dungeons: <kbd>Click</kbd> attack &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skills &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Space</kbd> dodge &nbsp; <kbd>F</kbd> auto',
+  '<kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Bertarung: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto &nbsp; <kbd>M</kbd> peta':
+    '<kbd>WASD</kbd> move &nbsp; <kbd>E</kbd> talk &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> potions &nbsp; <kbd>I</kbd> character &nbsp; <kbd>Esc</kbd> menu<br>In combat: <kbd>Click</kbd> attack &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skills &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Space</kbd> dodge &nbsp; <kbd>F</kbd> auto &nbsp; <kbd>M</kbd> map',
   'Pilih Petualang': 'Choose Adventurer',
   'Tiga slot, progres tersimpan otomatis.': 'Three slots, progress saves automatically.',
   Kembali: 'Back',
@@ -235,6 +235,15 @@ export default {
   'Kumpulkan {n} koin di dungeon': 'Collect {n} coins in dungeons',
   '+{g} koin · +{e} EXP · +{d} {dust} · +{m} Lencana': '+{g} coins · +{e} EXP · +{d} {dust} · +{m} Badges',
   Klaim: 'Claim',
+  'Ke {name}': 'To {name}',
+  Kamu: 'You',
+  'Atau keluar ke wilayah:': 'Or head out into a region:',
+  'LV {a}–{b} · segera': 'LV {a}–{b} · soon',
+  'Peta (M)': 'Map (M)',
+  Wilayah: 'Region',
+  'Buka seluruh peta': 'Reveal whole map',
+  'Ke ujung timur': 'Warp to east end',
+  'Ke tengah': 'Warp to middle',
   '+10 Lencana': '+10 Badges',
   'Selesaikan tugas': 'Finish bounties',
   Ganti: 'Replace',

@@ -13,6 +13,9 @@ import { levelRing, auraBack, auraFront, trailRgb, bestRarity } from '../art/aur
 import { RARITIES } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
+import { groundTile, drawField, fieldDecorLights } from './field.js';
+import { REGIONS } from '../data/world.js';
+import { skyAt } from '../meta/clock.js';
 
 const DOLL_SCALE = 0.82;   // player doll size in world units
 const TAU = Math.PI * 2;
@@ -45,6 +48,13 @@ export class Renderer {
       pat.setTransform(new DOMMatrix().scale(tile.T / tile.canvas.width));
       this.grounds[d.id] = pat;
     }
+    for (const r of REGIONS) { // open-world regions (spec §25.1)
+      if (!r.theme) continue;
+      const tile = groundTile(v.S, r.theme.ground);
+      const pat = v.ctx.createPattern(tile.canvas, 'repeat');
+      pat.setTransform(new DOMMatrix().scale(tile.T / tile.canvas.width));
+      this.grounds[`field:${r.id}`] = pat;
+    }
   }
 
   // CSS pixel → world point (for mouse aim); ignores screen shake on purpose.
@@ -75,15 +85,29 @@ export class Renderer {
     g.imageSmoothingEnabled = true;
     g.lineJoin = 'round';
 
-    this.drawRoom(g, game, t, visible);
-    if (playing) this.drawRun(g, game, t, visible);
-    this.lighting.draw(cx, cy, roomLights(game, t, playing), game.dungeon.theme.ambient);
-    v.begin(cx, cy);
-    roomGlow(g, game, t);
-    if (playing) this.drawFx(g, game, t);
+    if (game.field) {
+      drawField(g, game, this.grounds[`field:${game.region.id}`], t, { x0: cx - hw, y0: cy - hh, x1: cx + hw, y1: cy + hh });
+      if (playing) this.drawRun(g, game, t, visible);
+      // regions follow the clock (spec §18.4): never fully bright under the canopy
+      const sky = skyAt(game.clock ?? 12 * 60);
+      const out = [];
+      fieldDecorLights(game, t, out);
+      actorLights(game, out, playing, 260 + sky.night * 60);
+      this.lighting.draw(cx, cy, out, `rgba(${sky.rgb.join(',')},${Math.max(0.16, sky.dark).toFixed(3)})`);
+      daylight(v, g, sky);
+      v.begin(cx, cy);
+      if (playing) this.drawFx(g, game, t);
+    } else {
+      this.drawRoom(g, game, t, visible);
+      if (playing) this.drawRun(g, game, t, visible);
+      this.lighting.draw(cx, cy, roomLights(game, t, playing), game.dungeon.theme.ambient);
+      v.begin(cx, cy);
+      roomGlow(g, game, t);
+      if (playing) this.drawFx(g, game, t);
+    }
     v.vignetteOverlay();
-    // fade in at the start of each floor
-    const fade = playing ? 1 - game.floorT * 2.5 : 0;
+    // fade in at the start of each floor (regions: when arriving)
+    const fade = playing ? 1 - (game.field ? game.time : game.floorT) * 2.5 : 0;
     if (fade > 0) { g.fillStyle = `rgba(5,4,12,${fade})`; g.fillRect(0, 0, v.c.width, v.c.height); }
   }
 
@@ -197,15 +221,34 @@ function roomLights(game, t, playing) {
   decorLights(game.room, game.dungeon.theme, t, out);
   const glow = 1 + Math.sin(t * 2) * 0.1;
   out.push({ x: 0, y: 0, r: (game.floorClear ? 200 : 90) * glow, rgb: '150,110,255', tint: game.floorClear ? 0.1 : 0.05 });
+  if (playing) for (const p of game.portals) out.push({ x: p.x, y: p.y - 10, r: 160, rgb: PORTAL_RGB[p.kind], tint: 0.22 });
+  actorLights(game, out, playing, 200);
+  return out;
+}
+
+// lights carried by what moves: gear drops, elites, shots, hazards and the player
+function actorLights(game, out, playing, playerR) {
   if (playing) {
-    for (const p of game.portals) out.push({ x: p.x, y: p.y - 10, r: 160, rgb: PORTAL_RGB[p.kind], tint: 0.22 });
     for (const gm of game.gems) if (gm.gear) out.push({ x: gm.x, y: gm.y - 6, r: 50 + gm.gear.rarity * 14, rgb: RARITY_RGB[gm.gear.rarity], tint: 0.06 + gm.gear.rarity * 0.03 });
     for (const e of game.enemies) if (e.elite) out.push({ x: e.x, y: e.y, r: e.r * 3, rgb: '255,200,80', tint: 0.08 });
     for (const s of game.shots) out.push({ x: s.x, y: s.y, r: 34, rgb: '255,140,200', tint: 0.05 });
     for (const h of game.hazards) if (h.kind === 'circle') out.push({ x: h.x, y: h.y, r: h.r * 1.3, rgb: '255,60,70', tint: 0.08 });
-    out.push({ x: game.px, y: game.py, r: 200, rgb: '255,200,140', tint: 0.06 });
+    out.push({ x: game.px, y: game.py, r: playerR, rgb: '255,200,140', tint: 0.06 });
   }
-  return out;
+}
+
+// sunlight lifts the dark palette by day; dawn / dusk add a warm glow (as in town)
+function daylight(v, g, sky) {
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (sky.night < 0.95) {
+    g.globalCompositeOperation = 'screen';
+    g.fillStyle = `rgba(230,240,200,${(0.16 * (1 - sky.night)).toFixed(3)})`; g.fillRect(0, 0, v.c.width, v.c.height);
+  }
+  if (sky.warm > 0.005) {
+    g.globalCompositeOperation = 'lighter';
+    g.fillStyle = `rgba(255,130,60,${sky.warm.toFixed(3)})`; g.fillRect(0, 0, v.c.width, v.c.height);
+  }
+  g.globalCompositeOperation = 'source-over';
 }
 
 // faint engraved circle in the middle of the room; brightens when the floor is clear

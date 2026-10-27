@@ -188,14 +188,15 @@ function stepPattern(run, e, b, dt, enraged) {
 }
 
 // Enemy projectiles: fly, hit the player (unless dodging / invulnerable), leave the room.
-export function stepShots(run, dt, bound) {
+// bound: how far from (cx, cy) a shot may fly (the room, or around the player in a region)
+export function stepShots(run, dt, bound, cx = 0, cy = 0) {
   const S = run.shots;
   for (let i = S.length - 1; i >= 0; i--) {
     const s = S[i];
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     const hit = (s.x - run.px) ** 2 + (s.y - run.py) ** 2 < (s.r + 9) ** 2;
     if (hit && run.hurtPlayer(s.dmg)) s.life = 0;
-    if (s.life <= 0 || s.x * s.x + s.y * s.y > (bound + 40) ** 2) { S[i] = S[S.length - 1]; S.pop(); }
+    if (s.life <= 0 || (s.x - cx) ** 2 + (s.y - cy) ** 2 > (bound + 40) ** 2) { S[i] = S[S.length - 1]; S.pop(); }
   }
 }
 

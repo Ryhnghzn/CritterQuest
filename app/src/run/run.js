@@ -16,6 +16,8 @@ import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
+import { startField, stepField, confineFieldEnemy } from './field.js';
+import { FIELD } from '../data/world.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 
@@ -110,6 +112,7 @@ export class Game {
     this.wave = 0; this.queue = []; this.queueI = 0; this.spawnT = 0; this.waveGap = 0;
     this.floorT = 0; this.floorClear = false; this.clearT = 0;
     this.portals = []; this.exit = null;
+    this.field = false; this.region = null; this.fmap = null; this.fog = null; this.exitTo = null; this.night = false; // open world (run/field.js)
     this.baseStats = { ...stats }; // final stats before potion buffs
     this.stats = { ...stats, hp };
     this.potions = { ...potions }; this.belt = belt.slice(); this.potionCd = 0;
@@ -121,6 +124,27 @@ export class Game {
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
+  }
+
+  // A region of the open world instead of a dungeon (spec §25.1).
+  // setup.region: region id; setup.at: 'west' | 'east'; setup.fog: Uint8Array (revealed in place)
+  explore(setup) {
+    this.reset(setup);
+    this.fog = setup.fog || null;
+    startField(this, setup.region, setup.at);
+    this.state = ST.PLAY;
+  }
+
+  // Hands over what was earned since the last call and starts counting from zero
+  // (regions save every so often; spec §25.1). Level & EXP stay live in the run.
+  takeProgress() {
+    const out = {
+      exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites,
+      items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions },
+    };
+    this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0;
+    this.loot.length = 0; this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound.length = 0;
+    return out;
   }
 
   // setup.floor: floor to start on (spec §15.3), default 1
@@ -193,9 +217,11 @@ export class Game {
     this.stepPotion(dt);
     this.stepEffects(dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
-    stepDungeon(this, dt);
+    if (this.field) stepField(this, dt); else stepDungeon(this, dt);
     this.updateEnemies(dt);
-    if (this.state === ST.PLAY) stepShots(this, dt, this.room.bound);
+    if (this.state === ST.PLAY) {
+      if (this.field) stepShots(this, dt, FIELD.despawn, this.px, this.py); else stepShots(this, dt, this.room.bound);
+    }
     if (this.state === ST.PLAY) stepHazards(this, dt);
     if (this.state !== ST.PLAY) return; // died this step: no gem pickup after death
     this.updateGems(dt);
@@ -212,7 +238,7 @@ export class Game {
     for (const g of this.gems) this.pickup(g);
     this.gems.length = 0;
     sfx.levelup();
-    if (kind === 'down') startFloor(this, this.floor + 1);
+    if (this.field) { this.exitTo = kind; this.returned = true; this.state = ST.OVER; } else if (kind === 'down') startFloor(this, this.floor + 1);
     else { this.returned = true; this.state = ST.OVER; }
   }
 
@@ -333,7 +359,7 @@ export class Game {
       e.wob += dt * 5;
       // walk in through the lane, then the enemy's own behaviour (run/enemies.js)
       let vx, vy;
-      const goal = enemyGoal(this, e);
+      const goal = this.field ? { x: this.px, y: this.py } : enemyGoal(this, e);
       if (e.entering) {
         const ga = Math.atan2(goal.y - e.y, goal.x - e.x);
         vx = Math.cos(ga) * e.speed; vy = Math.sin(ga) * e.speed;
@@ -345,7 +371,7 @@ export class Game {
       e.x += (vx + e.kx) * dt;
       e.y += (vy + e.ky) * dt;
       e.kx *= 0.86; e.ky *= 0.86;
-      confineEnemy(this, e);
+      if (this.field) confineFieldEnemy(this, e); else confineEnemy(this, e);
       // touch damage
       const rr = e.r + 10;
       if (e.dmg > 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg)) {

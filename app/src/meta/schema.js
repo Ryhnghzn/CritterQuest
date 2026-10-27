@@ -13,8 +13,10 @@ import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js'
 import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
 import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
 import { BESTIARY_IDS } from '../data/collection.js';
+import { TOWN_IDS, REGION_IDS, regionById } from '../data/world.js';
+import { isFogValid } from './world.js';
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -77,6 +79,8 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v11 (spec §25.1): open world — last town, towns visited, explored regions.
+  10: (d) => ({ ...d, version: 11, location: 'home', towns: ['home'], regions: {} }),
 };
 
 export const freshBounties = () => structuredClone(STARTER_BOUNTIES);
@@ -156,6 +160,9 @@ export function validateSlot(d) {
   need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
   need(isInt(d.marks, 0), 'marks');
+  need(TOWN_IDS.includes(d.location) && Array.isArray(d.towns) && d.towns.every((id) => TOWN_IDS.includes(id))
+    && new Set(d.towns).size === d.towns.length && d.towns.includes(d.location), 'location/towns');
+  need(isObj(d.regions) && Object.entries(d.regions).every(([id, r]) => REGION_IDS.includes(id) && isObj(r) && isFogValid(r.fog, regionById(id))), 'regions');
   need(Array.isArray(d.bounties) && d.bounties.length === BOUNTY_COUNT && d.bounties.every((b) => isObj(b)
     && Object.hasOwn(BOUNTY_KINDS, b.kind) && (b.target === null || typeof b.target === 'string')
     && isInt(b.need, 1) && isInt(b.have, 0, b.need)), 'bounties');
