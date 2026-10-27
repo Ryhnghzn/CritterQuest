@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#16112e">
+<meta name="theme-color" content="#0f0c12">
 <title>Critter Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#16112e; --ink:#ffffff; --dim:#b9b3dc; --faint:rgba(255,255,255,.08); --line:rgba(255,255,255,.12);
@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
-  font-family:'Fredoka',system-ui,-apple-system,'Segoe UI',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+  font-family:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas#game{position:fixed;inset:0;width:100%;height:100%}
 #ui{position:fixed;inset:0;pointer-events:none}
 .hidden{display:none!important}
@@ -378,6 +378,74 @@ body.touch #prompt kbd{display:none}
 .modal .panel{display:flex;flex-direction:column;gap:20px;align-items:center;text-align:center;font-size:18px;line-height:1.5;width:min(420px,100%)}
 #nosave{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;font-size:13px;font-weight:600;
   color:#fff;background:rgba(255,107,139,.9);padding:8px 16px;border-radius:999px;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow)}
+
+/* ——— langkah 8D: dark fantasy UI — charcoal, bronze & gold, square-ish edges ——— */
+:root{
+  --bg:#0f0c12; --ink:#ece4d6; --dim:#a99d8c; --faint:rgba(255,236,200,.06); --line:rgba(201,162,74,.3);
+  --glass:rgba(20,16,22,.92); --glass2:rgba(255,236,200,.045);
+  --acc:#d9b25e; --acc-d:#7a5a20; --coral:#e0526a; --mint:#6fcf97; --sky:#6aa8e0; --violet:#9b7bd8;
+  --r:6px; --shadow:0 12px 34px rgba(0,0,0,.65);
+  --frame:inset 0 0 0 1px rgba(0,0,0,.55),inset 0 0 0 4px rgba(201,162,74,.08);
+}
+.screen{background:radial-gradient(120% 90% at 50% 40%,rgba(20,14,22,.6),rgba(6,4,8,.92))}
+.screen.title{background:radial-gradient(90% 70% at 50% 45%,rgba(6,4,8,.05),rgba(6,4,8,.7))}
+h2.h,.camphead .nm,.card .nm,.dcard b,.gdname,.attrhead b,#banner{font-family:'Cinzel',serif;letter-spacing:.5px}
+h2.h{font-weight:700;color:#f0dca8;text-shadow:0 2px 0 #000,0 0 24px rgba(217,178,94,.25)}
+h2.h.bad{color:#e0526a}
+h1.logo{font-family:'Cinzel',serif;font-weight:800;letter-spacing:4px;
+  background:linear-gradient(180deg,#fff3cf 0%,#e6c27a 40%,#8a6420 100%);-webkit-background-clip:text;background-clip:text;
+  filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 30px rgba(217,178,94,.35))}
+.tag{font-family:'Cinzel',serif;letter-spacing:8px;border-radius:2px;background:rgba(0,0,0,.4);border:1px solid var(--line);color:#e6c27a}
+kbd{border-radius:3px;border-color:rgba(201,162,74,.35)}
+.btn{font-family:'Cinzel',serif;font-weight:700;letter-spacing:1.5px;color:#f3dca0;border:1.5px solid #b08a3e;border-radius:4px;
+  background:linear-gradient(180deg,#3d2e1e 0%,#22180f 100%);
+  box-shadow:inset 0 1px 0 rgba(255,230,170,.22),0 4px 14px rgba(0,0,0,.55);text-shadow:0 1px 0 #000}
+.btn:hover{border-color:#f0cf7a;box-shadow:inset 0 1px 0 rgba(255,230,170,.3),0 0 18px rgba(217,178,94,.3);filter:none}
+.btn:active{transform:translateY(1px);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
+.btn.ghost{color:var(--ink);background:rgba(0,0,0,.35);border:1px solid rgba(201,162,74,.3);box-shadow:none}
+.btn.danger{color:#f0909e;border-color:rgba(224,82,106,.5)}
+.btn.big{letter-spacing:2.5px}
+.card,.panel,.dcard,.shoprow,.lootrow,.tile,.chest{border-radius:var(--r)}
+.card{background:linear-gradient(180deg,rgba(34,27,34,.94),rgba(16,12,18,.94));border:1px solid var(--line);box-shadow:var(--shadow),var(--frame)}
+.card:hover{border-color:rgba(217,178,94,.6)}
+.card.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),0 0 22px rgba(217,178,94,.25),var(--shadow)}
+.panel{background:linear-gradient(180deg,rgba(28,22,30,.95),rgba(14,11,16,.95));border:1px solid var(--line);box-shadow:var(--shadow),var(--frame)}
+.pill,.badge,.hchip,.lvbadge,.buff,.delta,.attrhead .pts,.act .cnt,.act .cost{border-radius:3px}
+.pill{background:color-mix(in srgb,var(--c,#9b7bd8) 22%,rgba(0,0,0,.4));border:1px solid color-mix(in srgb,var(--c,#9b7bd8) 45%,transparent)}
+.badge{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;box-shadow:0 2px 0 #4a3410}
+.badge.mint{background:linear-gradient(180deg,#8fd8a8,#3f8f5e);color:#0a2414;box-shadow:0 2px 0 #1e4a2e}
+.lvbadge{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;box-shadow:0 2px 0 #4a3410}
+.stage{background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--c,#9b7bd8) 45%,#2a2228) 0%,color-mix(in srgb,var(--c,#9b7bd8) 25%,#120e14) 70%);
+  border:2px solid rgba(201,162,74,.55);box-shadow:inset 0 -12px 24px rgba(0,0,0,.6),0 6px 18px rgba(0,0,0,.6)}
+.chip{border-radius:4px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.chip.sel,.tabs .chip.sel{background:linear-gradient(180deg,#e6c27a,#9c7428);border-color:#e6c27a;color:#1a1208}
+.tabs{border-radius:5px;background:rgba(0,0,0,.45)}
+.tab{font-family:'Cinzel',serif;letter-spacing:1px;border-radius:3px}
+.tab.on{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208}
+.swatch{border-radius:4px;border:2px solid rgba(255,255,255,.15)}
+input.name{border-radius:4px;background:rgba(0,0,0,.5);border:1px solid var(--line);font-family:'Cinzel',serif}
+input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.18)}
+#hud,#townhud{border-radius:6px;background:linear-gradient(180deg,rgba(24,19,26,.88),rgba(12,9,14,.88));border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.5),var(--frame)}
+.hpbar,.enbar,.xpbar,.meter{border-radius:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.6)}
+.hpbar>i,.enbar>i,.xpbar>i,.meter>i{border-radius:2px}
+.hpbar>i{background:linear-gradient(90deg,#8e1f2e,#d0453a)}
+.enbar>i{background:linear-gradient(90deg,#24508e,#4fa3d8)}
+.xpbar>i,.meter>i{background:linear-gradient(90deg,#8a6420,#e6c27a)}
+.xprow .lv{border-radius:3px}
+.act{background:radial-gradient(circle at 50% 35%,#2e2430,#120e14);border:1.5px solid rgba(201,162,74,.5);box-shadow:0 4px 12px rgba(0,0,0,.6)}
+.act.big{border-color:rgba(217,178,94,.8)}
+#pausebtn,#mute,#charbtn,#autobtn{background:rgba(14,11,16,.85);border:1px solid var(--line)}
+#autobtn.on{background:linear-gradient(180deg,#6fcf97,#2f7a4e);color:#06140c}
+#prompt{border-radius:4px;background:rgba(14,11,16,.88);border:1px solid rgba(217,178,94,.6)}
+#banner{color:#f0dca8;text-shadow:0 2px 0 #000,0 0 30px rgba(217,178,94,.45)}
+.gtile,.lootrow .lic,.gdic,.sic,.beltslot{border-radius:4px}
+.npcline{font-family:'Barlow',sans-serif;font-style:italic;color:#d8ccb8}
+.tile{background:linear-gradient(180deg,rgba(34,27,34,.94),rgba(16,12,18,.94));border:1px solid var(--line)}
+.tile b{font-family:'Cinzel',serif;color:#f0dca8}
+.stat{border-radius:4px;background:rgba(0,0,0,.3)}
+.attr{border-radius:4px;background:rgba(0,0,0,.3)}
+.attr .plus{border-radius:4px}
+.attr .plus::before,.attr .plus::after{background:#f3dca0}
 </style>
 </head>
 <body>

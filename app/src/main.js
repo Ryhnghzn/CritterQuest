@@ -300,8 +300,8 @@ async function changeGear(action) {
   openCharPanel();
 }
 
-// classId + look with the visible gear, for the paper doll
-const avatarOf = (c) => ({ classId: c.classId, look: { ...c.look, gear: dollGear(c) } });
+// classId + look with the visible gear, plus what drives the auras (unique effects, level)
+const avatarOf = (c) => ({ classId: c.classId, look: { ...c.look, gear: dollGear(c) }, fx: gearEffects(c), level: c.level });
 
 async function allocateInTown(add) {
   const next = allocate(current, add, Date.now());

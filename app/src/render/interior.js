@@ -5,6 +5,7 @@ import { INTERIORS } from '../data/town.js';
 import { OUT } from '../art/sprites.js';
 import { npcAt } from '../town/town.js';
 import { TAU, ink, lin, shadow, shade, actor, tag, plate } from './paint.js';
+import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { drawNpc, doorFade } from './town.js';
 
 const AMBIENT = 'rgba(10,6,22,.5)';
@@ -101,7 +102,11 @@ export class InteriorRenderer {
     if (avatar) {
       const moving = Math.min(1, Math.hypot(town.moveX, town.moveY));
       this.walk += moving * 0.22;
-      items.push({ y: town.y, draw: () => actor(g, town.x, town.y, avatar.classId, avatar.look, { t, moving, walk: this.walk }, town.facing) });
+      items.push({ y: town.y, draw: () => {
+        levelRing(g, town.x, town.y + 10, avatar.level || 1, t);
+        auraBack(g, town.x, town.y + 10, avatar.fx, t);
+        actor(g, town.x, town.y, avatar.classId, avatar.look, { t, moving, walk: this.walk }, town.facing);
+      } });
     }
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.draw();
@@ -116,6 +121,7 @@ export class InteriorRenderer {
     v.begin(cx, cy);
     glow(g, r, t);
     for (const p of npcs) tag(g, p.n, p.x, p.y, t, town.near === p.n);
+    if (town && avatar) auraFront(g, town.x, town.y + 10, avatar.fx, bestRarity(avatar.look.gear), t);
     plate(g, 'Keluar', r.w / 2, r.h - 6, '#2a2440');
     v.vignetteOverlay();
     doorFade(v, town);

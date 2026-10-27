@@ -35,7 +35,7 @@ export function tag(g, n, x, y0, t, near) {
   g.lineWidth = 1.6; g.strokeStyle = near ? '#fff' : 'rgba(255,255,255,.35)'; g.stroke();
   g.save(); g.translate(x, y); drawIcon(g, ROLE_ICON[n.role], 16); g.restore();
   if (near) {
-    g.font = '600 9px Fredoka, system-ui, sans-serif';
+    g.font = '600 9px Barlow, system-ui, sans-serif';
     g.textAlign = 'center';
     g.lineWidth = 3; g.strokeStyle = 'rgba(20,14,40,.9)';
     g.strokeText(n.name, x, y - 16);
@@ -45,7 +45,7 @@ export function tag(g, n, x, y0, t, near) {
 
 // small text plate (shop names over doors)
 export function plate(g, text, x, y, fill = '#3a2620') {
-  g.font = '700 8px Fredoka, system-ui, sans-serif';
+  g.font = '700 8px Barlow, system-ui, sans-serif';
   const w = g.measureText(text).width + 12;
   g.beginPath(); g.roundRect(x - w / 2, y - 7, w, 14, 4); ink(g, fill, 1.4);
   g.textAlign = 'center'; g.textBaseline = 'middle';

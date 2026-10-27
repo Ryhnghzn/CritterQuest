@@ -5,6 +5,7 @@
 // → armour → arms → head, hair (hidden under most helms) → helm → weapon.
 // Gear shapes come from art/gear.js (one per look variant).
 import { drawWeapon, drawHelm, drawArmor, drawBoot, helmHidesHair, INK } from './gear.js';
+import { RARITIES } from '../data/items.js';
 
 const TAU = Math.PI * 2;
 const SKIN = ['#e3bfa3', '#b98a6e'];
@@ -29,6 +30,14 @@ export const HAIR_PALETTE = [
   ['#4f74a8', '#2f4a74'],
   ['#dcdbe6', '#9e9cb0'],
 ];
+
+// Epik and up glow in their rarity colour (canvas shadow, pulsing)
+function glowOn(g, piece, t) {
+  if (!piece || piece.rarity < 3) return;
+  g.shadowColor = RARITIES[piece.rarity].color;
+  g.shadowBlur = (piece.rarity - 1) * 2.5 * (0.75 + 0.25 * Math.sin(t * 3));
+}
+function glowOff(g) { g.shadowBlur = 0; }
 
 function lin(g, y0, y1, c0, c1) {
   const gr = g.createLinearGradient(0, y0, 0, y1);
@@ -175,7 +184,7 @@ export function drawDoll(g, classId, look, pose = {}) {
   ink(g, lin(g, -28 + bob, bot, cMain, cShade));
   g.beginPath(); g.moveTo(-4, -25 + bob); g.quadraticCurveTo(-4.8, -21 + bob, -4, -18 + bob); g.lineWidth = 0.6; g.strokeStyle = 'rgba(255,255,255,.12)'; g.stroke();
   CLASS_FRONT[classId]?.(g, bob);
-  if (gear.armor) drawArmor(g, gear.armor.tier, -27.8 + bob, -15.5 + bob, 6.3, t);
+  if (gear.armor) { glowOn(g, gear.armor, t); drawArmor(g, gear.armor.tier, -27.8 + bob, -15.5 + bob, 6.3, t); glowOff(g); }
   // belt
   g.beginPath(); g.rect(-5, -16.4 + bob, 10, 1.6); ink(g, '#2a1e1a', 0.6);
 
@@ -213,14 +222,16 @@ export function drawDoll(g, classId, look, pose = {}) {
   } else {
     g.beginPath(); g.moveTo(hx + hr * 0.38, hy + 3.5); g.lineTo(hx + hr * 0.7, hy + (hurt ? 3.9 : 3.3)); g.lineWidth = 0.55; g.strokeStyle = '#6e4a40'; g.stroke();
   }
-  if (gear.helm) drawHelm(g, gear.helm.tier, hx, hy, hr, t);
+  if (gear.helm) { glowOn(g, gear.helm, t); drawHelm(g, gear.helm.tier, hx, hy, hr, t); glowOff(g); }
 
   // front arm, weapon, hand on the grip
   const handX = 5.5 - swing * 0.5 + attack * 5, handY = -17 + bob - attack * 4;
   limb(g, 4.5, -26 + bob, handX, handY, 2.8, cMain);
   if (gear.weapon && classId) {
     g.save(); g.translate(handX, handY); g.rotate(HOLD[classId](attack));
+    glowOn(g, gear.weapon, t);
     drawWeapon(g, classId, gear.weapon.tier, t);
+    glowOff(g);
     g.restore();
   }
   g.beginPath(); g.arc(handX, handY, 1.6, 0, TAU); ink(g, SKIN[0], 0.7);

@@ -8,6 +8,7 @@ import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
 import { ENEMIES } from '../data/enemies.js';
 import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
 import { drawGearIcon } from '../art/gear.js';
+import { levelRing, auraBack, auraFront, trailRgb, bestRarity } from '../art/aura.js';
 import { RARITIES } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
@@ -141,6 +142,8 @@ export class Renderer {
       g.restore();
     }
     shadow(g, game.px, game.py + 10, 10, 3);
+    levelRing(g, game.px, game.py + 10, game.level, t);
+    auraBack(g, game.px, game.py + 10, game.fx, t);
     aimMarker(g, game.px, game.py, game.aimX, game.aimY);
     if (this.avatar && !blink) {
       g.save();
@@ -161,6 +164,7 @@ export class Renderer {
     for (const h of game.hits) drawHit(g, h, this.avatar, t);
     if (game.buffT > 0) shoutAura(g, game.px, game.py, t, Math.min(1, game.buffT * 2));
     potionAuras(g, game, t);
+    if (this.avatar) auraFront(g, game.px, game.py + 10, game.fx, bestRarity(this.avatar.look.gear), t);
 
     // particles (additive glow)
     g.save(); g.globalCompositeOperation = 'lighter';
@@ -177,7 +181,7 @@ export class Renderer {
     g.textAlign = 'center';
     g.lineJoin = 'round';
     for (const f of game.floaters) {
-      g.font = f.big ? '700 13px Fredoka, system-ui, sans-serif' : '600 9px Fredoka, system-ui, sans-serif';
+      g.font = f.big ? '700 13px Barlow, system-ui, sans-serif' : '600 9px Barlow, system-ui, sans-serif';
       g.globalAlpha = Math.min(1, f.life * 2);
       g.lineWidth = 3; g.strokeStyle = 'rgba(30,20,60,.85)';
       g.strokeText(f.text, f.x, f.y);
@@ -237,7 +241,7 @@ function roomGlow(g, game, t) {
   decorGlow(g, game.room, game.dungeon.theme, t);
   for (const p of game.portals || []) portalSwirl(g, p, game.clearT, t);
   g.restore();
-  g.font = '600 9px Fredoka, system-ui, sans-serif';
+  g.font = '600 9px Barlow, system-ui, sans-serif';
   g.textAlign = 'center';
   for (const p of game.portals || []) {
     g.globalAlpha = p.armed ? 1 : 0.45;
@@ -277,12 +281,26 @@ function shadow(g, x, y, rx, ry) {
 const SLASH = { warrior: '255,214,120', default: '255,255,255' };
 
 // Visual for one attack instance (run/hits.js); k = remaining life 1 → 0.
+// streak behind a projectile in the weapon's rarity colour
+function weaponTrail(g, h, avatar) {
+  const rgb = trailRgb(avatar?.look?.gear);
+  if (!rgb) return;
+  g.save(); g.translate(h.x, h.y); g.rotate(h.angle);
+  const gr = g.createLinearGradient(-36, 0, 0, 0);
+  gr.addColorStop(0, `rgba(${rgb},0)`); gr.addColorStop(1, `rgba(${rgb},.85)`);
+  g.globalCompositeOperation = 'lighter';
+  g.beginPath(); g.moveTo(-36, 0); g.lineTo(0, -2); g.lineTo(0, 2); g.closePath();
+  g.fillStyle = gr; g.fill();
+  g.restore();
+}
+
 function drawHit(g, h, avatar, t) {
+  if (h.fx === 'arrow' || h.fx === 'dagger') weaponTrail(g, h, avatar);
   const k = Math.max(0, h.life / h.maxLife);
   const p = 1 - k;
   if (h.fx === 'slash') {
     const a0 = h.angle - h.arc / 2, sweep = h.arc * Math.min(1, p * 2.4);
-    const col = SLASH[avatar?.classId] || SLASH.default;
+    const col = trailRgb(avatar?.look?.gear) || SLASH[avatar?.classId] || SLASH.default; // weapon rarity colours the swing
     g.save();
     g.globalAlpha = Math.min(1, k * 1.5);
     g.beginPath();
