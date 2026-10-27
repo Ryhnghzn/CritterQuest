@@ -5,6 +5,7 @@ import {
 } from './character.js';
 
 const NOW = 1761436800000;
+const pots = (o = {}) => ({ red: 0, big: 0, shield: 0, wind: 0, rage: 0, ...o });
 const make = (over = {}) => createCharacter(
   { slot: 0, name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior', ...over }, NOW,
 );
@@ -26,10 +27,10 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 3, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 4, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0,
-      hp: null, potions: 0,
+      hp: null, potions: pots(), belt: ['red', 'big', 'shield', 'rage'],
       upgrades: { hp: 0, atk: 0, magnet: 0 },
       attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
       inventory: [],
@@ -89,34 +90,38 @@ describe('HP & potion', () => {
   });
 
   it('potion memulihkan 40% HP maks, tidak melebihi maks', () => {
-    const c = usePotion({ ...make(), hp: 20, potions: 2 }, NOW);
+    const c = usePotion({ ...make(), hp: 20, potions: pots({ red: 2 }) }, 'red', NOW);
     expect(c.hp).toBe(76);
-    expect(c.potions).toBe(1);
-    expect(usePotion({ ...make(), hp: 130, potions: 1 }, NOW).hp).toBeNull();
+    expect(c.potions.red).toBe(1);
+    expect(usePotion({ ...make(), hp: 130, potions: pots({ red: 1 }) }, 'red', NOW).hp).toBeNull();
+    expect(usePotion({ ...make(), hp: 20, potions: pots({ big: 1 }) }, 'big', NOW).hp).toBe(132);
   });
 
-  it('tanpa potion atau HP penuh: tidak berubah', () => {
-    const none = { ...make(), hp: 20, potions: 0 };
-    expect(usePotion(none, NOW)).toBe(none);
-    const full = { ...make(), potions: 3 };
-    expect(usePotion(full, NOW)).toBe(full);
+  it('tanpa potion, HP penuh, atau ramuan buff di kota: tidak berubah', () => {
+    const none = { ...make(), hp: 20 };
+    expect(usePotion(none, 'red', NOW)).toBe(none);
+    const full = { ...make(), potions: pots({ red: 3 }) };
+    expect(usePotion(full, 'red', NOW)).toBe(full);
+    const buff = { ...make(), hp: 20, potions: pots({ rage: 3 }) };
+    expect(usePotion(buff, 'rage', NOW)).toBe(buff);
+    expect(usePotion(buff, null, NOW)).toBe(buff);
   });
 });
 
 const trip = (over = {}) => ({
-  exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 0, cleared: false, died: false, hp: 100, potions: 0, ...over,
+  exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 0, cleared: false, died: false, hp: 100, potions: pots(), ...over,
 });
 
 describe('applyTrip', () => {
   it('pulang: semua hadiah dibawa, HP disimpan, rekor naik', () => {
     const before = { ...make(), gold: 5, records: { bestFloor: 2, clears: 0, trips: 4, kills: 10, bossKills: 0 } };
-    const { char, levelsGained, goldLost } = applyTrip(before, trip({ exp: 55, gold: 40, kills: 30, bossKills: 1, floor: 3, hp: 77, potions: 2 }), NOW + 5);
+    const { char, levelsGained, goldLost } = applyTrip(before, trip({ exp: 55, gold: 40, kills: 30, bossKills: 1, floor: 3, hp: 77, potions: pots({ red: 2, wind: 1 }) }), NOW + 5);
     expect(char.level).toBe(2);
     expect(levelsGained).toBe(1);
     expect(char.gold).toBe(45);
     expect(goldLost).toBe(0);
     expect(char.hp).toBe(77);
-    expect(char.potions).toBe(2);
+    expect(char.potions).toEqual(pots({ red: 2, wind: 1 }));
     expect(char.records).toEqual({ bestFloor: 3, clears: 0, trips: 5, kills: 40, bossKills: 1 });
     expect(char.updatedAt).toBe(NOW + 5);
     expect(before.records.trips).toBe(4);
@@ -182,7 +187,7 @@ describe('poin stat', () => {
   });
 
   it('poin yang dipakai di dungeon ikut tersimpan bersama hasil perjalanan', () => {
-    const trip = { exp: 130, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: true, hp: 1, potions: 0, attrs: { agi: 6 } };
+    const trip = { exp: 130, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: true, hp: 1, potions: pots(), attrs: { agi: 6 } };
     const { char } = applyTrip(make(), trip, NOW);
     expect(char.level).toBe(3);
     expect(char.attrs.agi).toBe(6);
@@ -192,7 +197,7 @@ describe('poin stat', () => {
 
 describe('gear dari perjalanan', () => {
   const gear = (id) => ({ id, slot: 'helm', classId: null, variant: 0, rarity: 1, itemLevel: 2, base: { maxHp: 15 }, bonuses: [{ stat: 'crit', value: 1 }], unique: null });
-  const trip = (over) => ({ exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: false, hp: 50, potions: 0, ...over });
+  const trip = (over) => ({ exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: false, hp: 50, potions: pots(), ...over });
 
   it('pulang: semua gear masuk tas', () => {
     const r = applyTrip(make(), trip({ items: [gear('a'), gear('b')] }), NOW);

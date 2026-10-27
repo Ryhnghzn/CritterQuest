@@ -14,7 +14,8 @@ import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from '
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
-import { innRest, buyPotion } from './meta/shop.js';
+import { innRest, buyPotion, setBelt } from './meta/shop.js';
+import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
@@ -40,6 +41,7 @@ let slots = [];        // last store.loadSlots()
 let current = null;    // character being played (save data)
 let town = null;       // town/town.js state while in town
 let townNpc = null;    // NPC whose dialog is open
+const talkIdx = {};    // townsfolk: which line they say next (npc id → index)
 let townSaveT = 0;
 let tripAttrs = {};    // points spent in the dungeon, saved with the trip result
 
@@ -92,6 +94,7 @@ function setUI(hud, controls) {
   $('autobtn').classList.toggle('hidden', !controls || hud !== 'run');
   $('charbtn').classList.toggle('hidden', !controls);
   $('actions').classList.toggle('hidden', !controls);
+  $('belt').classList.toggle('hidden', !controls);
   document.body.classList.toggle('playing', controls && hud === 'run');
   document.body.classList.toggle('intown', hud === 'town');
   if (!controls || hud !== 'town') $('prompt').classList.add('hidden');
@@ -175,12 +178,15 @@ function syncHp() {
 }
 
 function openNpc(npc, message = null) {
+  if (npc.role === 'talk' && screen !== 'npc') talkIdx[npc.id] = (talkIdx[npc.id] ?? -1) + 1; // next line each chat
   townNpc = npc;
   syncHp();
   renderNpc($('npc'), npc, {
     char: current, hp: town.hp, maxHp: town.maxHp, message,
+    line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
     onInn: () => serve(innRest, 'Kamu tidur nyenyak. HP pulih penuh!'),
-    onBuyPotion: () => serve(buyPotion, 'Satu ramuan merah untukmu. Hehehe.'),
+    onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), `${POTIONS[id].name}, segar dari kuali. Hehehe.`),
+    onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
     onEnter: enterDungeon,
     onClose: closeTownOverlay,
   });
@@ -188,8 +194,15 @@ function openNpc(npc, message = null) {
   showTownOverlay('npc');
 }
 
-const REFUSE = { full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan.' }, gold: 'Koinmu belum cukup.' };
+const REFUSE = { full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' }, gold: 'Koinmu belum cukup.' };
 
+// Belt slot cycles: empty → each potion type in turn → empty.
+function nextBeltPotion(char, slot) {
+  const order = [null, ...POTION_IDS];
+  return order[(order.indexOf(char.belt[slot]) + 1) % order.length];
+}
+
+// Runs a shop action (char, now) → { ok, char } | { ok: false, reason }, saves, redraws the dialog.
 async function serve(action, okText) {
   const r = action(current, Date.now());
   if (!r.ok) {
@@ -198,9 +211,9 @@ async function serve(action, okText) {
   }
   current = r.char;
   town.hp = currentHp(current);
-  sfx.heart();
+  if (okText) sfx.heart(); else sfx.pickCard();
   const err = await saveCurrent();
-  openNpc(townNpc, { text: err ? `Gagal menyimpan: ${err}` : okText, ok: !err });
+  openNpc(townNpc, err ? { text: `Gagal menyimpan: ${err}`, ok: false } : okText && { text: okText, ok: true });
   updateTownHUD(current, town);
 }
 
@@ -258,10 +271,16 @@ function townPause() {
   showTownOverlay('pause');
 }
 
-async function drinkInTown() {
+// Town: only healing potions do anything (buffs are for the dungeon).
+async function drinkInTown(slot) {
   syncHp();
-  const next = usePotion(current, Date.now());
-  if (next === current) { toast(current.potions <= 0 ? 'Tidak punya ramuan.' : 'HP sudah penuh.'); return; }
+  const id = current.belt[slot];
+  const next = usePotion(current, id, Date.now());
+  if (next === current) {
+    toast(!id ? 'Slot sabuk kosong.' : current.potions[id] <= 0 ? 'Tidak punya ramuan itu.'
+      : !isHeal(id) ? 'Ramuan ini hanya berguna di dungeon.' : 'HP sudah penuh.');
+    return;
+  }
   current = next;
   town.hp = currentHp(current);
   sfx.heart();
@@ -272,7 +291,7 @@ async function drinkInTown() {
 // ——— dungeon ———
 // The character is saved at the gate; closing the browser mid-dungeon returns
 // to this state (spec §13.4).
-async function enterDungeon() {
+async function enterDungeon(floor = 1) {
   syncHp();
   await saveCurrent();
   townNpc = null;
@@ -280,7 +299,7 @@ async function enterDungeon() {
   ensureAudio(); startMusic();
   const stats = finalStats(current);
   game.start({
-    classId: current.classId, stats, hp: currentHp(current), potions: current.potions,
+    classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
   });
   tripAttrs = {};
@@ -370,11 +389,19 @@ let hudT = 0;
 function tickTown(pressed) {
   if (screen !== null) return;
   stepTown(town, { move: { x: input.x, y: input.y } }, STEP);
+  if (town.entered) sfx.dodge();
   if ((pressed.has('skill2') || pressed.has('talk')) && town.near) { openNpc(town.near); return; }
-  if (pressed.has('potion')) drinkInTown();
+  const slot = potionSlot(pressed);
+  if (slot >= 0) drinkInTown(slot);
   // regen is only written to the save now and then
   townSaveT += STEP;
   if (townSaveT > 10) { townSaveT = 0; syncHp(); saveCurrent(); }
+}
+
+// belt slot pressed this frame (keys 1–4 / R / belt buttons), or -1
+function potionSlot(pressed) {
+  for (let i = 0; i < 4; i++) if (pressed.has(`pot${i}`)) return i;
+  return -1;
 }
 
 function tickRun(pressed) {
@@ -383,7 +410,7 @@ function tickRun(pressed) {
   const attack = input.touch ? input.attackHeld : input.mouse.down;
   game.intent = {
     move: { x: input.x, y: input.y }, aimAt, attack, auto,
-    dodge: pressed.has('dodge'), skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), potion: pressed.has('potion'),
+    dodge: pressed.has('dodge'), skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), potion: potionSlot(pressed),
   };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);

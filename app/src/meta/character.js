@@ -2,7 +2,8 @@
 // Every function returns new objects; save data is never mutated in place.
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
-import { POTION, DEATH } from '../data/dungeon.js';
+import { DEATH } from '../data/dungeon.js';
+import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
 import { SAVE_VERSION, validateSlot, nameLength } from './schema.js';
 
 export function validateName(name) {
@@ -19,7 +20,9 @@ export function createCharacter({ slot, name, look, classId }, now) {
     classId,
     level: 1, exp: 0,
     gold: 0,
-    hp: null, potions: 0,
+    hp: null,
+    potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
+    belt: DEFAULT_BELT.slice(),
     upgrades: { hp: 0, atk: 0, magnet: 0 },
     attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
     inventory: [],
@@ -97,14 +100,15 @@ function withHp(c, hp) {
   return c;
 }
 
-// Drink a potion outside a run (town). Returns the same object when nothing changes.
-export function usePotion(char, now) {
+// Drink a healing potion outside a run (town); buffs only work in the dungeon.
+// Returns the same object when nothing changes.
+export function usePotion(char, id, now) {
   const max = finalStats(char).maxHp;
   const hp = currentHp(char);
-  if (char.potions <= 0 || hp >= max) return char;
+  if (!id || !isHeal(id) || char.potions[id] <= 0 || hp >= max) return char;
   const c = structuredClone(char);
-  c.potions -= 1;
-  withHp(c, hp + max * POTION.heal);
+  c.potions[id] -= 1;
+  withHp(c, hp + max * POTIONS[id].heal);
   c.updatedAt = now;
   return c;
 }
@@ -121,7 +125,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   const c = (trip.attrs && allocate(leveled.char, trip.attrs, now)) || leveled.char;
   const gold = trip.died ? Math.floor(trip.gold * DEATH.goldKeep) : trip.gold;
   c.gold += gold;
-  c.potions = trip.potions;
+  c.potions = { ...trip.potions };
   withHp(c, trip.died ? Math.max(1, finalStats(c).maxHp * DEATH.wakeHp) : trip.hp);
   const r = c.records;
   r.bestFloor = Math.max(r.bestFloor, trip.floor);

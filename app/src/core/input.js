@@ -22,7 +22,8 @@ const KEYMAP = {
   KeyA: [-1, 0], ArrowLeft: [-1, 0],
   KeyD: [1, 0], ArrowRight: [1, 0],
 };
-const ACTION_KEYS = { Space: 'dodge', KeyQ: 'skill1', KeyE: 'skill2', KeyR: 'potion' };
+// R and 1–4 drink from the potion belt (spec §15.2)
+const ACTION_KEYS = { Space: 'dodge', KeyQ: 'skill1', KeyE: 'skill2', KeyR: 'pot0', Digit1: 'pot0', Digit2: 'pot1', Digit3: 'pot2', Digit4: 'pot3' };
 
 addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, textarea')) return; // typing a name, not playing

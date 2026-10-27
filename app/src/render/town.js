@@ -2,12 +2,10 @@
 // lit by lamps, windows, torches and a bonfire. NPCs and the player are paper
 // dolls drawn in y order; flames, portal and name tags glow over the darkness.
 import { TOWN } from '../data/town.js';
-import { drawDoll } from '../art/doll.js';
 import { drawIcon, OUT } from '../art/sprites.js';
-
-const TAU = Math.PI * 2;
-const DOLL = 0.82;
-const ROLE_ICON = { inn: 'inn', potion: 'potion', gear: 'pow', gate: 'arm' };
+import { npcAt } from '../town/town.js';
+import { TAU, ink, lin, shadow, shade, actor, tag, plate } from './paint.js';
+import { InteriorRenderer } from './interior.js';
 const WARM = '255,170,80';
 const AMBIENT = 'rgba(8,6,26,.8)';
 
@@ -68,6 +66,7 @@ export class TownRenderer {
     this.lighting = lighting;
     this.camX = TOWN.spawn.x; this.camY = TOWN.spawn.y - 60;
     this.walk = 0;
+    this.inside = new InteriorRenderer(view, lighting);
     view.onResize.push(() => this.rebake());
     this.rebake();
   }
@@ -82,6 +81,7 @@ export class TownRenderer {
 
   // town: state from town/town.js, or null behind the menus; avatar: { classId, look }
   draw(town, t, avatar) {
+    if (town && town.map !== 'town') { this.inside.draw(town, t, avatar); return; }
     const v = this.view, g = v.ctx;
     let tx, ty;
     if (town) { tx = town.x; ty = town.y - 20; }
@@ -114,9 +114,9 @@ export class TownRenderer {
     for (const d of TOWN.decor) items.push({ y: d.y, draw: () => decor(g, d) });
     for (const l of TOWN.lamps) items.push({ y: l.y, draw: () => lampPost(g, l) });
     items.push({ y: fireY + 8, draw: () => bonfireBase(g) });
-    for (const n of TOWN.npcs) {
-      items.push({ y: n.y, draw: () => actor(g, n.x, n.y, null, { ...n.look, outfit: n.outfit }, { t: t + n.x }, town && town.x < n.x ? -1 : 1) });
-    }
+    const nt = town ? town.t : t;
+    const npcs = TOWN.npcs.map((n) => ({ n, ...npcAt(n, nt) }));
+    for (const p of npcs) items.push({ y: p.y, draw: () => drawNpc(g, p, t, town) });
     if (town && avatar) {
       const moving = Math.min(1, Math.hypot(town.moveX, town.moveY));
       this.walk += moving * 0.22;
@@ -133,9 +133,26 @@ export class TownRenderer {
     v.begin(cx, cy);
     flames(g, t);
     portal(g, t);
-    for (const n of TOWN.npcs) tag(g, n, t, town?.near === n);
+    for (const p of npcs) tag(g, p.n, p.x, p.y, t, town?.near === p.n);
     v.vignetteOverlay();
+    doorFade(v, town);
   }
+}
+
+// NPC paper doll at its current spot; standing ones face the player, strollers walk.
+export function drawNpc(g, p, t, town) {
+  const n = p.n;
+  const facing = p.moving ? p.facing : town && town.x < p.x ? -1 : 1;
+  actor(g, p.x, p.y, null, { ...n.look, outfit: n.outfit }, { t: t + n.x, moving: p.moving, walk: t * 5 * p.moving }, facing, n.scale || 1);
+}
+
+// brief black fade after walking through a door
+export function doorFade(v, town) {
+  if (!town || town.doorT <= 0) return;
+  const g = v.ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = `rgba(5,4,12,${Math.min(1, town.doorT / 0.35)})`;
+  g.fillRect(0, 0, v.c.width, v.c.height);
 }
 
 function lights(t, town) {
@@ -144,6 +161,10 @@ function lights(t, town) {
   for (const l of TOWN.lamps) out.push({ x: l.x, y: l.y - 40, r: 130, rgb: WARM, tint: 0.1 });
   for (const b of houses) for (const w of windowsOf(b)) out.push({ x: w.x, y: w.y + 20, r: 70, rgb: WARM, tint: 0.08 });
   for (const b of houses) out.push({ x: b.x + b.w / 2, y: b.y + b.h + 10, r: 60, rgb: WARM, tint: 0.05 });
+  for (const b of houses) {
+    if (b.theme === 'potion') out.push({ x: b.x + b.w / 2 - 52, y: b.y + b.h, r: 70, rgb: '90,255,140', tint: 0.14 });
+    if (b.theme === 'smith') out.push({ x: b.x + b.w - 45, y: b.y - 10, r: 70, rgb: '255,120,40', tint: 0.12 });
+  }
   out.push({ x: gate.x + 18, y: gate.y + 4, r: 95 * f, rgb: WARM, tint: 0.12 });
   out.push({ x: gate.x + gate.w - 18, y: gate.y + 4, r: 95 * f, rgb: WARM, tint: 0.12 });
   out.push({ x: gate.x + gate.w / 2, y: gate.y + 55, r: 120, rgb: '150,100,255', tint: 0.16 });
@@ -151,9 +172,6 @@ function lights(t, town) {
   return out;
 }
 
-function ink(g, fill, lw = 1.5) { g.fillStyle = fill; g.fill(); g.lineWidth = lw; g.strokeStyle = OUT; g.stroke(); }
-function lin(g, y0, y1, c0, c1) { const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, c0); gr.addColorStop(1, c1); return gr; }
-function shadow(g, x, y, rx, ry) { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill(); }
 
 function plaza(g) {
   g.beginPath(); g.ellipse(fireX, fireY + 30, 190, 130, 0, 0, TAU);
@@ -227,13 +245,68 @@ function house(g, b, t) {
     g.beginPath(); g.roundRect(sx - 16, sy - 2, 32, 26, 6); ink(g, '#d9b98a', 1.8);
     g.save(); g.translate(sx, sy + 11); drawIcon(g, b.sign, 20); g.restore();
   }
+  facade(g, b, t);
+  plate(g, b.name, dx, y + h - 60);
 }
 
-function shade(hex, k) {
-  const n = parseInt(hex.slice(1), 16);
-  const c = (v) => Math.max(0, Math.min(255, Math.round(v * k)));
-  return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`;
+// what makes each shop look like what it sells
+function facade(g, b, t) {
+  const { x, y, w, h } = b;
+  const dx = x + w / 2, base = y + h;
+  if (b.theme === 'inn') {
+    // flower boxes and a lantern by the door
+    for (const wnd of windowsOf(b)) {
+      for (let i = 0; i < 4; i++) {
+        g.beginPath(); g.arc(wnd.x - 13 + i * 8.5, wnd.y + 12, 3.2, 0, TAU);
+        ink(g, ['#ff6b8b', '#ffd36b', '#ff9ab0', '#c9b8ff'][i], 1);
+      }
+    }
+    g.beginPath(); g.moveTo(dx - 26, base - 44); g.lineTo(dx - 22, base - 44); g.stroke();
+    g.beginPath(); g.roundRect(dx - 31, base - 44, 10, 13, 3); ink(g, '#ffd98a', 1.4);
+  } else if (b.theme === 'potion') {
+    // bubbling cauldron left of the door + hanging herbs
+    const cx = dx - 52, cy = base + 10;
+    shadow(g, cx, cy + 4, 15, 4);
+    g.beginPath(); g.ellipse(cx, cy - 6, 15, 12, 0, 0, Math.PI); g.lineTo(cx - 15, cy - 8); g.closePath(); ink(g, '#2a2638', 1.6);
+    g.beginPath(); g.ellipse(cx, cy - 8, 13, 4, 0, 0, TAU); ink(g, '#5aff8c', 1.2);
+    for (let i = 0; i < 3; i++) {
+      const ph = (t * 0.8 + i / 3) % 1;
+      g.beginPath(); g.arc(cx - 6 + i * 6, cy - 10 - ph * 16, 2.4 * (1 - ph) + 0.5, 0, TAU);
+      g.fillStyle = `rgba(140,255,170,${1 - ph})`; g.fill();
+    }
+    for (let i = 0; i < 4; i++) {
+      const hx = x + 30 + i * 12;
+      g.beginPath(); g.moveTo(hx, base - 80); g.lineTo(hx, base - 70); g.lineWidth = 1; g.strokeStyle = '#2a1d19'; g.stroke();
+      g.beginPath(); g.ellipse(hx, base - 64, 3.5, 7, 0, 0, TAU); ink(g, i % 2 ? '#6aa84f' : '#8fbf5a', 1);
+    }
+  } else if (b.theme === 'smith') {
+    // stone front, anvil and a glowing forge window
+    g.save();
+    g.beginPath(); g.rect(x + 6, y + h * 0.46 - 6, w - 12, h * 0.54 + 6); g.clip();
+    g.fillStyle = 'rgba(70,72,90,.55)'; g.fillRect(x, y, w, h);
+    g.strokeStyle = 'rgba(0,0,0,.3)'; g.lineWidth = 1;
+    for (let yy = y + h * 0.46; yy < base; yy += 12) for (let xx = x + ((yy / 12) % 2) * 10; xx < x + w; xx += 20) { g.strokeRect(xx, yy, 20, 12); }
+    g.restore();
+    const ax = dx + 52, ay = base + 12;
+    shadow(g, ax, ay + 2, 15, 4);
+    g.beginPath(); g.moveTo(ax - 14, ay - 14); g.lineTo(ax + 16, ay - 14); g.lineTo(ax + 10, ay - 8); g.lineTo(ax + 5, ay - 8);
+    g.lineTo(ax + 5, ay); g.lineTo(ax - 6, ay); g.lineTo(ax - 6, ay - 8); g.lineTo(ax - 14, ay - 10); g.closePath(); ink(g, '#4a4866', 1.5);
+    for (let i = 0; i < 4; i++) {
+      const ph = (t * 1.3 + i / 4) % 1;
+      g.beginPath(); g.arc(x + w - 45 + Math.sin(i * 5 + t * 3) * 6, y - 8 - ph * 34, 1.4 * (1 - ph) + 0.4, 0, TAU);
+      g.fillStyle = `rgba(255,170,80,${1 - ph})`; g.fill();
+    }
+  } else if (b.theme === 'guild') {
+    // two banners and a shield crest over the door
+    for (const [bx, col] of [[x + 22, '#b33a3a'], [x + w - 34, '#d4a017']]) {
+      const sway = Math.sin(t * 1.5 + bx) * 1.5;
+      g.beginPath(); g.moveTo(bx, base - 92); g.lineTo(bx + 12, base - 92); g.lineTo(bx + 12 + sway, base - 50); g.lineTo(bx + 6 + sway, base - 56); g.lineTo(bx + sway, base - 50); g.closePath();
+      ink(g, col, 1.4);
+    }
+    g.save(); g.translate(dx, base - 78); drawIcon(g, 'arm', 18); g.restore();
+  }
 }
+
 
 function fence(g, b) {
   g.fillStyle = '#4c3324';
@@ -343,31 +416,7 @@ function decor(g, d) {
   }
 }
 
-function actor(g, x, y, classId, look, pose, facing) {
-  shadow(g, x, y + 10, 10, 3);
-  g.save();
-  g.translate(x, y + 10);
-  g.scale(DOLL * facing, DOLL);
-  drawDoll(g, classId, look, pose);
-  g.restore();
-}
 
-// role icon above an NPC; name when the player is close
-function tag(g, n, t, near) {
-  const bob = Math.sin(t * 3 + n.x) * 2;
-  const y = n.y - 40 + bob;
-  g.beginPath(); g.arc(n.x, y, 11, 0, TAU);
-  g.fillStyle = near ? 'rgba(255,201,77,.95)' : 'rgba(30,24,60,.85)'; g.fill();
-  g.lineWidth = 1.6; g.strokeStyle = near ? '#fff' : 'rgba(255,255,255,.35)'; g.stroke();
-  g.save(); g.translate(n.x, y); drawIcon(g, ROLE_ICON[n.role], 16); g.restore();
-  if (near) {
-    g.font = '600 9px Fredoka, system-ui, sans-serif';
-    g.textAlign = 'center';
-    g.lineWidth = 3; g.strokeStyle = 'rgba(20,14,40,.9)';
-    g.strokeText(n.name, n.x, y - 16);
-    g.fillStyle = '#fff'; g.fillText(n.name, n.x, y - 16);
-  }
-}
 
 function fog(g, t) {
   for (let i = 0; i < 4; i++) {

@@ -1,6 +1,5 @@
 // Town economy and dungeon trips (spec §13).
 export const INN = { base: 10, perLevel: 2 };          // price = base + perLevel × level
-export const POTION = { price: 25, max: 5, heal: 0.4, cooldown: 1 };  // heal = fraction of max HP
 export const TOWN_REGEN = 0.01;                         // fraction of max HP per second in town
 export const DEATH = { goldKeep: 0.5, gearKeepChance: 0.5, wakeHp: 0.1 };
 

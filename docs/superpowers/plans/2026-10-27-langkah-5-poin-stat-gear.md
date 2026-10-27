@@ -17,6 +17,13 @@ Empat bagian; tiap bagian dicek manual oleh pemilik sebelum commit.
 - [x] `meta/itemgen.js` (RNG ber-seed) — tes
 - [x] Musuh elite; drop gear di dungeon (sinar warna rarity), dibawa pulang; hilang 50% saat mati — tes
 
+## Sela — Kota, ramuan, lanjut dungeon (§15, permintaan 2026-10-27)
+- [x] Rumah bisa dimasuki: 4 interior bertema, penjual di dalam, papan nama & tampilan luar sesuai jualan — tes
+- [x] Warga yang bisa diajak bicara (kota & dalam rumah), sebagian berjalan-jalan — tes
+- [x] 5 ramuan + sabuk 4 slot, perisai/angin/amuk di dungeon, save v4 — tes
+- [x] Pilih lantai di gerbang (sampai lantai terdalam) — tes
+- [x] Verifikasi: tes, build, screenshot PC & HP
+
 ## 5C — Inventori & paper doll
 - [ ] Tab Gear di panel Karakter: daftar, pasang/lepas, perbandingan stat, buang
 - [ ] Gear di `finalStats`; efek khusus di ronde — tes

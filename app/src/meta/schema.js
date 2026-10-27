@@ -4,10 +4,10 @@ import { CLASSES } from '../data/classes.js';
 import {
   SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL,
 } from '../data/balance.js';
-import { POTION } from '../data/dungeon.js';
+import { POTION_IDS, POTION_MAX, BELT_SIZE, DEFAULT_BELT } from '../data/potions.js';
 import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -28,6 +28,12 @@ export const MIGRATIONS = {
     if (isObj(d.equipped)) out.equipped = { ...d.equipped, boots: null, amulet: null };
     return out;
   },
+  // v4 (spec §15.2): potions per type + a 4-slot belt; old potions are red ones.
+  3: (d) => ({
+    ...d, version: 4,
+    potions: { ...Object.fromEntries(POTION_IDS.map((id) => [id, 0])), red: d.potions },
+    belt: DEFAULT_BELT.slice(),
+  }),
 };
 
 export const EQUIP_SLOTS = ['weapon', 'helm', 'armor', 'boots', 'amulet', 'ring'];
@@ -86,7 +92,10 @@ export function validateSlot(d) {
   need(isInt(d.exp, 0), 'exp');
   need(isInt(d.gold, 0), 'gold');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
-  need(isInt(d.potions, 0, POTION.max), 'potions');
+  need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))
+    && Object.keys(d.potions).length === POTION_IDS.length, 'potions');
+  need(Array.isArray(d.belt) && d.belt.length === BELT_SIZE
+    && d.belt.every((id) => id === null || POTION_IDS.includes(id)), 'belt');
   need(isObj(d.upgrades) && UPGRADES.every((k) => isInt(d.upgrades[k], 0)), 'upgrades');
   need(isObj(d.records) && RECORDS.every((k) => isInt(d.records[k], 0)), 'records');
   const attrsOk = isObj(d.attrs) && ATTR_IDS.every((k) => isInt(d.attrs[k], 0));

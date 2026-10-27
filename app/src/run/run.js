@@ -3,7 +3,7 @@
 import { rand, rrange, rint, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL } from '../data/balance.js';
 import { expToNext } from '../meta/character.js';
-import { POTION } from '../data/dungeon.js';
+import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
@@ -19,7 +19,11 @@ export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 // EXP gems level the character up right in the dungeon (spec §14.1). A run is one dungeon
 // trip: floor after floor (run/dungeon.js) until a gold portal, death or giving up.
 const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } };
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, potion: false };
+// potion: belt slot to drink from this step (0–3), or -1
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, potion: -1 };
+const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
+// potion buffs: stat → multiplier field on the potion (spec §15.2)
+const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
 
 export class Game {
   constructor() {
@@ -52,7 +56,7 @@ export class Game {
     this.state = ST.OVER;
   }
 
-  reset({ classId, stats, hp = stats.maxHp, potions = 0, level = 1, exp = 0, luk = 0 }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0 }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -79,16 +83,21 @@ export class Game {
     this.wave = 0; this.queue = []; this.queueI = 0; this.spawnT = 0; this.waveGap = 0;
     this.floorT = 0; this.floorClear = false; this.clearT = 0;
     this.portals = []; this.exit = null;
+    this.baseStats = { ...stats }; // final stats before potion buffs
     this.stats = { ...stats, hp };
-    this.potions = potions; this.potionCd = 0;
+    this.potions = { ...potions }; this.belt = belt.slice(); this.potionCd = 0;
+    this.buffs = { wind: 0, rage: 0 }; // seconds left
+    this.shield = 0; this.shieldT = 0; this.shieldMax = 0;
+    this.dodgeCdMul = 1;
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
   }
 
+  // setup.floor: floor to start on (spec §15.3), default 1
   start(setup) {
     this.reset(setup);
-    startFloor(this, 1);
+    startFloor(this, setup.floor || 1);
     this.state = ST.PLAY;
   }
 
@@ -98,8 +107,22 @@ export class Game {
   // plus whatever max HP was added.
   setStats(stats) {
     const hp = Math.min(stats.maxHp, this.stats.hp + Math.max(0, stats.maxHp - this.stats.maxHp));
+    this.baseStats = { ...stats };
     this.stats = { ...stats, hp };
+    this.applyBuffs();
     this.skillCdMax = CLASSES[this.classId].skills.map((sk) => skillCooldown(stats, sk));
+  }
+
+  // stats = base stats × active potion buffs
+  applyBuffs() {
+    for (const [id, keys] of Object.entries(BUFF_STATS)) {
+      for (const k of keys) this.stats[k] = this.baseStats[k];
+    }
+    for (const [id, keys] of Object.entries(BUFF_STATS)) {
+      if (this.buffs[id] <= 0) continue;
+      for (const k of keys) this.stats[k] *= 1 + POTIONS[id][k];
+    }
+    this.dodgeCdMul = this.buffs.wind > 0 ? POTIONS.wind.dodgeCd : 1;
   }
 
   // ——————————————— fixed step ———————————————
@@ -156,17 +179,43 @@ export class Game {
     return e;
   }
 
-  // Drink: heal a fraction of max HP, short lockout between drinks.
+  // Drink from a belt slot (spec §15.2): heal, shield or a timed buff; one
+  // shared lockout between drinks. Buffs tick down here too.
   stepPotion(dt) {
     if (this.potionCd > 0) this.potionCd -= dt;
-    if (!this.intent.potion || this.potionCd > 0 || this.potions <= 0) return;
-    const s = this.stats;
-    if (s.hp >= s.maxHp) return;
-    s.hp = Math.min(s.maxHp, s.hp + s.maxHp * POTION.heal);
-    this.potions -= 1;
-    this.potionCd = POTION.cooldown;
-    this.addFloater(this.px, this.py - 30, `+${Math.round(s.maxHp * POTION.heal)}`, '#ff8aa3');
-    sfx.heart();
+    let changed = false;
+    for (const id in this.buffs) {
+      if (this.buffs[id] <= 0) continue;
+      this.buffs[id] -= dt;
+      if (this.buffs[id] <= 0) changed = true;
+    }
+    if (this.shieldT > 0 && (this.shieldT -= dt) <= 0) this.shield = 0;
+    const id = this.belt[this.intent.potion];
+    if (id && this.potionCd <= 0 && this.potions[id] > 0 && this.drink(id)) {
+      this.potions[id] -= 1;
+      this.potionCd = POTION_CD;
+      sfx.heart();
+    }
+    if (changed) this.applyBuffs();
+  }
+
+  // Applies one potion; false when it would do nothing (healing at full HP).
+  drink(id) {
+    const p = POTIONS[id], s = this.stats;
+    if (p.heal) {
+      if (s.hp >= s.maxHp) return false;
+      s.hp = Math.min(s.maxHp, s.hp + s.maxHp * p.heal);
+      this.addFloater(this.px, this.py - 30, `+${Math.round(s.maxHp * p.heal)}`, p.light);
+    } else if (p.shield) {
+      this.shieldMax = this.shield = s.maxHp * p.shield;
+      this.shieldT = p.dur;
+      this.addFloater(this.px, this.py - 30, 'Perisai!', p.light);
+    } else {
+      this.buffs[id] = p.dur;
+      this.applyBuffs();
+      this.addFloater(this.px, this.py - 30, p.name.replace('Ramuan ', '') + '!', p.light);
+    }
+    return true;
   }
 
   // ——————————————— combat ———————————————
@@ -213,7 +262,8 @@ export class Game {
       // touch damage
       const rr = e.r + 10;
       if (this.invuln <= 0 && this.dodgeInv <= 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr) {
-        const dmg = Math.max(1, e.dmg - this.stats.def) * this.dmgTakenMul;
+        let dmg = Math.max(1, e.dmg - this.stats.def) * this.dmgTakenMul;
+        if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; }
         this.stats.hp -= dmg;
         this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
         sfx.hurt();

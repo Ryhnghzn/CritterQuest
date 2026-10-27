@@ -4,7 +4,7 @@ import { el, button, svgIcon, stage } from './screens.js';
 import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { CHAR_LEVEL_MAX, ATTRS } from '../data/balance.js';
-import { POTION } from '../data/dungeon.js';
+import { POTION_IDS } from '../data/potions.js';
 import { expToNext, finalStats, freePoints, allocate } from '../meta/character.js';
 
 const STAT_ROWS = [
@@ -50,7 +50,7 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave })
   cls.style.setProperty('--c', color);
   const line = el('div', 'note');
   line.append(maxed ? 'Level maks' : `EXP ${char.exp} / ${need}`, ' · ');
-  line.append(el('span', 'gold', `${char.gold} koin`), ` · Ramuan ${char.potions}/${POTION.max}`);
+  line.append(el('span', 'gold', `${char.gold} koin`), ` · Ramuan ${POTION_IDS.reduce((n, id) => n + char.potions[id], 0)}`);
   const info = el('div', 'info');
   const top = el('div');
   top.append(cls);

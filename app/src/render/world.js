@@ -267,6 +267,7 @@ export class Renderer {
     // attack instances
     for (const h of game.hits) drawHit(g, h, this.avatar, t);
     if (game.buffT > 0) shoutAura(g, game.px, game.py, t, Math.min(1, game.buffT * 2));
+    potionAuras(g, game, t);
 
     // particles (additive glow)
     g.save(); g.globalCompositeOperation = 'lighter';
@@ -574,6 +575,38 @@ function shoutAura(g, x, y, t, a) {
   g.fillStyle = 'rgba(255,214,120,.12)'; g.fill();
   g.lineWidth = 2.5; g.strokeStyle = 'rgba(255,214,120,.8)'; g.stroke();
   g.restore();
+}
+
+// potion effects on the player: shield bubble, wind streaks, rage glow
+function potionAuras(g, game, t) {
+  const x = game.px, y = game.py - 6;
+  if (game.shield > 0) {
+    const k = Math.min(1, game.shield / (game.shieldMax || 1));
+    g.save();
+    g.globalAlpha = 0.35 + 0.5 * k;
+    const gr = g.createRadialGradient(x - 6, y - 8, 4, x, y, 24);
+    gr.addColorStop(0, 'rgba(200,230,255,.05)'); gr.addColorStop(0.8, 'rgba(120,190,255,.25)'); gr.addColorStop(1, 'rgba(160,210,255,.7)');
+    g.beginPath(); g.arc(x, y, 24 + Math.sin(t * 5) * 0.8, 0, TAU);
+    g.fillStyle = gr; g.fill();
+    g.lineWidth = 1.6; g.strokeStyle = 'rgba(190,225,255,.9)'; g.stroke();
+    g.restore();
+  }
+  if (game.buffs.rage > 0) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const gr = g.createRadialGradient(x, y + 6, 4, x, y + 6, 30);
+    gr.addColorStop(0, 'rgba(255,120,40,.35)'); gr.addColorStop(1, 'rgba(255,80,20,0)');
+    g.fillStyle = gr; g.fillRect(x - 30, y - 24, 60, 60);
+    g.restore();
+  }
+  if (game.buffs.wind > 0) {
+    g.save(); g.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const a = t * 6 + i * 2.1;
+      g.beginPath(); g.arc(x, y + 8, 18 + i * 3, a, a + 1.2);
+      g.lineWidth = 1.6; g.strokeStyle = 'rgba(143,245,200,.7)'; g.stroke();
+    }
+    g.restore();
+  }
 }
 
 // soft chevron on a ring around the player pointing where attacks will go

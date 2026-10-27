@@ -151,6 +151,20 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 .attr .plus:disabled{opacity:.3;pointer-events:none}
 .attrs .row{justify-content:flex-end;margin-top:4px}
 .stat b.up{color:var(--mint)}
+.shoplist{display:flex;flex-direction:column;gap:6px;width:100%}
+.shoprow{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;align-items:center;gap:10px;text-align:left;padding:6px 8px;border-radius:12px;background:var(--glass2)}
+.shoprow .sic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:rgba(0,0,0,.3)}
+.shoprow .stx{display:flex;flex-direction:column;min-width:0}
+.shoprow .stx b{font-size:15px}
+.shoprow .stx span{font-size:12px;color:var(--dim)}
+.shoprow .have{font-size:13px;font-weight:700;color:var(--dim)}
+.shoprow .buy{display:flex;align-items:center;gap:5px;padding:7px 12px}
+.shoprow .buy:disabled{opacity:.4;pointer-events:none}
+.beltedit{display:flex;flex-direction:column;gap:6px;align-items:center}
+.beltslot{position:relative;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;cursor:pointer;
+  background:var(--glass2);border:1.5px dashed var(--line);font-family:inherit;color:var(--ink)}
+.beltslot kbd{position:absolute;right:-4px;bottom:-4px;font-size:10px;padding:0 5px}
+.floors{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
 .loot{display:flex;flex-direction:column;gap:6px;width:min(460px,100%);max-height:34vh;overflow-y:auto;padding:2px}
 .lootrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;text-align:left;padding:5px 12px 5px 6px;border-radius:12px;
   background:var(--glass2);border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);animation:rise .35s ease both}
@@ -209,9 +223,18 @@ h2.h.bad{color:var(--coral)}
 /* action buttons (dodge now; attack + skills in 3C/3D), pause, joystick */
 #actions{position:absolute;right:16px;bottom:16px;display:grid;gap:14px 12px;align-items:end;justify-items:center;
   grid-template-areas:"q e dodge"}
-#act-q{grid-area:q}#act-e{grid-area:e}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}#act-potion{grid-area:pot}#act-talk{grid-area:atk}
-#actions{grid-template-areas:"pot q e dodge"}
-body.touch #actions{grid-template-areas:". q e" "pot dodge atk";right:14px;bottom:14px}
+#act-q{grid-area:q}#act-e{grid-area:e}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}#act-talk{grid-area:atk}
+body.touch #actions{grid-template-areas:". q e" ". dodge atk";right:14px;bottom:14px}
+#belt{position:absolute;left:16px;bottom:16px;display:flex;gap:10px}
+#belt .act{width:50px;height:50px}
+#belt .act.none{opacity:.3}
+#belt .act .ic{pointer-events:none}
+body.touch #belt{left:auto;right:14px;transform:none;bottom:224px;gap:8px}
+body.touch #belt .act{width:46px;height:46px}
+body.intown.touch #belt{bottom:110px}
+#buffs{display:flex;gap:6px;flex-wrap:wrap;min-height:0}
+#buffs:empty{display:none}
+.buff{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;color:#14102a;background:var(--c)}
 body.intown #act-q,body.intown #act-e,body.intown #act-dodge,body.intown #act-attack{display:none}
 body:not(.intown) #act-talk,body:not(.touch) #act-talk,body.intown:not(.near) #act-talk{display:none}
 .act .cnt{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;display:grid;place-items:center;
@@ -248,6 +271,7 @@ body.touch .act kbd{display:none}
 body.playing:not(.touch) canvas#game{cursor:crosshair}
 #townhud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:18px;
   background:rgba(22,17,46,.6);border:1.5px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);width:min(300px,calc(100vw - 140px))}
+@media (max-width:560px){#townhud{width:calc(100vw - 24px);top:66px}}
 #townhud .trow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:16px}
 #townhud .trow b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tmeta{display:flex;gap:6px}
@@ -317,14 +341,20 @@ body.touch #prompt kbd{display:none}
       <span class="hchip"><svg class="i"><use href="#i-skull"/></svg><b id="kills">0</b></span>
       <span class="hchip gold"><span class="coin"></span><b id="gold">0</b></span>
     </div>
+    <div id="buffs"></div>
   </div>
   <div id="actions" class="hidden">
     <button class="act touchbtn" id="act-q" data-action="skill1" aria-label="Skill Q"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>Q</kbd></button>
     <button class="act touchbtn" id="act-e" data-action="skill2" aria-label="Skill E"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>E</kbd></button>
-    <button class="act touchbtn" id="act-potion" data-action="potion" aria-label="Minum ramuan"><svg class="i"><use href="#i-flask"/></svg><b class="cnt">0</b><i class="cd"></i><kbd>R</kbd></button>
     <button class="act big touchbtn" id="act-talk" data-action="talk" aria-label="Bicara"><svg class="i"><use href="#i-chat"/></svg></button>
     <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd>Spasi</kbd></button>
     <button class="act big touchbtn" id="act-attack" data-hold="attackHeld" aria-label="Serang"><svg class="i"><use href="#i-sword"/></svg></button>
+  </div>
+  <div id="belt" class="hidden">
+    <button class="act touchbtn belt" id="pot0" data-action="pot0" aria-label="Ramuan slot 1"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>1</kbd></button>
+    <button class="act touchbtn belt" id="pot1" data-action="pot1" aria-label="Ramuan slot 2"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>2</kbd></button>
+    <button class="act touchbtn belt" id="pot2" data-action="pot2" aria-label="Ramuan slot 3"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>3</kbd></button>
+    <button class="act touchbtn belt" id="pot3" data-action="pot3" aria-label="Ramuan slot 4"><span class="ic"></span><b class="cnt">0</b><i class="cd"></i><kbd>4</kbd></button>
   </div>
   <div id="joy" class="hidden"><i></i></div>
   <button id="pausebtn" class="touchbtn hidden" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>

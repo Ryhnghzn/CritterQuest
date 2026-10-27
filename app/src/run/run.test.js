@@ -87,40 +87,92 @@ describe('stat kelas', () => {
   });
 });
 
-describe('HP awal & potion di ronde', () => {
+describe('HP awal & ramuan di dungeon', () => {
+  const pots = (o = {}) => ({ red: 0, big: 0, shield: 0, wind: 0, rage: 0, ...o });
   const start = (over) => {
     const g = new Game();
     g.start({ ...setup('warrior'), ...over });
     g.spawnT = 1e9;
     return g;
   };
-  const step = (g, intent = {}) => {
-    g.intent = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, ...intent };
+  // potion: belt slot (0–3) or -1
+  const step = (g, potion = -1) => {
+    g.intent = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, potion };
     g.step(1 / 60);
   };
+  const wait = (g, s) => { for (let i = 0; i < s * 60; i++) step(g); };
 
   it('ronde dimulai dengan HP karakter saat ini', () => {
-    expect(start({ hp: 40, potions: 2 }).stats.hp).toBe(40);
+    expect(start({ hp: 40 }).stats.hp).toBe(40);
     expect(start({}).stats.hp).toBe(140);
   });
 
-  it('potion memulihkan 40% HP maks, jeda 1 detik, jumlah berkurang', () => {
-    const g = start({ hp: 20, potions: 2 });
-    step(g, { potion: true });
+  it('bisa mulai di lantai lain', () => {
+    const g = start({ floor: 4 });
+    expect(g.floor).toBe(4);
+    expect(g.result().floor).toBe(4);
+  });
+
+  it('Ramuan Merah (slot 1): pulih 40% HP maks, jeda 1 detik, stok berkurang', () => {
+    const g = start({ hp: 20, potions: pots({ red: 2 }) });
+    step(g, 0);
     expect(g.stats.hp).toBeCloseTo(76);
-    expect(g.potions).toBe(1);
-    step(g, { potion: true });
-    expect(g.potions).toBe(1);
-    for (let i = 0; i < 61; i++) step(g);
-    step(g, { potion: true });
-    expect(g.potions).toBe(0);
+    expect(g.potions.red).toBe(1);
+    step(g, 0);
+    expect(g.potions.red).toBe(1);
+    wait(g, 1.1);
+    step(g, 0);
+    expect(g.potions.red).toBe(0);
     expect(g.stats.hp).toBe(132);
   });
 
-  it('tanpa potion tidak terjadi apa-apa', () => {
-    const g = start({ hp: 20, potions: 0 });
-    step(g, { potion: true });
-    expect(g.stats.hp).toBe(20);
+  it('ramuan pulih tidak terbuang saat HP penuh; slot kosong / stok habis tidak berbuat apa-apa', () => {
+    const g = start({ potions: pots({ red: 1, big: 0 }) });
+    step(g, 0);
+    expect(g.potions.red).toBe(1);
+    g.stats.hp = 10;
+    step(g, 1);
+    expect(g.stats.hp).toBe(10);
+    const h = start({ hp: 10, potions: pots({ red: 3 }), belt: [null, 'red', null, null] });
+    step(h, 0);
+    expect(h.stats.hp).toBe(10);
+  });
+
+  it('Ramuan Besar pulih 80%', () => {
+    const g = start({ hp: 10, potions: pots({ big: 1 }) });
+    step(g, 1);
+    expect(g.stats.hp).toBeCloseTo(10 + 112);
+  });
+
+  it('Ramuan Perisai menyerap damage sentuh selama 8 detik', () => {
+    const g = start({ potions: pots({ shield: 1 }) });
+    step(g, 2);
+    expect(g.shield).toBeCloseTo(140 * 0.3);
+    const e = g.spawnEnemy('slink'); e.x = 0; e.y = 0; // dmg 8 − def 2
+    step(g);
+    expect(g.stats.hp).toBe(140);
+    expect(g.shield).toBeCloseTo(42 - 6);
+    e.hp = 0;
+    wait(g, 8.1);
+    expect(g.shield).toBe(0);
+  });
+
+  it('Ramuan Angin & Amuk: stat naik selama 10 detik lalu kembali', () => {
+    const g = start({ potions: pots({ wind: 1, rage: 1 }), belt: ['wind', 'rage', null, null] });
+    const base = { ...g.stats };
+    step(g, 0);
+    wait(g, 1.1);
+    step(g, 1);
+    expect(g.stats.moveSpd).toBeCloseTo(base.moveSpd * 1.35);
+    expect(g.stats.atk).toBeCloseTo(base.atk * 1.3);
+    expect(g.stats.atkSpd).toBeCloseTo(base.atkSpd * 1.2);
+    expect(g.dodgeCdMul).toBe(0.5);
+    g.setStats({ ...setup('warrior').stats, atk: 20 }); // poin dibagi di tengah buff
+    expect(g.stats.atk).toBeCloseTo(26);
+    wait(g, 10);
+    expect(g.stats.moveSpd).toBeCloseTo(base.moveSpd);
+    expect(g.stats.atk).toBe(20);
+    expect(g.dodgeCdMul).toBe(1);
   });
 });
 

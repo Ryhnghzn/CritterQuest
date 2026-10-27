@@ -461,3 +461,33 @@ Stat akhir = dasar kelas + pertumbuhan level + atribut + gear (+ upgrade Pelatih
 ### 14.3 Save versi 3
 
 `migrate()` v2 → v3: tambah `attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 }`; `equipped` mendapat `boots: null, amulet: null`. Validasi: jumlah `attrs` ≤ `3 × (level − 1)`.
+
+## 15. Rumah Bisa Dimasuki, Ramuan Beragam, Lanjut Dungeon (perubahan 2026-10-27)
+
+Atas permintaan pemilik. Mengalahkan §13.2 bila bertentangan.
+
+### 15.1 Rumah & warga
+
+- Empat rumah bisa dimasuki dengan berjalan ke pintunya (keluar lewat celah pintu di dinding bawah, layar memudar singkat): **Penginapan**, **Toko Ramuan**, **Pandai Besi** (Toko Gear), **Balai Petualang** (menggantikan "Rumah"). Penjual berada **di dalam** rumah.
+- Tampilan luar sesuai yang dijual: Penginapan (pot bunga, lentera), Toko Ramuan (kuali hijau menggelegak, tanaman obat tergantung), Pandai Besi (dinding batu, landasan tempa, percikan api), Balai Petualang (dua panji, lambang perisai); papan nama di atas pintu.
+- Interior (`data/town.js` `INTERIORS`): lantai kayu/batu, dinding belakang, perabot padat (meja, konter, perapian, tungku, kuali, rak senjata, papan tugas, dsb.), cahaya hangat sesuai sumbernya.
+- **Warga** (`role: 'talk'`): di kota (Dara, Kakek Odo, Pip, Prajurit Gani, Sela) dan di dalam rumah (tamu Penginapan, murid penyihir, murid pandai besi, para petualang di Balai). Tiap kali diajak bicara mengucapkan kalimat berikutnya dari daftar. Sebagian berjalan-jalan pelan di sekitar tempatnya.
+- Posisi pemain tetap tidak disimpan; memuat slot selalu mulai di alun-alun.
+
+### 15.2 Ramuan
+
+| Ramuan | Efek | Harga |
+|---|---|---|
+| Merah | Pulih 40% HP | 25 |
+| Besar | Pulih 80% HP | 60 |
+| Perisai | Perisai menyerap damage sebesar 30% HP maks, 8 detik | 45 |
+| Angin | Gerak +35%, jeda dodge −50%, 10 detik | 40 |
+| Amuk | ATK +30%, kec. serang +20%, 10 detik | 50 |
+
+- Maks 5 per jenis. **Sabuk 4 slot**: tombol 1–4 (R = slot 1) / tombol sabuk di HUD; isi sabuk diatur di Toko Ramuan (ketuk slot untuk ganti jenis). Jeda minum 1 detik bersama.
+- Di kota hanya ramuan pulih yang bisa diminum. Buff aktif tampil sebagai chip di HUD dungeon; perisai tampil sebagai gelembung di sekitar pemain.
+- **Save versi 4:** `potions` menjadi `{ red, big, shield, wind, rage }`, tambah `belt: [4 jenis | null]`; `migrate()` v3 → v4: ramuan lama menjadi Ramuan Merah, sabuk bawaan `red, big, shield, rage`.
+
+### 15.3 Lanjut dungeon
+
+Penjaga gerbang: tombol utama **"Lanjut ke Lantai X"** (X = lantai terdalam yang pernah dicapai, `records.bestFloor`), plus tombol untuk tiap lantai di atasnya. Perjalanan berjalan seperti biasa dari lantai itu.

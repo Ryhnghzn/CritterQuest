@@ -2,6 +2,8 @@
 // pickups, ground decor and icons. Shapes are drawn in world units around the
 // origin; bakeAll(scale) renders them to offscreen canvases at the current
 // device scale and is re-run when the screen size changes.
+import { POTIONS } from '../data/potions.js';
+
 export const OUT = '#2a2140'; // shared outline colour
 
 const TAU = Math.PI * 2;
@@ -26,6 +28,22 @@ function eye(g, x, y, r, look = 0.25, iris = OUT) {
 function brow(g, x0, y0, x1, y1, w) {
   g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1);
   g.lineCap = 'round'; g.lineWidth = w; g.strokeStyle = OUT; g.stroke();
+}
+
+// potion flask in the potion's colours; big = taller neck + star
+function flask(g, p, big) {
+  const k = big ? 1.12 : 1;
+  g.save(); g.scale(k, k);
+  g.beginPath(); g.roundRect(-3, -11, 6, 6, 1.5); ink(g, '#c8874e', 1.3);
+  g.beginPath(); g.moveTo(-3, -5); g.lineTo(-3, -3); g.arc(0, 4, 8, -Math.PI / 2 - 0.38, Math.PI * 1.5 + 0.38); g.lineTo(3, -5); g.closePath();
+  ink(g, grad(g, -4, 12, p.light, p.color), 1.5);
+  shine(g, -3, 1, 2, 3.2, 0.3, 0.6);
+  if (big) {
+    g.beginPath();
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU - Math.PI / 2, r = i % 2 ? 1.6 : 3.6; g.lineTo(2.5 + Math.cos(a) * r, 5 + Math.sin(a) * r); }
+    g.closePath(); g.fillStyle = '#fff6c2'; g.fill();
+  }
+  g.restore();
 }
 
 // ——— enemies: drawn facing right at radius r ———
@@ -327,6 +345,13 @@ const ICONS = {
     ink(g, grad(g, -10, -2, '#c9f0ff', '#4fa8e8'), 1.2);
   },
   // ——— town ———
+  talk(g) { // speech bubble
+    g.beginPath(); g.roundRect(-10, -9, 20, 14, 6); g.moveTo(-3, 5); g.lineTo(-6, 10); g.lineTo(2, 5);
+    ink(g, '#fffaf0', 1.5);
+    g.fillStyle = OUT;
+    for (const x of [-5, 0, 5]) { g.beginPath(); g.arc(x, -2, 1.5, 0, TAU); g.fill(); }
+  },
+  ...Object.fromEntries(Object.entries(POTIONS).map(([id, p]) => [`pot_${id}`, (g) => flask(g, p, id === 'big')])),
   inn(g) { // frothy mug
     g.beginPath(); g.roundRect(-8, -5, 13, 15, 3); ink(g, grad(g, -5, 10, '#ffd36b', '#e09a2a'), 1.5);
     g.beginPath(); g.arc(5, 2, 4.5, -Math.PI / 2, Math.PI / 2); g.lineWidth = 4.4; g.strokeStyle = OUT; g.stroke();

@@ -1,6 +1,7 @@
-// Town services (spec §13.2): Inn and potion shop. Pure — returns
+// Town services (spec §13.2, §15.2): Inn, potion shop, potion belt. Pure — returns
 // { ok: true, char } with a new character, or { ok: false, reason } ('full' | 'gold').
-import { INN, POTION } from '../data/dungeon.js';
+import { INN } from '../data/dungeon.js';
+import { POTIONS, POTION_MAX, BELT_SIZE } from '../data/potions.js';
 import { currentHp, finalStats } from './character.js';
 
 export function innPrice(char) { return INN.base + INN.perLevel * char.level; }
@@ -16,12 +17,23 @@ export function innRest(char, now) {
   return { ok: true, char: c };
 }
 
-export function buyPotion(char, now) {
-  if (char.potions >= POTION.max) return { ok: false, reason: 'full' };
-  if (char.gold < POTION.price) return { ok: false, reason: 'gold' };
+export function buyPotion(char, id, now) {
+  const p = POTIONS[id];
+  if (char.potions[id] >= POTION_MAX) return { ok: false, reason: 'full' };
+  if (char.gold < p.price) return { ok: false, reason: 'gold' };
   const c = structuredClone(char);
-  c.gold -= POTION.price;
-  c.potions += 1;
+  c.gold -= p.price;
+  c.potions[id] += 1;
+  c.updatedAt = now;
+  return { ok: true, char: c };
+}
+
+// Put a potion type (or null) in belt slot i; a type sits in one slot at most.
+export function setBelt(char, i, id, now) {
+  if (!Number.isInteger(i) || i < 0 || i >= BELT_SIZE || (id !== null && !POTIONS[id])) return { ok: false, reason: 'bad' };
+  const c = structuredClone(char);
+  c.belt = c.belt.map((x) => (x === id ? null : x));
+  c.belt[i] = id;
   c.updatedAt = now;
   return { ok: true, char: c };
 }

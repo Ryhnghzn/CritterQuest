@@ -36,7 +36,7 @@ export function stepPlayer(run, intent, dt) {
     run.dodgeY = moving ? my / ml : run.aimY;
     run.dodgeT = DODGE.duration;
     run.dashSpeed = DODGE_SPEED;
-    run.dodgeCd = DODGE.cooldown;
+    run.dodgeCd = DODGE.cooldown * run.dodgeCdMul;
     run.dodgeInv = DODGE.invuln;
     sfx.dodge();
   }
