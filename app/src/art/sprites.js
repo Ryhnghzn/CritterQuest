@@ -135,6 +135,13 @@ export const PICKUP_ART = {
     ink(g, grad(g, -6, 6, '#ff8aa3', '#e8264f'), 1.3);
     shine(g, -2.8, -2.8, 1.6, 0.9, -0.6, 0.7);
   },
+  coin(g) {
+    ellipse(g, 0, 0, 5.2, 5.2);
+    ink(g, grad(g, -5, 5, '#fff1b3', '#e09a10'), 1.3);
+    ellipse(g, 0, 0, 3, 3);
+    g.lineWidth = 1; g.strokeStyle = 'rgba(122,74,0,.7)'; g.stroke();
+    shine(g, -1.8, -2, 1.4, 0.8, -0.6, 0.8);
+  },
 };
 function diamond(g, k, c0, c1) {
   g.beginPath();
@@ -262,6 +269,21 @@ const ICONS = {
     ink(g, grad(g, -10, 11, '#9fd0ff', '#3f7ee0'), 1.6);
     g.beginPath(); g.moveTo(0, -6); g.lineTo(0, 7); g.moveTo(-5.5, -2); g.lineTo(5.5, -2);
     g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,.75)'; g.stroke();
+  },
+  // ——— town ———
+  inn(g) { // frothy mug
+    g.beginPath(); g.roundRect(-8, -5, 13, 15, 3); ink(g, grad(g, -5, 10, '#ffd36b', '#e09a2a'), 1.5);
+    g.beginPath(); g.arc(5, 2, 4.5, -Math.PI / 2, Math.PI / 2); g.lineWidth = 4.4; g.strokeStyle = OUT; g.stroke();
+    g.lineWidth = 2; g.strokeStyle = '#ffd36b'; g.stroke();
+    g.beginPath();
+    for (const [x, r] of [[-6, 3.6], [-1.5, 4.4], [3, 3.6]]) { g.moveTo(x + r, -6); g.arc(x, -6, r, 0, TAU); }
+    ink(g, '#fffaf0', 1.2);
+  },
+  potion(g) { // round flask
+    g.beginPath(); g.roundRect(-3, -11, 6, 6, 1.5); ink(g, '#c8874e', 1.3);
+    g.beginPath(); g.moveTo(-3, -5); g.lineTo(-3, -3); g.arc(0, 4, 8, -Math.PI / 2 - 0.38, Math.PI * 1.5 + 0.38); g.lineTo(3, -5); g.closePath();
+    ink(g, grad(g, -4, 12, '#ff8aa3', '#d0234f'), 1.5);
+    shine(g, -3, 1, 2, 3.2, 0.3, 0.6);
   },
   // ——— class skills ———
   spin(g) {

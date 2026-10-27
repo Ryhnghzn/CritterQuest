@@ -1,19 +1,23 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
-import { rand, rrange, rint, pick, resetRng } from '../core/rng.js';
+import { rand, rrange, rint, resetRng } from '../core/rng.js';
 import { XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
+import { POTION } from '../data/dungeon.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { ENEMIES, WAVES, BOSS_EVERY, MAX_ENEMIES } from '../data/enemies.js';
+import { ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
+import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropCoins, hpMul } from './dungeon.js';
 
 export const ST = { TITLE: 0, PLAY: 1, LEVELUP: 2, PAUSE: 3, OVER: 4 };
 
-// What a run starts from: class and final stats (meta/character.js finalStats).
+// What a run starts from: class, final stats (meta/character.js finalStats),
+// and the HP / potions the character carries in (spec §13.3). A run is one dungeon
+// trip: floor after floor (run/dungeon.js) until a gold portal, death or giving up.
 const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } };
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, potion: false };
 
 export class Game {
   constructor() {
@@ -23,8 +27,6 @@ export class Game {
     this.particles = [];
     this.floaters = [];
     this.state = ST.TITLE;
-    // record to beat; the caller seeds it from the character's save
-    this.best = { time: 0, kills: 0, level: 0 };
     this.shake = 0;
     this.reset(DEFAULT_START);
     const run = this;
@@ -35,23 +37,20 @@ export class Game {
     };
   }
 
-  updateBest() {
-    if (this.time <= this.best.time) return;
-    this.best = { time: Math.floor(this.time), kills: this.kills, level: this.level };
-  }
-
-  // Rewards earned so far; applied to the save by meta/ (spec §10).
+  // Rewards earned so far; meta/character.js applyTrip turns them into save data (spec §13.4).
   result() {
-    return { time: this.time, kills: this.kills, exp: this.expGained, gold: 0, items: [], bossKills: this.bossKills };
+    return {
+      time: this.time, kills: this.kills, exp: this.expGained, gold: this.gold, items: [],
+      bossKills: this.bossKills, floor: this.deepest, cleared: this.cleared,
+    };
   }
 
-  // Pause → Menyerah: ends the run, everything earned is kept (spec §5.6).
+  // Pause → Menyerah: ends the trip; the caller treats it like dying (spec §13.4).
   surrender() {
     this.state = ST.OVER;
-    this.updateBest();
   }
 
-  reset({ classId, stats }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = 0 }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -69,12 +68,17 @@ export class Game {
     this.dashSpeed = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0; this.level = 1;
-    this.expGained = 0; this.bossKills = 0;
+    this.expGained = 0; this.bossKills = 0; this.gold = 0;
     this.xp = 0; this.xpNeed = XP_BASE + XP_GROWTH;
-    this.spawnT = 0; this.bossAt = BOSS_EVERY; this.bossAlive = false;
+    // dungeon progress (run/dungeon.js)
+    this.floor = 0; this.deepest = 0; this.cleared = false; this.returned = false;
+    this.wave = 0; this.queue = []; this.queueI = 0; this.spawnT = 0; this.waveGap = 0;
+    this.floorT = 0; this.floorClear = false; this.clearT = 0;
+    this.portals = []; this.exit = null;
     this.pendingLevels = 0; this.choices = null;
     // run stats: the character's final stats, then multiplied by level-up blessings
-    this.stats = { ...stats, hp: stats.maxHp, dmgMul: 1 };
+    this.stats = { ...stats, hp, dmgMul: 1 };
+    this.potions = potions; this.potionCd = 0;
     this.upCounts = {}; // stat id -> times taken
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
@@ -83,6 +87,7 @@ export class Game {
 
   start(setup) {
     this.reset(setup);
+    startFloor(this, 1);
     this.state = ST.PLAY;
   }
 
@@ -101,55 +106,66 @@ export class Game {
 
     stepAttack(this, this.intent, dt);
     stepSkills(this, this.intent, dt);
+    this.stepPotion(dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
-    this.spawnLogic(dt);
+    stepDungeon(this, dt);
     this.updateEnemies(dt);
     if (this.state !== ST.PLAY) return; // died this step: no gem pickup / level-up after death
     this.updateGems(dt);
     this.updateParticles(dt);
     this.updateFloaters(dt);
+    if (this.exit) this.takeExit();
 
-    // level-up gate
-    if (this.pendingLevels > 0) {
+    // level-up gate (not after going home: the trip is over)
+    if (this.state === ST.PLAY && this.pendingLevels > 0) {
       this.choices = this.rollChoices();
       this.state = ST.LEVELUP;
       sfx.levelup();
     }
   }
 
-  // ——————————————— spawning ———————————————
-  spawnLogic(dt) {
-    const t = this.time;
-    if (t >= this.bossAt && !this.bossAlive) {
-      this.bossAlive = true;
-      this.spawnEnemy('boss');
-      this.showBanner('RAJA MAW DATANG!');
-      sfx.boss();
-    }
-    let wave = WAVES[0];
-    for (const w of WAVES) if (t >= w.at) wave = w;
-    this.spawnT -= dt;
-    if (this.spawnT <= 0 && this.enemies.length < MAX_ENEMIES) {
-      this.spawnT = wave.interval * rrange(0.8, 1.2);
-      const n = wave.batch + Math.floor(t / 200);
-      for (let i = 0; i < n; i++) this.spawnEnemy(pick(wave.types));
-    }
+  // Blue portal: next floor (blessings, EXP and HP carry over). Gold: go home.
+  // Anything still on the ground is picked up on the way out.
+  takeExit() {
+    const kind = this.exit;
+    this.exit = null;
+    for (const g of this.gems) this.pickup(g);
+    this.gems.length = 0;
+    sfx.levelup();
+    if (kind === 'down') startFloor(this, this.floor + 1);
+    else { this.returned = true; this.state = ST.OVER; return; }
+    if (this.pendingLevels > 0) { this.choices = this.rollChoices(); this.state = ST.LEVELUP; }
   }
 
+  // ——————————————— spawning ———————————————
+  // Placed at the player; run/dungeon.js spawnFromLane moves it into a lane.
   spawnEnemy(typeId) {
     const base = ENEMIES[typeId];
-    const hpMul = typeId === 'boss' ? 1 + this.time / 400 : 1 + this.time / 320;
-    const a = rand() * Math.PI * 2;
-    const dist = Math.max(this.viewR || 400, 300) + rrange(60, 200);
+    const hp = base.hp * hpMul(Math.max(1, this.floor));
     const e = {
-      type: typeId, x: this.px + Math.cos(a) * dist, y: this.py + Math.sin(a) * dist,
-      hp: base.hp * hpMul, maxHp: base.hp * hpMul,
+      type: typeId, x: this.px, y: this.py,
+      hp, maxHp: hp,
       speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg,
       r: base.r, xp: base.xp, sprite: base.sprite, score: base.score,
       wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
+      lane: null, entering: false,
     };
     this.enemies.push(e);
+    if (typeId === 'boss') sfx.boss();
     return e;
+  }
+
+  // Drink: heal a fraction of max HP, short lockout between drinks.
+  stepPotion(dt) {
+    if (this.potionCd > 0) this.potionCd -= dt;
+    if (!this.intent.potion || this.potionCd > 0 || this.potions <= 0) return;
+    const s = this.stats;
+    if (s.hp >= s.maxHp) return;
+    s.hp = Math.min(s.maxHp, s.hp + s.maxHp * POTION.heal);
+    this.potions -= 1;
+    this.potionCd = POTION.cooldown;
+    this.addFloater(this.px, this.py - 30, `+${Math.round(s.maxHp * POTION.heal)}`, '#ff8aa3');
+    sfx.heart();
   }
 
   // ——————————————— combat ———————————————
@@ -186,11 +202,13 @@ export class Game {
       if (e.flash > 0) e.flash -= dt;
       if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
-      const a = Math.atan2(this.py - e.y, this.px - e.x);
+      const goal = enemyGoal(this, e);
+      const a = Math.atan2(goal.y - e.y, goal.x - e.x);
       const zig = e.type === 'dart' ? Math.sin(e.wob) * 0.7 : 0;
       e.x += (Math.cos(a + zig) * e.speed + e.kx) * dt;
       e.y += (Math.sin(a + zig) * e.speed + e.ky) * dt;
       e.kx *= 0.86; e.ky *= 0.86;
+      confineEnemy(e);
       // touch damage
       const rr = e.r + 10;
       if (this.invuln <= 0 && this.dodgeInv <= 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr) {
@@ -209,10 +227,9 @@ export class Game {
     this.kills += 1;
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.type === 'boss' ? '#c26bd8' : '#7a45c2', e.type === 'boss' ? 26 : 8);
+    dropCoins(this, e);
     if (e.type === 'boss') {
-      this.bossAlive = false;
       this.bossKills += 1;
-      this.bossAt += BOSS_EVERY;
       this.showBanner('RAJA MAW TUMBANG!');
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2;
@@ -242,23 +259,31 @@ export class Game {
         g.y += (dy / d) * sp * dt;
       }
       if (d2 < 14 * 14) {
-        if (g.heart) {
-          this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + 20);
-          this.addFloater(g.x, g.y, '+20', '#ff5a6e');
-          sfx.heart();
-        } else {
-          this.xp += g.v;
-          this.expGained += g.v;
-          this.addFloater(g.x, g.y, `+${g.v}`, '#8fffc0');
-          sfx.gem();
-          while (this.xp >= this.xpNeed) {
-            this.xp -= this.xpNeed;
-            this.level++;
-            this.xpNeed = XP_BASE + XP_GROWTH * this.level;
-            this.pendingLevels++;
-          }
-        }
+        this.pickup(g);
         G[i] = G[G.length - 1]; G.pop();
+      }
+    }
+  }
+
+  pickup(g) {
+    if (g.heart) {
+      this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + 20);
+      this.addFloater(g.x, g.y, '+20', '#ff5a6e');
+      sfx.heart();
+    } else if (g.coin) {
+      this.gold += g.v;
+      this.addFloater(g.x, g.y, `+${g.v}`, '#ffd166');
+      sfx.gem();
+    } else {
+      this.xp += g.v;
+      this.expGained += g.v;
+      this.addFloater(g.x, g.y, `+${g.v}`, '#8fffc0');
+      sfx.gem();
+      while (this.xp >= this.xpNeed) {
+        this.xp -= this.xpNeed;
+        this.level++;
+        this.xpNeed = XP_BASE + XP_GROWTH * this.level;
+        this.pendingLevels++;
       }
     }
   }
@@ -310,7 +335,6 @@ export class Game {
   die() {
     this.stats.hp = 0;
     this.state = ST.OVER;
-    this.updateBest();
     sfx.gameover();
     this.spawnBurst(this.px, this.py, '#ff5a6e', 30);
   }

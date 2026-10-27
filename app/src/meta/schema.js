@@ -4,15 +4,28 @@ import { CLASSES } from '../data/classes.js';
 import {
   SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX,
 } from '../data/balance.js';
+import { POTION } from '../data/dungeon.js';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
-// MIGRATIONS[v] turns a version-v save into a version-(v+1) save.
-export const MIGRATIONS = {};
+// MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
+// parts are passed through untouched so validation still reports them.
+export const MIGRATIONS = {
+  // v2 (spec §13.5): HP & potions persist between town and dungeon; shop
+  // "starting potions" upgrade dropped; records follow dungeon floors.
+  1: (d) => {
+    const out = { ...d, version: 2, hp: null, potions: 0 };
+    if (isObj(d.upgrades)) { const { potion, ...rest } = d.upgrades; out.upgrades = rest; }
+    if (isObj(d.records)) {
+      out.records = { bestFloor: 0, clears: 0, trips: d.records.runs, kills: d.records.kills, bossKills: d.records.bossKills };
+    }
+    return out;
+  },
+};
 
 const EQUIP_SLOTS = ['weapon', 'helm', 'armor', 'ring'];
-const UPGRADES = ['hp', 'atk', 'magnet', 'potion'];
-const RECORDS = ['bestTime', 'runs', 'kills', 'bossKills'];
+const UPGRADES = ['hp', 'atk', 'magnet'];
+const RECORDS = ['bestFloor', 'clears', 'trips', 'kills', 'bossKills'];
 const BASE_STATS = ['atk', 'maxHp', 'def'];
 const BONUS_STATS = ['atk', 'maxHp', 'atkSpd', 'crit', 'moveSpd', 'cdr'];
 const RARITY_MAX = 3;
@@ -63,6 +76,8 @@ export function validateSlot(d) {
   need(isInt(d.level, 1, CHAR_LEVEL_MAX), 'level');
   need(isInt(d.exp, 0), 'exp');
   need(isInt(d.gold, 0), 'gold');
+  need(d.hp === null || isInt(d.hp, 0), 'hp');
+  need(isInt(d.potions, 0, POTION.max), 'potions');
   need(isObj(d.upgrades) && UPGRADES.every((k) => isInt(d.upgrades[k], 0)), 'upgrades');
   need(isObj(d.records) && RECORDS.every((k) => isInt(d.records[k], 0)), 'records');
 

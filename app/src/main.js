@@ -1,33 +1,46 @@
-// Bootstrap: opens the save, wires the game, renderer, input, audio and the
-// DOM screens together and runs the fixed-timestep loop.
-// Flow (spec §3): Judul → Pilih Slot → Buat Karakter / Kemah → Ronde → Hasil → Kemah.
+// Bootstrap: opens the save, wires scenes, renderers, input, audio and the DOM
+// screens together and runs the fixed-timestep loop.
+// Flow (spec §13.1): Judul → Pilih Slot → [Buat Karakter] → KOTA ⇄ DUNGEON → Hasil Perjalanan → KOTA.
+// Scenes: 'menu' (title/slots/create/results over the town backdrop), 'town', 'run'.
 import { Game, ST } from './run/run.js';
+import { View } from './render/view.js';
+import { Lighting } from './render/light.js';
 import { Renderer } from './render/world.js';
+import { TownRenderer } from './render/town.js';
 import { CLASSES, CLASS_BASE } from './data/classes.js';
 import { iconCanvas } from './art/sprites.js';
 import { input, pollMove, consumePressed } from './core/input.js';
 import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
-import { createCharacter, applyRunResult, finalStats } from './meta/character.js';
+import { createCharacter, applyTrip, finalStats, currentHp, usePotion } from './meta/character.js';
+import { innRest, buyPotion } from './meta/shop.js';
+import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
-import { renderCamp } from './ui/camp.js';
 import { renderResults } from './ui/results.js';
-import { updateHUD, updateActions } from './ui/hud.js';
+import { renderNpc } from './ui/npc.js';
+import { renderCharPanel } from './ui/charpanel.js';
+import { updateHUD, updateActions, updateTownHUD } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
 
 const $ = (id) => document.getElementById(id);
-const canvas = $('game');
+const view = new View($('game'));
+const lighting = new Lighting(view);
+const R = new Renderer(view, lighting);
+const TR = new TownRenderer(view, lighting);
 const game = new Game();
-const R = new Renderer(canvas);
 setupTouch();
 
 let simT = 0;
-let screen = 'title';
-let slots = [];       // last store.loadSlots()
-let current = null;   // character being played (save data)
+let scene = 'menu';
+let screen = 'title';  // visible DOM screen, null = playing/walking
+let slots = [];        // last store.loadSlots()
+let current = null;    // character being played (save data)
+let town = null;       // town/town.js state while in town
+let townNpc = null;    // NPC whose dialog is open
+let townSaveT = 0;
 
 // ——— save + settings ———
 const store = await openStore();
@@ -56,30 +69,56 @@ function saveSettings() {
   store.saveSettings(settings).catch(() => { /* settings are a convenience; ignore */ });
 }
 
-// ——— screens ———
-function showMenu(id) {
-  game.state = ST.TITLE; // not in a run
-  screen = showScreen(id);
-  setRunUI(false, false);
+let toastTimer = 0;
+function toast(text) {
+  $('toast').textContent = text;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 1800);
 }
 
-// HUD visible during a run; action buttons only while actually playing.
-function setRunUI(hud, controls) {
-  $('hud').classList.toggle('hidden', !hud);
+// Writes the character; a failed write keeps playing from memory and says so.
+async function saveCurrent() {
+  try { await store.saveSlot(current); return null; } catch (e) { toast(`Gagal menyimpan: ${e.message}`); return e.message; }
+}
+
+// ——— scene + HUD visibility ———
+// hud: 'none' | 'town' | 'run'; controls: action buttons usable right now
+function setUI(hud, controls) {
+  $('hud').classList.toggle('hidden', hud !== 'run');
+  $('townhud').classList.toggle('hidden', hud !== 'town');
   $('pausebtn').classList.toggle('hidden', !controls);
-  $('autobtn').classList.toggle('hidden', !controls);
+  $('autobtn').classList.toggle('hidden', !controls || hud !== 'run');
+  $('charbtn').classList.toggle('hidden', !controls || hud !== 'town');
   $('actions').classList.toggle('hidden', !controls);
-  document.body.classList.toggle('playing', controls);
+  document.body.classList.toggle('playing', controls && hud === 'run');
+  document.body.classList.toggle('intown', hud === 'town');
+  if (!controls || hud !== 'town') $('prompt').classList.add('hidden');
+}
+
+function showMenu(id) {
+  scene = 'menu';
+  game.state = ST.TITLE;
+  screen = showScreen(id);
+  setUI('none', false);
 }
 
 // overlay during a run (levelup / pause); null = playing
 function showOverlay(id) {
   screen = showScreen(id);
-  setRunUI(true, id === null);
+  setUI('run', id === null);
 }
 
+// overlay in town (npc / charpanel / pause); null = walking
+function showTownOverlay(id) {
+  screen = showScreen(id);
+  setUI('town', id === null);
+}
+
+// ——— menus ———
 async function toSlots() {
   stopMusic();
+  if (scene === 'town') { syncHp(); await saveCurrent(); }
   slots = await store.loadSlots();
   renderSlots($('slotlist'), slots, { onOpen: openSlot, onCreate: toCreate, onDelete: deleteSlot });
   showMenu('slots');
@@ -87,7 +126,7 @@ async function toSlots() {
 
 function openSlot(slot) {
   const e = slots[slot];
-  if (e.status === 'ok') toCamp(e.data);
+  if (e.status === 'ok') enterTown(e.data, 'spawn');
 }
 
 function toCreate(slot) {
@@ -103,7 +142,7 @@ async function createChar(slot, form) {
   // ask the browser not to evict our data (spec §9.3); ignore if unsupported/denied
   if (first && store.persistent) navigator.storage?.persist?.().catch(() => {});
   ensureAudio(); sfx.pickCard();
-  toCamp(char);
+  enterTown(char, 'spawn');
 }
 
 async function deleteSlot(slot) {
@@ -114,41 +153,124 @@ async function deleteSlot(slot) {
   await toSlots();
 }
 
-function toCamp(char) {
+// ——— town ———
+function enterTown(char, at) {
   current = char;
   settings.lastSlot = char.slot;
   saveSettings();
   stopMusic();
-  renderCamp($('camp'), char, { onStart: startRun, onBack: toSlots });
-  showMenu('camp');
+  const s = finalStats(char);
+  town = createTown({ moveSpd: s.moveSpd, hp: currentHp(char), maxHp: s.maxHp, at });
+  scene = 'town';
+  game.state = ST.TITLE;
+  showTownOverlay(null);
+  updateTownHUD(current, town);
 }
 
-// ——— run ———
-function startRun() {
+// Copies the live town HP into the character (whole number, null when full).
+function syncHp() {
+  const hp = Math.floor(town.hp);
+  current = { ...current, hp: hp >= town.maxHp ? null : hp };
+}
+
+function openNpc(npc, message = null) {
+  townNpc = npc;
+  syncHp();
+  renderNpc($('npc'), npc, {
+    char: current, hp: town.hp, maxHp: town.maxHp, message,
+    onInn: () => serve(innRest, 'Kamu tidur nyenyak. HP pulih penuh!'),
+    onBuyPotion: () => serve(buyPotion, 'Satu ramuan merah untukmu. Hehehe.'),
+    onEnter: enterDungeon,
+    onClose: closeTownOverlay,
+  });
+  if (screen !== 'npc') { ensureAudio(); sfx.pickCard(); }
+  showTownOverlay('npc');
+}
+
+const REFUSE = { full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan.' }, gold: 'Koinmu belum cukup.' };
+
+async function serve(action, okText) {
+  const r = action(current, Date.now());
+  if (!r.ok) {
+    openNpc(townNpc, { text: r.reason === 'gold' ? REFUSE.gold : REFUSE.full[townNpc.role], ok: false });
+    return;
+  }
+  current = r.char;
+  town.hp = currentHp(current);
+  sfx.heart();
+  const err = await saveCurrent();
+  openNpc(townNpc, { text: err ? `Gagal menyimpan: ${err}` : okText, ok: !err });
+  updateTownHUD(current, town);
+}
+
+function closeTownOverlay() {
+  townNpc = null;
+  showTownOverlay(null);
+}
+
+function openCharPanel() {
+  syncHp();
+  renderCharPanel($('charpanel'), current, town.hp, { onClose: closeTownOverlay });
+  showTownOverlay('charpanel');
+}
+
+function townPause() {
+  $('surrender').classList.add('hidden');
+  $('toslots').classList.remove('hidden');
+  $('pausenote').classList.add('hidden');
+  showTownOverlay('pause');
+}
+
+async function drinkInTown() {
+  syncHp();
+  const next = usePotion(current, Date.now());
+  if (next === current) { toast(current.potions <= 0 ? 'Tidak punya ramuan.' : 'HP sudah penuh.'); return; }
+  current = next;
+  town.hp = currentHp(current);
+  sfx.heart();
+  updateTownHUD(current, town);
+  await saveCurrent();
+}
+
+// ——— dungeon ———
+// The character is saved at the gate; closing the browser mid-dungeon returns
+// to this state (spec §13.4).
+async function enterDungeon() {
+  syncHp();
+  await saveCurrent();
+  townNpc = null;
+  scene = 'run';
   ensureAudio(); startMusic();
-  game.start({ classId: current.classId, stats: finalStats(current) });
+  const stats = finalStats(current);
+  game.start({ classId: current.classId, stats, hp: currentHp(current), potions: current.potions });
   CLASSES[current.classId].skills.forEach((sk, i) => {
     const btn = $(i ? 'act-e' : 'act-q');
     btn.querySelector('.ic').replaceChildren(iconCanvas(sk.id, 30));
     btn.title = `${sk.name} (${i ? 'E' : 'Q'})`;
   });
-  game.best = { time: current.records.bestTime, kills: 0, level: 0 };
   R.avatar = { classId: current.classId, look: current.look };
+  $('surrender').classList.remove('hidden');
+  $('toslots').classList.add('hidden');
+  $('pausenote').classList.remove('hidden');
   showOverlay(null);
 }
 
-// After death or surrender: apply rewards, auto-save, show Hasil (spec §5.6, §9.3).
+// End of a trip — gold portal (died = false), death or giving up (died = true):
+// apply rewards/penalty, auto-save, show Hasil Perjalanan (spec §13.4).
 async function endRun(died) {
   screen = 'ending';
   stopMusic();
-  const result = game.result();
-  const isRecord = Math.floor(result.time) > current.records.bestTime;
-  const { char, levelsGained } = applyRunResult(current, result, Date.now());
+  const r = game.result();
+  const trip = {
+    exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills,
+    floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
+  };
+  const newRecord = trip.floor > current.records.bestFloor;
+  const { char, levelsGained, goldLost } = applyTrip(current, trip, Date.now());
   current = char; // keep progress in memory even if the write fails
-  let saveError = null;
-  try { await store.saveSlot(char); } catch (e) { saveError = e.message; }
-  renderResults($('results'), { char, result, levelsGained, isRecord, died, saveError },
-    { onContinue: () => toCamp(current) });
+  const saveError = await saveCurrent();
+  renderResults($('results'), { char, trip, levelsGained, goldLost, newRecord, saveError },
+    { onContinue: () => enterTown(current, 'gate') });
   showMenu('results');
 }
 
@@ -182,15 +304,24 @@ function pickChoice(i) {
 }
 
 function pause() { game.state = ST.PAUSE; showOverlay('pause'); }
-function resume() { game.state = ST.PLAY; showOverlay(null); }
+function resume() {
+  if (scene === 'town') { closeTownOverlay(); return; }
+  game.state = ST.PLAY; showOverlay(null);
+}
 
 // ——— buttons ———
 $('play').addEventListener('click', () => { ensureAudio(); toSlots(); });
 $('slotsback').addEventListener('click', () => showMenu('title'));
 $('resume').addEventListener('click', resume);
-$('surrender').addEventListener('click', () => { game.surrender(); endRun(false); });
-$('pausebtn').addEventListener('click', () => { if (game.state === ST.PLAY) pause(); });
+$('surrender').addEventListener('click', () => { game.surrender(); endRun(true); });
+$('toslots').addEventListener('click', toSlots);
+$('pausebtn').addEventListener('click', () => {
+  if (scene === 'run' && game.state === ST.PLAY) pause();
+  else if (scene === 'town' && screen === null) townPause();
+});
 $('autobtn').addEventListener('click', toggleAuto);
+$('charbtn').addEventListener('click', () => { if (scene === 'town' && screen === null) openCharPanel(); });
+$('prompt').addEventListener('click', () => { if (town?.near && screen === null) openNpc(town.near); });
 $('mute').addEventListener('click', () => {
   ensureAudio();
   settings.muted = toggleMuted();
@@ -201,10 +332,16 @@ $('mute').addEventListener('click', () => {
 // ——— keyboard shortcuts ———
 input.onAction.push((code) => {
   if (code === 'KeyM') { $('mute').click(); return; }
-  if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
   const go = code === 'Space' || code === 'Enter';
   if (screen === 'title' && go) { $('play').click(); return; }
   if (screen === 'results' && go) { $('tocamp').click(); return; }
+  if (scene === 'town') {
+    if (code === 'Escape') { if (screen === null) townPause(); else closeTownOverlay(); return; }
+    if (code === 'KeyC') { if (screen === null) openCharPanel(); else if (screen === 'charpanel') closeTownOverlay(); return; }
+    if (code === 'Enter' && screen === null && town.near) openNpc(town.near);
+    return;
+  }
+  if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
   if (game.state === ST.PLAY && code === 'Escape') { pause(); return; }
   if (game.state === ST.PAUSE && code === 'Escape') { resume(); return; }
   if (game.state === ST.LEVELUP && code.startsWith('Digit')) {
@@ -215,16 +352,23 @@ input.onAction.push((code) => {
 let hudT = 0;
 
 // ——— main loop ———
-function tick() {
-  simT += STEP;
-  pollMove();
-  const pressed = consumePressed(); // one-shot actions go to the first step of the frame
+function tickTown(pressed) {
+  if (screen !== null) return;
+  stepTown(town, { move: { x: input.x, y: input.y } }, STEP);
+  if ((pressed.has('skill2') || pressed.has('talk')) && town.near) { openNpc(town.near); return; }
+  if (pressed.has('potion')) drinkInTown();
+  // regen is only written to the save now and then
+  townSaveT += STEP;
+  if (townSaveT > 10) { townSaveT = 0; syncHp(); saveCurrent(); }
+}
+
+function tickRun(pressed) {
   const auto = settings.autoAttack; // auto mode: attack + aim on their own (spec §5.1)
   const aimAt = !auto && !input.touch && input.mouse.active ? R.screenToWorld(input.mouse.x, input.mouse.y) : null;
   const attack = input.touch ? input.attackHeld : input.mouse.down;
   game.intent = {
     move: { x: input.x, y: input.y }, aimAt, attack, auto,
-    dodge: pressed.has('dodge'), skill1: pressed.has('skill1'), skill2: pressed.has('skill2'),
+    dodge: pressed.has('dodge'), skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), potion: pressed.has('potion'),
   };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
@@ -232,17 +376,36 @@ function tick() {
   // every frame swaps the DOM between mousedown and mouseup and kills clicks
   if (!wasPlaying) return false;
   if (game.state === ST.LEVELUP) { showLevelUp(); return true; }
-  if (game.state === ST.OVER) { $('dmg').style.opacity = 0; endRun(true); return true; }
+  if (game.state === ST.OVER) { $('dmg').style.opacity = 0; endRun(!game.returned); return true; }
+  return false;
+}
+
+function tick() {
+  simT += STEP;
+  pollMove();
+  const pressed = consumePressed(); // one-shot actions go to the first step of the frame
+  if (scene === 'town') { tickTown(pressed); return false; }
+  if (scene === 'run') return tickRun(pressed);
   return false;
 }
 
 function frame(dt) {
-  R.draw(game, simT);
   hudT += dt;
-  if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); }
-  const playing = game.state === ST.PLAY;
-  if (playing) updateActions(game);
-  updateJoystick(playing);
+  if (scene === 'run') {
+    R.draw(game, simT);
+    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); }
+    if (game.state === ST.PLAY) updateActions(game);
+  } else {
+    TR.draw(scene === 'town' ? town : null, simT, current && { classId: current.classId, look: current.look });
+    if (scene === 'town') {
+      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); }
+      const near = screen === null ? town.near : null;
+      $('prompt').classList.toggle('hidden', !near);
+      document.body.classList.toggle('near', !!near);
+      if (near) $('prompttext').textContent = `Bicara dengan ${near.name}`;
+    }
+  }
+  updateJoystick((scene === 'run' && game.state === ST.PLAY) || (scene === 'town' && screen === null));
   window.__SCENE_READY__ = true;
 }
 
@@ -253,6 +416,7 @@ const loop = startLoop(tick, frame);
 window.__seek = (t) => {
   const v = Number(t) || 0;
   if (game.state === ST.TITLE) {
+    scene = 'run';
     game.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } });
     showOverlay(null);
   }
@@ -270,3 +434,5 @@ const T_PARAM = new URLSearchParams(location.search).get('t');
 if (T_PARAM !== null) window.__seek(T_PARAM);
 window.__game = game;
 window.__input = input; // debug/test hook: lets scripts drive the joystick
+window.__town = () => town; // debug/test hook: live town state
+window.__char = () => current;

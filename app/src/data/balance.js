@@ -1,5 +1,4 @@
-// General tuning shared by the run: arena size, level curve, level-up boosts.
-export const WORLD_R = 2600;          // playable radius
+// General tuning shared by the run: level curve, level-up boosts. Room size: data/dungeon.js.
 export const XP_BASE = 6;             // xp needed = base + level * growth
 export const XP_GROWTH = 4;
 

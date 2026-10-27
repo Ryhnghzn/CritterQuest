@@ -1,111 +1,130 @@
-// World rendering: full-resolution canvas, camera follows the player with an
-// adaptive zoom (the short screen side shows ~VIEW world units), cartoon vector
-// art baked per scale, soft shadows, fog beyond the arena edge and a vignette.
-import { WORLD_R } from '../data/balance.js';
+// Dungeon rendering (spec §13.3): a round stone room with torches and glowing
+// mushrooms, lanes cut through the wall, portals once a floor is clear. Camera
+// follows the player; darkness with light holes comes from render/light.js and
+// emissive effects (attacks, flames, portals) are drawn over it.
+import { ROOM, PORTAL } from '../data/dungeon.js';
 import { ENEMIES } from '../data/enemies.js';
-import { SPRITES, bakeAll, drawBaked } from '../art/sprites.js';
+import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
+import { LANES } from '../run/dungeon.js';
 
-const VIEW = 360;          // world units across the short side of the screen
 const DOLL_SCALE = 0.82;   // player doll size in world units
 const TAU = Math.PI * 2;
 const ENEMY_R = Object.fromEntries(Object.entries(ENEMIES).map(([k, e]) => [k, e.r]));
+const AMBIENT = 'rgba(4,3,14,.82)';
+const WARM = '255,160,70';
+const LANE_HALF = Math.asin(ROOM.laneWidth / 2 / ROOM.r); // half the angle a lane cuts from the wall
+const OUTER = ROOM.r + ROOM.wall;
+const PORTAL_RGB = { down: '90,170,255', home: '255,200,90' };
+const PORTAL_LABEL = { down: 'Turun', home: 'Pulang' };
 
-// deterministic decor scatter (own PRNG so it never touches the sim's rng)
-const DECOR = [];
-(function makeDecor() {
-  let s = 777;
-  const r = () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  for (let i = 0; i < 900; i++) {
-    const a = r() * TAU, d = Math.sqrt(r()) * (WORLD_R + 260);
-    const k = r();
-    const f = k < 0.5 ? 'tuft' : k < 0.62 ? 'flowerW' : k < 0.72 ? 'flowerP' : k < 0.8 ? 'flowerY' : k < 0.9 ? 'stone' : 'bush';
-    DECOR.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, f, s: 0.8 + r() * 0.6, flip: r() < 0.5 });
+// angle distance to the nearest lane
+const laneGap = (a) => {
+  let best = 9;
+  for (const l of LANES) best = Math.min(best, Math.abs(Math.atan2(Math.sin(a - l.a), Math.cos(a - l.a))));
+  return best;
+};
+
+// static room dressing, deterministic (own PRNG so it never touches the sim's rng)
+const TORCHES = [], SHROOMS = [], RUBBLE = [], BLOCKS = [];
+(function dress() {
+  let s = 1337;
+  const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  for (let i = 0; i < 8; i++) {
+    const a = (i * TAU) / 8 + TAU / 16;
+    TORCHES.push({ a, x: Math.cos(a) * (ROOM.r - 4), y: Math.sin(a) * (ROOM.r - 4) });
+  }
+  while (SHROOMS.length < 14) {
+    const a = r() * TAU;
+    if (laneGap(a) < LANE_HALF + 0.12) continue;
+    const d = ROOM.r - 26 - r() * 60;
+    const cool = r() < 0.6;
+    const caps = [];
+    for (let k = 0, n = 2 + Math.floor(r() * 3); k < n; k++) caps.push({ dx: (r() - 0.5) * 22, dy: (r() - 0.5) * 12, s: 0.6 + r() * 0.7 });
+    caps.sort((p, q) => p.dy - q.dy);
+    SHROOMS.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, rgb: cool ? '90,230,255' : '200,130,255', cap: cool ? '#4fd8ef' : '#b17bf0', caps });
+  }
+  for (let i = 0; i < 70; i++) {
+    const a = r() * TAU, d = Math.sqrt(r()) * (ROOM.r - 30);
+    RUBBLE.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, s: 1.5 + r() * 3.5, bone: r() < 0.18, rot: r() * TAU });
+  }
+  // wall blocks: two courses of stones around the ring, skipping the lanes
+  for (const [r0, r1, n, off] of [[ROOM.r, ROOM.r + ROOM.wall * 0.55, 72, 0], [ROOM.r + ROOM.wall * 0.55, OUTER, 64, 0.5]]) {
+    for (let i = 0; i < n; i++) {
+      const a0 = ((i + off) * TAU) / n, a1 = ((i + off + 1) * TAU) / n;
+      if (laneGap((a0 + a1) / 2) < LANE_HALF + TAU / n / 2) continue;
+      const tone = 52 + Math.floor(r() * 16);
+      BLOCKS.push({ r0, r1, a0: a0 + 0.004, a1: a1 - 0.004, fill: `rgb(${tone - 6},${tone - 8},${tone + 18})` });
+    }
   }
 })();
 
-// Soft, seamless meadow tile: base colour + blurred light/dark patches.
-function makeGroundTile(scale) {
-  const T = 256;
+// Dark flagstones: big irregular slabs with worn edges and a few cracks.
+function flagTile(scale) {
+  const T = 128;
   const c = document.createElement('canvas');
   c.width = c.height = Math.ceil(T * scale);
   const g = c.getContext('2d');
   g.scale(c.width / T, c.height / T);
-  g.fillStyle = '#4fae68'; g.fillRect(0, 0, T, T);
-  let s = 99;
+  g.fillStyle = '#100e1a'; g.fillRect(0, 0, T, T);
+  let s = 31;
   const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  // draw at the 9 wrapped offsets so anything crossing an edge tiles seamlessly
-  const wrap = (fn) => { for (const ox of [-T, 0, T]) for (const oy of [-T, 0, T]) fn(ox, oy); };
-  for (let i = 0; i < 34; i++) {
-    const x = r() * T, y = r() * T, rad = 14 + r() * 26;
-    const col = r() < 0.5 ? '140,220,140' : '40,120,70';
-    wrap((ox, oy) => {
-      const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, rad);
-      gr.addColorStop(0, `rgba(${col},.16)`); gr.addColorStop(1, `rgba(${col},0)`);
-      g.fillStyle = gr; g.fillRect(x + ox - rad, y + oy - rad, rad * 2, rad * 2);
-    });
-  }
-  g.lineCap = 'round';
-  for (let i = 0; i < 170; i++) {
-    const x = r() * T, y = r() * T, h = 2.5 + r() * 3, lean = (r() - 0.5) * 2.5;
-    g.strokeStyle = r() < 0.6 ? 'rgba(46,130,72,.55)' : 'rgba(130,215,130,.45)';
-    g.lineWidth = 1;
-    wrap((ox, oy) => { g.beginPath(); g.moveTo(x + ox, y + oy); g.lineTo(x + ox + lean, y + oy - h); g.stroke(); });
-  }
-  for (let i = 0; i < 40; i++) {
-    const x = r() * T, y = r() * T;
-    g.fillStyle = 'rgba(255,255,255,.12)';
-    wrap((ox, oy) => { g.beginPath(); g.arc(x + ox, y + oy, 0.8, 0, TAU); g.fill(); });
+  for (let row = 0; row < 4; row++) {
+    const y = row * 32, shift = row % 2 ? 20 : 0;
+    let x = 0;
+    while (x < T) {
+      const w = Math.min(T - x, 26 + Math.floor(r() * 18));
+      const tone = 34 + Math.floor(r() * 12);
+      for (const ox of [shift, shift - T]) {
+        g.beginPath(); g.roundRect(x + ox + 1.2, y + 1.2, w - 2.4, 29.6, 5);
+        g.fillStyle = `rgb(${tone - 2},${tone - 4},${tone + 14})`; g.fill();
+        g.beginPath(); g.roundRect(x + ox + 3, y + 2.5, w - 7, 4, 2);
+        g.fillStyle = 'rgba(255,255,255,.045)'; g.fill();
+      }
+      if (r() < 0.3) {
+        const cx = x + shift + 6 + r() * (w - 12), cy = y + 6 + r() * 20;
+        g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + 5, cy + 4); g.lineTo(cx + 3, cy + 9);
+        g.lineWidth = 0.8; g.strokeStyle = 'rgba(0,0,0,.45)'; g.stroke();
+      }
+      x += w;
+    }
   }
   return { canvas: c, T };
 }
 
 export class Renderer {
-  constructor(canvas) {
-    this.c = canvas;
-    this.ctx = canvas.getContext('2d');
+  constructor(view, lighting) {
+    this.view = view;
+    this.lighting = lighting;
     this.camX = 0; this.camY = 0;
     this.avatar = null;   // { classId, look } of the character being played
     this.facing = 1;
     this.walk = 0;
     this.trail = [];      // dodge afterimages: { x, y, life }
-    this.resize();
-    addEventListener('resize', () => this.resize());
+    view.onResize.push(() => this.rebake());
+    this.rebake();
   }
 
-  resize() {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    const cssW = innerWidth, cssH = innerHeight;
-    this.c.width = Math.round(cssW * dpr);
-    this.c.height = Math.round(cssH * dpr);
-    this.zoom = Math.max(1, Math.min(cssW, cssH) / VIEW); // CSS px per world unit
-    this.S = this.zoom * dpr;                              // device px per world unit
-    this.viewW = cssW / this.zoom; this.viewH = cssH / this.zoom;
-    bakeAll(this.S, ENEMY_R);
-    const tile = makeGroundTile(this.S);
-    this.ground = this.ctx.createPattern(tile.canvas, 'repeat');
+  rebake() {
+    const v = this.view;
+    bakeAll(v.S, ENEMY_R);
+    const tile = flagTile(v.S);
+    this.ground = v.ctx.createPattern(tile.canvas, 'repeat');
     this.ground.setTransform(new DOMMatrix().scale(tile.T / tile.canvas.width));
-    const W = this.c.width, H = this.c.height;
-    this.vignette = this.ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.hypot(W, H) * 0.62);
-    this.vignette.addColorStop(0, 'rgba(14,10,36,0)');
-    this.vignette.addColorStop(1, 'rgba(14,10,36,.55)');
   }
 
   // CSS pixel → world point (for mouse aim); ignores screen shake on purpose.
-  screenToWorld(x, y) {
-    return { x: this.camX + (x - innerWidth / 2) / this.zoom, y: this.camY + (y - innerHeight / 2) / this.zoom };
-  }
+  screenToWorld(x, y) { return this.view.screenToWorld(x, y, this.camX, this.camY); }
 
   draw(game, t) {
-    const g = this.ctx, S = this.S, W = this.c.width, H = this.c.height;
+    const v = this.view, g = v.ctx;
     const playing = game.state !== 0;
     // camera: follow the player, or drift slowly behind the menus
-    const tx = playing ? game.px : Math.sin(t * 0.07) * 260;
-    const ty = playing ? game.py : Math.cos(t * 0.05) * 180;
+    const tx = playing ? game.px : Math.sin(t * 0.07) * 160;
+    const ty = playing ? game.py : Math.cos(t * 0.05) * 120;
     this.camX += (tx - this.camX) * (playing ? 0.12 : 0.02);
     this.camY += (ty - this.camY) * (playing ? 0.12 : 0.02);
-    game.viewR = Math.hypot(this.viewW, this.viewH) / 2;
     let shx = 0, shy = 0;
     if (playing && game.shake > 0) {
       // Math.random, not rng.js: render runs at display rate, so drawing from the
@@ -114,34 +133,73 @@ export class Renderer {
       shy = (Math.random() - 0.5) * game.shake * 6;
     }
     const cx = this.camX + shx, cy = this.camY + shy;
-    const hw = this.viewW / 2 + 30, hh = this.viewH / 2 + 30;
+    const hw = v.viewW / 2 + 30, hh = v.viewH / 2 + 30;
     const visible = (x, y, m = 0) => Math.abs(x - cx) < hw + m && Math.abs(y - cy) < hh + m;
 
-    g.setTransform(S, 0, 0, S, W / 2 - cx * S, H / 2 - cy * S);
-    g.imageSmoothingEnabled = true;
-
-    // ground + decor
-    g.fillStyle = this.ground;
-    g.fillRect(cx - hw, cy - hh, hw * 2, hh * 2);
-    for (const d of DECOR) {
-      if (!visible(d.x, d.y)) continue;
-      drawBaked(g, SPRITES[d.f], d.x, d.y, d.s, d.s, d.flip);
-    }
-
-    // fog beyond the arena edge
-    g.beginPath();
-    g.rect(cx - hw, cy - hh, hw * 2, hh * 2);
-    g.arc(0, 0, WORLD_R, 0, TAU, true);
-    g.fillStyle = 'rgba(28,20,60,.55)'; g.fill('evenodd');
-    g.beginPath(); g.arc(0, 0, WORLD_R, 0, TAU);
-    g.lineWidth = 6; g.strokeStyle = 'rgba(155,123,255,.35)'; g.stroke();
-
-    if (playing) this.drawRun(g, game, t, visible);
-
-    // screen-space vignette
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = this.vignette;
-    g.fillRect(0, 0, W, H);
+    g.fillStyle = '#05040c'; g.fillRect(0, 0, v.c.width, v.c.height);
+    v.begin(cx, cy);
+    g.imageSmoothingEnabled = true;
+    g.lineJoin = 'round';
+
+    this.drawRoom(g, game, t, visible);
+    if (playing) this.drawRun(g, game, t, visible);
+    this.lighting.draw(cx, cy, roomLights(game, t, playing), AMBIENT);
+    v.begin(cx, cy);
+    roomGlow(g, game, t);
+    if (playing) this.drawFx(g, game, t);
+    v.vignetteOverlay();
+    // fade in at the start of each floor
+    const fade = playing ? 1 - game.floorT * 2.5 : 0;
+    if (fade > 0) { g.fillStyle = `rgba(5,4,12,${fade})`; g.fillRect(0, 0, v.c.width, v.c.height); }
+  }
+
+  drawRoom(g, game, t, visible) {
+    // lanes: stone corridors fading into the dark
+    for (const l of LANES) {
+      g.save();
+      g.rotate(l.a);
+      const x0 = ROOM.r - 20, x1 = OUTER + ROOM.laneLen, w = ROOM.laneWidth / 2;
+      g.fillStyle = this.ground; g.fillRect(x0, -w, x1 - x0, w * 2);
+      const gr = g.createLinearGradient(OUTER, 0, x1, 0);
+      gr.addColorStop(0, 'rgba(5,4,12,0)'); gr.addColorStop(1, 'rgba(5,4,12,1)');
+      g.fillStyle = gr; g.fillRect(OUTER, -w - 1, x1 - OUTER + 1, w * 2 + 2);
+      for (const sd of [-1, 1]) {
+        g.beginPath(); g.rect(OUTER - ROOM.wall, sd > 0 ? w : -w - 14, ROOM.laneLen * 0.7 + ROOM.wall, 14);
+        g.fillStyle = '#2b2740'; g.fill();
+      }
+      g.restore();
+    }
+    // floor
+    g.beginPath(); g.arc(0, 0, ROOM.r + 2, 0, TAU);
+    g.fillStyle = this.ground; g.fill();
+    const worn = g.createRadialGradient(0, 0, 0, 0, 0, ROOM.r);
+    worn.addColorStop(0, 'rgba(120,110,170,.07)'); worn.addColorStop(0.7, 'rgba(0,0,0,0)'); worn.addColorStop(1, 'rgba(0,0,0,.35)');
+    g.fillStyle = worn; g.fill();
+    runeCircle(g, t, game.floorClear);
+    for (const d of RUBBLE) {
+      if (!visible(d.x, d.y)) continue;
+      if (d.bone) {
+        g.save(); g.translate(d.x, d.y); g.rotate(d.rot);
+        g.beginPath(); g.roundRect(-d.s * 1.6, -0.9, d.s * 3.2, 1.8, 0.9);
+        g.arc(-d.s * 1.6, -1, 1.3, 0, TAU); g.arc(d.s * 1.6, 1, 1.3, 0, TAU);
+        g.fillStyle = '#8f8aa3'; g.fill();
+        g.restore();
+      } else {
+        g.beginPath(); g.ellipse(d.x, d.y, d.s, d.s * 0.7, d.rot, 0, TAU);
+        g.fillStyle = '#2a2638'; g.fill(); g.lineWidth = 0.8; g.strokeStyle = 'rgba(0,0,0,.5)'; g.stroke();
+      }
+    }
+    // wall
+    for (const b of BLOCKS) {
+      g.beginPath(); g.arc(0, 0, b.r1, b.a0, b.a1); g.arc(0, 0, b.r0, b.a1, b.a0, true); g.closePath();
+      g.fillStyle = b.fill; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
+    }
+    g.beginPath(); g.arc(0, 0, ROOM.r, 0, TAU);
+    g.lineWidth = 5; g.strokeStyle = 'rgba(0,0,0,.35)'; g.stroke();
+    for (const s of SHROOMS) if (visible(s.x, s.y)) shroom(g, s);
+    for (const tc of TORCHES) if (visible(tc.x, tc.y)) sconce(g, tc);
+    if (game.portals) for (const p of game.portals) portalBase(g, p, game.clearT, t);
   }
 
   drawRun(g, game, t, visible) {
@@ -150,7 +208,7 @@ export class Renderer {
       if (!visible(gm.x, gm.y)) continue;
       const bob = Math.sin(gm.t) * 2;
       shadow(g, gm.x, gm.y + 6, 4, 1.4);
-      const s = SPRITES[gm.heart ? 'heart' : gm.big ? 'bigGem' : 'gem'];
+      const s = SPRITES[gm.heart ? 'heart' : gm.coin ? 'coin' : gm.big ? 'bigGem' : 'gem'];
       drawBaked(g, s, gm.x, gm.y + bob - 2, 1);
     }
 
@@ -163,10 +221,6 @@ export class Renderer {
       drawBaked(g, sprite, e.x, e.y, 1 / squash, squash, game.px < e.x);
       if (e.type === 'boss' || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp);
     }
-
-    // attack instances
-    for (const h of game.hits) drawHit(g, h, this.avatar, t);
-    if (game.buffT > 0) shoutAura(g, game.px, game.py, t, Math.min(1, game.buffT * 2));
 
     // player
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
@@ -200,6 +254,14 @@ export class Renderer {
       g.restore();
     }
 
+  }
+
+  // Emissive layer drawn over the darkness: attacks, sparks, numbers.
+  drawFx(g, game, t) {
+    // attack instances
+    for (const h of game.hits) drawHit(g, h, this.avatar, t);
+    if (game.buffT > 0) shoutAura(g, game.px, game.py, t, Math.min(1, game.buffT * 2));
+
     // particles (additive glow)
     g.save(); g.globalCompositeOperation = 'lighter';
     for (const p of game.particles) {
@@ -222,6 +284,126 @@ export class Renderer {
       g.fillStyle = f.color; g.fillText(f.text, f.x, f.y);
     }
     g.globalAlpha = 1;
+  }
+}
+
+function roomLights(game, t, playing) {
+  const out = [];
+  for (let i = 0; i < TORCHES.length; i++) {
+    const tc = TORCHES[i];
+    const f = 1 + Math.sin(t * 9 + i * 1.7) * 0.05 + Math.sin(t * 23 + i) * 0.03;
+    out.push({ x: tc.x * 0.96, y: tc.y * 0.96 - 8, r: 190 * f, rgb: WARM, tint: 0.14 });
+  }
+  for (const s of SHROOMS) out.push({ x: s.x, y: s.y - 4, r: 75, rgb: s.rgb, tint: 0.12 });
+  const glow = 1 + Math.sin(t * 2) * 0.1;
+  out.push({ x: 0, y: 0, r: (game.floorClear ? 200 : 90) * glow, rgb: '150,110,255', tint: game.floorClear ? 0.1 : 0.05 });
+  if (playing) {
+    for (const p of game.portals) out.push({ x: p.x, y: p.y - 10, r: 160, rgb: PORTAL_RGB[p.kind], tint: 0.22 });
+    out.push({ x: game.px, y: game.py, r: 200, rgb: '255,200,140', tint: 0.06 });
+  }
+  return out;
+}
+
+// faint engraved circle in the middle of the room; brightens when the floor is clear
+function runeCircle(g, t, lit) {
+  g.save();
+  g.globalAlpha = lit ? 0.75 : 0.35;
+  g.lineWidth = 2; g.strokeStyle = '#6b55b8';
+  g.beginPath(); g.arc(0, 0, 130, 0, TAU); g.stroke();
+  g.beginPath(); g.arc(0, 0, 112, 0, TAU); g.stroke();
+  g.lineWidth = 1.4;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * TAU + t * 0.05;
+    g.save(); g.rotate(a); g.translate(121, 0);
+    g.beginPath(); g.moveTo(-4, -3); g.lineTo(0, 3); g.lineTo(4, -3); g.stroke();
+    g.restore();
+  }
+  g.beginPath(); g.arc(0, 0, 44, 0, TAU); g.stroke();
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * TAU + Math.PI / 4;
+    g.beginPath(); g.moveTo(Math.cos(a) * 48, Math.sin(a) * 48); g.lineTo(Math.cos(a) * 108, Math.sin(a) * 108); g.stroke();
+  }
+  g.restore();
+}
+
+function sconce(g, tc) {
+  const x = tc.x, y = tc.y;
+  g.beginPath(); g.ellipse(x, y, 7, 5, 0, 0, TAU); g.fillStyle = '#3a3346'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.roundRect(x - 2.5, y - 16, 5, 16, 2); g.fillStyle = '#6a4630'; g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(x - 6, y - 16); g.lineTo(x + 6, y - 16); g.lineTo(x + 4, y - 21); g.lineTo(x - 4, y - 21); g.closePath();
+  g.fillStyle = '#2f2c40'; g.fill(); g.stroke();
+}
+
+function shroom(g, s) {
+  for (const c of s.caps) {
+    const x = s.x + c.dx, y = s.y + c.dy, k = c.s;
+    g.beginPath(); g.roundRect(x - 1.6 * k, y - 7 * k, 3.2 * k, 7 * k, 1.5 * k);
+    g.fillStyle = '#d9d2ea'; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.ellipse(x, y - 7 * k, 6 * k, 4 * k, 0, Math.PI, 0); g.closePath();
+    g.fillStyle = s.cap; g.fill(); g.lineWidth = 1.2; g.stroke();
+    g.beginPath(); g.arc(x - 2 * k, y - 8.5 * k, 1 * k, 0, TAU); g.arc(x + 2.2 * k, y - 9 * k, 0.8 * k, 0, TAU);
+    g.fillStyle = 'rgba(255,255,255,.8)'; g.fill();
+  }
+}
+
+// stone ring on the floor under a portal; the swirl itself is in roomGlow
+function portalBase(g, p, clearT, t) {
+  const k = Math.min(1, clearT * 2);
+  g.beginPath(); g.ellipse(p.x, p.y + 6, (PORTAL.r + 8) * k, (PORTAL.r * 0.45 + 4) * k, 0, 0, TAU);
+  g.fillStyle = '#2b2740'; g.fill(); g.lineWidth = 1.6; g.strokeStyle = OUT; g.stroke();
+}
+
+// Emissive room layer: torch flames, mushroom spores, portals and their labels.
+function roomGlow(g, game, t) {
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < TORCHES.length; i++) {
+    const tc = TORCHES[i], x = tc.x, y = tc.y - 22;
+    const k = 1 + Math.sin(t * 11 + i * 2) * 0.12;
+    g.beginPath(); g.moveTo(x, y - 14 * k);
+    g.bezierCurveTo(x + 6.5, y - 5, x + 6, y + 3, x, y + 3.5);
+    g.bezierCurveTo(x - 6, y + 3, x - 6.5, y - 5, x, y - 14 * k);
+    const gr = g.createLinearGradient(0, y - 14, 0, y + 3);
+    gr.addColorStop(0, 'rgba(255,90,40,0)'); gr.addColorStop(0.4, 'rgba(255,140,50,.85)'); gr.addColorStop(1, 'rgba(255,230,140,.95)');
+    g.fillStyle = gr; g.fill();
+  }
+  for (const s of SHROOMS) {
+    for (let i = 0; i < 2; i++) {
+      const ph = (t * 0.25 + i * 0.5 + s.x * 0.01) % 1;
+      g.beginPath(); g.arc(s.x + Math.sin(t + i * 3 + s.y) * 8, s.y - 10 - ph * 26, 1.3 * (1 - ph), 0, TAU);
+      g.fillStyle = `rgba(${s.rgb},${1 - ph})`; g.fill();
+    }
+  }
+  for (const p of game.portals || []) portalSwirl(g, p, game.clearT, t);
+  g.restore();
+  g.font = '600 9px Fredoka, system-ui, sans-serif';
+  g.textAlign = 'center';
+  for (const p of game.portals || []) {
+    g.globalAlpha = p.armed ? 1 : 0.45;
+    g.lineWidth = 3; g.strokeStyle = 'rgba(20,14,40,.9)';
+    g.strokeText(PORTAL_LABEL[p.kind], p.x, p.y - 48);
+    g.fillStyle = '#fff'; g.fillText(PORTAL_LABEL[p.kind], p.x, p.y - 48);
+  }
+  g.globalAlpha = 1;
+}
+
+function portalSwirl(g, p, clearT, t) {
+  const k = Math.min(1, clearT * 2), rgb = PORTAL_RGB[p.kind], a = p.armed ? 1 : 0.5;
+  const R = PORTAL.r * k;
+  const gr = g.createRadialGradient(p.x, p.y - 14, 2, p.x, p.y - 14, R * 1.9);
+  gr.addColorStop(0, `rgba(${rgb},${0.55 * a})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr; g.fillRect(p.x - R * 2, p.y - 14 - R * 2, R * 4, R * 4);
+  for (let i = 0; i < 3; i++) {
+    const s = t * (2 + i * 0.6) * (p.kind === 'down' ? -1 : 1) + i * 2;
+    g.beginPath(); g.ellipse(p.x, p.y - 14, R * (0.45 + i * 0.25), R * (0.8 + i * 0.25), 0, s, s + 2.4);
+    g.lineWidth = 2.4; g.strokeStyle = `rgba(${rgb},${0.6 * a})`; g.stroke();
+  }
+  g.beginPath(); g.ellipse(p.x, p.y + 6, R, R * 0.45, 0, 0, TAU);
+  g.lineWidth = 2; g.strokeStyle = `rgba(${rgb},${0.8 * a})`; g.stroke();
+  // rising motes
+  for (let i = 0; i < 6; i++) {
+    const ph = (t * 0.6 + i / 6) % 1;
+    g.beginPath(); g.arc(p.x + Math.sin(i * 9 + t * 2) * R * 0.7, p.y + 4 - ph * 50, 1.5 * (1 - ph), 0, TAU);
+    g.fillStyle = `rgba(${rgb},${(1 - ph) * a})`; g.fill();
   }
 }
 

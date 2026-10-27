@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { Game } from './run.js';
 import { stepPlayer } from './player.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { DODGE, WORLD_R, AUTO_AIM_RANGE } from '../data/balance.js';
+import { DODGE, AUTO_AIM_RANGE } from '../data/balance.js';
+import { ROOM } from '../data/dungeon.js';
 
 const STATS = { ...CLASS_BASE, ...CLASSES.archer.stats }; // moveSpd 115
 const DT = 1 / 60;
@@ -25,11 +26,11 @@ describe('gerak', () => {
     expect(g.px).toBeCloseTo(57.5);
   });
 
-  it('tidak keluar arena', () => {
+  it('tidak menembus dinding ruangan', () => {
     const g = fresh();
-    g.px = WORLD_R - 1;
+    g.px = ROOM.r - 13; g.py = 0;
     hold(g, 1, intent({ move: { x: 1, y: 0 } }));
-    expect(Math.hypot(g.px, g.py)).toBeLessThanOrEqual(WORLD_R + 1e-6);
+    expect(Math.hypot(g.px, g.py)).toBeLessThanOrEqual(ROOM.r - 12 + 1e-6);
   });
 });
 

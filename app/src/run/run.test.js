@@ -46,7 +46,7 @@ describe('hasil ronde', () => {
     for (let l = 1; l < g.level; l++) total += XP_BASE + XP_GROWTH * l;
     const r = g.result();
     expect(r.exp).toBe(total);
-    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: 0, items: [], bossKills: 0 });
+    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, floor: g.deepest, cleared: false });
   });
 
   it('menghitung bos yang dikalahkan', () => {
@@ -85,5 +85,42 @@ describe('stat kelas', () => {
     e.x = 0; e.y = 0;
     g.step(1 / 60);
     expect(g.stats.hp).toBe(140 - 3);
+  });
+});
+
+describe('HP awal & potion di ronde', () => {
+  const start = (over) => {
+    const g = new Game();
+    g.start({ ...setup('warrior'), ...over });
+    g.spawnT = 1e9;
+    return g;
+  };
+  const step = (g, intent = {}) => {
+    g.intent = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, ...intent };
+    g.step(1 / 60);
+  };
+
+  it('ronde dimulai dengan HP karakter saat ini', () => {
+    expect(start({ hp: 40, potions: 2 }).stats.hp).toBe(40);
+    expect(start({}).stats.hp).toBe(140);
+  });
+
+  it('potion memulihkan 40% HP maks, jeda 1 detik, jumlah berkurang', () => {
+    const g = start({ hp: 20, potions: 2 });
+    step(g, { potion: true });
+    expect(g.stats.hp).toBeCloseTo(76);
+    expect(g.potions).toBe(1);
+    step(g, { potion: true });
+    expect(g.potions).toBe(1);
+    for (let i = 0; i < 61; i++) step(g);
+    step(g, { potion: true });
+    expect(g.potions).toBe(0);
+    expect(g.stats.hp).toBe(132);
+  });
+
+  it('tanpa potion tidak terjadi apa-apa', () => {
+    const g = start({ hp: 20, potions: 0 });
+    step(g, { potion: true });
+    expect(g.stats.hp).toBe(20);
   });
 });

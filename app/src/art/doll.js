@@ -134,11 +134,13 @@ const CLASS_FRONT = {
   },
 };
 
+// look: { hair, hairColor, outfit? } — outfit [main, shade] overrides the class
+// colours (NPCs pass classId null and an outfit).
 // pose: { t: seconds, moving: 0..1, walk: phase (rad), attack: 0..1, hurt: bool }
 // Returns anchor points (head, body, hand) for gear layers.
 export function drawDoll(g, classId, look, pose = {}) {
   const { t = 0, moving = 0, walk = 0, attack = 0, hurt = false } = pose;
-  const [cMain, cShade] = OUTFIT[classId];
+  const [cMain, cShade] = look.outfit || OUTFIT[classId];
   const [hMain, hShade] = HAIR_PALETTE[look.hairColor];
   const swing = Math.sin(walk) * 3.4 * moving;
   const bob = moving ? -Math.abs(Math.sin(walk)) * 1.6 * moving : Math.sin(t * 2.2) * 0.45;

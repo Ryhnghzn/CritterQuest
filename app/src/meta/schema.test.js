@@ -28,7 +28,11 @@ describe('validateSlot', () => {
     ['uang negatif', (c) => { c.gold = -1; }],
     ['EXP pecahan', (c) => { c.exp = 1.5; }],
     ['rambut di luar rentang', (c) => { c.look.hair = 9; }],
-    ['upgrade hilang', (c) => { delete c.upgrades.potion; }],
+    ['upgrade hilang', (c) => { delete c.upgrades.magnet; }],
+    ['HP negatif', (c) => { c.hp = -1; }],
+    ['HP pecahan', (c) => { c.hp = 10.5; }],
+    ['potion melebihi batas', (c) => { c.potions = 6; }],
+    ['rekor lantai hilang', (c) => { delete c.records.bestFloor; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 30', (c) => { c.inventory = Array.from({ length: 31 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
@@ -40,6 +44,36 @@ describe('validateSlot', () => {
     const c = structuredClone(fresh());
     mutate(c);
     expect(validateSlot(c).length).toBeGreaterThan(0);
+  });
+});
+
+describe('save versi 2', () => {
+  it('HP null (penuh) atau bilangan bulat ≥ 0 sah', () => {
+    expect(validateSlot({ ...fresh(), hp: null })).toEqual([]);
+    expect(validateSlot({ ...fresh(), hp: 0 })).toEqual([]);
+    expect(validateSlot({ ...fresh(), hp: 37, potions: 5 })).toEqual([]);
+  });
+
+  it('migrasi v1 → v2: hp & potion baru, upgrade potion dibuang, rekor diubah', () => {
+    const v1 = {
+      ...fresh(), version: 1,
+      upgrades: { hp: 2, atk: 1, magnet: 0, potion: 3 },
+      records: { bestTime: 321, runs: 7, kills: 400, bossKills: 2 },
+    };
+    delete v1.hp; delete v1.potions;
+    const r = readSlot(v1);
+    expect(r.status).toBe('ok');
+    expect(r.data.version).toBe(2);
+    expect(r.data.hp).toBeNull();
+    expect(r.data.potions).toBe(0);
+    expect(r.data.upgrades).toEqual({ hp: 2, atk: 1, magnet: 0 });
+    expect(r.data.records).toEqual({ bestFloor: 0, clears: 0, trips: 7, kills: 400, bossKills: 2 });
+  });
+
+  it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {
+    const v1 = { ...fresh(), version: 1, records: 'hilang' };
+    delete v1.hp; delete v1.potions;
+    expect(readSlot(v1).status).toBe('corrupt');
   });
 });
 

@@ -373,6 +373,9 @@ Kemah dihapus. Stat & rekor dilihat di **panel Karakter** (tombol C / ikon di ko
 - Lantai selesai bila semua gelombang sudah muncul dan musuh habis → dua portal di tengah: **biru = turun**, **emas = pulang**. Setelah bos lantai 5 hanya portal emas + spanduk "Dungeon tamat!".
 - Koin: 30% musuh biasa jatuhkan 1–3, bos 100; bonus `10 × lantai` tiap lantai selesai.
 - Kartu berkah level-up dan EXP ronde berlaku selama satu perjalanan (lintas lantai).
+- Gelombang berikut dimulai setelah gelombang sekarang muncul semua dan musuh tersisa ≤ 2 (jeda 1,5 detik). Pemain mulai di tengah ruangan.
+- Portal aktif setelah 1 detik **dan** setelah pemain keluar dari lingkarannya (tidak menyedot pemain yang kebetulan berdiri di tengah). Permata & koin yang tersisa ikut terpungut saat masuk portal.
+- `records.bestFloor` = lantai terdalam yang dicapai (termasuk bila mati di lantai itu).
 
 ### 13.4 Akhir perjalanan
 

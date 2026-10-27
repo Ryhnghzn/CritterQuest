@@ -142,7 +142,8 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 .soon svg{font-size:40px;opacity:.6}
 
 /* results */
-.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:min(520px,100%)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:min(620px,100%)}
+@media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tile{padding:16px 10px;border-radius:16px;background:var(--glass);border:1.5px solid var(--line);display:flex;flex-direction:column;gap:4px;animation:rise .35s ease both}
 .tile span{font-size:12px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
 .tile b{font-size:28px;font-weight:700}
@@ -185,8 +186,14 @@ h2.h.bad{color:var(--coral)}
 /* action buttons (dodge now; attack + skills in 3C/3D), pause, joystick */
 #actions{position:absolute;right:16px;bottom:16px;display:grid;gap:14px 12px;align-items:end;justify-items:center;
   grid-template-areas:"q e dodge"}
-#act-q{grid-area:q}#act-e{grid-area:e}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}
-body.touch #actions{grid-template-areas:". q e" "dodge . atk";right:14px;bottom:14px}
+#act-q{grid-area:q}#act-e{grid-area:e}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}#act-potion{grid-area:pot}#act-talk{grid-area:atk}
+#actions{grid-template-areas:"pot q e dodge"}
+body.touch #actions{grid-template-areas:". q e" "pot dodge atk";right:14px;bottom:14px}
+body.intown #act-q,body.intown #act-e,body.intown #act-dodge,body.intown #act-attack{display:none}
+body:not(.intown) #act-talk,body:not(.touch) #act-talk,body.intown:not(.near) #act-talk{display:none}
+.act .cnt{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;display:grid;place-items:center;
+  font-size:12px;font-weight:700;background:#ff6b8b;color:#fff;box-shadow:0 2px 0 #b8334f}
+.act.empty{opacity:.45}
 body.touch #act-q{transform:translate(10px,40px)}
 body.touch #act-dodge{transform:translateY(6px)}
 .act .ic{display:grid;place-items:center}
@@ -216,6 +223,31 @@ body.touch .act kbd{display:none}
 #joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
   background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.55),rgba(255,255,255,.2));border:2px solid rgba(255,255,255,.5)}
 body.playing:not(.touch) canvas#game{cursor:crosshair}
+#townhud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:18px;
+  background:rgba(22,17,46,.6);border:1.5px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);width:min(300px,calc(100vw - 140px))}
+#townhud .trow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:16px}
+#townhud .trow b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tmeta{display:flex;gap:6px}
+.hchip.gold b{color:var(--acc)}
+.coin{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff1b3,#ffc94d 55%,#d98a00);box-shadow:0 0 0 1.5px #7a4a00 inset}
+#charbtn{position:absolute;right:66px;top:12px;z-index:5;pointer-events:auto;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  font-size:20px;color:var(--ink);background:rgba(22,17,46,.6);border:1.5px solid var(--line);cursor:pointer;backdrop-filter:blur(6px)}
+#prompt{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);pointer-events:auto;display:flex;align-items:center;gap:10px;
+  font-family:inherit;font-size:16px;font-weight:600;color:var(--ink);padding:10px 18px;border-radius:999px;cursor:pointer;
+  background:rgba(22,17,46,.75);border:1.5px solid rgba(255,201,77,.6);box-shadow:0 0 24px rgba(255,201,77,.25);animation:rise .2s ease}
+body.touch #prompt{bottom:auto;top:calc(50% + 60px)}
+body.touch #prompt kbd{display:none}
+#toast{position:absolute;left:50%;top:90px;transform:translateX(-50%);font-size:16px;font-weight:600;padding:8px 16px;border-radius:999px;
+  background:rgba(22,17,46,.85);border:1.5px solid var(--line);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+.npcpanel{display:flex;flex-direction:column;gap:14px;align-items:center;width:min(480px,100%)}
+.npchead{display:flex;gap:16px;align-items:center;align-self:stretch;text-align:left}
+.npchead .stage{width:104px;height:104px;flex:none}
+.npchead .nm{font-size:24px;font-weight:700}
+.npcline{font-size:16px;line-height:1.5;color:var(--ink);font-style:italic;opacity:.9}
+.npcmsg{font-size:15px;min-height:1.3em;color:var(--coral)}
+.npcmsg.ok{color:var(--mint)}
+.records .hchip{font-size:14px}
 #banner{position:absolute;left:50%;top:24%;transform:translateX(-50%);font-size:clamp(24px,4.5vw,44px);font-weight:700;white-space:nowrap;
   color:#fff;text-shadow:0 4px 0 #8a1f4a,0 0 30px rgba(255,107,139,.6);opacity:0;transition:opacity .3s}
 #dmg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(255,50,90,.45));opacity:0}
@@ -238,29 +270,42 @@ body.playing:not(.touch) canvas#game{cursor:crosshair}
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
   <symbol id="i-dash" viewBox="0 0 24 24"><path d="M13 5l7 7-7 7"/><path d="M4 8h6M2 12h9M4 16h6"/></symbol>
   <symbol id="i-sword" viewBox="0 0 24 24"><path d="M14.5 3.5L20 3l-.5 5.5L9 19l-4-4z"/><path d="M6 13l5 5M4 20l2.5-2.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 3h4M10 3v5l-5 9a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-5-9V3"/><path d="M7.5 14h9"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
 </svg>
 <canvas id="game"></canvas>
 <div id="dmg"></div>
 <div id="ui">
+  <div id="townhud" class="hidden">
+    <div class="trow"><b id="tname"></b><span class="lv" id="tlv">LV 1</span></div>
+    <div class="hpbar"><i id="thpfill"></i><span id="thptext"></span></div>
+    <div id="tmeta"><span class="hchip gold"><span class="coin"></span><b id="tgold">0</b></span><span class="hchip"><svg class="i"><use href="#i-flask"/></svg><b id="tpot">0</b></span></div>
+  </div>
+  <button id="prompt" class="hidden"><kbd>E</kbd><span id="prompttext"></span></button>
+  <div id="toast"></div>
   <div id="hud" class="hidden">
     <div class="hpbar"><i id="hpfill"></i><span id="hptext"></span></div>
     <div class="xprow"><span class="lv" id="lvltext">LV 1</span><div class="xpbar"><i id="xpfill"></i></div></div>
     <div id="meta">
-      <span class="hchip"><svg class="i"><use href="#i-clock"/></svg><b id="time">0:00</b></span>
+      <span class="hchip"><svg class="i"><use href="#i-trophy"/></svg><b id="floor">Lantai 1</b></span>
       <span class="hchip"><svg class="i"><use href="#i-skull"/></svg><b id="kills">0</b></span>
-      <span class="hchip"><svg class="i"><use href="#i-trophy"/></svg><b id="best">0:00</b></span>
+      <span class="hchip gold"><span class="coin"></span><b id="gold">0</b></span>
     </div>
   </div>
   <div id="actions" class="hidden">
     <button class="act touchbtn" id="act-q" data-action="skill1" aria-label="Skill Q"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>Q</kbd></button>
     <button class="act touchbtn" id="act-e" data-action="skill2" aria-label="Skill E"><span class="ic"></span><i class="cd"></i><b class="cdt"></b><kbd>E</kbd></button>
+    <button class="act touchbtn" id="act-potion" data-action="potion" aria-label="Minum ramuan"><svg class="i"><use href="#i-flask"/></svg><b class="cnt">0</b><i class="cd"></i><kbd>R</kbd></button>
+    <button class="act big touchbtn" id="act-talk" data-action="talk" aria-label="Bicara"><svg class="i"><use href="#i-chat"/></svg></button>
     <button class="act touchbtn" id="act-dodge" data-action="dodge" aria-label="Dodge"><svg class="i"><use href="#i-dash"/></svg><i class="cd"></i><kbd>Spasi</kbd></button>
     <button class="act big touchbtn" id="act-attack" data-hold="attackHeld" aria-label="Serang"><svg class="i"><use href="#i-sword"/></svg></button>
   </div>
   <div id="joy" class="hidden"><i></i></div>
   <button id="pausebtn" class="touchbtn hidden" aria-label="Jeda"><svg class="i"><use href="#i-pause"/></svg></button>
+  <button id="charbtn" class="touchbtn hidden" title="Karakter (C)" aria-label="Karakter"><svg class="i"><use href="#i-user"/></svg></button>
   <button id="autobtn" class="touchbtn hidden" title="Serang otomatis (F)"><span class="dot"></span>AUTO<kbd>F</kbd></button>
   <button id="mute" title="Suara" aria-label="Suara"><svg class="i on"><use href="#i-sound-on"/></svg><svg class="i off"><use href="#i-sound-off"/></svg></button>
   <div id="banner"></div>
@@ -271,7 +316,7 @@ body.playing:not(.touch) canvas#game{cursor:crosshair}
       <span class="tag">ARCADE</span>
     </div>
     <button class="btn big" id="play">Main</button>
-    <div class="help"><kbd>WASD</kbd> gerak &nbsp; <kbd>Klik</kbd> serang &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>Esc</kbd> jeda &nbsp; <kbd>M</kbd> suara<br>Di HP: joystick di kiri, tombol di kanan</div>
+    <div class="help"><kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>R</kbd> ramuan &nbsp; <kbd>C</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Di dungeon: <kbd>Klik</kbd> serang &nbsp; <kbd>Q</kbd>/<kbd>E</kbd> skill &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto</div>
   </div>
 
   <div id="slots" class="screen hidden">
@@ -282,7 +327,8 @@ body.playing:not(.touch) canvas#game{cursor:crosshair}
   </div>
 
   <div id="create" class="screen hidden"></div>
-  <div id="camp" class="screen hidden"></div>
+  <div id="npc" class="screen hidden"></div>
+  <div id="charpanel" class="screen hidden"></div>
 
   <div id="levelup" class="screen hidden">
     <h2 class="h">Naik Level!</h2>
@@ -295,8 +341,9 @@ body.playing:not(.touch) canvas#game{cursor:crosshair}
     <div class="row">
       <button class="btn" id="resume">Lanjut</button>
       <button class="btn ghost" id="surrender">Menyerah</button>
+      <button class="btn ghost" id="toslots">Ganti Slot</button>
     </div>
-    <div class="sub">Menyerah mengakhiri ronde — EXP yang didapat tetap tersimpan.</div>
+    <div class="sub" id="pausenote">Menyerah dihitung seperti tumbang: EXP tetap, separuh koin perjalanan hilang.</div>
   </div>
 
   <div id="results" class="screen hidden"></div>

@@ -1,6 +1,6 @@
 // Screen manager + small DOM helpers shared by the menu screens.
 const $ = (id) => document.getElementById(id);
-const SCREENS = ['title', 'slots', 'create', 'camp', 'levelup', 'pause', 'results'];
+const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'levelup', 'pause', 'results'];
 
 // Shows one screen (null = none, during play) and returns its id.
 export function showScreen(id) {
@@ -22,7 +22,6 @@ export function button(label, cls, onClick) {
   return b;
 }
 
-export function fmtTime(t) { t = Math.floor(t); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; }
 
 // In-game yes/no dialog → Promise<boolean>.
 export function confirmDialog(text, yesLabel = 'YA') {
