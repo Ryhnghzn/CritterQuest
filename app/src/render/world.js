@@ -6,7 +6,8 @@ import { PORTAL } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
 import { ENEMIES } from '../data/enemies.js';
-import { SPRITES, bakeAll, drawBaked, drawIcon, gearIcon, OUT } from '../art/sprites.js';
+import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
+import { drawGearIcon } from '../art/gear.js';
 import { RARITIES } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
@@ -582,7 +583,7 @@ function gearDrop(g, gm, t) {
   g.beginPath(); g.arc(gm.x, gm.y - 4 + bob, 8.5, 0, TAU);
   g.fillStyle = 'rgba(20,14,40,.85)'; g.fill();
   g.lineWidth = 1.8; g.strokeStyle = RARITIES[item.rarity].color; g.stroke();
-  g.save(); g.translate(gm.x, gm.y - 4 + bob); drawIcon(g, gearIcon(item), 13); g.restore();
+  g.save(); g.translate(gm.x, gm.y - 4 + bob); drawGearIcon(g, item, 15, t); g.restore();
 }
 
 // jagged lightning between two points; deterministic per segment so it doesn't flicker

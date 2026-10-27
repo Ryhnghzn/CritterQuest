@@ -572,3 +572,12 @@ Empat dungeon terbuka berurutan — dungeon berikutnya terbuka setelah yang sebe
 - Dungeon tetap gelap (bawah tanah) dengan suasana per tema.
 - Tidur di Penginapan: waktu maju ke 07:00 berikutnya.
 - **Save versi 6:** tambah `clock` (menit sejak Hari 1 00:00); karakter baru mulai 07:00; `migrate()` v5 → v6 mengisi 07:00.
+
+## 19. Desain Ulang Dark Fantasy (langkah 8, 2026-10-27)
+
+Atas permintaan pemilik ("terlalu ke anak-anakan"). Mengalahkan §8 untuk gaya gambar.
+
+- **Gaya:** dark fantasy stylized — proporsi kepala ±1:3, mata almond kecil dengan alis, tanpa pipi merah, outline tipis gelap (`#16121c`), warna kalem, highlight logam & bayangan tegas.
+- **8A Karakter & gear:** baju kelas berwarna redup dengan ciri (Warrior jubah panjang & tali dada; Archer jerkin bertali, tudung terlipat, tabung panah; Mage jubah panjang berkerah tinggi; Assassin sabuk silang, masker kain, syal). NPC memakai tubuh yang sama dengan warna baju sendiri.
+- **Gear per varian** (`art/gear.js`): tiap tingkat punya siluet sendiri — mis. pedang kayu → besi → baja → ksatria (pelindung sayap emas) → runa (rune bercahaya) → obsidian (bergerigi, tepi ungu) → naga (bilah api melengkung); helm topi kulit → helm besi bertepi → bertanduk → helm ksatria berjambul → lingkar runa (rambut tetap terlihat) → obsidian berduri (celah mata bercahaya) → helm naga bersirip. Bentuk yang sama dipakai di badan, ikon tas/toko/hasil, dan gear di tanah; Epik ke atas berpendar warna rarity.
+- 8B aura, 8C monster, 8D UI: lihat rencana langkah 8.

@@ -2,7 +2,8 @@
 // bag sorted by rarity, and a detail card with stats, special effect, the
 // change if worn, and Pasang / Lepas / Buang (only in town).
 import { el, button } from './screens.js';
-import { iconCanvas, gearIcon } from '../art/sprites.js';
+import { iconCanvas } from '../art/sprites.js';
+import { gearCanvas } from '../art/gear.js';
 import { RARITIES, SLOTS, BONUSES } from '../data/items.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { EQUIP_SLOTS } from '../meta/schema.js';
@@ -59,7 +60,7 @@ function tile(it, onClick, slot = null) {
   const t = button('', 'gtile', onClick || (() => {}));
   if (it) {
     t.style.setProperty('--c', RARITIES[it.rarity].color);
-    t.append(iconCanvas(gearIcon(it), 28), el('span', 'ilv', String(it.itemLevel)));
+    t.append(gearCanvas(it, 28), el('span', 'ilv', String(it.itemLevel)));
     t.title = itemName(it);
     t.dataset.item = it.id;
   } else {
@@ -82,7 +83,7 @@ function detail(box, char, it, opts) {
   box.style.setProperty('--c', r.color);
   const top = el('div', 'gdhead');
   const ic = el('span', 'gdic');
-  ic.append(iconCanvas(gearIcon(it), 40));
+  ic.append(gearCanvas(it, 40));
   const nm = el('div');
   nm.append(el('b', 'gdname', itemName(it)), el('span', 'gdsub', `${r.name} · ${SLOTS[it.slot].name} · LV ${it.itemLevel}`));
   top.append(ic, nm);

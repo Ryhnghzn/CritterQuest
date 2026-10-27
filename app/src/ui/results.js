@@ -1,6 +1,6 @@
 // Hasil Perjalanan (spec §13.4): shown after returning, dying or giving up.
 import { el, button } from './screens.js';
-import { iconCanvas, gearIcon } from '../art/sprites.js';
+import { gearCanvas } from '../art/gear.js';
 import { RARITIES } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { dungeonById } from '../data/dungeons.js';
@@ -44,7 +44,7 @@ function lootRow(it, cls) {
   const row = el('div', `lootrow ${cls}`.trim());
   row.style.setProperty('--c', r.color);
   const ic = el('span', 'lic');
-  ic.append(iconCanvas(gearIcon(it), 26));
+  ic.append(gearCanvas(it, 26));
   row.append(ic, el('b', null, itemName(it)), el('span', 'lr', `${r.name} · LV ${it.itemLevel}`));
   return row;
 }

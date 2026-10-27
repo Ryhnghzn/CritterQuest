@@ -56,3 +56,17 @@ describe('sprite vektor', () => {
     drawIcon(fakeCtx(), 'iconEmber', 32);
   });
 });
+
+describe('gear per varian', () => {
+  it('tiap slot × tingkat (dan tiap senjata kelas) bisa digambar di badan dan sebagai ikon', async () => {
+    const { drawGearIcon } = await import('./gear.js');
+    for (let tier = 0; tier < 7; tier++) {
+      for (const classId of Object.keys(CLASSES)) {
+        const gear = { weapon: { tier, rarity: 3 }, helm: { tier, rarity: 4 }, armor: { tier, rarity: 5 }, boots: { tier, rarity: 1 } };
+        drawDoll(fakeCtx(), classId, { hair: 2, hairColor: 1, gear }, { attack: 0.5, t: 1 });
+        drawGearIcon(fakeCtx(), { slot: 'weapon', classId, variant: tier, rarity: tier % 6 }, 32, 1);
+      }
+      for (const slot of ['helm', 'armor', 'boots', 'amulet', 'ring']) drawGearIcon(fakeCtx(), { slot, classId: null, variant: tier, rarity: 5 }, 32, 1);
+    }
+  });
+});

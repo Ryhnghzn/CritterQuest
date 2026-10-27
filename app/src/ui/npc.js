@@ -3,7 +3,8 @@
 // townsfolk who just talk.
 import { el, button, stage } from './screens.js';
 import { portrait, HAIR_NAMES, HAIR_PALETTE, HAIR_COLOR_NAMES } from '../art/doll.js';
-import { iconCanvas, gearIcon } from '../art/sprites.js';
+import { iconCanvas } from '../art/sprites.js';
+import { gearCanvas } from '../art/gear.js';
 import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
@@ -172,7 +173,7 @@ function sellPanel(char, onSell, redraw) {
       redraw();
     });
     t.style.setProperty('--c', RARITIES[it.rarity].color);
-    t.append(iconCanvas(gearIcon(it), 26), el('span', 'ilv', String(it.itemLevel)));
+    t.append(gearCanvas(it, 26), el('span', 'ilv', String(it.itemLevel)));
     if (worn) t.append(el('span', 'eq', 'E'));
     t.title = `${itemName(it)} — ${worn ? 'sedang dipakai' : `${SELL_PRICE(it)} koin`}`;
     t.dataset.item = it.id;
