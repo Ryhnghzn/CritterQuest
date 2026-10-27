@@ -113,7 +113,7 @@ function chain(run, s) {
     if (d < best) { best = d; cur = e; }
   }
   const struck = new Set();
-  const hit = { mult: s.mult, freeze: 0 };
+  const hit = { mult: s.mult, freeze: 0, fx: 'chain' };
   let fx = run.px, fy = run.py;
   for (let i = 0; i < s.count && cur; i++) {
     run.damageEnemy(hit, cur);

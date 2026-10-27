@@ -10,7 +10,8 @@ import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
-import { FX } from '../data/dungeon.js';
+import { FX, ROOM } from '../data/dungeon.js';
+import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
@@ -30,6 +31,9 @@ export class Game {
   constructor() {
     this.enemies = [];
     this.hits = [];       // live attack instances (run/hits.js)
+    this.shots = [];      // enemy projectiles (run/enemies.js)
+    this.hazards = [];    // telegraphed danger zones
+    this.pulses = [];     // expanding rings (heal, blast) — visual only
     this.gems = [];
     this.particles = [];
     this.floaters = [];
@@ -62,6 +66,7 @@ export class Game {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
+    this.shots.length = 0; this.hazards.length = 0; this.pulses.length = 0;
     this.gems.length = 0;
     this.particles.length = 0; this.floaters.length = 0;
     this.px = 0; this.py = 0;
@@ -166,7 +171,9 @@ export class Game {
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
     stepDungeon(this, dt);
     this.updateEnemies(dt);
-    if (this.state !== ST.PLAY) return; // died this step: no gem pickup / level-up after death
+    if (this.state === ST.PLAY) stepShots(this, dt, ROOM.r);
+    if (this.state === ST.PLAY) stepHazards(this, dt);
+    if (this.state !== ST.PLAY) return; // died this step: no gem pickup after death
     this.updateGems(dt);
     this.updateParticles(dt);
     this.updateFloaters(dt);
@@ -198,6 +205,7 @@ export class Game {
       wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
       lane: null, entering: false, elite: false,
     };
+    initAi(e);
     this.enemies.push(e);
     if (typeId === 'boss') sfx.boss();
     return e;
@@ -248,7 +256,7 @@ export class Game {
     const s = this.stats;
     const crit = rand() * 100 < s.crit;
     const fx = this.fx;
-    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1);
+    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.type === 'boss' || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
@@ -294,30 +302,48 @@ export class Game {
       if (e.flash > 0) e.flash -= dt;
       if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
+      // walk in through the lane, then the enemy's own behaviour (run/enemies.js)
+      let vx, vy;
       const goal = enemyGoal(this, e);
-      const a = Math.atan2(goal.y - e.y, goal.x - e.x);
-      const zig = e.type === 'dart' ? Math.sin(e.wob) * 0.7 : 0;
-      e.x += (Math.cos(a + zig) * e.speed + e.kx) * dt;
-      e.y += (Math.sin(a + zig) * e.speed + e.ky) * dt;
+      if (e.entering) {
+        const ga = Math.atan2(goal.y - e.y, goal.x - e.x);
+        vx = Math.cos(ga) * e.speed; vy = Math.sin(ga) * e.speed;
+      } else ({ vx, vy } = aiStep(this, e, dt));
+      if (e.type === 'dart') { // zig-zag flight
+        const z = Math.sin(e.wob) * 0.7, c = Math.cos(z), s = Math.sin(z);
+        [vx, vy] = [vx * c - vy * s, vx * s + vy * c];
+      }
+      e.x += (vx + e.kx) * dt;
+      e.y += (vy + e.ky) * dt;
       e.kx *= 0.86; e.ky *= 0.86;
       confineEnemy(e);
       // touch damage
       const rr = e.r + 10;
-      if (this.invuln <= 0 && this.dodgeInv <= 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr) {
-        let dmg = Math.max(1, e.dmg - this.stats.def) * this.dmgTakenMul;
-        if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; }
-        this.stats.hp -= dmg;
+      if (e.dmg > 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg)) {
+        const a = Math.atan2(this.py - e.y, this.px - e.x);
         if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; }
-        this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
-        sfx.hurt();
-        this.spawnBurst(this.px, this.py, '#ff5a6e', 8);
         e.kx = -Math.cos(a) * 220; e.ky = -Math.sin(a) * 220;
-        if (this.stats.hp <= 0) { this.die(); return; }
+        if (this.state !== ST.PLAY) return;
       }
     }
   }
 
+  // Any damage to the player (touch, projectile, blast): def, Teriakan Baja, shield,
+  // short invulnerability. Returns false when it did not land (dodging / invulnerable).
+  hurtPlayer(raw) {
+    if (this.invuln > 0 || this.dodgeInv > 0) return false;
+    let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul;
+    if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; }
+    this.stats.hp -= dmg;
+    this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
+    sfx.hurt();
+    this.spawnBurst(this.px, this.py, '#ff5a6e', 8);
+    if (this.stats.hp <= 0) this.die();
+    return true;
+  }
+
   killEnemy(e) {
+    onDeath(this, e);
     this.kills += 1;
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.type === 'boss' ? '#c26bd8' : '#7a45c2', e.type === 'boss' ? 26 : 8);
@@ -339,7 +365,7 @@ export class Game {
       return;
     }
     // xp gem
-    this.gems.push({ x: e.x, y: e.y, v: e.xp, mag: false, big: e.xp >= 5, t: rand() * 6 });
+    if (e.xp > 0) this.gems.push({ x: e.x, y: e.y, v: e.xp, mag: false, big: e.xp >= 5, t: rand() * 6 });
     // rare heart drop
     if (rand() < 0.018) this.gems.push({ x: e.x, y: e.y, v: 0, mag: false, big: false, heart: true, t: 0 });
   }
@@ -428,6 +454,8 @@ export class Game {
   }
 
   updateParticles(dt) {
+    const Q = this.pulses;
+    for (let i = Q.length - 1; i >= 0; i--) { if ((Q[i].t -= dt) <= 0) { Q[i] = Q[Q.length - 1]; Q.pop(); } }
     const P = this.particles;
     for (let i = P.length - 1; i >= 0; i--) {
       const p = P[i];

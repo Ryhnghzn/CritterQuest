@@ -206,6 +206,7 @@ export class Renderer {
   }
 
   drawRun(g, game, t, visible) {
+    for (const h of game.hazards) hazard(g, h, t);
     // pickups
     for (const gm of game.gems) {
       if (!visible(gm.x, gm.y)) continue;
@@ -224,7 +225,12 @@ export class Renderer {
       const sprite = SPRITES[e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type];
       const k = e.r / ENEMY_R[e.type]; // elites are drawn bigger
       if (e.elite) eliteAura(g, e, t);
-      drawBaked(g, sprite, e.x, e.y, k / squash, k * squash, game.px < e.x);
+      // about to act: blink white
+      const warn = (e.mode === 'wind' || e.mode === 'fuse') && ((t * 14) | 0) % 2 === 0;
+      const look = warn ? SPRITES[`${e.type}Flash`] : sprite;
+      const flip = e.mode === 'dash' ? e.dirX < 0 : game.px < e.x;
+      drawBaked(g, look, e.x, e.y, k / squash, k * squash, flip);
+      if (e.ai === 'shield') guard(g, e);
       if (e.type === 'boss' || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.type === 'boss' ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
     }
 
@@ -264,6 +270,7 @@ export class Renderer {
 
   // Emissive layer drawn over the darkness: attacks, sparks, numbers.
   drawFx(g, game, t) {
+    enemyShots(g, game, t);
     // attack instances
     for (const h of game.hits) drawHit(g, h, this.avatar, t);
     if (game.buffT > 0) shoutAura(g, game.px, game.py, t, Math.min(1, game.buffT * 2));
@@ -308,6 +315,8 @@ function roomLights(game, t, playing) {
     for (const p of game.portals) out.push({ x: p.x, y: p.y - 10, r: 160, rgb: PORTAL_RGB[p.kind], tint: 0.22 });
     for (const gm of game.gems) if (gm.gear) out.push({ x: gm.x, y: gm.y - 6, r: 50 + gm.gear.rarity * 14, rgb: RARITY_RGB[gm.gear.rarity], tint: 0.06 + gm.gear.rarity * 0.03 });
     for (const e of game.enemies) if (e.elite) out.push({ x: e.x, y: e.y, r: e.r * 3, rgb: '255,200,80', tint: 0.08 });
+    for (const s of game.shots) out.push({ x: s.x, y: s.y, r: 34, rgb: '255,140,200', tint: 0.05 });
+    for (const h of game.hazards) if (h.kind === 'circle') out.push({ x: h.x, y: h.y, r: h.r * 1.3, rgb: '255,60,70', tint: 0.08 });
     out.push({ x: game.px, y: game.py, r: 200, rgb: '255,200,140', tint: 0.06 });
   }
   return out;
@@ -634,6 +643,63 @@ function hpPill(g, x, y, w, k, elite = false) {
   if (k > 0) {
     g.beginPath(); g.roundRect(x - w / 2 + 0.6, y + 0.6, Math.max(h - 1.2, (w - 1.2) * k), h - 1.2, (h - 1.2) / 2);
     g.fillStyle = elite ? '#ffc94d' : '#ff5f7e'; g.fill();
+  }
+}
+
+// telegraphed danger: red zone filling up until it goes off
+function hazard(g, h, t) {
+  const k = 1 - Math.max(0, h.t) / h.max;
+  g.save();
+  if (h.kind === 'line') {
+    const a = Math.atan2(h.y2 - h.y, h.x2 - h.x), len = Math.hypot(h.x2 - h.x, h.y2 - h.y);
+    g.translate(h.x, h.y); g.rotate(a);
+    g.fillStyle = `rgba(255,60,80,${0.12 + 0.18 * k})`;
+    g.fillRect(0, -h.w / 2, len, h.w);
+    g.fillStyle = 'rgba(255,90,110,.55)';
+    g.fillRect(0, -h.w / 2, len * k, h.w);
+    g.strokeStyle = 'rgba(255,120,130,.8)'; g.lineWidth = 1.5; g.setLineDash([6, 5]);
+    g.strokeRect(0, -h.w / 2, len, h.w);
+  } else {
+    g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU);
+    g.fillStyle = `rgba(255,50,70,${0.1 + 0.15 * k})`; g.fill();
+    g.lineWidth = 2; g.strokeStyle = `rgba(255,110,120,${0.6 + 0.4 * Math.sin(t * 20) ** 2})`; g.setLineDash([7, 5]); g.lineDashOffset = -t * 30; g.stroke();
+    g.setLineDash([]);
+    g.beginPath(); g.arc(h.x, h.y, h.r * k, 0, TAU);
+    g.fillStyle = 'rgba(255,80,90,.35)'; g.fill();
+  }
+  g.restore();
+}
+
+// steel shield arc in front of a Kura Baja, turned toward where it faces
+function guard(g, e) {
+  g.save();
+  g.translate(e.x, e.y);
+  g.rotate(e.face);
+  g.beginPath(); g.arc(0, 0, e.r + 7, -1.15, 1.15); g.arc(0, 0, e.r + 2, 1.15, -1.15, true); g.closePath();
+  g.fillStyle = 'rgba(180,200,230,.9)'; g.fill();
+  g.lineWidth = 1.5; g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.arc(0, 0, e.r + 5, -0.9, 0.9); g.lineWidth = 1.2; g.strokeStyle = 'rgba(255,255,255,.7)'; g.stroke();
+  g.restore();
+}
+
+// enemy projectiles + expanding rings (heals, blasts), glowing over the darkness
+function enemyShots(g, game, t) {
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (const s of game.shots) {
+    const gr = g.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 2.6);
+    gr.addColorStop(0, s.color || '#ff6b8b'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(s.x - s.r * 3, s.y - s.r * 3, s.r * 6, s.r * 6);
+  }
+  for (const p of game.pulses) {
+    const k = 1 - p.t / p.max;
+    g.beginPath(); g.arc(p.x, p.y, p.r * (0.3 + 0.7 * k), 0, TAU);
+    g.lineWidth = 3 * (1 - k) + 0.5; g.strokeStyle = `rgba(${p.color},${1 - k})`; g.stroke();
+  }
+  g.restore();
+  for (const s of game.shots) {
+    g.beginPath(); g.arc(s.x, s.y, s.r * 0.75, 0, TAU);
+    g.fillStyle = '#fff'; g.fill();
+    g.lineWidth = 1.2; g.strokeStyle = s.color || '#ff6b8b'; g.stroke();
   }
 }
 

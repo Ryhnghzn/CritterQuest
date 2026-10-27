@@ -34,6 +34,7 @@ export function startFloor(run, floor) {
   run.floor = floor;
   run.deepest = Math.max(run.deepest, floor);
   run.enemies.length = 0; run.hits.length = 0;
+  run.shots.length = 0; run.hazards.length = 0; run.pulses.length = 0;
   run.particles.length = 0; run.floaters.length = 0;
   run.px = 0; run.py = 0;
   run.dodgeT = 0;

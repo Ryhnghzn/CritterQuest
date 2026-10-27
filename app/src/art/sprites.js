@@ -104,6 +104,67 @@ export const ENEMY_ART = {
       g.fillStyle = '#ff5f6d'; g.shadowColor = '#ff5f6d'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0;
     }
   },
+  mini(g, r) { ENEMY_ART.slink(g, r); },
+  spitter(g, r) { // green toad with a big mouth
+    for (const x of [-0.6, 0.55]) { ellipse(g, x * r, r * 0.72, r * 0.32, r * 0.18); ink(g, '#2f8a4e', r * 0.1); }
+    ellipse(g, 0, r * 0.08, r * 1.02, r * 0.78);
+    ink(g, grad(g, -r, r, '#a8f07a', '#3fa95a'), r * 0.13);
+    ellipse(g, r * 0.05, r * 0.42, r * 0.62, r * 0.28); ink(g, '#d9f7b0', r * 0.08); // belly
+    for (const x of [-0.22, 0.48]) { ellipse(g, x * r, -r * 0.62, r * 0.3, r * 0.3); ink(g, '#7ad65a', r * 0.1); eye(g, x * r + r * 0.03, -r * 0.62, r * 0.2, 0.35); }
+    g.beginPath(); g.moveTo(r * 0.15, r * 0.02); g.quadraticCurveTo(r * 0.65, r * 0.25, r * 0.98, r * 0.0);
+    g.lineCap = 'round'; g.lineWidth = r * 0.1; g.strokeStyle = OUT; g.stroke();
+    shine(g, -r * 0.45, -r * 0.15, r * 0.22, r * 0.1);
+  },
+  charger(g, r) { // stone boar with tusks
+    for (const x of [-0.55, -0.1, 0.35, 0.7]) { g.beginPath(); g.roundRect(x * r - r * 0.12, r * 0.4, r * 0.24, r * 0.45, r * 0.08); ink(g, '#4a4866', r * 0.08); }
+    ellipse(g, -r * 0.1, 0, r * 1.0, r * 0.62);
+    ink(g, grad(g, -r, r, '#b59a86', '#6a5446'), r * 0.1);
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(-r * (0.7 - i * 0.28), -r * 0.55); g.lineTo(-r * (0.6 - i * 0.28), -r * 0.9); g.lineTo(-r * (0.48 - i * 0.28), -r * 0.55); ink(g, '#4a3a33', r * 0.06); }
+    ellipse(g, r * 0.72, r * 0.05, r * 0.42, r * 0.36); ink(g, '#c8ae98', r * 0.09); // snout
+    ellipse(g, r * 0.98, r * 0.08, r * 0.14, r * 0.16); ink(g, '#8a6a5a', r * 0.06);
+    g.beginPath(); g.moveTo(r * 0.7, r * 0.3); g.quadraticCurveTo(r * 1.0, r * 0.35, r * 1.05, r * -0.1); g.lineTo(r * 0.9, r * 0.2); g.closePath(); ink(g, '#f1e9d8', r * 0.05);
+    eye(g, r * 0.52, -r * 0.22, r * 0.14, 0.3, '#ff4d5e');
+    brow(g, r * 0.35, -r * 0.42, r * 0.7, -r * 0.3, r * 0.08);
+  },
+  summoner(g, r) { // hooded skull shaman with a staff
+    g.beginPath(); g.moveTo(r * 0.85, -r * 1.25); g.lineTo(r * 0.85, r * 0.9); g.lineCap = 'round'; g.lineWidth = r * 0.14; g.strokeStyle = '#6a4630'; g.stroke();
+    g.beginPath(); g.arc(r * 0.85, -r * 1.3, r * 0.22, 0, TAU); g.fillStyle = '#c26bd8'; g.shadowColor = '#c26bd8'; g.shadowBlur = r * 0.6; g.fill(); g.shadowBlur = 0;
+    g.beginPath(); g.moveTo(-r * 0.9, r * 0.9); g.quadraticCurveTo(-r * 0.95, -r * 0.6, 0, -r * 1.1); g.quadraticCurveTo(r * 0.95, -r * 0.6, r * 0.75, r * 0.9); g.closePath();
+    ink(g, grad(g, -r, r, '#6d3fd6', '#2e1a5c'), r * 0.1);
+    ellipse(g, r * 0.05, -r * 0.3, r * 0.5, r * 0.48); ink(g, '#e8e4f2', r * 0.08); // skull
+    for (const x of [-0.12, 0.25]) { ellipse(g, x * r, -r * 0.32, r * 0.11, r * 0.13); g.fillStyle = '#c26bd8'; g.shadowColor = '#c26bd8'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0; }
+    g.beginPath(); g.moveTo(-r * 0.1, -r * 0.05); g.lineTo(r * 0.25, -r * 0.05); g.lineWidth = r * 0.06; g.strokeStyle = OUT; g.stroke();
+  },
+  healer(g, r) { // moss fairy with leaf wings
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.ellipse(s * r * 0.75, -r * 0.35, r * 0.6, r * 0.32, s * 0.6, 0, TAU);
+      g.fillStyle = 'rgba(160,255,190,.45)'; g.fill(); g.lineWidth = r * 0.06; g.strokeStyle = '#3fa95a'; g.stroke();
+    }
+    ellipse(g, 0, 0, r * 0.68, r * 0.75); ink(g, grad(g, -r, r, '#8ff5c8', '#2f9a6e'), r * 0.12);
+    for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse((i - 1) * r * 0.32, -r * 0.72, r * 0.18, r * 0.3, (i - 1) * 0.5, 0, TAU); ink(g, '#4fd88a', r * 0.06); }
+    eye(g, -r * 0.05, -r * 0.08, r * 0.17, 0.3);
+    eye(g, r * 0.32, -r * 0.08, r * 0.17, 0.3);
+    g.beginPath(); g.arc(r * 0.14, r * 0.2, r * 0.12, 0.2, Math.PI - 0.2); g.lineWidth = r * 0.06; g.strokeStyle = OUT; g.stroke();
+    shine(g, -r * 0.3, -r * 0.35, r * 0.15, r * 0.08);
+  },
+  bomber(g, r) { // mushroom with a lit fuse
+    g.beginPath(); g.roundRect(-r * 0.42, -r * 0.1, r * 0.84, r * 0.95, r * 0.3); ink(g, '#f1e9d8', r * 0.1);
+    eye(g, -r * 0.12, r * 0.25, r * 0.15, 0.3); eye(g, r * 0.22, r * 0.25, r * 0.15, 0.3);
+    g.beginPath(); g.moveTo(-r * 1.0, -r * 0.05); g.quadraticCurveTo(-r * 0.95, -r * 1.05, 0, -r * 1.05); g.quadraticCurveTo(r * 0.95, -r * 1.05, r * 1.0, -r * 0.05); g.closePath();
+    ink(g, grad(g, -r, 0, '#ff6b5e', '#c2183b'), r * 0.1);
+    for (const [x, y, rr] of [[-0.5, -0.45, 0.16], [0.15, -0.75, 0.13], [0.55, -0.35, 0.14]]) { g.beginPath(); g.arc(x * r, y * r, rr * r, 0, TAU); g.fillStyle = '#fff3e0'; g.fill(); }
+    g.beginPath(); g.moveTo(0, -r * 1.05); g.quadraticCurveTo(r * 0.25, -r * 1.35, r * 0.1, -r * 1.55); g.lineWidth = r * 0.08; g.strokeStyle = '#4a3a33'; g.stroke();
+    g.beginPath(); g.arc(r * 0.1, -r * 1.6, r * 0.12, 0, TAU); g.fillStyle = '#ffd36b'; g.shadowColor = '#ff9a3c'; g.shadowBlur = r * 0.6; g.fill(); g.shadowBlur = 0;
+  },
+  shielder(g, r) { // steel turtle (the shield itself is drawn by the renderer, facing the player)
+    for (const x of [-0.6, 0.55]) { ellipse(g, x * r, r * 0.6, r * 0.22, r * 0.16); ink(g, '#5b8a4e', r * 0.08); }
+    ellipse(g, r * 0.85, -r * 0.05, r * 0.32, r * 0.28); ink(g, '#7ab35a', r * 0.09);
+    eye(g, r * 0.95, -r * 0.12, r * 0.11, 0.3);
+    g.beginPath(); g.ellipse(-r * 0.05, -r * 0.05, r * 0.92, r * 0.72, 0, Math.PI, 0); g.lineTo(r * 0.87, r * 0.3); g.lineTo(-r * 0.97, r * 0.3); g.closePath();
+    ink(g, grad(g, -r, r * 0.3, '#c9d1e0', '#5d6880'), r * 0.1);
+    for (const x of [-0.45, 0.05, 0.5]) { g.beginPath(); g.arc(x * r, -r * 0.25, r * 0.2, 0, TAU); g.lineWidth = r * 0.06; g.strokeStyle = 'rgba(42,33,64,.5)'; g.stroke(); }
+    shine(g, -r * 0.4, -r * 0.5, r * 0.25, r * 0.1, -0.3, 0.4);
+  },
   boss(g, r) {
     g.beginPath();
     g.moveTo(-r, r * 0.6);

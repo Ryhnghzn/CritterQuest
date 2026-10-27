@@ -522,3 +522,30 @@ Aktif hanya di `npm run dev` atau bila alamat diberi `?cheat`; dibuka dengan tom
 
   Persen dihitung dari total stat (kelas + level + atribut + gear). Upgrade/atur ulang tidak memulihkan HP.
 - **Tukang Cukur — Bang Rudi**: kios beratap belang di sudut barat daya kota. Pilih gaya & warna rambut dengan pratinjau; 50 koin per potongan; gaya yang sama ditolak.
+
+## 18. Monster Baru, Skill Berenergi, Dungeon Bertema, Siang–Malam (perubahan 2026-10-27)
+
+Atas permintaan pemilik. Dikerjakan sebagai langkah 7 (ekspor/impor & polesan langkah 6 ditunda).
+
+### 18.1 Monster (langkah 7A)
+| Monster | Perilaku | Cara melawan |
+|---|---|---|
+| Penembak (Katak Ludah) | Menjaga jarak, berhenti sebentar (bersinar) lalu meludahkan proyektil | Dodge / bergerak menyamping |
+| Penyerbu (Babi Batu) | Mendekat, berhenti dengan garis merah peringatan, lalu menyeruduk lurus cepat | Keluar dari garis |
+| Pemanggil (Dukun Tengkorak) | Menjaga jarak, memanggil 3 anak buah tiap beberapa detik (maks 6) | Prioritaskan |
+| Penyembuh (Peri Lumut) | Menjaga jarak, memulihkan musuh di sekitarnya | Prioritaskan |
+| Peledak (Jamur Bom) | Berlari cepat; dekat pemain → lingkaran merah lalu meledak; mati → meledak juga | Menjauh dari lingkaran |
+| Berperisai (Kura Baja) | Perisai menghadap pemain, berputar pelan; serangan dasar dari depan −85% | Serang dari samping/belakang, atau pakai skill (menembus perisai) |
+
+- Proyektil musuh & area bahaya ditandai merah sebelum mengenai; dodge (kebal) menghindari semuanya.
+- **Raja Maw** punya pola serangan acak tiap beberapa detik: cincin proyektil, spiral, hentakan berantai di posisi pemain, serudukan, panggil anak buah; di bawah 50% HP lebih cepat dan lebih rapat.
+- Angka semua monster di `data/enemies.js`.
+
+### 18.2 Skill berenergi (langkah 7B)
+Serangan dasar yang kena mengisi **energi**; Q/E memakai energi dan jauh lebih kuat. Detail ditetapkan di 7B.
+
+### 18.3 Dungeon bertema (langkah 7C)
+Empat dungeon terbuka berurutan (Ruang Bawah Tanah Bayangan → Gua Kristal → Hutan Jamur Busuk → Benteng Lava), masing-masing 5 lantai + bos sendiri; bentuk ruangan tiap lantai diacak dengan rintangan. Detail di 7C.
+
+### 18.4 Siang–malam (langkah 7D)
+Kota berputar pagi → siang → sore → malam (± 8 menit nyata); dungeon tetap gelap dengan suasana per tema.
