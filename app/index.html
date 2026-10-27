@@ -134,6 +134,23 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 .tabs .chip.sel{background:var(--acc);color:#4a2600}
 .statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 22px;text-align:left}
 @media (min-width:520px){.statgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.attrs{width:min(580px,100%);display:flex;flex-direction:column;gap:6px;text-align:left}
+.attrhead{display:flex;justify-content:space-between;align-items:center;font-size:16px}
+.attrhead .pts{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--faint);color:var(--dim)}
+.attrhead .pts.on{background:linear-gradient(180deg,#8ff5c8,#3fd496);color:#0d3b28;animation:rise .3s ease}
+.attr{display:grid;grid-template-columns:40px 50px minmax(0,1fr) auto;align-items:center;gap:8px;padding:4px 6px 4px 12px;border-radius:12px;background:var(--glass2)}
+.attr .an{font-weight:700}
+.attr .add{color:var(--mint)}
+.attr .ad{font-size:12px;color:var(--dim)}
+.attr .plus{width:34px;height:34px;padding:0;position:relative;font-size:0}
+.attr .plus::before,.attr .plus::after{content:'';position:absolute;left:50%;top:50%;width:14px;height:3.5px;border-radius:2px;background:#4a2600;transform:translate(-50%,-50%)}
+.attr .plus::after{transform:translate(-50%,-50%) rotate(90deg)}
+.cpbody{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start;width:min(900px,100%)}
+.cpbody>.panel{width:min(440px,100%)}
+@media (min-width:920px){.cpbody .statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.attr .plus:disabled{opacity:.3;pointer-events:none}
+.attrs .row{justify-content:flex-end;margin-top:4px}
+.stat b.up{color:var(--mint)}
 .stat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 12px;border-radius:12px;background:var(--glass2)}
 .stat span{font-size:12px;color:var(--dim)}
 .stat b{font-size:17px;font-weight:600}
@@ -155,7 +172,6 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(255,201,77,.2
 h2.h.bad{color:var(--coral)}
 
 /* level-up cards */
-#choices .card{width:200px;padding:20px 16px}
 .iconbubble{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;
   background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.25),rgba(255,255,255,.06));border:1.5px solid var(--line)}
 .key{position:absolute;top:10px;left:10px;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;
@@ -198,7 +214,7 @@ body.touch #act-q{transform:translate(10px,40px)}
 body.touch #act-dodge{transform:translateY(6px)}
 .act .ic{display:grid;place-items:center}
 .act .cdt{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;font-weight:700;text-shadow:0 1px 3px #000;pointer-events:none}
-#autobtn{position:absolute;right:120px;top:12px;z-index:5;pointer-events:auto;height:44px;padding:0 14px;border-radius:999px;display:flex;align-items:center;gap:7px;
+#autobtn{position:absolute;right:174px;top:12px;z-index:5;pointer-events:auto;height:44px;padding:0 14px;border-radius:999px;display:flex;align-items:center;gap:7px;
   font-family:inherit;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--dim);background:rgba(22,17,46,.6);border:1.5px solid var(--line);cursor:pointer;backdrop-filter:blur(6px)}
 #autobtn .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25)}
 #autobtn.on{color:#0d3b28;background:linear-gradient(180deg,#8ff5c8,#3fd496);border-color:transparent}
@@ -230,7 +246,7 @@ body.playing:not(.touch) canvas#game{cursor:crosshair}
 #tmeta{display:flex;gap:6px}
 .hchip.gold b{color:var(--acc)}
 .coin{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff1b3,#ffc94d 55%,#d98a00);box-shadow:0 0 0 1.5px #7a4a00 inset}
-#charbtn{position:absolute;right:66px;top:12px;z-index:5;pointer-events:auto;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+#charbtn{position:absolute;right:120px;top:12px;z-index:5;pointer-events:auto;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
   font-size:20px;color:var(--ink);background:rgba(22,17,46,.6);border:1.5px solid var(--line);cursor:pointer;backdrop-filter:blur(6px)}
 #prompt{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);pointer-events:auto;display:flex;align-items:center;gap:10px;
   font-family:inherit;font-size:16px;font-weight:600;color:var(--ink);padding:10px 18px;border-radius:999px;cursor:pointer;
@@ -329,12 +345,6 @@ body.touch #prompt kbd{display:none}
   <div id="create" class="screen hidden"></div>
   <div id="npc" class="screen hidden"></div>
   <div id="charpanel" class="screen hidden"></div>
-
-  <div id="levelup" class="screen hidden">
-    <h2 class="h">Naik Level!</h2>
-    <div class="sub">Pilih satu kekuatan — klik atau tekan 1 / 2 / 3</div>
-    <div class="row" id="choices"></div>
-  </div>
 
   <div id="pause" class="screen hidden">
     <h2 class="h">Jeda</h2>

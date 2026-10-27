@@ -1,19 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { XP_BASE, XP_GROWTH } from '../data/balance.js';
+import { expToNext } from '../meta/character.js';
 
 const setup = (classId) => ({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats } });
 const CLASS_IDS = Object.keys(CLASSES);
 
-// Plays a run headlessly: circle around the arena attacking, always take the first card.
+// Plays a run headlessly: circle around the room attacking.
 function simulate(classId, seconds) {
   const g = new Game();
   g.start(setup(classId));
   for (let i = 0; i < seconds * 60 && g.state !== ST.OVER; i++) {
     g.intent = { move: { x: Math.cos(g.time * 0.9), y: Math.sin(g.time * 0.9) }, aimAt: null, dodge: false, attack: true };
     g.step(1 / 60);
-    if (g.state === ST.LEVELUP) g.applyChoice(g.choices[0]);
   }
   return g;
 }
@@ -43,7 +42,7 @@ describe('hasil ronde', () => {
   it('EXP = total nilai permata yang diambil', () => {
     const g = simulate('warrior', 90);
     let total = g.xp;
-    for (let l = 1; l < g.level; l++) total += XP_BASE + XP_GROWTH * l;
+    for (let l = 1; l < g.level; l++) total += expToNext(l);
     const r = g.result();
     expect(r.exp).toBe(total);
     expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, floor: g.deepest, cleared: false });
@@ -122,5 +121,33 @@ describe('HP awal & potion di ronde', () => {
     const g = start({ hp: 20, potions: 0 });
     step(g, { potion: true });
     expect(g.stats.hp).toBe(20);
+  });
+});
+
+describe('level karakter di dungeon', () => {
+  const start = (level = 1, exp = 0) => {
+    const g = new Game();
+    g.start({ ...setup('warrior'), level, exp });
+    g.spawnT = 1e9;
+    return g;
+  };
+  const gem = (g, v) => { g.gems.push({ x: g.px, y: g.py, v, mag: false, big: false, t: 0 }); g.step(1 / 60); };
+
+  it('permata EXP menambah EXP karakter dan naik level tanpa menghentikan permainan', () => {
+    const g = start(2, 60); // butuh 70
+    gem(g, 15);
+    expect(g.level).toBe(3);
+    expect(g.xp).toBe(5);
+    expect(g.levelsGained).toBe(1);
+    expect(g.state).toBe(ST.PLAY);
+    expect(g.result().exp).toBe(15);
+  });
+
+  it('setStats: HP sekarang tetap, ditambah kenaikan HP maks', () => {
+    const g = start();
+    g.stats.hp = 50;
+    g.setStats({ ...setup('warrior').stats, maxHp: 160 });
+    expect(g.stats.hp).toBe(70);
+    expect(g.stats.maxHp).toBe(160);
   });
 });

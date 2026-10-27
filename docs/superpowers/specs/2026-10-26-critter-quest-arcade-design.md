@@ -411,3 +411,45 @@ Slot naik ke `version: 2`; `migrate()` v1 → v2:
 | `ui/npc.js`, `ui/charpanel.js` | jendela NPC, panel Karakter | smoke Playwright |
 
 Dikerjakan dalam dua bagian, masing-masing dicek manual oleh pemilik: **4A** kota (gerbang sementara menuju arena lama), **4B** dungeon berlantai.
+
+## 14. Poin Stat & Gear Diperluas (perubahan 2026-10-27)
+
+Atas permintaan pemilik: kartu berkah level-up dihapus, naik level memberi **poin stat** yang dibagi sendiri; gear dibuat **banyak** dengan **6 rarity** dan **6 slot**. Bagian ini mengalahkan §4.1, §4.3, §5.5, §6 bila bertentangan.
+
+### 14.1 Level & poin stat
+
+- Level ronde & kartu berkah (§5.5) **dihapus**. Permata EXP langsung menambah EXP **karakter**, juga di tengah dungeon; naik level di dungeon → spanduk "Naik level!" tanpa menghentikan permainan.
+- Tiap naik level: **+3 poin**. Poin tersedia = `3 × (level − 1) − poin terpakai` (tidak disimpan terpisah).
+- Poin dibagi di panel Karakter (tombol C / ikon; di dungeon membuka panel sambil menjeda). Tombol [+] menandai, lalu **Simpan** / **Batal**. Pembagian permanen (atur ulang menyusul di langkah 6).
+- Di dungeon, poin dari level yang baru didapat bisa langsung dipakai dan stat ronde ikut berubah; disimpan ke save bersama hasil perjalanan (juga bila mati).
+
+| Atribut | Per poin |
+|---|---|
+| STR | atk +1 |
+| VIT | maxHp +8, def +0,25 |
+| AGI | atkSpd +0,015, moveSpd +0,8 |
+| DEX | crit +0,5%, cdr +0,4% |
+| LUK | critDmg +0,02, magnet +2, peluang rarity lebih tinggi (langkah 5B) |
+
+Stat akhir = dasar kelas + pertumbuhan level + atribut + gear (+ upgrade Pelatih, langkah 6).
+
+### 14.2 Gear
+
+**Slot (6):** Senjata (khusus kelas, atk), Helm (maxHp), Armor (def + maxHp), Sepatu (moveSpd), Kalung (crit), Cincin (hanya bonus, minimal Bagus). Helm, armor, sepatu, senjata terlihat di paper doll.
+
+**Rarity (6):**
+
+| Rarity | Warna | Bonus acak | Pengali dasar | Lain |
+|---|---|---|---|---|
+| 0 Biasa | `#e8e8e8` | 0 | ×1,00 | |
+| 1 Bagus | `#6ee7a0` | 1 | ×1,00 | |
+| 2 Langka | `#6ec9ff` | 2 | ×1,08 | |
+| 3 Epik | `#c26bd8` | 3 | ×1,18 | kilau |
+| 4 Legendaris | `#ffb547` | 3 | ×1,30 | + 1 efek khusus, nama unik |
+| 5 Mitos | `#ff4d6d` | 4 | ×1,45 | + 1 efek khusus, hanya dari bos lantai 5 / peti mahal |
+
+Varian tampilan per slot berdasarkan rentang level item (puluhan model total); daftar varian, bonus, efek khusus, peluang drop, dan harga ditetapkan di `data/items.js` pada langkah 5B dan dicatat di sini setelah disetujui.
+
+### 14.3 Save versi 3
+
+`migrate()` v2 → v3: tambah `attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 }`; `equipped` mendapat `boots: null, amulet: null`. Validasi: jumlah `attrs` ≤ `3 × (level − 1)`.

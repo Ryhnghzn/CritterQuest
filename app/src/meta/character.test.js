@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateName, createCharacter, expToNext, addExp, finalStats, currentHp, usePotion, applyTrip,
+  freePoints, allocate,
 } from './character.js';
 
 const NOW = 1761436800000;
@@ -25,13 +26,14 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 2, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 3, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0,
       hp: null, potions: 0,
       upgrades: { hp: 0, atk: 0, magnet: 0 },
+      attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
       inventory: [],
-      equipped: { weapon: null, helm: null, armor: null, ring: null },
+      equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
       records: { bestFloor: 0, clears: 0, trips: 0, kills: 0, bossKills: 0 },
     });
   });
@@ -139,5 +141,51 @@ describe('applyTrip', () => {
   it('rekor lantai terdalam tidak turun', () => {
     const before = { ...make(), records: { bestFloor: 4, clears: 1, trips: 9, kills: 0, bossKills: 0 } };
     expect(applyTrip(before, trip({ floor: 1 }), NOW).char.records.bestFloor).toBe(4);
+  });
+});
+
+describe('poin stat', () => {
+  const lv = (level, attrs = {}) => ({ ...make(), level, attrs: { ...make().attrs, ...attrs } });
+
+  it('3 poin per level di atas 1, dikurangi yang terpakai', () => {
+    expect(freePoints(make())).toBe(0);
+    expect(freePoints(lv(5))).toBe(12);
+    expect(freePoints(lv(5, { str: 4, luk: 1 }))).toBe(7);
+  });
+
+  it('membagi poin sebanyak yang tersedia', () => {
+    const c = allocate(lv(3), { str: 2, vit: 4 }, NOW + 1);
+    expect(c.attrs).toEqual({ str: 2, vit: 4, agi: 0, dex: 0, luk: 0 });
+    expect(c.updatedAt).toBe(NOW + 1);
+    expect(freePoints(c)).toBe(0);
+  });
+
+  it('menolak poin berlebih, atribut tak dikenal, dan nilai bukan bulat positif', () => {
+    expect(allocate(lv(2), { str: 4 }, NOW)).toBeNull();
+    expect(allocate(lv(2), { int: 1 }, NOW)).toBeNull();
+    expect(allocate(lv(2), { str: -1 }, NOW)).toBeNull();
+    expect(allocate(lv(2), { str: 1.5 }, NOW)).toBeNull();
+  });
+
+  it('atribut menambah stat akhir', () => {
+    const base = finalStats(lv(4));
+    const s = finalStats(lv(4, { str: 3, vit: 2, agi: 2, dex: 2, luk: 1 }));
+    expect(s.atk).toBeCloseTo(base.atk + 3);
+    expect(s.maxHp).toBeCloseTo(base.maxHp + 16);
+    expect(s.def).toBeCloseTo(base.def + 0.5);
+    expect(s.atkSpd).toBeCloseTo(base.atkSpd + 0.03);
+    expect(s.moveSpd).toBeCloseTo(base.moveSpd + 1.6);
+    expect(s.crit).toBeCloseTo(base.crit + 1);
+    expect(s.cdr).toBeCloseTo(base.cdr + 0.8);
+    expect(s.critDmg).toBeCloseTo(base.critDmg + 0.02);
+    expect(s.magnet).toBeCloseTo(base.magnet + 2);
+  });
+
+  it('poin yang dipakai di dungeon ikut tersimpan bersama hasil perjalanan', () => {
+    const trip = { exp: 130, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: true, hp: 1, potions: 0, attrs: { agi: 6 } };
+    const { char } = applyTrip(make(), trip, NOW);
+    expect(char.level).toBe(3);
+    expect(char.attrs.agi).toBe(6);
+    expect(freePoints(char)).toBe(0);
   });
 });

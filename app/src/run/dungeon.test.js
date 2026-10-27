@@ -17,7 +17,6 @@ function start() {
 function step(g, intent = IDLE) {
   g.intent = intent;
   g.step(DT);
-  if (g.state === ST.LEVELUP) while (g.choices) g.applyChoice(g.choices[0]);
 }
 
 // Kills everything as soon as it spawns until the floor is clear; returns how many died.
@@ -106,7 +105,7 @@ describe('lantai & portal', () => {
     enter(g, 'down');
     expect(g.floor).toBe(2);
     expect(g.state).toBe(ST.PLAY);
-    expect(g.stats.hp).toBeGreaterThanOrEqual(500); // level-up cards may heal, never a refill
+    expect(g.stats.hp).toBeGreaterThanOrEqual(500); // hearts may heal, never a refill
     expect(g.stats.hp).toBeLessThan(1000);
     expect(g.gold).toBeGreaterThanOrEqual(gold);
     expect(g.expGained).toBeGreaterThanOrEqual(exp);

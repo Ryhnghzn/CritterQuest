@@ -13,7 +13,7 @@ import { input, pollMove, consumePressed } from './core/input.js';
 import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
-import { createCharacter, applyTrip, finalStats, currentHp, usePotion } from './meta/character.js';
+import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
 import { innRest, buyPotion } from './meta/shop.js';
 import { createTown, stepTown } from './town/town.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
@@ -41,6 +41,7 @@ let current = null;    // character being played (save data)
 let town = null;       // town/town.js state while in town
 let townNpc = null;    // NPC whose dialog is open
 let townSaveT = 0;
+let tripAttrs = {};    // points spent in the dungeon, saved with the trip result
 
 // ——— save + settings ———
 const store = await openStore();
@@ -89,7 +90,7 @@ function setUI(hud, controls) {
   $('townhud').classList.toggle('hidden', hud !== 'town');
   $('pausebtn').classList.toggle('hidden', !controls);
   $('autobtn').classList.toggle('hidden', !controls || hud !== 'run');
-  $('charbtn').classList.toggle('hidden', !controls || hud !== 'town');
+  $('charbtn').classList.toggle('hidden', !controls);
   $('actions').classList.toggle('hidden', !controls);
   document.body.classList.toggle('playing', controls && hud === 'run');
   document.body.classList.toggle('intown', hud === 'town');
@@ -103,7 +104,7 @@ function showMenu(id) {
   setUI('none', false);
 }
 
-// overlay during a run (levelup / pause); null = playing
+// overlay during a run (pause / charpanel); null = playing
 function showOverlay(id) {
   screen = showScreen(id);
   setUI('run', id === null);
@@ -208,10 +209,44 @@ function closeTownOverlay() {
   showTownOverlay(null);
 }
 
+// The character as it stands mid-trip: EXP so far and points spent in the dungeon.
+function tripChar() {
+  const { char } = addExp(current, game.expGained);
+  return allocate(char, tripAttrs, char.updatedAt) || char;
+}
+
 function openCharPanel() {
+  if (scene === 'run') {
+    game.state = ST.PAUSE;
+    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun });
+    showOverlay('charpanel');
+    return;
+  }
   syncHp();
-  renderCharPanel($('charpanel'), current, town.hp, { onClose: closeTownOverlay });
+  renderCharPanel($('charpanel'), current, town.hp, { onClose: closeTownOverlay, onAllocate: allocateInTown });
   showTownOverlay('charpanel');
+}
+
+async function allocateInTown(add) {
+  const next = allocate(current, add, Date.now());
+  if (!next) return;
+  current = next;
+  const s = finalStats(current);
+  town.maxHp = s.maxHp; town.moveSpd = s.moveSpd;
+  sfx.pickCard();
+  await saveCurrent();
+  updateTownHUD(current, town);
+  openCharPanel();
+}
+
+// In the dungeon the save stays as it was at the gate (spec §13.4); the points
+// are applied to the run now and written with the trip result.
+function allocateInRun(add) {
+  if (!allocate(tripChar(), add, 0)) return;
+  for (const [k, n] of Object.entries(add)) tripAttrs[k] = (tripAttrs[k] || 0) + n;
+  game.setStats(finalStats(tripChar()));
+  sfx.pickCard();
+  openCharPanel();
 }
 
 function townPause() {
@@ -242,7 +277,8 @@ async function enterDungeon() {
   scene = 'run';
   ensureAudio(); startMusic();
   const stats = finalStats(current);
-  game.start({ classId: current.classId, stats, hp: currentHp(current), potions: current.potions });
+  game.start({ classId: current.classId, stats, hp: currentHp(current), potions: current.potions, level: current.level, exp: current.exp });
+  tripAttrs = {};
   CLASSES[current.classId].skills.forEach((sk, i) => {
     const btn = $(i ? 'act-e' : 'act-q');
     btn.querySelector('.ic').replaceChildren(iconCanvas(sk.id, 30));
@@ -263,7 +299,7 @@ async function endRun(died) {
   const r = game.result();
   const trip = {
     exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills,
-    floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
+    floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions, attrs: tripAttrs,
   };
   const newRecord = trip.floor > current.records.bestFloor;
   const { char, levelsGained, goldLost } = applyTrip(current, trip, Date.now());
@@ -272,35 +308,6 @@ async function endRun(died) {
   renderResults($('results'), { char, trip, levelsGained, goldLost, newRecord, saveError },
     { onContinue: () => enterTown(current, 'gate') });
   showMenu('results');
-}
-
-// ——— level-up screen ———
-function showLevelUp() {
-  const box = $('choices');
-  box.innerHTML = '';
-  game.choices.forEach((c, i) => {
-    const d = game.describeChoice(c);
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.style.animationDelay = `${i * 0.07}s`;
-    const key = document.createElement('div'); key.className = 'key'; key.textContent = i + 1;
-    const icon = document.createElement('div'); icon.className = 'iconbubble';
-    icon.append(iconCanvas(d.icon || c.id, 44));
-    const tag = document.createElement('div'); tag.className = 'tagline'; tag.textContent = c.label || 'BERKAH';
-    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = d.name;
-    const ds = document.createElement('div'); ds.className = 'ds'; ds.textContent = d.desc;
-    card.append(key, icon, tag, nm, ds);
-    card.addEventListener('click', () => pickChoice(i));
-    box.appendChild(card);
-  });
-  showOverlay('levelup');
-}
-
-function pickChoice(i) {
-  if (game.state !== ST.LEVELUP || !game.choices[i]) return;
-  game.applyChoice(game.choices[i]);
-  if (game.state === ST.PLAY) showOverlay(null);
-  else showLevelUp();
 }
 
 function pause() { game.state = ST.PAUSE; showOverlay('pause'); }
@@ -320,7 +327,9 @@ $('pausebtn').addEventListener('click', () => {
   else if (scene === 'town' && screen === null) townPause();
 });
 $('autobtn').addEventListener('click', toggleAuto);
-$('charbtn').addEventListener('click', () => { if (scene === 'town' && screen === null) openCharPanel(); });
+$('charbtn').addEventListener('click', () => {
+  if ((scene === 'town' && screen === null) || (scene === 'run' && game.state === ST.PLAY)) openCharPanel();
+});
 $('prompt').addEventListener('click', () => { if (town?.near && screen === null) openNpc(town.near); });
 $('mute').addEventListener('click', () => {
   ensureAudio();
@@ -342,11 +351,11 @@ input.onAction.push((code) => {
     return;
   }
   if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
+  if (code === 'KeyC' && game.state === ST.PLAY) { openCharPanel(); return; }
+  if (code === 'KeyC' && screen === 'charpanel') { resume(); return; }
+  if (screen === 'charpanel' && code === 'Escape') { resume(); return; }
   if (game.state === ST.PLAY && code === 'Escape') { pause(); return; }
   if (game.state === ST.PAUSE && code === 'Escape') { resume(); return; }
-  if (game.state === ST.LEVELUP && code.startsWith('Digit')) {
-    pickChoice(Number(code.slice(5)) - 1);
-  }
 });
 
 let hudT = 0;
@@ -372,10 +381,8 @@ function tickRun(pressed) {
   };
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
-  // react only on the PLAY -> LEVELUP/OVER transition; rebuilding the cards
-  // every frame swaps the DOM between mousedown and mouseup and kills clicks
+  // react only on the PLAY -> OVER transition
   if (!wasPlaying) return false;
-  if (game.state === ST.LEVELUP) { showLevelUp(); return true; }
   if (game.state === ST.OVER) { $('dmg').style.opacity = 0; endRun(!game.returned); return true; }
   return false;
 }
@@ -425,7 +432,6 @@ window.__seek = (t) => {
   for (let i = 0; i < n && game.state === ST.PLAY; i++) {
     simT += STEP;
     game.step(STEP);
-    if (game.state === ST.LEVELUP) game.applyChoice(game.choices[0]);
   }
   R.draw(game, simT);
 };

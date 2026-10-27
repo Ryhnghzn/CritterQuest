@@ -1,7 +1,7 @@
 // Permanent character: creation, level/EXP and final stats (spec §4.1, §4.3).
 // Every function returns new objects; save data is never mutated in place.
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX } from '../data/balance.js';
+import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL } from '../data/balance.js';
 import { POTION, DEATH } from '../data/dungeon.js';
 import { SAVE_VERSION, validateSlot, nameLength } from './schema.js';
 
@@ -21,8 +21,9 @@ export function createCharacter({ slot, name, look, classId }, now) {
     gold: 0,
     hp: null, potions: 0,
     upgrades: { hp: 0, atk: 0, magnet: 0 },
+    attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
     inventory: [],
-    equipped: { weapon: null, helm: null, armor: null, ring: null },
+    equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
     records: { bestFloor: 0, clears: 0, trips: 0, kills: 0, bossKills: 0 },
   };
   const err = validateSlot(c);
@@ -45,15 +46,42 @@ export function addExp(char, amount) {
   return { char: c, levelsGained };
 }
 
-// Class base + level growth. Shop upgrades (langkah 5), gear (langkah 4) and
-// run blessings are layered on top of this later.
+// Class base + level growth + attribute points (spec §14.1). Gear (langkah 5C)
+// and trainer upgrades (langkah 6) are layered on top of this later.
 export function finalStats(char) {
   const cls = CLASSES[char.classId];
   const lv = char.level - 1;
   const s = { ...CLASS_BASE, ...cls.stats };
   s.maxHp += cls.growth.maxHp * lv;
   s.atk += cls.growth.atk * lv;
+  for (const a of ATTRS) {
+    const n = char.attrs[a.id];
+    for (const [stat, v] of Object.entries(a.per)) s[stat] += v * n;
+  }
   return s;
+}
+
+export function spentPoints(char) {
+  return ATTRS.reduce((n, a) => n + char.attrs[a.id], 0);
+}
+
+export function freePoints(char) {
+  return POINTS_PER_LEVEL * (char.level - 1) - spentPoints(char);
+}
+
+// Spend points: add = { str: 2, vit: 1, … }. Returns the new character, or
+// null when the request is malformed or needs more points than are free.
+export function allocate(char, add, now) {
+  let total = 0;
+  for (const [k, n] of Object.entries(add)) {
+    if (!ATTRS.some((a) => a.id === k) || !Number.isInteger(n) || n < 0) return null;
+    total += n;
+  }
+  if (total > freePoints(char)) return null;
+  const c = structuredClone(char);
+  for (const [k, n] of Object.entries(add)) c.attrs[k] += n;
+  c.updatedAt = now;
+  return c;
 }
 
 // Saved HP: null means full; anything above max (e.g. after a level change) is clamped.
@@ -82,10 +110,12 @@ export function usePotion(char, now) {
 }
 
 // End of a dungeon trip (spec §13.4).
-// trip: { exp, gold, kills, bossKills, floor, cleared, died, hp, potions }
-// Gear joins the inventory in langkah 5.
+// trip: { exp, gold, kills, bossKills, floor, cleared, died, hp, potions, attrs? }
+// attrs: points spent during the trip (on levels gained in it). Gear joins the inventory in langkah 5B.
 export function applyTrip(char, trip, now) {
-  const { char: c, levelsGained } = addExp(char, trip.exp);
+  const leveled = addExp(char, trip.exp);
+  const levelsGained = leveled.levelsGained;
+  const c = (trip.attrs && allocate(leveled.char, trip.attrs, now)) || leveled.char;
   const gold = trip.died ? Math.floor(trip.gold * DEATH.goldKeep) : trip.gold;
   c.gold += gold;
   c.potions = trip.potions;

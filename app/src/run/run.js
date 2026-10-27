@@ -1,7 +1,8 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
 import { rand, rrange, rint, resetRng } from '../core/rng.js';
-import { XP_BASE, XP_GROWTH, STAT_UPS } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL } from '../data/balance.js';
+import { expToNext } from '../meta/character.js';
 import { POTION } from '../data/dungeon.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -11,10 +12,11 @@ import { stepAttack, stepSkills, skillCooldown } from './skills.js';
 import { stepHits } from './hits.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropCoins, hpMul } from './dungeon.js';
 
-export const ST = { TITLE: 0, PLAY: 1, LEVELUP: 2, PAUSE: 3, OVER: 4 };
+export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 
 // What a run starts from: class, final stats (meta/character.js finalStats),
-// and the HP / potions the character carries in (spec §13.3). A run is one dungeon
+// the HP / potions the character carries in (spec §13.3) and its level / EXP:
+// EXP gems level the character up right in the dungeon (spec §14.1). A run is one dungeon
 // trip: floor after floor (run/dungeon.js) until a gold portal, death or giving up.
 const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } };
 const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, potion: false };
@@ -50,7 +52,7 @@ export class Game {
     this.state = ST.OVER;
   }
 
-  reset({ classId, stats, hp = stats.maxHp, potions = 0 }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = 0, level = 1, exp = 0 }) {
     resetRng();
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
@@ -67,19 +69,17 @@ export class Game {
     this.buffT = 0; this.dmgTakenMul = 1;
     this.dashSpeed = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
-    this.time = 0; this.kills = 0; this.level = 1;
+    this.time = 0; this.kills = 0;
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
-    this.xp = 0; this.xpNeed = XP_BASE + XP_GROWTH;
+    // character level & EXP, live during the trip
+    this.level = level; this.xp = exp; this.xpNeed = expToNext(level); this.levelsGained = 0;
     // dungeon progress (run/dungeon.js)
     this.floor = 0; this.deepest = 0; this.cleared = false; this.returned = false;
     this.wave = 0; this.queue = []; this.queueI = 0; this.spawnT = 0; this.waveGap = 0;
     this.floorT = 0; this.floorClear = false; this.clearT = 0;
     this.portals = []; this.exit = null;
-    this.pendingLevels = 0; this.choices = null;
-    // run stats: the character's final stats, then multiplied by level-up blessings
-    this.stats = { ...stats, hp, dmgMul: 1 };
+    this.stats = { ...stats, hp };
     this.potions = potions; this.potionCd = 0;
-    this.upCounts = {}; // stat id -> times taken
     this.invuln = 0; this.flash = 0; this.shake = 0;
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
@@ -92,6 +92,14 @@ export class Game {
   }
 
   showBanner(text) { this.banner = text; this.bannerT = 2.4; }
+
+  // New final stats mid-trip (points spent in the dungeon): current HP stays,
+  // plus whatever max HP was added.
+  setStats(stats) {
+    const hp = Math.min(stats.maxHp, this.stats.hp + Math.max(0, stats.maxHp - this.stats.maxHp));
+    this.stats = { ...stats, hp };
+    this.skillCdMax = CLASSES[this.classId].skills.map((sk) => skillCooldown(stats, sk));
+  }
 
   // ——————————————— fixed step ———————————————
   step(dt) {
@@ -115,16 +123,9 @@ export class Game {
     this.updateParticles(dt);
     this.updateFloaters(dt);
     if (this.exit) this.takeExit();
-
-    // level-up gate (not after going home: the trip is over)
-    if (this.state === ST.PLAY && this.pendingLevels > 0) {
-      this.choices = this.rollChoices();
-      this.state = ST.LEVELUP;
-      sfx.levelup();
-    }
   }
 
-  // Blue portal: next floor (blessings, EXP and HP carry over). Gold: go home.
+  // Blue portal: next floor (EXP, HP and potions carry over). Gold: go home.
   // Anything still on the ground is picked up on the way out.
   takeExit() {
     const kind = this.exit;
@@ -133,8 +134,7 @@ export class Game {
     this.gems.length = 0;
     sfx.levelup();
     if (kind === 'down') startFloor(this, this.floor + 1);
-    else { this.returned = true; this.state = ST.OVER; return; }
-    if (this.pendingLevels > 0) { this.choices = this.rollChoices(); this.state = ST.LEVELUP; }
+    else { this.returned = true; this.state = ST.OVER; }
   }
 
   // ——————————————— spawning ———————————————
@@ -169,11 +169,11 @@ export class Game {
   }
 
   // ——————————————— combat ———————————————
-  // Damage rules (spec §5.2): atk × skill multiplier × (crit ? critDmg : 1), × level-up power.
+  // Damage rules (spec §5.2): atk × skill multiplier × (crit ? critDmg : 1).
   damageEnemy(h, e) {
     const s = this.stats;
     const crit = rand() * 100 < s.crit;
-    const dmg = s.atk * h.mult * s.dmgMul * (crit ? s.critDmg : 1);
+    const dmg = s.atk * h.mult * (crit ? s.critDmg : 1);
     e.hp -= dmg;
     e.flash = 0.12;
     if (h.freeze) e.frozen = Math.max(e.frozen, h.freeze);
@@ -279,57 +279,16 @@ export class Game {
       this.expGained += g.v;
       this.addFloater(g.x, g.y, `+${g.v}`, '#8fffc0');
       sfx.gem();
-      while (this.xp >= this.xpNeed) {
+      while (this.level < CHAR_LEVEL_MAX && this.xp >= this.xpNeed) {
         this.xp -= this.xpNeed;
         this.level++;
-        this.xpNeed = XP_BASE + XP_GROWTH * this.level;
-        this.pendingLevels++;
+        this.levelsGained++;
+        this.xpNeed = expToNext(this.level);
+        this.showBanner(`Naik level! LV ${this.level}`);
+        this.addFloater(this.px, this.py - 44, `+${POINTS_PER_LEVEL} poin`, '#8fffc0');
+        sfx.levelup();
       }
     }
-  }
-
-  // ——————————————— level up ———————————————
-  rollChoices() {
-    // run blessings only; the class decides the attack (spec §5.5)
-    const cands = [];
-    for (const s of STAT_UPS) {
-      if ((this.upCounts[s.id] || 0) < s.max) cands.push({ kind: 'stat', id: s.id });
-    }
-    // shuffle
-    for (let i = cands.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [cands[i], cands[j]] = [cands[j], cands[i]];
-    }
-    const out = cands.slice(0, 3);
-    while (out.length < 3) out.push({ kind: 'heal', id: 'heal' });
-    return out;
-  }
-
-  describeChoice(c) {
-    if (c.kind === 'heal') return { name: 'Camilan Darurat', desc: 'Pulih 30 HP sekarang', icon: 'heart' };
-    if (c.kind === 'stat') {
-      const s = STAT_UPS.find((x) => x.id === c.id);
-      return { name: s.name, desc: s.desc(), icon: s.id };
-    }
-    return null;
-  }
-
-  applyChoice(c) {
-    if (c.kind === 'heal') this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + 30);
-    else if (c.kind === 'stat') {
-      this.upCounts[c.id] = (this.upCounts[c.id] || 0) + 1;
-      const s = this.stats;
-      if (c.id === 'spd') s.moveSpd *= 1.12;
-      if (c.id === 'vit') { s.maxHp += 25; s.hp = Math.min(s.maxHp, s.hp + 25); }
-      if (c.id === 'pow') s.dmgMul *= 1.15;
-      if (c.id === 'hst') s.atkSpd *= 1.12;
-      if (c.id === 'mag') s.magnet += 35;
-      if (c.id === 'arm') s.def += 2;
-    }
-    this.pendingLevels--;
-    if (this.pendingLevels > 0) this.choices = this.rollChoices();
-    else { this.choices = null; this.state = ST.PLAY; }
-    sfx.pickCard();
   }
 
   die() {

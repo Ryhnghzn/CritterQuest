@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Game, ST } from './run.js';
+import { Game } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { STAT_UPS } from '../data/balance.js';
 
 const DT = 1 / 60;
 
@@ -44,13 +43,6 @@ describe('serangan dasar', () => {
     expect(dealt(e)).toBeCloseTo(14 * 1.5);
   });
 
-  it('berkah "Taring Tajam" menambah damage 15%', () => {
-    const { g, e } = arena('warrior');
-    g.stats.dmgMul = 1.15;
-    hold(g, DT);
-    expect(dealt(e)).toBeCloseTo(14 * 1.15);
-  });
-
   it('tebasan warrior tidak mengenai musuh di belakang', () => {
     const { g, e } = arena('warrior', { x: -30 });
     g.aimX = 1; g.aimY = 0;
@@ -80,17 +72,6 @@ describe('serangan dasar', () => {
     hold(g, 1);
     expect(dealt(e)).toBeCloseTo(16);
     expect(1e6 - side.hp).toBeCloseTo(16);
-  });
-});
-
-describe('kartu level-up', () => {
-  it('hanya berkah stat (atau pulih bila habis)', () => {
-    const { g } = arena('archer');
-    g.pendingLevels = 1;
-    g.step(DT);
-    expect(g.state).toBe(ST.LEVELUP);
-    const ids = STAT_UPS.map((s) => s.id);
-    for (const c of g.choices) expect(c.kind === 'stat' ? ids.includes(c.id) : c.kind === 'heal').toBe(true);
   });
 });
 

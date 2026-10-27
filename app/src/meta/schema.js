@@ -2,11 +2,11 @@
 // touches storage, so corrupt data is only ever reported, never rewritten.
 import { CLASSES } from '../data/classes.js';
 import {
-  SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX,
+  SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL,
 } from '../data/balance.js';
 import { POTION } from '../data/dungeon.js';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -21,14 +21,21 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v3 (spec §14.3): stat points replace level-up cards; boots & amulet slots.
+  2: (d) => {
+    const out = { ...d, version: 3, attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 } };
+    if (isObj(d.equipped)) out.equipped = { ...d.equipped, boots: null, amulet: null };
+    return out;
+  },
 };
 
-const EQUIP_SLOTS = ['weapon', 'helm', 'armor', 'ring'];
+export const EQUIP_SLOTS = ['weapon', 'helm', 'armor', 'boots', 'amulet', 'ring'];
+const ATTR_IDS = ATTRS.map((a) => a.id);
 const UPGRADES = ['hp', 'atk', 'magnet'];
 const RECORDS = ['bestFloor', 'clears', 'trips', 'kills', 'bossKills'];
-const BASE_STATS = ['atk', 'maxHp', 'def'];
+const BASE_STATS = ['atk', 'maxHp', 'def', 'moveSpd', 'crit'];
 const BONUS_STATS = ['atk', 'maxHp', 'atkSpd', 'crit', 'moveSpd', 'cdr'];
-const RARITY_MAX = 3;
+const RARITY_MAX = 5;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v, min = -Infinity, max = Infinity) => Number.isInteger(v) && v >= min && v <= max;
@@ -80,6 +87,12 @@ export function validateSlot(d) {
   need(isInt(d.potions, 0, POTION.max), 'potions');
   need(isObj(d.upgrades) && UPGRADES.every((k) => isInt(d.upgrades[k], 0)), 'upgrades');
   need(isObj(d.records) && RECORDS.every((k) => isInt(d.records[k], 0)), 'records');
+  const attrsOk = isObj(d.attrs) && ATTR_IDS.every((k) => isInt(d.attrs[k], 0));
+  need(attrsOk, 'attrs');
+  if (attrsOk && isInt(d.level, 1)) {
+    const spent = ATTR_IDS.reduce((n, k) => n + d.attrs[k], 0);
+    need(spent <= POINTS_PER_LEVEL * (d.level - 1), 'attrs: poin melebihi level');
+  }
 
   const inv = Array.isArray(d.inventory) && d.inventory.length <= INVENTORY_MAX ? d.inventory : null;
   need(inv, 'inventory');

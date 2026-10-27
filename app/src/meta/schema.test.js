@@ -36,7 +36,9 @@ describe('validateSlot', () => {
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 30', (c) => { c.inventory = Array.from({ length: 31 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
-    ['rarity tak dikenal', (c) => { c.inventory = [item({ rarity: 4 })]; }],
+    ['rarity tak dikenal', (c) => { c.inventory = [item({ rarity: 6 })]; }],
+    ['atribut hilang', (c) => { delete c.attrs.luk; }],
+    ['poin atribut melebihi level', (c) => { c.level = 2; c.attrs.str = 4; }],
     ['bonus stat tak dikenal', (c) => { c.inventory = [item({ bonuses: [{ stat: 'luck', value: 1 }] })]; }],
     ['gear terpasang tidak ada di inventori', (c) => { c.equipped.helm = 'it_x'; }],
     ['gear dipasang di slot yang salah', (c) => { c.inventory = [item()]; c.equipped.armor = 'it_a1'; }],
@@ -63,11 +65,21 @@ describe('save versi 2', () => {
     delete v1.hp; delete v1.potions;
     const r = readSlot(v1);
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(2);
+    expect(r.data.version).toBe(SAVE_VERSION);
     expect(r.data.hp).toBeNull();
     expect(r.data.potions).toBe(0);
     expect(r.data.upgrades).toEqual({ hp: 2, atk: 1, magnet: 0 });
     expect(r.data.records).toEqual({ bestFloor: 0, clears: 0, trips: 7, kills: 400, bossKills: 2 });
+  });
+
+  it('migrasi v2 → v3: atribut nol, slot sepatu & kalung kosong, gear lama tetap', () => {
+    const v2 = { ...fresh(), version: 2, level: 6, inventory: [item()], equipped: { weapon: null, helm: 'it_a1', armor: null, ring: null } };
+    delete v2.attrs;
+    const r = readSlot(v2);
+    expect(r.status).toBe('ok');
+    expect(r.data.version).toBe(3);
+    expect(r.data.attrs).toEqual({ str: 0, vit: 0, agi: 0, dex: 0, luk: 0 });
+    expect(r.data.equipped).toEqual({ weapon: null, helm: 'it_a1', armor: null, ring: null, boots: null, amulet: null });
   });
 
   it('v1 yang rusak tetap terbaca rusak setelah migrasi', () => {

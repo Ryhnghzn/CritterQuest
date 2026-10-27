@@ -1,6 +1,6 @@
 // Screen manager + small DOM helpers shared by the menu screens.
 const $ = (id) => document.getElementById(id);
-const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'levelup', 'pause', 'results'];
+const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'pause', 'results'];
 
 // Shows one screen (null = none, during play) and returns its id.
 export function showScreen(id) {
