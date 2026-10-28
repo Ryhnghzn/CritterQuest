@@ -41,5 +41,8 @@ Prinsip:
 - [ ] Animasi mati ditunda: saat HP habis game langsung ke `ST.OVER`; perlu jeda di alur hasil (`main.js`, sedang diubah sesi lain)
 - [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 4 — Monster & bos (29 jenis)
+- [x] `art/monsters.js`: 29 monster & bos digambar ulang (bersudut, bayangan cel, cahaya tepi warna bioma, mata menyala); varian es/pasir/magma punya detail sendiri (paku es, butir pasir, retakan bara)
+- [x] `sprites.js` memakai gambar baru (`Object.assign(ENEMY_ART, MONSTER_ART)`); tetap dipanggang sekali per ukuran
+- [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 5 — NPC rakitan (bentuk badan, pakaian, kepala, barang, gerakan profesi)
 ## Bagian 6 — Ikon gear & sentuhan akhir (font/UI bila perlu)
