@@ -18,7 +18,7 @@ import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
 import { bountyList, markShop, expeditionPanel } from './board.js';
-import { displayPanel, nightPanel, matsPanel } from './market.js';
+import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -41,7 +41,7 @@ const LINES = {
   armor: 'Zirah yang pas di badan menyelamatkan nyawa. Lihat-lihat dulu.',
   jewelry: 'Kalung dan cincin, masing-masing dengan kisahnya sendiri.',
   night: 'Psst… barang yang tak dijual di etalase. Hanya malam ini.',
-  storage: 'Gudang masih dibersihkan. Sebentar lagi kau bisa menitip barang di sini.',
+  storage: 'Titip apa saja di sini. Barangmu aman, dan bisa kau ambil di kota besar mana pun.',
   mats: 'Debu, kristal, inti, permata — semua yang dibutuhkan pandai besi. Jumlahnya terbatas.',
 };
 const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga',
@@ -119,6 +119,8 @@ export function renderNpc(box, npc, ctx) {
     panel.append(displayPanel(char, char.location, npc.role, ctx.onBuyDisplay, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'night') {
     panel.append(nightPanel(char, char.location, ctx, () => renderNpc(box, npc, { ...ctx, message: null })));
+  } else if (npc.role === 'storage') {
+    panel.append(storagePanel(char, ctx));
   } else if (npc.role === 'mats') {
     panel.append(matsPanel(char, char.location, ctx));
   } else if (npc.role === 'teleport') {

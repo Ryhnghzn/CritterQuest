@@ -66,10 +66,15 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Pandai Senjata / Penjahit Zirah / Toko Perhiasan (etalase + detail + beli), Garo & gerobak malam, Pedagang Bahan; kamus EN
 - [x] Verifikasi: tes, build, screenshot PC & HP
 #### 9D-2c — Gudang
+- [x] `meta/stash.js`: titip & ambil (gear dipakai tetap di tas, batas 120) — tes
+- [x] Panel Gudang di kota besar (ketuk untuk pindah); kamus EN; nama permata EN ("Chipped Ruby")
+- [x] Verifikasi: tes, build, screenshot PC & HP
 ### 9D-3 — Harta karun, mini bos, portal bos
 ### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir
-## 9F — Petualangan: quest utama & side quest (permintaan 2026-10-28, rancangan menyusul)
-- Quest utama yang menuntun ke semua kota & dungeon sampai bos terakhir
-- Rumah/orang tersembunyi di jalan wilayah dengan side quest berhadiah item
-- Side quest dari warga & penjaga toko di kota
+## 9F — Petualangan: quest utama & side quest (permintaan 2026-10-28; dikerjakan setelah 9D-3 & 9D-4)
+Keputusan pemilik (2026-10-28):
+- **Quest utama** menuntun ke semua kota & dungeon; setelah 5 bos dungeon (termasuk Makam Pasir) terbuka **dungeon akhir baru** dengan bos akhir bertahap, ada akhir cerita.
+- **Rumah/orang tersembunyi** di wilayah: **letak tetap untuk semua karakter**, dirancang manual, di luar jalan & tertutup kabut.
+- **Side quest** dari orang tersembunyi, warga kota, dan penjaga toko — jenis: buru (musuh/elite/mini bos), antar/kumpul barang (gear, bahan, permata), cari tempat/orang, rantai cerita bertahap dengan hadiah item unik khusus quest.
+- Rancangan rinci (spesifikasi) ditulis & disetujui sebelum mulai.
 ## 9E — Tingkat kesulitan & Celah tanpa batas

@@ -334,4 +334,9 @@ export default {
   "Tokonya sedang tutup.": "The shop is closed right now.",
   "Sudah habis untuk hari ini.": "Sold out for today.",
   "Pedagang Malam": "Night Merchant",
+  // ——— 9D-2c: Gudang ———
+  "Kosong.": "Empty.",
+  "Ketuk barang di tas untuk menitip, ketuk barang di Gudang untuk mengambil. Gudang ini bisa dibuka di kota besar mana pun.": "Tap something in your bag to store it, tap something in the storehouse to take it back. You can open this storehouse in any big town.",
+  "Titip apa saja di sini. Barangmu aman, dan bisa kau ambil di kota besar mana pun.": "Leave anything here. Your things are safe, and you can collect them in any big town.",
+  "Gudang sudah penuh.": "The storehouse is full.",
 };

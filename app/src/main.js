@@ -36,6 +36,7 @@ import { GAME_MIN_PER_SEC } from './data/time.js';
 import { FIELD, TOWNS, TOWN_IDS, regionById, regionOfDungeon } from './data/world.js';
 import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
 import { buyDisplay, buyNight, buyMats, isNight } from './meta/market.js';
+import { deposit, withdraw } from './meta/stash.js';
 import { phaseOf } from './meta/clock.js';
 import { drawRegionMap } from './render/regionmap.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
@@ -296,6 +297,8 @@ function openNpc(npc, message = null) {
     onExpClaim: () => serve(claimExpedition, (r) => ({ text: t('Ekspedisi tuntas! +{g} koin, +{e} EXP, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, m: r.reward.marks }) + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a' })),
     onExplore: (id) => explore(id, regionById(id).from === current.location ? 'west' : 'east'),
     onTeleport: travel,
+    onDeposit: (ids) => serve((c, now) => deposit(c, ids, now), null),
+    onWithdraw: (ids) => serve((c, now) => withdraw(c, ids, now), null),
     onBuyDisplay: (key) => serve((c, now) => buyDisplay(c, c.location, townNpc.role, key, now), boughtText),
     onBuyNight: (key) => serve((c, now) => buyNight(c, c.location, key, now), (r) => (r.item ? boughtText(r) : t('Kau mendapat {gem}!', { gem: gemName(r.gem.gem, r.gem.tier) }))),
     onBuyMat: (key, n) => serve((c, now) => buyMats(c, c.location, key, n, now), (r) => t('+{n} {what}', { n: r.count, what: r.entry.kind === 'mat' ? MATS[r.entry.id].name : gemName(r.entry.id, r.entry.tier) })),
@@ -311,7 +314,7 @@ const REFUSE = {
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
   marks: 'Lencanamu belum cukup.', notdone: 'Tugas itu belum selesai.',
-  mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
+  mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', stashfull: 'Gudang sudah penuh.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
 // Belt slot cycles: empty → each potion type in turn → empty.

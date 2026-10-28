@@ -8,6 +8,8 @@ import { itemName, gemName } from '../meta/itemgen.js';
 import { displayStock, nightStock, matsStock, isNight } from '../meta/market.js';
 import { detail } from './gear.js';
 import { matsBar } from './forge.js';
+import { isEquipped } from '../meta/gear.js';
+import { INVENTORY_MAX, STASH_MAX } from '../data/balance.js';
 import { tr, t } from '../i18n.js';
 
 let picked = null; // `${shop}:${key}` of the item looked at
@@ -106,5 +108,31 @@ export function matsPanel(char, townId, { onBuyMat }) {
     list.append(row);
   }
   box.append(list);
+  return box;
+}
+
+// Gudang (spec §25.2): tap a piece in the bag to store it, tap a stored one to take it back.
+export function storagePanel(char, { onDeposit, onWithdraw }) {
+  const box = el('div', 'marketbox stashbox');
+  const side = (title, items, max, onTap, worn) => {
+    const head = el('div', 'attrhead');
+    head.append(el('b', null, title), el('span', 'pts', `${items.length} / ${max}`));
+    const grid = el('div', 'gearbag');
+    for (const it of items.slice().sort((a, b) => b.rarity - a.rarity || b.itemLevel - a.itemLevel)) {
+      const on = worn && worn(it);
+      const g = button('', `gtile${on ? ' empty' : ''}`, () => { if (!on) onTap([it.id]); });
+      g.style.setProperty('--c', RARITIES[it.rarity].color);
+      g.append(gearCanvas(it, 26), el('span', 'ilv', String(it.itemLevel)));
+      if (on) g.append(el('span', 'eq', 'E'));
+      g.title = itemName(it);
+      g.dataset.item = it.id;
+      grid.append(g);
+    }
+    if (!items.length) grid.append(el('div', 'note', tr('Kosong.')));
+    return [head, grid];
+  };
+  box.append(el('div', 'note', tr('Ketuk barang di tas untuk menitip, ketuk barang di Gudang untuk mengambil. Gudang ini bisa dibuka di kota besar mana pun.')),
+    ...side(tr('Tas'), char.inventory, INVENTORY_MAX, onDeposit, (it) => isEquipped(char, it)),
+    ...side(tr('Gudang'), char.stash, STASH_MAX, onWithdraw));
   return box;
 }
