@@ -227,7 +227,8 @@ export function stepQuestPlaces(run) {
 // A slain enemy may drop a quest item (only while that quest step is on).
 export function questDrop(run, e, kin) {
   for (const d of run.questDrops) {
-    if ((d.enemy !== e.type && d.enemy !== kin) || rand() >= d.chance) continue;
+    if (d.enemy !== '*' && d.enemy !== e.type && d.enemy !== kin) continue;
+    if ((d.night && !run.night) || rand() >= d.chance) continue;
     run.questItems[d.item] = (run.questItems[d.item] || 0) + 1;
     run.addFloater(e.x, e.y - 30, `+1 ${DROP_ITEMS[d.item].name}`, DROP_ITEMS[d.item].color);
   }

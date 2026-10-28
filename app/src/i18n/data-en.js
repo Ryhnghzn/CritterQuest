@@ -317,6 +317,54 @@ export const QUEST_LINE_EN = {
 
 // side quests & people in the wild (spec §26.5)
 const WILD_EN = {
+  "Sup untuk Nenek Kunyit": "Soup for Granny Kunyit",
+  "Lendir Kental": "Thick Goo",
+  "Bahan Tungku": "Fuel for the Forge",
+  "Kerang Bercahaya": "The Glowing Shell",
+  "Jamur Raksasa": "The Giant Mushroom",
+  "Bunga Kunang": "Firefly Blossoms",
+  "Ujian Bilah": "Trial of the Blade",
+  "Katak di Danau": "Frogs in the Lake",
+  "Sup untuk Bjorn": "Soup for Bjorn",
+  "Bulu untuk Musim Dingin": "Furs for Winter",
+  "Unta yang Hilang": "The Lost Camel",
+  "Permata untuk Kalung": "Gems for a Necklace",
+  "Cacing di Jalur Dagang": "Worms on the Trade Road",
+  "Bara Abadi": "Everlasting Embers",
+  "Penguasa Gunung": "Lord of the Mountain",
+  "Inti untuk Tungku": "Cores for the Furnace",
+  "Nenek Kunyit, sahabat lamaku, tinggal di pondok tengah Hutan Kelam. Sudah lama ia tak turun gunung. Tolong antarkan sup hangat ini, ya?": "Granny Kunyit, my old friend, lives in a cabin in the middle of Gloomwood. She hasn't come down in ages. Would you take her this warm soup?",
+  "Sup Marta! Masih hangat pula. Bilang padanya aku sehat. Dan ini, untuk kakimu yang lelah.": "Marta's soup! Still warm, too. Tell her I'm well. And this is for your tired feet.",
+  "Hehehe… ramuan baruku butuh Lendir Kental. Lendir di Hutan Kelam kadang meninggalkannya. Enam saja, Sayang.": "Hehehe… my new brew needs Thick Goo. The slimes in Gloomwood sometimes leave some behind. Just six, dear.",
+  "Kental dan lengket, sempurna! Ini, cicipi hasil kualiku.": "Thick and sticky, perfect! Here, taste what my cauldron made.",
+  "Tungkuku lapar! Bawakan satu gear Langka dan empat puluh Debu Rune. Akan kuajari kau rahasia kecil.": "My forge is hungry! Bring me a Rare piece of gear and forty Rune Dust. I'll teach you a little secret.",
+  "Bagus, bagus! Rahasianya? Pukul lebih keras. Hahaha! Ini bayaranmu.": "Good, good! The secret? Hit harder. Hahaha! Here's your pay.",
+  "Kak! Katanya di tepi danau Hutan Kelam ada kerang yang bisa bercahaya! Carikan, dong! Aku mau lihat!": "Hey! They say there's a shell that glows by a lake in Gloomwood! Find it, please! I want to see it!",
+  "Wuaaah, beneran ada?! Kakak keren! Ini, harta karunku. Jangan bilang Ibu ya.": "Whoaaa, it's real?! You're so cool! Here's my treasure. Don't tell Mom.",
+  "Tidak ada yang percaya aku lihat jamur yang meledak! Kalahkan lima belas, biar mereka percaya!": "Nobody believes I saw exploding mushrooms! Defeat fifteen so they believe me!",
+  "Tuh kan! Aku tidak bohong! Kakak pahlawanku!": "See! I wasn't lying! You're my hero!",
+  "Bunga Kunang hanya mekar di malam hari, dan makhluk hutan suka membawanya. Lima tangkai, Nak, dari Hutan Kelam setelah gelap.": "Firefly Blossoms only bloom at night, and forest creatures like to carry them. Five stems, child, from Gloomwood after dark.",
+  "Cahayanya masih menyala. Akan kujadikan ramuan paling terang. Ini untukmu.": "They're still glowing. I'll make the brightest potion from them. This is for you.",
+  "Bilah terbaikku hanya untuk yang pantas. Kalahkan sepuluh elite di Hutan Kelam, lalu kembali.": "My finest blades are only for the worthy. Defeat ten elites in Gloomwood, then come back.",
+  "Kau pantas. Pegang ini, rasakan beratnya.": "You are worthy. Hold this, feel its weight.",
+  "Katak Salju menghabiskan ikan di danau. Dua puluh lima ekor, dan aku bisa memancing lagi.": "The Snow Frogs are eating all the fish in the lake. Twenty-five of them, and I can fish again.",
+  "Ikannya kembali! Makan malam gratis di Bu Hangat untukmu. Dan ini.": "The fish are back! Dinner at Mrs. Hangat's is on me. And this.",
+  "Bjorn si pemburu yeti tak pernah mampir lagi. Antarkan sup ikan ini ke pondoknya di barat Padang Es, ya.": "Bjorn the yeti hunter never drops by anymore. Take this fish soup to his cabin in the west of the Frost Plains, would you.",
+  "Sup Bu Hangat! Ha! Hangat sampai ke tulang. Ini, untuk jasamu.": "Mrs. Hangat's soup! Ha! Warms me to the bone. Here, for your trouble.",
+  "Aku membuat zirah musim dingin dari zirah lama. Bawakan dua helm, armor, atau sepatu Langka.": "I make winter armor out of old armor. Bring me two Rare helmets, armors or boots.",
+  "Bagus sekali. Lihat, jadi lebih hangat dan lebih kuat.": "Very good. Look, warmer and stronger.",
+  "Untaku kabur saat badai pasir. Namanya Kurma. Kalau kau temukan dia di Gurun Merah, beri tahu aku!": "My camel ran off in a sandstorm. Her name is Date. If you find her in the Red Desert, tell me!",
+  "Kurma selamat?! Aku segera menjemputnya. Terima kasih, sahabat!": "Date is safe?! I'll fetch her right away. Thank you, friend!",
+  "Pesanan istimewa dari sang sultan… aku butuh tiga permata Biasa. Kau punya?": "A special order from the sultan… I need three Flawed gems. Do you have any?",
+  "Indah! Sang sultan akan puas. Ini bagianmu.": "Beautiful! The sultan will be pleased. Here's your share.",
+  "Cacing pasir menelan dua gerobak bahanku! Kalahkan tiga puluh, dan stokku aman lagi.": "Sandworms swallowed two of my supply carts! Defeat thirty, and my stock is safe again.",
+  "Gerobakku lewat dengan selamat! Ambil ini, langsung dari gudang.": "My carts got through safely! Take these, straight from the warehouse.",
+  "Aku mau bikin lentera yang tak pernah padam! Lendir Magma kadang menjatuhkan Bara Abadi. Bawakan sepuluh!": "I want to make a lantern that never goes out! Magma Slimes sometimes drop Everlasting Embers. Bring me ten!",
+  "Terang sekali! Sekarang aku tidak takut gelap lagi. Ini, hadiah dariku!": "So bright! Now I'm not scared of the dark anymore. Here, a present from me!",
+  "Penguasa Gunung Api menjaga harta di ujung timur. Kalahkan dia, dan aku akan menempa senjata dari kemenanganmu.": "The Overlord of Fire Mountain guards a treasure in the far east. Defeat him, and I'll forge a weapon from your victory.",
+  "Kau mengalahkannya?! Ini tempaan terbaikku. Pantas untuk sang penakluk.": "You beat him?! This is my finest work. Fit for a conqueror.",
+  "Tungku kota butuh Inti Kegelapan. Lima buah, dan kau dapat harga khusus dariku.": "The town furnace needs Dark Cores. Five of them, and you'll get a special price from me.",
+  "Tungku menyala lagi! Ini permata terbaik di lapakku, untukmu.": "The furnace burns again! The best gems on my stall, for you.",
   "Pemburu Tua": "Old Hunter",
   "Pengembara": "Wanderer",
   "Peramu": "Herbalist",
@@ -406,7 +454,7 @@ const WILD_EN = {
   "Bara masih hidup? Aku segera menjemputnya! Ini, dari tabungan kami para penambang.": "Bara's alive? I'll go fetch him right away! Here, from our miners' savings.",
 };
 const WILD_NAME_EN = {"Resi Sunyi": "Silent Sage", "Penjaga Kawah": "Crater Keeper", "Pak Gaharu": "Old Gaharu"};
-const DROP_EN = {"Jamur Bercahaya": "Glowcap", "Sisik Cacing": "Worm Scale"};
+const DROP_EN = {"Jamur Bercahaya": "Glowcap", "Sisik Cacing": "Worm Scale", "Lendir Kental": "Thick Goo", "Bunga Kunang": "Firefly Blossom", "Bara Abadi": "Everlasting Ember"};
 
 // helpers: replace a field / array entries through a map (keyed by the Indonesian text)
 const swap = (obj, key, map) => { if (obj && obj[key] in map) obj[key] = map[obj[key]]; };

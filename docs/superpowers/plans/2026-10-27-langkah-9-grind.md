@@ -102,10 +102,10 @@ Keputusan pemilik (2026-10-28):
 #### 9F-2 — Rumah tersembunyi & side quest wilayah
 - [x] 16 tempat tetap + 16 quest (4 rantai, 4 unik quest), barang quest jatuh, titik `reach` — tes
 - [x] Gambar pondok per biome & penghuni, ikon peta; kamus EN
-- [ ] Verifikasi
+- [x] Verifikasi
 #### 9F-3 — Side quest kota
-- [ ] 16 quest warga & penjaga toko — tes; kamus EN
-- [ ] Verifikasi
+- [x] 16 quest warga & penjaga toko — tes; kamus EN
+- [x] Verifikasi
 #### 9F-4 — Tanah Gerhana & bos akhir
 - [ ] Wilayah Tanah Gerhana, musuh gerhana, dungeon Menara Gerhana, save v18 — tes
 - [ ] Sang Gerhana 3 fase, bab 6, epilog

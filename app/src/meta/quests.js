@@ -288,13 +288,13 @@ export function hiddenIn(char, regionId) {
 }
 
 // What a region needs to know of the quests being worked on:
-//   spots: places still to stand at [{ spot, x, y }]; drops: quest items that may fall [{ item, enemy, chance }]
+//   spots: places still to stand at [{ spot, x, y }]; drops: quest items that may fall [{ item, enemy, chance, night }]
 export function fieldQuests(char, regionId) {
   const spots = [], drops = [];
   for (const a of activeQuests(char)) {
     const s = a.step;
     if (s?.kind === 'reach') s.spots.forEach((id, i) => { if (SPOTS[id].region === regionId && !(a.state.prog & (1 << i))) spots.push({ spot: id, ...spotXY(id) }); });
-    if (s?.kind === 'drop' && s.region === regionId) drops.push({ item: s.item, enemy: s.enemy, chance: s.chance });
+    if (s?.kind === 'drop' && s.region === regionId) drops.push({ item: s.item, enemy: s.enemy, chance: s.chance, night: !!s.night });
   }
   return { spots, drops };
 }

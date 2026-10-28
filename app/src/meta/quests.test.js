@@ -16,10 +16,10 @@ describe('quest utama', () => {
   it('dimulai dengan bicara pada Kakek Odo (tanda !)', () => {
     const c = make();
     expect(activeQuests(c)[0].id).toBe('ch1');
-    expect(npcMarks(c, 'home')).toEqual({ odo: '!' });
+    expect(npcMarks(c, 'home').odo).toBe('!');
     expect(talkOffers(c, 'home', 'odo')[0]).toMatchObject({ id: 'ch1', start: true, ends: false });
-    expect(talkOffers(c, 'home', 'pip')).toEqual([]);
-    expect(questTalk(c, 'ch1', 'home', 'pip', 5).ok).toBe(false);
+    expect(talkOffers(c, 'home', 'dara')).toEqual([]);
+    expect(questTalk(c, 'ch1', 'home', 'dara', 5).ok).toBe(false);
   });
 
   it('langkah gerbang & bos selesai sendiri dari hasil perjalanan; lapor membayar hadiah', () => {
@@ -29,7 +29,7 @@ describe('quest utama', () => {
     expect(c.quests.main.step).toBe(2);
     c = applyTrip(c, trip({ floor: 5, cleared: true }), 7).char;
     expect(c.quests.main.step).toBe(3);
-    expect(npcMarks(c, 'home')).toEqual({ odo: '?' });
+    expect(npcMarks(c, 'home').odo).toBe('?');
     const r = talk(c, 'ch1', 'home', 'odo');
     expect(r.done).toBe(true);
     expect(r.got.shard).toBe(true);
@@ -52,7 +52,7 @@ describe('quest utama', () => {
     expect(c.quests.main.step).toBe(3);                  // straight to the report
     c = talk(c, 'ch1', 'home', 'odo').char;
     expect(c.quests.main).toEqual({ ch: 1, step: 1, prog: 0 }); // Rimbawana already visited
-    expect(npcMarks(c, 'rimba')).toEqual({ board: '?' });
+    expect(npcMarks(c, 'rimba').board).toBe('?');
     c = talk(c, 'ch2', 'rimba', 'board').char;
     expect(c.quests.main.step).toBe(3);                  // crystal gate already found
   });
@@ -177,7 +177,7 @@ describe('side quest', () => {
 
   it('kumpul: barang quest dari wilayah', () => {
     let c = talk(make(), 's_kunyit', 'wild', 'kunyit').char;
-    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'glowcap', enemy: 'bomber', chance: 0.4 }]);
+    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'glowcap', enemy: 'bomber', chance: 0.4, night: false }]);
     expect(fieldQuests(c, 'ice').drops).toEqual([]);
     c = field(c, { region: 'forest', questItems: { glowcap: 3 } });
     expect(c.quests.side.s_kunyit.prog).toBe(3);
@@ -270,7 +270,8 @@ describe('data quest', () => {
     const npcs = (town) => [...TOWN_DEFS[town].npcs, ...Object.values(TOWN_DEFS[town].interiors).flatMap((r) => r.npcs || [])].map((n) => n.id);
     for (const q of [...MAIN, ...SIDE]) {
       for (const s of q.steps) {
-        if (s.enemy) expect(ENEMIES[s.enemy], `${q.id} ${s.enemy}`).toBeTruthy();
+        if (s.enemy && s.enemy !== '*') expect(ENEMIES[s.enemy], `${q.id} ${s.enemy}`).toBeTruthy();
+        if (s.show) expect(ENEMIES[s.show].kin).toBe(s.enemy);
         if ((s.kind === 'talk' || s.kind === 'give') && s.town !== 'wild') expect(npcs(s.town), `${q.id} ${s.npc}`).toContain(s.npc);
         if (s.town === 'wild') expect(HIDDEN.some((h) => h.id === s.npc)).toBe(true);
         for (const id of s.spots || []) expect(SPOTS[id]).toBeTruthy();
@@ -300,5 +301,46 @@ describe('data quest', () => {
       const it = dropItem({ source: 'grand', classId: 'mage', charLevel: 40, floor: 5, luk: 200 }, rng);
       if (it.unique) expect(UNIQUES.find((u) => u.id === it.unique).quest).toBeFalsy();
     }
+  });
+});
+
+describe('side quest kota', () => {
+  it('16 quest kota: 4 di Kota Awal, 3 di tiap kota besar', () => {
+    const towns = SIDE.filter((q) => q.id.startsWith('t_')).map((q) => q.steps[0].town);
+    expect(towns).toHaveLength(16);
+    expect(towns.filter((t) => t === 'home')).toHaveLength(4);
+    for (const t of ['rimba', 'beku', 'pasir', 'bara']) expect(towns.filter((x) => x === t)).toHaveLength(3);
+  });
+
+  it('antar sup ke penghuni tersembunyi: tanda ? di pondoknya', () => {
+    let c = talk(make(), 't_marta', 'home', 'inn').char;
+    expect(npcMarks(c, 'wild').kunyit).toBe('?');
+    const offers = talkOffers(c, 'wild', 'kunyit');
+    expect(offers[0].id).toBe('t_marta');                   // the errand comes before her own quest
+    const r = talk(c, 't_marta', 'wild', 'kunyit');
+    expect(r.done).toBe(true);
+  });
+
+  it('serahkan zirah: hanya slot helm/armor/sepatu yang dihitung', () => {
+    let c = talk(make(), 't_bulu', 'beku', 'armor').char;
+    c.inventory = [gearOf(2, 1, 'ring'), gearOf(2, 2, 'helm')];
+    expect(talkOffers(c, 'beku', 'armor')[0].can.ok).toBe(false);
+    c.inventory.push(gearOf(3, 3, 'boots'));
+    const r = talk(c, 't_bulu', 'beku', 'armor');
+    expect(r.char.inventory[0].id).toBe('g1');                // the ring stays
+    expect(r.char.inventory.some((it) => it.id === 'g2' || it.id === 'g3')).toBe(false);
+  });
+
+  it('kumpul malam hari dari musuh apa pun', () => {
+    const c = talk(make(), 't_akar', 'rimba', 'potion').char;
+    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'firefly', enemy: '*', chance: 0.12, night: true }]);
+  });
+
+  it('bunuh varian: Katak Salju dihitung lewat kin di Padang Es saja', () => {
+    let c = talk(make(), 't_arne', 'beku', 'folk0').char;
+    c = field(c, { region: 'forest', killsBy: { spitter: 30 } });
+    expect(c.quests.side.t_arne.prog).toBe(0);
+    c = field(c, { region: 'ice', killsBy: { spitter: 25 } });
+    expect(c.quests.side.t_arne.step).toBe(2);
   });
 });

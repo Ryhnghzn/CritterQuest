@@ -4,10 +4,12 @@
 //   town  { town }                  — walk into a town
 //   gate  { dungeon }               — find the dungeon's gate in its region
 //   boss  { dungeon }               — beat the dungeon's boss (its floor 5)
-//   kill  { enemy, n, region? }     — kills of a type (variants count to their kin)
+//   kill  { enemy, n, region?, show? } — kills of a type (variants count to their kin; show: the
+//         variant named in the text, e.g. the region's own kind of spitter)
 //   elite { n, region?, enemy? }    — elite kills (of a type, when given)
 //   reach { spots: [id], label }    — stand at fixed places (SPOTS); prog is a bit per spot
-//   drop  { item, n, enemy, region, chance } — quest items that only drop while this step is on
+//   drop  { item, n, enemy, region, chance, night? } — quest items that only drop while this step is on
+//         (enemy '*' = any; night: only after dark)
 //   guard { region, n?, lord? }     — treasure guardians beaten (chests of the region opened)
 //   give  { town, npc, who, say, mats?, gems?, potions?, gear? } — hand things over (ends a talk)
 // A talk / give in the wild uses town 'wild' and the hidden person's id as npc.
@@ -92,6 +94,9 @@ export const REACH_R = 160;                                  // standing this cl
 export const DROP_ITEMS = {
   glowcap: { name: 'Jamur Bercahaya', color: '#9fffb0' },
   wormscale: { name: 'Sisik Cacing', color: '#e0b060' },
+  goo: { name: 'Lendir Kental', color: '#8fe0a0' },
+  firefly: { name: 'Bunga Kunang', color: '#ffe680' },
+  ember: { name: 'Bara Abadi', color: '#ff8a3c' },
 };
 const L = (hair, hairColor) => ({ hair, hairColor });
 // at: [fx, fy] of the region's size; hut: a cabin (false = a person alone); gone: hidden once
@@ -227,5 +232,81 @@ export const SIDE = [
     { ...wild('bara'), say: 'Kakiku terjepit… aku bisa merangkak pulang, tapi tolong kabari Ignis di Baraapi. Dia pasti mencariku.' },
     { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Bara masih hidup? Aku segera menjemputnya! Ini, dari tabungan kami para penambang.' },
   ], reward: { gold: 6, exp: 5, marks: 2, mats: { core: 1, crystal: 5 } } },
+
+  // ——— towns: townsfolk and shopkeepers (spec §26.6) ———
+  { id: 't_marta', title: 'Sup untuk Nenek Kunyit', steps: [
+    { kind: 'talk', town: 'home', npc: 'inn', who: 'Bu Marta', say: 'Nenek Kunyit, sahabat lamaku, tinggal di pondok tengah Hutan Kelam. Sudah lama ia tak turun gunung. Tolong antarkan sup hangat ini, ya?' },
+    { ...wild('kunyit'), say: 'Sup Marta! Masih hangat pula. Bilang padanya aku sehat. Dan ini, untuk kakimu yang lelah.' },
+  ], reward: { gold: 2, exp: 3, marks: 2, potions: { red: 3 } } },
+  { id: 't_mira', title: 'Lendir Kental', steps: [
+    { kind: 'talk', town: 'home', npc: 'potion', who: 'Nenek Mira', say: 'Hehehe… ramuan baruku butuh Lendir Kental. Lendir di Hutan Kelam kadang meninggalkannya. Enam saja, Sayang.' },
+    { kind: 'drop', item: 'goo', n: 6, enemy: 'slink', region: 'forest', chance: 0.3 },
+    { kind: 'talk', town: 'home', npc: 'potion', who: 'Nenek Mira', say: 'Kental dan lengket, sempurna! Ini, cicipi hasil kualiku.' },
+  ], reward: { gold: 2, exp: 3, marks: 2, potions: { shield: 2, rage: 2 } } },
+  { id: 't_brom', title: 'Bahan Tungku', steps: [
+    { kind: 'talk', town: 'home', npc: 'gear', who: 'Pandai Brom', say: 'Tungkuku lapar! Bawakan satu gear Langka dan empat puluh Debu Rune. Akan kuajari kau rahasia kecil.' },
+    { kind: 'give', town: 'home', npc: 'gear', who: 'Pandai Brom', say: 'Bagus, bagus! Rahasianya? Pukul lebih keras. Hahaha! Ini bayaranmu.', gear: { rarity: 2, n: 1 }, mats: { dust: 40 } },
+  ], reward: { gold: 3, exp: 3, marks: 2, mats: { crystal: 4 } } },
+  { id: 't_pip', title: 'Kerang Bercahaya', steps: [
+    { kind: 'talk', town: 'home', npc: 'pip', who: 'Pip', say: 'Kak! Katanya di tepi danau Hutan Kelam ada kerang yang bisa bercahaya! Carikan, dong! Aku mau lihat!' },
+    { kind: 'reach', spots: ['shell'], label: 'kerang bercahaya' },
+    { kind: 'talk', town: 'home', npc: 'pip', who: 'Pip', say: 'Wuaaah, beneran ada?! Kakak keren! Ini, harta karunku. Jangan bilang Ibu ya.' },
+  ], reward: { gold: 2, exp: 3, marks: 2, gems: [{ tier: 1 }] } },
+  { id: 't_tole', title: 'Jamur Raksasa', steps: [
+    { kind: 'talk', town: 'rimba', npc: 'folk2', who: 'Tole', say: 'Tidak ada yang percaya aku lihat jamur yang meledak! Kalahkan lima belas, biar mereka percaya!' },
+    { kind: 'kill', enemy: 'bomber', n: 15, region: 'forest' },
+    { kind: 'talk', town: 'rimba', npc: 'folk2', who: 'Tole', say: 'Tuh kan! Aku tidak bohong! Kakak pahlawanku!' },
+  ], reward: { gold: 3, exp: 3, marks: 2, potions: { wind: 2 } } },
+  { id: 't_akar', title: 'Bunga Kunang', steps: [
+    { kind: 'talk', town: 'rimba', npc: 'potion', who: 'Nenek Akar', say: 'Bunga Kunang hanya mekar di malam hari, dan makhluk hutan suka membawanya. Lima tangkai, Nak, dari Hutan Kelam setelah gelap.' },
+    { kind: 'drop', item: 'firefly', n: 5, enemy: '*', region: 'forest', chance: 0.12, night: true },
+    { kind: 'talk', town: 'rimba', npc: 'potion', who: 'Nenek Akar', say: 'Cahayanya masih menyala. Akan kujadikan ramuan paling terang. Ini untukmu.' },
+  ], reward: { gold: 3, exp: 4, marks: 3, potions: { big: 3 } } },
+  { id: 't_kayan', title: 'Ujian Bilah', steps: [
+    { kind: 'talk', town: 'rimba', npc: 'weapons', who: 'Pandai Kayan', say: 'Bilah terbaikku hanya untuk yang pantas. Kalahkan sepuluh elite di Hutan Kelam, lalu kembali.' },
+    { kind: 'elite', n: 10, region: 'forest' },
+    { kind: 'talk', town: 'rimba', npc: 'weapons', who: 'Pandai Kayan', say: 'Kau pantas. Pegang ini, rasakan beratnya.' },
+  ], reward: { gold: 4, exp: 4, marks: 3, gear: { rarity: 3 } } },
+  { id: 't_arne', title: 'Katak di Danau', steps: [
+    { kind: 'talk', town: 'beku', npc: 'folk0', who: 'Arne', say: 'Katak Salju menghabiskan ikan di danau. Dua puluh lima ekor, dan aku bisa memancing lagi.' },
+    { kind: 'kill', enemy: 'spitter', show: 'frostspitter', n: 25, region: 'ice' },
+    { kind: 'talk', town: 'beku', npc: 'folk0', who: 'Arne', say: 'Ikannya kembali! Makan malam gratis di Bu Hangat untukmu. Dan ini.' },
+  ], reward: { gold: 4, exp: 4, marks: 3, mats: { crystal: 5 } } },
+  { id: 't_hangat', title: 'Sup untuk Bjorn', steps: [
+    { kind: 'talk', town: 'beku', npc: 'inn', who: 'Bu Hangat', say: 'Bjorn si pemburu yeti tak pernah mampir lagi. Antarkan sup ikan ini ke pondoknya di barat Padang Es, ya.' },
+    { ...wild('bjorn'), say: 'Sup Bu Hangat! Ha! Hangat sampai ke tulang. Ini, untuk jasamu.' },
+  ], reward: { gold: 3, exp: 4, marks: 2, potions: { big: 2 } } },
+  { id: 't_bulu', title: 'Bulu untuk Musim Dingin', steps: [
+    { kind: 'talk', town: 'beku', npc: 'armor', who: 'Ibu Bulu', say: 'Aku membuat zirah musim dingin dari zirah lama. Bawakan dua helm, armor, atau sepatu Langka.' },
+    { kind: 'give', town: 'beku', npc: 'armor', who: 'Ibu Bulu', say: 'Bagus sekali. Lihat, jadi lebih hangat dan lebih kuat.', gear: { rarity: 2, n: 2, slots: ['helm', 'armor', 'boots'] } },
+  ], reward: { gold: 4, exp: 4, marks: 3, gear: { rarity: 3 } } },
+  { id: 't_omar', title: 'Unta yang Hilang', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'folk0', who: 'Omar', say: 'Untaku kabur saat badai pasir. Namanya Kurma. Kalau kau temukan dia di Gurun Merah, beri tahu aku!' },
+    { kind: 'reach', spots: ['camel'], label: 'unta Omar' },
+    { kind: 'talk', town: 'pasir', npc: 'folk0', who: 'Omar', say: 'Kurma selamat?! Aku segera menjemputnya. Terima kasih, sahabat!' },
+  ], reward: { gold: 5, exp: 5, marks: 3, gems: [{ tier: 2 }] } },
+  { id: 't_mirage', title: 'Permata untuk Kalung', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'jewelry', who: 'Nona Mirage', say: 'Pesanan istimewa dari sang sultan… aku butuh tiga permata Biasa. Kau punya?' },
+    { kind: 'give', town: 'pasir', npc: 'jewelry', who: 'Nona Mirage', say: 'Indah! Sang sultan akan puas. Ini bagianmu.', gems: [{ tier: 2, n: 3 }] },
+  ], reward: { gold: 6, exp: 4, marks: 3, gems: [{ tier: 3 }] } },
+  { id: 't_yusuf', title: 'Cacing di Jalur Dagang', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'mats', who: 'Yusuf', say: 'Cacing pasir menelan dua gerobak bahanku! Kalahkan tiga puluh, dan stokku aman lagi.' },
+    { kind: 'kill', enemy: 'sandworm', n: 30, region: 'desert' },
+    { kind: 'talk', town: 'pasir', npc: 'mats', who: 'Yusuf', say: 'Gerobakku lewat dengan selamat! Ambil ini, langsung dari gudang.' },
+  ], reward: { gold: 5, exp: 5, marks: 3, mats: { crystal: 8, core: 1 } } },
+  { id: 't_puntung', title: 'Bara Abadi', steps: [
+    { kind: 'talk', town: 'bara', npc: 'folk2', who: 'Puntung', say: 'Aku mau bikin lentera yang tak pernah padam! Lendir Magma kadang menjatuhkan Bara Abadi. Bawakan sepuluh!' },
+    { kind: 'drop', item: 'ember', n: 10, enemy: 'magmaslink', region: 'volcano', chance: 0.35 },
+    { kind: 'talk', town: 'bara', npc: 'folk2', who: 'Puntung', say: 'Terang sekali! Sekarang aku tidak takut gelap lagi. Ini, hadiah dariku!' },
+  ], reward: { gold: 5, exp: 6, marks: 3, gems: [{ tier: 3 }] } },
+  { id: 't_gora', title: 'Penguasa Gunung', steps: [
+    { kind: 'talk', town: 'bara', npc: 'weapons', who: 'Pandai Gora', say: 'Penguasa Gunung Api menjaga harta di ujung timur. Kalahkan dia, dan aku akan menempa senjata dari kemenanganmu.' },
+    { kind: 'guard', region: 'volcano', lord: true },
+    { kind: 'talk', town: 'bara', npc: 'weapons', who: 'Pandai Gora', say: 'Kau mengalahkannya?! Ini tempaan terbaikku. Pantas untuk sang penakluk.' },
+  ], reward: { gold: 8, exp: 8, marks: 6, gear: { rarity: 4 } } },
+  { id: 't_selaapi', title: 'Inti untuk Tungku', steps: [
+    { kind: 'talk', town: 'bara', npc: 'mats', who: 'Sela Api', say: 'Tungku kota butuh Inti Kegelapan. Lima buah, dan kau dapat harga khusus dariku.' },
+    { kind: 'give', town: 'bara', npc: 'mats', who: 'Sela Api', say: 'Tungku menyala lagi! Ini permata terbaik di lapakku, untukmu.', mats: { core: 5 } },
+  ], reward: { gold: 6, exp: 6, marks: 4, gems: [{ tier: 3 }, { tier: 3 }] } },
 ];
 export const QUEST_IDS = [...MAIN_IDS, ...SIDE.map((q) => q.id)];

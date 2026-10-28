@@ -22,12 +22,14 @@ export function stepText(s) {
     case 'town': return t('Pergi ke {town}', { town: town(s.town) });
     case 'gate': return t('Temukan gerbang {d} di {r}', { d: dungeonById(s.dungeon).name, r: regionOfDungeon(s.dungeon)?.name ?? '' });
     case 'boss': return t('Kalahkan bos {d} (lantai 5)', { d: dungeonById(s.dungeon).name });
-    case 'kill': return s.region ? t('Kalahkan {n} {enemy} di {r}', { n: s.n, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name }) : t('Kalahkan {n} {enemy}', { n: s.n, enemy: ENEMIES[s.enemy].name });
+    case 'kill': return s.region ? t('Kalahkan {n} {enemy} di {r}', { n: s.n, enemy: ENEMIES[s.show || s.enemy].name, r: regionById(s.region).name }) : t('Kalahkan {n} {enemy}', { n: s.n, enemy: ENEMIES[s.enemy].name });
     case 'elite':
       if (s.enemy) return t('Kalahkan {n} {enemy} elite di {r}', { n: s.n, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name });
       return s.region ? t('Kalahkan {n} elite di {r}', { n: s.n, r: regionById(s.region).name }) : t('Kalahkan {n} elite', { n: s.n });
     case 'reach': return t('Temukan {n} {what} di {r}', { n: s.spots.length, what: tr(s.label), r: regionById(SPOTS[s.spots[0]].region).name });
-    case 'drop': return t('Kumpulkan {n} {item} dari {enemy} di {r}', { n: s.n, item: DROP_ITEMS[s.item].name, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name });
+    case 'drop':
+      if (s.enemy === '*') return t('Kumpulkan {n} {item} dari musuh di {r} pada malam hari', { n: s.n, item: DROP_ITEMS[s.item].name, r: regionById(s.region).name });
+      return t('Kumpulkan {n} {item} dari {enemy} di {r}', { n: s.n, item: DROP_ITEMS[s.item].name, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name });
     case 'guard': return s.lord ? t('Kalahkan Penguasa {r} (peti harta terakhir)', { r: regionById(s.region).name }) : t('Kalahkan {n} penjaga harta di {r}', { n: s.n || 1, r: regionById(s.region).name });
     case 'give': return t('Serahkan barang kepada {who} di {town}', { who: s.who, town: where(s) });
     default: return '';

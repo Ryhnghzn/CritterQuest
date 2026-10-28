@@ -927,6 +927,8 @@ Urutan dungeon sama dengan urutan buka dungeon (§18.3). Rentang level wilayah t
 | Baraapi | Pandai Gora (Senjata) | kalahkan Penguasa Gunung Api | buru |
 | Baraapi | Sela Api (Bahan) | serahkan 5 Inti Kegelapan | antar |
 
+- **Rincian 9F-3:** Bunga Kunang jatuh 12% dari musuh apa pun di Hutan Kelam, hanya pada malam hari. Lendir Kental jatuh 30% dari Lendir; Bara Abadi 35% dari Lendir Magma. Katak Salju dihitung lewat jenis asalnya (Katak) di Padang Es saja. Bila satu NPC punya beberapa quest, yang sedang berjalan tampil lebih dulu, misalnya antar sup sebelum quest Nenek Kunyit sendiri.
+
 Hadiah side quest disesuaikan tingkat wilayah/kota: koin & EXP (rumus seperti Papan Tugas, ×3), Lencana 2–6, dan satu hadiah khas (gear Langka–Epik, permata, bahan, atau ramuan). Angka di `data/quests.js`.
 
 ### 26.7 Tanah Gerhana & Menara Gerhana (9F-4)
