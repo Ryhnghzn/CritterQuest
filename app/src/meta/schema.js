@@ -14,10 +14,10 @@ import { QUALITY_IDS } from '../data/fx.js';
 import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
 import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
 import { BESTIARY_IDS } from '../data/collection.js';
-import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS } from '../data/world.js';
+import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
 import { isFogValid } from './world.js';
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -92,6 +92,8 @@ export const MIGRATIONS = {
   }),
   // v13 (spec §25.2): what was bought from the big-town merchants today, the Gudang.
   12: (d) => ({ ...d, version: 13, shops: {}, stash: [] }),
+  // v14 (spec §25.3): hidden treasure chests already opened, per region.
+  13: (d) => ({ ...d, version: 14, treasures: {} }),
 };
 
 export const worldSeed = (now, slot) => (Math.floor(Math.abs(now)) + slot * 7919) % 2147483647;
@@ -203,6 +205,8 @@ export function validateSlot(d) {
     need(spent <= POINTS_PER_LEVEL * (d.level - 1), 'attrs: poin melebihi level');
   }
 
+  need(isObj(d.treasures) && Object.entries(d.treasures).every(([id, list]) => REGION_IDS.includes(id) && Array.isArray(list)
+    && list.every((i) => isInt(i, 0, TREASURE.count - 1)) && new Set(list).size === list.length), 'treasures');
   need(isObj(d.shops) && Object.entries(d.shops).every(([k, v]) => /^[a-z]+:[a-z]+$/.test(k) && TOWN_IDS.includes(k.split(':')[0])
     && isObj(v) && isInt(v.day) && isObj(v.sold) && Object.values(v.sold).every((n) => isInt(n, 1))), 'shops');
   const stash = Array.isArray(d.stash) && d.stash.length <= STASH_MAX ? d.stash : null;

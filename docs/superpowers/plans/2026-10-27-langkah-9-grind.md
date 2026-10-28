@@ -69,7 +69,12 @@ Tiap bagian dicek manual sebelum commit.
 - [x] `meta/stash.js`: titip & ambil (gear dipakai tetap di tas, batas 120) — tes
 - [x] Panel Gudang di kota besar (ketuk untuk pindah); kamus EN; nama permata EN ("Chipped Ruby")
 - [x] Verifikasi: tes, build, screenshot PC & HP
-### 9D-3 — Harta karun, mini bos, portal bos
+### 9D-3 — Harta karun & mini bos (§25.3)
+- [x] `data/world.js` TREASURE; `meta/world.js` letak peti tetap per wilayah, catat peti terbuka — tes
+- [x] Save v14: `treasures` — tes
+- [x] `run/field.js`: penjaga (mini bos bermahkota + pengawal), peti terkunci → terbuka → hadiah — tes
+- [x] Render peti (rantai, kilau, tutup terbuka), mahkota penjaga, ikon peti di peta; cheat Ke harta; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
 ### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir
 ## 9F — Petualangan: quest utama & side quest (permintaan 2026-10-28; dikerjakan setelah 9D-3 & 9D-4)
 Keputusan pemilik (2026-10-28):

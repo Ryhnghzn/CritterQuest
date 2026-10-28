@@ -137,3 +137,13 @@ describe('batu teleport', () => {
     expect(teleport({ ...r.char, gold: 0 }, 'rimba', 4)).toEqual({ ok: false, reason: 'gold' });
   });
 });
+
+describe('harta tersimpan', () => {
+  it('applyField mencatat peti yang dibuka per wilayah, tanpa ganda', () => {
+    const c = make();
+    const a = applyField(c, { exp: 0, gold: 0, kills: 0, killsBy: {}, elites: 0, items: [], mats: {}, gems: [], hp: null, potions: c.potions, region: 'forest', fog: '', opened: [2] }, 1);
+    const b = applyField(a.char, { exp: 0, gold: 0, kills: 0, killsBy: {}, elites: 0, items: [], mats: {}, gems: [], hp: null, potions: c.potions, region: 'forest', fog: '', opened: [0, 2] }, 2);
+    expect(b.char.treasures).toEqual({ forest: [0, 2] });
+    expect(validateSlot(b.char)).toEqual([]);
+  });
+});

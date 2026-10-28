@@ -339,4 +339,12 @@ export default {
   "Ketuk barang di tas untuk menitip, ketuk barang di Gudang untuk mengambil. Gudang ini bisa dibuka di kota besar mana pun.": "Tap something in your bag to store it, tap something in the storehouse to take it back. You can open this storehouse in any big town.",
   "Titip apa saja di sini. Barangmu aman, dan bisa kau ambil di kota besar mana pun.": "Leave anything here. Your things are safe, and you can collect them in any big town.",
   "Gudang sudah penuh.": "The storehouse is full.",
+  // ——— 9D-3: treasure ———
+  "Semua harta di wilayah ini sudah dibuka": "Every treasure in this region is already open",
+  "Harta Penguasa {region} terbuka!": "The {region} Overlord's hoard is open!",
+  "Harta karun ditemukan!": "Treasure found!",
+  "Penjaga tumbang — petinya tidak terkunci lagi!": "The guardian falls — the chest is unlocked!",
+  "Penguasa {name} menjaga harta ini!": "An Overlord {name} guards this treasure!",
+  "Penjaga {name} muncul!": "A Guardian {name} appears!",
+  "Ke harta": "To treasure",
 };

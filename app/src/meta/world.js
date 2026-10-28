@@ -1,7 +1,7 @@
 // Open world on the save (spec §25.1): fog of war per region (one bit per
 // FIELD.fogCell square, stored as base64), progress written from a region,
 // and the light penalty for falling there. Pure.
-import { FIELD, TOWNS, TELEPORT, regionById, EXPEDITIONS, EXPEDITION_REWARD, regionOfDungeon } from '../data/world.js';
+import { FIELD, TREASURE, TOWNS, TELEPORT, regionById, EXPEDITIONS, EXPEDITION_REWARD, regionOfDungeon } from '../data/world.js';
 import { buildFieldMap, mulberry, sample, blocked } from '../run/fieldmap.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
@@ -100,6 +100,10 @@ export function applyField(char, part, now) {
   for (const [m, n] of Object.entries(part.mats || {})) c.mats[m] += n;
   for (const gm of part.gems || []) c.gems[gm.gem][gm.tier - 1] += 1;
   for (const id of part.found || []) if (!c.found.includes(id)) c.found.push(id);
+  if (part.region && part.opened?.length) {
+    const had = c.treasures[part.region] || [];
+    c.treasures = { ...c.treasures, [part.region]: [...new Set([...had, ...part.opened])].sort((a, b) => a - b) };
+  }
   if (part.region && regionById(part.region)) c.regions = { ...c.regions, [part.region]: { fog: part.fog ?? c.regions[part.region]?.fog ?? '' } };
   c.updatedAt = now;
   return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone };
@@ -122,6 +126,34 @@ export function visitTown(char, townId, now) {
   if (!c.towns.includes(townId)) c.towns.push(townId);
   c.updatedAt = now;
   return c;
+}
+
+// ——— hidden treasure (spec §25.3) ———
+// The region's treasure spots: fixed for everyone (from the region seed), off the paths,
+// clear of solids, spread west → east; the last one is the overlord's. Cached per region.
+const treasureCache = new Map();
+export function treasureSpots(region) {
+  if (treasureCache.has(region.id)) return treasureCache.get(region.id);
+  const map = buildFieldMap(region);
+  const rng = mulberry((region.seed * 7919 + 101) >>> 0);
+  const [b0, b1] = TREASURE.band, step = (b1 - b0) / TREASURE.count;
+  const pts = map.paths.flatMap((p) => sample(p, 200));
+  const out = [];
+  for (let i = 0; i < TREASURE.count; i++) {
+    const lo = region.w * (b0 + step * i), hi = region.w * (b0 + step * (i + 1));
+    const near = pts.filter(([x]) => x >= lo && x <= hi);
+    for (let tries = 0; tries < 800 && near.length; tries++) {
+      const [px, py] = near[Math.floor(rng() * near.length)];
+      const a = rng() * Math.PI * 2, d = TREASURE.offPath[0] + rng() * (TREASURE.offPath[1] - TREASURE.offPath[0]);
+      const x = px + Math.cos(a) * d, y = py + Math.sin(a) * d;
+      if (x < lo || x > hi || y < 200 || y > region.h - 200) continue;
+      if (map.pathDist(x, y) < TREASURE.offPath[0] || blocked(map, x, y, 90)) continue;
+      out.push({ idx: i, x: Math.round(x), y: Math.round(y), lord: i === TREASURE.count - 1 });
+      break;
+    }
+  }
+  treasureCache.set(region.id, out);
+  return out;
 }
 
 // ——— teleport stone (spec §25.2) ———

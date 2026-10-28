@@ -4,12 +4,13 @@
 // leaves the region. Pure logic on the run state (run/run.js).
 import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
-import { FIELD, FIELD_SCALE, READY_TOWNS, TOWNS, regionById } from '../data/world.js';
+import { FIELD, FIELD_SCALE, TREASURE, READY_TOWNS, TOWNS, regionById } from '../data/world.js';
 import { ENEMIES } from '../data/enemies.js';
 import { dungeonById } from '../data/dungeons.js';
 import { buildFieldMap, pushOut, blocked } from './fieldmap.js';
-import { makeElite } from './dungeon.js';
-import { revealFog } from '../meta/world.js';
+import { makeElite, addMats, dropGear } from './dungeon.js';
+import { revealFog, treasureSpots } from '../meta/world.js';
+import { GEM_IDS, GEMS } from '../data/forge.js';
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
@@ -28,7 +29,8 @@ export const fieldScale = (level) => ({
 // at: 'west' (from the region's `from` town), 'east', or { x, y } (back out of a dungeon gate)
 // gates: [{ dungeon, x, y, found }] — this character's dungeon gates in the region (meta/world.js)
 // target: { x, y } | null — where the expedition arrow points
-export function startField(run, regionId, at = 'west', gates = [], target = null) {
+// opened: indexes of this region's treasure chests already opened (spec §25.3)
+export function startField(run, regionId, at = 'west', gates = [], target = null, opened = []) {
   const region = regionById(regionId);
   const map = buildFieldMap(region);
   run.field = true;
@@ -43,6 +45,9 @@ export function startField(run, regionId, at = 'west', gates = [], target = null
   run.gatesFound = [];   // dungeon ids found this visit (written to the save)
   run.nearGate = null;
   run.target = target;
+  // state: 'idle' → 'guarded' (guardian out) → 'unlocked' (guardian down) → 'open'
+  run.treasures = treasureSpots(region).map((tr) => ({ ...tr, state: opened.includes(tr.idx) ? 'open' : 'idle', guard: null }));
+  run.treasuresOpened = []; // opened this visit (written to the save)
   run.packT = 1.5; run.fogT = 0; run.edgeT = 0;
   run.night = false;
   if (run.fog) revealFog(run.fog, region, run.px, run.py);
@@ -97,9 +102,10 @@ export function stepField(run, dt) {
   const E = run.enemies, far = FIELD.despawn * FIELD.despawn;
   for (let i = E.length - 1; i >= 0; i--) {
     const e = E[i];
-    if (!e.boss && (e.x - run.px) ** 2 + (e.y - run.py) ** 2 > far) { E[i] = E[E.length - 1]; E.pop(); }
+    if (!e.boss && !e.mini && (e.x - run.px) ** 2 + (e.y - run.py) ** 2 > far) { E[i] = E[E.length - 1]; E.pop(); }
   }
   if (run.fog && (run.fogT -= dt) <= 0) { run.fogT = 0.25; revealFog(run.fog, region, run.px, run.py); }
+  stepTreasure(run);
   // dungeon gates: seen within the fog radius, usable up close (spec §25.5)
   run.nearGate = null;
   for (const g of run.gates) {
@@ -133,3 +139,64 @@ export const confineFieldEnemy = (run, e) => pushOut(run.fmap, e, e.r);
 
 // floater text for the region the player is in, e.g. "Hutan Kelam · LV 7"
 export const fieldHere = (run) => `${run.region.name} · LV ${fieldLevel(run.region, run.px)}`;
+
+// ——— hidden treasure (spec §25.3) ———
+const GUARD_SKIP = ['healer', 'summoner', 'bomber']; // too soft to guard a chest
+
+// The guardian (a crowned, giant version of a regional enemy) and its escort.
+export function spawnGuardian(run, tr) {
+  const region = run.region, rule = tr.lord ? TREASURE.lord : TREASURE.guard;
+  let type = pickType(region);
+  if (GUARD_SKIP.includes(type)) type = Object.keys(region.enemies).find((id) => !GUARD_SKIP.includes(id));
+  const level = fieldLevel(region, tr.x), sc = fieldScale(level);
+  const g = run.spawnEnemy(type);
+  g.x = tr.x + 40; g.y = tr.y + 30;
+  g.hp *= sc.hp * rule.hp; g.maxHp = g.hp; g.dmg *= sc.dmg * rule.dmg; g.r *= rule.size;
+  g.xp = Math.round(ENEMIES[type].xp * sc.reward * rule.hp * 0.5);
+  g.level = level; g.elite = true; g.mini = true; g.lord = tr.lord;
+  pushOut(run.fmap, g, g.r);
+  for (let i = 0; i < rule.escort; i++) {
+    const e = run.spawnEnemy(type);
+    e.hp *= sc.hp; e.maxHp *= sc.hp; e.dmg *= sc.dmg;
+    e.xp = Math.round(ENEMIES[type].xp * sc.reward); e.level = level;
+    const a = (i / rule.escort) * Math.PI * 2;
+    e.x = tr.x + Math.cos(a) * 90; e.y = tr.y + Math.sin(a) * 90;
+    pushOut(run.fmap, e, e.r);
+  }
+  tr.guard = g; tr.state = 'guarded';
+  run.showBanner(t(tr.lord ? 'Penguasa {name} menjaga harta ini!' : 'Penjaga {name} muncul!', { name: ENEMIES[type].name }));
+  return g;
+}
+
+// What a chest gives: coins, materials, a gem and gear of Grand Chest quality.
+export function openTreasure(run, tr) {
+  const level = fieldLevel(run.region, tr.x), sc = fieldScale(level);
+  const gold = Math.round((TREASURE.gold.base + TREASURE.gold.perLevel * level) * (tr.lord ? TREASURE.lordGold : 1));
+  run.addGold(gold);
+  run.addFloater(tr.x, tr.y - 60, t('+{n} koin', { n: gold }), '#ffd166');
+  const mats = {};
+  for (const [m, [a, b]] of Object.entries(tr.lord ? TREASURE.lordMats : TREASURE.mats)) mats[m] = rint(a, b);
+  addMats(run, mats);
+  const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)], tier = Math.min(4, 1 + Math.floor(level / 15) + (tr.lord ? 1 : 0));
+  run.gemsFound.push({ gem, tier });
+  run.addFloater(tr.x, tr.y - 90, `+${GEMS[gem].name}`, GEMS[gem].color);
+  run.lootLevel = level;
+  for (let i = 0; i < (tr.lord ? TREASURE.lordItems : TREASURE.items); i++) dropGear(run, TREASURE.source, tr.x, tr.y + 20);
+  tr.state = 'open';
+  run.treasuresOpened.push(tr.idx);
+  run.showBanner(tr.lord ? t('Harta Penguasa {region} terbuka!', { region: run.region.name }) : t('Harta karun ditemukan!'));
+  run.addShake?.('medium');
+  return { gold, mats, gem, tier, sc };
+}
+
+export function stepTreasure(run) {
+  for (const tr of run.treasures || []) {
+    if (tr.state === 'open') continue;
+    const d2 = (tr.x - run.px) ** 2 + (tr.y - run.py) ** 2;
+    if (tr.state === 'idle' && d2 < TREASURE.triggerR ** 2) spawnGuardian(run, tr);
+    else if (tr.state === 'guarded' && (tr.guard.hp <= 0 || !run.enemies.includes(tr.guard))) {
+      tr.state = 'unlocked'; tr.guard = null;
+      run.showBanner(t('Penjaga tumbang — petinya tidak terkunci lagi!'));
+    } else if (tr.state === 'unlocked' && d2 < TREASURE.openR ** 2) openTreasure(run, tr);
+  }
+}

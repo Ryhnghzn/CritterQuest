@@ -751,9 +751,18 @@ Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang 
 - **Gudang** per karakter (9D-2c), maks 120 barang.
 - **Save versi 13:** `shops` (pembelian hari ini per toko) dan `stash` (isi Gudang). `migrate()` v12 → v13 mengisi keduanya kosong.
 
-### 25.3 Isi wilayah (9D-3)
-- Harta karun tersembunyi yang dijaga mini bos.
-- Portal bos ke dungeon wilayah; dungeon tidak lagi dibuka berurutan dari gerbang kota awal.
+### 25.3 Harta karun & mini bos (9D-3)
+(Portal bos lama digantikan gerbang dungeon di dunia, §25.5.) Semua angka di `TREASURE` (`data/world.js`).
+- **Letak:** 4 peti per wilayah di tempat tetap (sama untuk semua karakter, dari seed wilayah), tersebar barat → timur, 420–900 dari jalan, tidak tertutup benda padat. Peti ke-4 (paling timur) milik **Penguasa** wilayah.
+- **Penjaga:** dalam radius 520 dari peti muncul mini bos bermahkota — musuh khas wilayah (bukan penyembuh/pemanggil/bom) yang diperbesar: HP ×14, damage ×1,5, ukuran ×1,8, dengan 3 pengawal. Penguasa: HP ×26, damage ×1,7, ukuran ×2,1, 5 pengawal, mahkota berbatu merah. Kekuatan ikut level wilayah di titik peti. Penjaga tidak hilang walau ditinggal jauh.
+- **Peti** dirantai selama penjaga hidup; setelah penjaga tumbang, sentuh peti untuk membukanya:
+  - koin `60 + 14 × level` (Penguasa ×2,5);
+  - bahan (debu & kristal; Penguasa kristal & inti);
+  - 1 permata tingkat `1 + level/15` (Penguasa +1);
+  - gear bobot Peti Agung: 1 buah (Penguasa 2).
+- Peti yang dibuka tercatat per karakter dan tidak muncul lagi. Peti tampil di peta (ikon peti; terbuka = redup) setelah tempatnya terbuka dari kabut.
+- **Save versi 14:** `treasures { regionId: [indeks peti terbuka] }`; `migrate()` v13 → v14 mengisinya kosong.
+- Cheat wilayah: "Ke harta".
 
 ### 25.4 Tiga biome lain (9D-4)
 - Wilayah Padang Es, Gurun Merah, dan Gunung Api, masing-masing dengan musuh biome.

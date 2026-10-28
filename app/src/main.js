@@ -33,7 +33,7 @@ import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
-import { FIELD, TOWNS, TOWN_IDS, regionById, regionOfDungeon } from './data/world.js';
+import { FIELD, TREASURE, TOWNS, TOWN_IDS, regionById, regionOfDungeon } from './data/world.js';
 import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
 import { buyDisplay, buyNight, buyMats, isNight } from './meta/market.js';
 import { deposit, withdraw } from './meta/stash.js';
@@ -514,7 +514,7 @@ async function explore(regionId, at = 'west') {
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
     effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
-    region: regionId, at, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region),
+    region: regionId, at, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
   });
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
   if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
@@ -548,7 +548,7 @@ async function openGate(g) {
 // Writes what was earned in the region so far (EXP, coins, loot, bestiary, bounties, fog).
 async function commitField() {
   const part = game.takeProgress();
-  const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), attrs: tripAttrs }, Date.now());
+  const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now());
   tripAttrs = {};
   current = r.char;
   fieldSaveT = 0;
@@ -595,7 +595,7 @@ function openMap() {
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, treasures: game.treasures });
   $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
   $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, game.region) * 100) });
 }
@@ -608,7 +608,7 @@ function drawMinimap() {
   if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, treasures: game.treasures });
 }
 $('minimap').addEventListener('click', openMap);
 $('mapclose').addEventListener('click', () => resume());
@@ -775,6 +775,11 @@ const cheatActions = {
     if (!game.field || !game.gates.length) { toast(tr('Tidak ada gerbang di wilayah ini')); return; }
     const g = game.target || game.gates[0];
     game.px = g.x; game.py = g.y + 120;
+  },
+  warpTreasure: () => { // next chest not opened yet, just outside the guardian's reach
+    const spot = game.field && game.treasures.find((x) => x.state !== 'open');
+    if (!spot) { toast(tr('Semua harta di wilayah ini sudah dibuka')); return; }
+    game.px = spot.x - TREASURE.triggerR - 60; game.py = spot.y;
   },
   revealMap: () => { if (game.fog) game.fog.fill(255); toast(tr('Peta terbuka')); },
   warp: (k) => { if (!game.field) return; game.px = game.fmap.w * k; game.py = game.fmap.paths[0].reduce((b, p) => (Math.abs(p[0] - game.px) < Math.abs(b[0] - game.px) ? p : b))[1]; },

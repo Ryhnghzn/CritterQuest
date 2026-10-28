@@ -61,7 +61,7 @@ export function renderCheat(box, ctx, actions, redraw) {
       section('Wilayah',
         row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),
         row(b('Buka seluruh peta', actions.revealMap), b('+100 EXP', () => actions.exp(100))),
-        row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5)), b('Ke gerbang', actions.warpGate)));
+        row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5)), b('Ke gerbang', actions.warpGate), b('Ke harta', actions.warpTreasure)));
     } else {
       section('Dungeon',
         row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),

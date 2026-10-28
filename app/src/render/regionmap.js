@@ -110,6 +110,7 @@ function gateIcon(g, x, y, gt, size) {
 // fog: Uint8Array or null (all revealed); rect: { x, y, w, h }; player: { x, y } or null.
 // opts: labels (town & gate names, title), title: false hides the title, t: seconds (pulses),
 //   window: world width of a window centred on the player (minimap), gates: [{ dungeon, x, y, found }],
+//   treasures: [{ x, y, state, lord }] — shown where the fog is gone;
 //   target: { x, y } | null — shown even under the fog; at the window edge as an arrow when outside.
 export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
   const region = map.region;
@@ -146,6 +147,19 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
     if (x < ox - 10 || x > ox + w + 10 || y < oy - 10 || y > oy + h + 10) continue;
     gateIcon(g, x, y, gt, opts.labels ? 7 : 4);
     if (opts.labels) { const d = dungeonById(gt.dungeon); label(g, d.short || d.name, x, y - 16, '#e9d8ff', 'center', 12); }
+  }
+  // treasure chests (spec §25.3): once their spot is uncovered; opened ones dimmed
+  const { cols } = fogSize(region);
+  for (const tr of opts.treasures || []) {
+    if (fog && !fogAt(fog, cols, Math.floor(tr.x / FIELD.fogCell), Math.floor(tr.y / FIELD.fogCell))) continue;
+    const x = sx(tr.x), y = sy(tr.y);
+    if (x < ox - 10 || x > ox + w + 10 || y < oy - 10 || y > oy + h + 10) continue;
+    const k = opts.labels ? 1 : 0.6, open = tr.state === 'open';
+    g.globalAlpha = open ? 0.45 : 1;
+    g.beginPath(); g.roundRect(x - 6 * k, y - 4 * k, 12 * k, 9 * k, 2); g.fillStyle = open ? '#6b5a48' : tr.lord ? '#ff8a3c' : '#e6c27a'; g.fill();
+    g.lineWidth = 1.2; g.strokeStyle = '#2a1606'; g.stroke();
+    g.beginPath(); g.moveTo(x - 6 * k, y); g.lineTo(x + 6 * k, y); g.stroke();
+    g.globalAlpha = 1;
   }
   // expedition target: always shown, even under the fog
   if (opts.target) {

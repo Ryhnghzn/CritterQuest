@@ -125,3 +125,55 @@ describe('mode wilayah', () => {
     expect([g.px, g.py]).toEqual([4000, 5000]);
   });
 });
+
+describe('harta karun & mini bos (§25.3)', () => {
+  it('setiap wilayah punya harta di tempat tetap, di luar jalan, tidak tertutup benda padat', async () => {
+    const { treasureSpots } = await import('../meta/world.js');
+    const { TREASURE } = await import('../data/world.js');
+    for (const r of REGIONS) {
+      const spots = treasureSpots(r), map = buildFieldMap(r);
+      expect(spots).toHaveLength(TREASURE.count);
+      expect(spots.filter((s) => s.lord)).toHaveLength(1);
+      for (const s of spots) {
+        expect(blocked(map, s.x, s.y, 40)).toBe(false);
+        expect(map.pathDist(s.x, s.y)).toBeGreaterThanOrEqual(TREASURE.offPath[0]);
+      }
+      expect(spots.map((s) => s.x)).toEqual([...spots.map((s) => s.x)].sort((a, b) => a - b));
+    }
+  });
+
+  it('mendekat → penjaga muncul; peti terkunci sampai penjaga tumbang; menyentuh peti → hadiah, tercatat', async () => {
+    const { TREASURE } = await import('../data/world.js');
+    const g = new Game();
+    g.explore(setup());
+    g.intent = idle; g.packT = 999; g.god = true;
+    const tr = g.treasures[0];
+    g.px = tr.x - TREASURE.triggerR + 40; g.py = tr.y;
+    g.step(1 / 60);
+    expect(tr.state).toBe('guarded');
+    const boss = tr.guard;
+    expect(boss.mini).toBe(true);
+    expect(boss.maxHp).toBeGreaterThan(5 * 20);
+    g.px = tr.x; g.py = tr.y + 30;
+    for (let i = 0; i < 5; i++) g.step(1 / 60);
+    expect(tr.state).toBe('guarded'); // still locked
+    boss.hp = 0;
+    for (let i = 0; i < 10; i++) g.step(1 / 60);
+    expect(['unlocked', 'open']).toContain(tr.state);
+    for (let i = 0; i < 10; i++) g.step(1 / 60);
+    expect(tr.state).toBe('open');
+    expect(g.treasuresOpened).toEqual([0]);
+    expect(g.gemsFound.length).toBeGreaterThan(0);
+    expect(g.gold).toBeGreaterThan(0);
+  });
+
+  it('peti yang sudah dibuka tidak memunculkan penjaga lagi', () => {
+    const g = new Game();
+    g.explore(setup({ opened: [0, 1, 2, 3] }));
+    g.intent = idle; g.packT = 999;
+    g.px = g.treasures[3].x; g.py = g.treasures[3].y + 30;
+    g.step(1 / 60);
+    expect(g.treasures.every((t) => t.state === 'open')).toBe(true);
+    expect(g.enemies).toHaveLength(0);
+  });
+});

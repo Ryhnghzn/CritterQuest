@@ -139,7 +139,7 @@ export class Game {
   explore(setup) {
     this.reset(setup);
     this.fog = setup.fog || null;
-    startField(this, setup.region, setup.at, setup.gates, setup.target);
+    startField(this, setup.region, setup.at, setup.gates, setup.target, setup.opened);
     this.state = ST.PLAY;
   }
 

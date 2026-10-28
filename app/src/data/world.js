@@ -70,6 +70,21 @@ export const FIELD = {
   saveEvery: 60,           // seconds between automatic saves in a region
   deathGoldLoss: 0.1,
 };
+// Hidden treasure (spec §25.3): `count` chests per region at fixed spots (same for
+// every character), each guarded by a mini boss that appears when the player comes
+// near; the last (easternmost) one by the region's overlord. Opened once per character.
+export const TREASURE = {
+  count: 4, band: [0.12, 0.95],       // spread west → east over this part of the width
+  offPath: [420, 900],                // distance from the nearest path
+  triggerR: 520,                      // the guardian appears this close
+  openR: 70,                          // walk this close to an unlocked chest to open it
+  guard: { hp: 14, dmg: 1.5, size: 1.8, escort: 3 },
+  lord: { hp: 26, dmg: 1.7, size: 2.1, escort: 5 },
+  gold: { base: 60, perLevel: 14 }, lordGold: 2.5,
+  items: 1, lordItems: 2, source: 'grand',
+  mats: { dust: [6, 14], crystal: [1, 3] }, lordMats: { crystal: [3, 6], core: [1, 2] },
+};
+
 // enemy strength by level (matches the dungeon tiers: LV 26 ≈ Benteng Lava)
 export const FIELD_SCALE = { hp: 0.2, dmg: 0.075, reward: 0.16 };
 

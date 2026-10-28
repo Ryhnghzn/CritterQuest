@@ -184,11 +184,21 @@ describe('save versi 2', () => {
 
   it('migrasi v12 → v13: stok toko & Gudang kosong', () => {
     const v12 = { ...fresh(), version: 12 };
-    delete v12.shops; delete v12.stash;
+    delete v12.shops; delete v12.stash; delete v12.treasures;
     const r = readSlot(v12);
     expect(r.status).toBe('ok');
     expect(r.data.shops).toEqual({});
     expect(r.data.stash).toEqual([]);
+  });
+
+  it('migrasi v13 → v14: harta kosong; harta rusak ditolak', () => {
+    const v13 = { ...fresh(), version: 13 };
+    delete v13.treasures;
+    const r = readSlot(v13);
+    expect(r.status).toBe('ok');
+    expect(r.data.treasures).toEqual({});
+    expect(validateSlot({ ...fresh(), treasures: { forest: [9] } })).toContain('treasures');
+    expect(validateSlot({ ...fresh(), treasures: { mars: [0] } })).toContain('treasures');
   });
 
   it('menolak catatan toko & Gudang yang rusak', () => {

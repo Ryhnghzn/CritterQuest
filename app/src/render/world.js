@@ -155,6 +155,7 @@ export class Renderer {
       const flip = e.mode === 'dash' ? e.dirX < 0 : game.px < e.x;
       drawBaked(g, look, e.x, e.y, k / squash, k * squash, flip);
       if (e.ai === 'shield') guard(g, e);
+      if (e.mini) crown(g, e.x, e.y - e.r * 1.25 - 14, e.r * 0.5, e.lord);
       if (e.boss || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.boss ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
     }
 
@@ -496,4 +497,13 @@ function gearDrop(g, gm, t) {
   g.fillStyle = 'rgba(20,14,40,.85)'; g.fill();
   g.lineWidth = 1.8; g.strokeStyle = RARITIES[item.rarity].color; g.stroke();
   g.save(); g.translate(gm.x, gm.y - 4 + bob); drawGearIcon(g, item, 15, t); g.restore();
+}
+
+// treasure guardian (spec §25.3): a golden crown over the head; the overlord's is red-jewelled
+function crown(g, x, y, w, lord) {
+  g.beginPath();
+  g.moveTo(x - w, y + 8); g.lineTo(x - w, y - 4); g.lineTo(x - w * 0.5, y + 2); g.lineTo(x, y - 10);
+  g.lineTo(x + w * 0.5, y + 2); g.lineTo(x + w, y - 4); g.lineTo(x + w, y + 8); g.closePath();
+  g.fillStyle = '#ffc94d'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#3a2408'; g.stroke();
+  g.beginPath(); g.arc(x, y + 2, 3, 0, Math.PI * 2); g.fillStyle = lord ? '#ff4d6d' : '#6ec9ff'; g.fill();
 }

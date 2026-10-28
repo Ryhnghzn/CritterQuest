@@ -35,7 +35,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot) }, found: [], expedition: null,
-    shops: {}, stash: [],
+    shops: {}, stash: [], treasures: {},
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),

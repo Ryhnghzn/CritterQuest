@@ -540,9 +540,11 @@ export function drawField(g, game, ground, t, rect) {
     }
   }
   for (const gt of game.gates || []) if (vis(gt.x, gt.y, 160)) list.push({ gate: gt, y: gt.y });
+  for (const tr of game.treasures || []) if (vis(tr.x, tr.y, 140)) list.push({ chest: tr, y: tr.y });
   list.sort((a, b) => a.y - b.y);
   for (const s of list) {
     if (s.gate) gate(g, s.gate, t, game.nearGate === s.gate);
+    else if (s.chest) treasureChest(g, s.chest, t);
     else if (s.kind === 'tree') {
       if (biome === 'ice') snowPine(g, s);
       else if (biome === 'desert') { if ((s.v || 0) < 0.6) cactus(g, s); else deadShrub(g, s); } else if (biome === 'volcano') deadShrub(g, s, '#1c1513', true);
@@ -578,6 +580,10 @@ export function fieldDecorLights(game, t, out, rect) {
     const [, c1] = gateGlow(gt);
     out.push({ x: gt.x, y: gt.y - 46, r: 220 + Math.sin(t * 2) * 15, rgb: c1, tint: 0.14 });
   }
+  for (const tr of game.treasures || []) {
+    if (tr.state === 'open' || !vis(tr.x, tr.y, 200)) continue;
+    out.push({ x: tr.x, y: tr.y - 20, r: (tr.lord ? 200 : 150) + Math.sin(t * 3) * 10, rgb: tr.state === 'unlocked' ? '255,210,110' : '255,170,60', tint: tr.state === 'unlocked' ? 0.2 : 0.1 });
+  }
   if (biome !== 'volcano') return;
   for (const l of map.lakes) if (vis(l.x, l.y, l.r + 200)) out.push({ x: l.x, y: l.y, r: l.r * 1.7, rgb: '255,120,40', tint: 0.16 + Math.sin(t * 1.1 + l.x) * 0.02 });
   for (const river of map.rivers) {
@@ -612,4 +618,54 @@ export function targetArrow(g, game, t) {
   const lx = game.px + Math.cos(a) * (R + 22), ly = game.py - 10 + Math.sin(a) * (R + 22) + 4;
   g.lineWidth = 3; g.strokeStyle = 'rgba(10,8,20,.9)'; g.strokeText(label, lx, ly);
   g.fillStyle = '#f3e2b8'; g.fillText(label, lx, ly);
+}
+
+// ——— hidden treasure (spec §25.3): a chest on a rune-ring dais; chained and
+// locked while its guardian lives, glowing once free, lid thrown back when opened ———
+function treasureChest(g, tr, t) {
+  const { x, y } = tr, open = tr.state === 'open', locked = tr.state === 'idle' || tr.state === 'guarded';
+  const s = tr.lord ? 1.35 : 1;
+  // dais
+  g.beginPath(); g.ellipse(x, y + 8, 62 * s, 22 * s, 0, 0, Math.PI * 2);
+  g.fillStyle = 'rgba(30,26,40,.75)'; g.fill(); g.lineWidth = 2; g.strokeStyle = 'rgba(230,194,122,.35)'; g.stroke();
+  if (!open) {
+    g.save(); g.translate(x, y + 8); g.scale(1, 0.35);
+    for (let i = 0; i < 8; i++) {
+      const a = t * 0.6 + (i / 8) * Math.PI * 2;
+      g.beginPath(); g.arc(Math.cos(a) * 52 * s, Math.sin(a) * 52 * s, 4, 0, Math.PI * 2);
+      g.fillStyle = `rgba(255,${locked ? 150 : 210},80,${0.5 + 0.4 * Math.sin(t * 3 + i)})`; g.fill();
+    }
+    g.restore();
+  }
+  g.save(); g.translate(x, y); g.scale(s, s);
+  // body
+  g.beginPath(); g.roundRect(-30, -28, 60, 34, 4); g.fillStyle = '#6b3f1f'; g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#1a1010'; g.stroke();
+  g.fillStyle = '#c9a24a';
+  for (const bx of [-30, -4, 22]) g.fillRect(bx, -28, 8, 34);
+  g.strokeStyle = '#1a1010'; g.lineWidth = 1.5; for (const bx of [-30, -4, 22]) g.strokeRect(bx, -28, 8, 34);
+  if (open) {
+    // lid thrown back, light pouring out
+    g.beginPath(); g.moveTo(-32, -28); g.lineTo(-28, -52); g.lineTo(28, -52); g.lineTo(32, -28); g.closePath();
+    g.fillStyle = '#5a3418'; g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#1a1010'; g.stroke();
+    g.fillStyle = 'rgba(20,12,8,.9)'; g.fillRect(-26, -30, 52, 6);
+  } else {
+    g.beginPath(); g.moveTo(-32, -28); g.quadraticCurveTo(0, -50, 32, -28); g.closePath();
+    g.fillStyle = '#7a4a24'; g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#1a1010'; g.stroke();
+    // lock
+    g.beginPath(); g.roundRect(-7, -22, 14, 14, 3); g.fillStyle = locked ? '#8a8a9a' : '#ffd166'; g.fill(); g.lineWidth = 1.5; g.stroke();
+    if (locked) { // chains across the lid
+      g.strokeStyle = '#9a9aaa'; g.lineWidth = 3; g.setLineDash([6, 4]);
+      g.beginPath(); g.moveTo(-34, -40); g.lineTo(34, -6); g.moveTo(34, -40); g.lineTo(-34, -6); g.stroke(); g.setLineDash([]);
+    }
+  }
+  g.restore();
+  if (!locked) { // sparkles / rays
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < (open ? 4 : 7); i++) {
+      const ph = (t * 0.8 + i / 7) % 1;
+      g.beginPath(); g.arc(x + Math.sin(i * 9 + t) * 24 * s, y - 34 * s - ph * 50, 2.4 * (1 - ph) + 0.6, 0, Math.PI * 2);
+      g.fillStyle = `rgba(255,220,130,${(open ? 0.5 : 1) * (1 - ph)})`; g.fill();
+    }
+    g.restore();
+  }
 }
