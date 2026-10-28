@@ -11,6 +11,7 @@ import { buildFieldMap, pushOut, blocked } from './fieldmap.js';
 import { makeElite, addMats, dropGear } from './dungeon.js';
 import { revealFog, treasureSpots } from '../meta/world.js';
 import { GEM_IDS, GEMS } from '../data/forge.js';
+import { HIDDEN_R, REACH_R, DROP_ITEMS } from '../data/quests.js';
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
@@ -70,6 +71,7 @@ export function spawnPack(run) {
     x = run.px + Math.cos(a) * d; y = run.py + Math.sin(a) * d;
     ok = x > FIELD.exitZone + 60 && y > 60 && x < map.w - FIELD.exitZone - 60 && y < map.h - 60 && !blocked(map, x, y, 40);
     if (ok && map.pathDist(x, y) < FIELD.pathWidth && rand() < FIELD.pathAvoid) ok = false;
+    if (ok && run.hidden.some((h) => (h.x - x) ** 2 + (h.y - y) ** 2 < HIDDEN_R.calm ** 2)) ok = false; // homes stay quiet
   }
   if (!ok) return 0;
   const type = pickType(region);
@@ -106,6 +108,7 @@ export function stepField(run, dt) {
   }
   if (run.fog && (run.fogT -= dt) <= 0) { run.fogT = 0.25; revealFog(run.fog, region, run.px, run.py); }
   stepTreasure(run);
+  stepQuestPlaces(run);
   // dungeon gates: seen within the fog radius, usable up close (spec §25.5)
   run.nearGate = null;
   for (const g of run.gates) {
@@ -132,6 +135,10 @@ export function stepField(run, dt) {
 export function confineFieldPlayer(run) {
   const o = { x: run.px, y: run.py };
   pushOut(run.fmap, o, 12);
+  for (const h of run.hidden) if (h.hut) { // a cabin is solid
+    const dx = o.x - h.x, dy = o.y - (h.y - 30), d = Math.hypot(dx, dy), r = HIDDEN_R.solid + 12;
+    if (d < r && d > 0) { o.x = h.x + (dx / d) * r; o.y = h.y - 30 + (dy / d) * r; }
+  }
   run.px = o.x; run.py = o.y;
 }
 
@@ -198,5 +205,30 @@ export function stepTreasure(run) {
       tr.state = 'unlocked'; tr.guard = null;
       run.showBanner(t('Penjaga tumbang — petinya tidak terkunci lagi!'));
     } else if (tr.state === 'unlocked' && d2 < TREASURE.openR ** 2) openTreasure(run, tr);
+  }
+}
+
+// ——— quests in the wild (spec §26.5) ———
+// run.hidden: people living out here [{ id, x, y, hut, mark, … }]; run.questSpots: places a quest
+// sends you to [{ spot, x, y }]; run.questDrops: quest items that may fall [{ item, enemy, chance }].
+export function stepQuestPlaces(run) {
+  run.nearHidden = null;
+  for (const h of run.hidden) if ((h.x - run.px) ** 2 + (h.y + 20 - run.py) ** 2 < HIDDEN_R.talk ** 2) run.nearHidden = h;
+  for (let i = run.questSpots.length - 1; i >= 0; i--) {
+    const s = run.questSpots[i];
+    if ((s.x - run.px) ** 2 + (s.y - run.py) ** 2 > REACH_R ** 2) continue;
+    run.questSpots.splice(i, 1);
+    run.reached.push(s.spot);
+    run.showBanner(t('Tempat ditemukan!'));
+    run.addFloater(s.x, s.y - 60, t('Quest: tempat ditemukan'), '#ffd24a');
+  }
+}
+
+// A slain enemy may drop a quest item (only while that quest step is on).
+export function questDrop(run, e, kin) {
+  for (const d of run.questDrops) {
+    if ((d.enemy !== e.type && d.enemy !== kin) || rand() >= d.chance) continue;
+    run.questItems[d.item] = (run.questItems[d.item] || 0) + 1;
+    run.addFloater(e.x, e.y - 30, `+1 ${DROP_ITEMS[d.item].name}`, DROP_ITEMS[d.item].color);
   }
 }

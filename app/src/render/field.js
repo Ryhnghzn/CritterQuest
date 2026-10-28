@@ -8,6 +8,7 @@ import { FIELD, TOWNS } from '../data/world.js';
 import { dungeonById } from '../data/dungeons.js';
 import { OUT } from '../art/sprites.js';
 import { TAU, shadow, shade } from './paint.js';
+import { drawHideout, drawQuestSpot, hideoutLights } from './hideout.js';
 
 const cache = new Map(); // region id → { decals, pines, lakeShapes }
 const DCELL = 400;       // bucket size for floor decals & edge silhouettes
@@ -541,10 +542,14 @@ export function drawField(g, game, ground, t, rect) {
   }
   for (const gt of game.gates || []) if (vis(gt.x, gt.y, 160)) list.push({ gate: gt, y: gt.y });
   for (const tr of game.treasures || []) if (vis(tr.x, tr.y, 140)) list.push({ chest: tr, y: tr.y });
+  for (const h of game.hidden || []) if (vis(h.x, h.y - 60, 200)) list.push({ home: h, y: h.y });
+  for (const sp of game.questSpots || []) if (vis(sp.x, sp.y, 120)) list.push({ spot: sp, y: sp.y });
   list.sort((a, b) => a.y - b.y);
   for (const s of list) {
     if (s.gate) gate(g, s.gate, t, game.nearGate === s.gate);
     else if (s.chest) treasureChest(g, s.chest, t);
+    else if (s.home) drawHideout(g, s.home, t, biome, game.nearHidden === s.home);
+    else if (s.spot) drawQuestSpot(g, s.spot, t);
     else if (s.kind === 'tree') {
       if (biome === 'ice') snowPine(g, s);
       else if (biome === 'desert') { if ((s.v || 0) < 0.6) cactus(g, s); else deadShrub(g, s); } else if (biome === 'volcano') deadShrub(g, s, '#1c1513', true);
@@ -584,6 +589,7 @@ export function fieldDecorLights(game, t, out, rect) {
     if (tr.state === 'open' || !vis(tr.x, tr.y, 200)) continue;
     out.push({ x: tr.x, y: tr.y - 20, r: (tr.lord ? 200 : 150) + Math.sin(t * 3) * 10, rgb: tr.state === 'unlocked' ? '255,210,110' : '255,170,60', tint: tr.state === 'unlocked' ? 0.2 : 0.1 });
   }
+  hideoutLights(game, t, out, vis);
   if (biome !== 'volcano') return;
   for (const l of map.lakes) if (vis(l.x, l.y, l.r + 200)) out.push({ x: l.x, y: l.y, r: l.r * 1.7, rgb: '255,120,40', tint: 0.16 + Math.sin(t * 1.1 + l.x) * 0.02 });
   for (const river of map.rivers) {

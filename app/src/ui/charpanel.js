@@ -32,10 +32,11 @@ const STAT_ROWS = [
 // hp: current HP (live, not yet saved); onAllocate(add): spend points (add = { str: n, … }).
 // Points are only marked with [+] until Simpan, so a stray tap costs nothing.
 // gear: options for the Gear tab (ui/gear.js).
-export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skill }) {
+// quest: { onTrack, onAbandon } for the Quest tab (town only)
+export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skill, quest }) {
   const pending = Object.fromEntries(ATTRS.map((a) => [a.id, 0]));
   const draw = () => drawPanel(box, char, hp, pending, {
-    onClose, gear, skill, redraw: () => draw(),
+    onClose, gear, skill, quest, redraw: () => draw(),
     onAdd: (id) => { pending[id] += 1; draw(); },
     onCancel: () => { for (const k in pending) pending[k] = 0; draw(); },
     onSave: () => onAllocate({ ...pending }),
@@ -43,7 +44,7 @@ export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skil
   draw();
 }
 
-function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, redraw }) {
+function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, quest, redraw }) {
   box.replaceChildren();
   const marked = Object.values(pending).reduce((a, b) => a + b, 0);
   const preview = (marked && allocate(char, pending, char.updatedAt)) || char;
@@ -127,7 +128,7 @@ function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, g
   if (tab === 'gear') body.append(renderGearTab(char, gear, redraw));
   else if (tab === 'skill') body = renderSkillTab(char, skill, redraw);
   else if (tab === 'coll') body = renderCollectionTab(char);
-  else if (tab === 'quest') body = renderQuestTab(char);
+  else if (tab === 'quest') body = renderQuestTab(char, quest);
   else body.append(attrs, panel);
   box.append(head, tabs, body, close);
 }

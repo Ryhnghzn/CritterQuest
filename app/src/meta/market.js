@@ -41,7 +41,7 @@ function stockItem(slots, weights, itemLevel, classId, rng, idTag) {
   let rarity = Math.max(pickRarity(weights, rng), SLOTS[slot].minRarity || 0);
   let unique = null;
   if (rarity >= LEGENDARY) {
-    const fits = UNIQUES.filter((u) => u.rarity === rarity && u.slot === slot && (u.classId === null || u.classId === classId));
+    const fits = UNIQUES.filter((u) => !u.quest && u.rarity === rarity && u.slot === slot && (u.classId === null || u.classId === classId));
     if (fits.length) unique = fits[Math.floor(rng() * fits.length)].id;
     else rarity = LEGENDARY - 1;
   }

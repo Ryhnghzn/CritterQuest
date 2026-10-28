@@ -20,7 +20,8 @@ import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js'
 import { bountyList, markShop, expeditionPanel } from './board.js';
 import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
 import { questDef } from '../meta/quests.js';
-import { rewardText } from './journal.js';
+import { rewardText, giveLines } from './journal.js';
+import { SIDE_MAX } from '../data/quests.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -67,7 +68,7 @@ export function renderNpc(box, npc, ctx) {
   // a quest step said here (spec §26.3) speaks first; the shop stays below it
   const offer = ctx.quests?.[0];
   panel.append(head, el('div', 'npcline', `“${offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
-  if (offer) panel.append(questBox(offer, ctx.onQuest));
+  if (offer) panel.append(questBox(offer, ctx.onQuest, char));
 
   if (npc.role !== 'talk') {
     const wallet = el('div', 'records');
@@ -147,15 +148,28 @@ export function renderNpc(box, npc, ctx) {
 }
 
 // The quest the NPC just spoke of, with the button that moves it on.
-function questBox(o, onQuest) {
+function questBox(o, onQuest, char) {
   const box = el('div', 'questbox');
   const def = questDef(o.id);
   box.append(el('span', 'pill', def.main ? t('Bab {n}: {title}', { n: def.ch + 1, title: o.title }) : o.title));
-  if (o.ends) box.append(el('div', 'qreward', `${tr('Hadiah')}: ${rewardText(o.reward)}`));
-  const b = button(o.start ? tr('Terima') : o.ends ? tr('Lapor & ambil hadiah') : tr('Lanjut'), 'btn small', () => onQuest(o.id));
+  if (o.give) box.append(giveList(o.give, o.can, char));
+  if (o.ends || o.start) box.append(el('div', 'qreward', `${tr('Hadiah')}: ${rewardText(o.reward)}`));
+  const label = o.give ? tr('Serahkan') : o.start ? tr('Terima') : o.ends ? tr('Lapor & ambil hadiah') : tr('Lanjut');
+  const b = button(o.give && o.ends ? tr('Serahkan & ambil hadiah') : label, 'btn small', () => onQuest(o.id));
   b.id = 'quest-go';
+  b.disabled = !!o.full || (o.give && !o.can.ok);
   box.append(b);
+  if (o.full) box.append(el('div', 'note', t('Jurnal penuh ({n} side quest).', { n: SIDE_MAX })));
   return box;
+}
+
+// What a give step asks for, each with what the bag holds (spec §26.5)
+function giveList(step, can, char) {
+  const list = el('div', 'qgive');
+  const chip = (text, ok) => list.append(el('span', `hchip${ok ? ' ok' : ' miss'}`, text));
+  for (const line of giveLines(step, char)) chip(line.text, line.ok);
+  if (can?.gear.length) list.append(el('div', 'note', `${tr('Akan diserahkan')}: ${can.gear.map((it) => itemName(it)).join(', ')}`));
+  return list;
 }
 
 // Teleport stone (spec §25.2): every town already visited, priced by its tier.

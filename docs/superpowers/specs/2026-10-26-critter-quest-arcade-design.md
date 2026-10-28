@@ -893,6 +893,19 @@ Urutan dungeon sama dengan urutan buka dungeon (§18.3). Rentang level wilayah t
 | Gunung Api | Penjaga Kawah | **rantai:** padamkan 3 api abadi → kalahkan 4 Salamander elite → kalahkan Penguasa Gunung Api → unik "Zirah Sisik Kawah" (armor) | rantai |
 | Gunung Api | Bara, penambang terjebak | sampaikan kabar ke Ignis di Baraapi | cari orang |
 
+- **Rincian 9F-2:**
+  - Letak rumah dan titik quest (`HIDDEN`, `SPOTS` di `data/quests.js`) dicari sekali dengan skrip, lalu ditulis tetap. Tes memastikan semuanya tidak di benda padat dan berjarak > 500 dari peti harta. Pondok padat (radius 58), dan kelompok musuh tidak muncul dalam radius 400.
+  - Bicara dengan penghuni (E) menyimpan dulu hasil di wilayah. Bila quest selesai atau barang diserahkan, wilayah dimuat ulang di tempat yang sama agar level, ramuan, dan tas sesuai save.
+  - **Titik "cari tempat"** (batu tulis, bintang jatuh, tugu makam, api abadi) tampil bercahaya di dunia selama langkahnya aktif. Berdiri dalam radius 160 menandainya; progres disimpan satu bit per titik.
+  - **Barang quest** (Jamur Bercahaya 40% dari Jamur Bom di Hutan Kelam, Sisik Cacing 50% dari Cacing Pasir) hanya jatuh selama langkahnya aktif dan langsung dihitung, tidak masuk tas.
+  - **Penjaga harta:** dihitung dari peti yang sudah dibuka di wilayah itu (peti terakhir = Penguasa), jadi peti yang dibuka sebelum quest diambil ikut dihitung.
+  - **Serahkan:** gear dipilih otomatis, yaitu yang paling biasa dan memenuhi syarat, tidak pernah yang sedang dipakai. Daftar barang yang akan diserahkan tampil di dialog. Permata tanpa jenis diambil dari jenis yang paling banyak.
+  - Penghuni yang ikut pergi (Lio, Gustav, Bara) hilang dari wilayah setelah quest-nya diterima.
+  - **Unik quest** (Legendaris, tidak pernah jatuh, tidak dijual, tidak keluar dari peti): Kalung Akar Tua (pulih 1% HP/detik), Cincin Bintang Beku (perisai 12%), Topeng Pasir Abadi (hisap 2,5%), Zirah Sisik Kawah (duri 70%). LV-nya mengikuti level pemain saat diterima.
+  - **Jurnal:** tombol **Lacak** (pelacak, panah, dan penanda peta mengikuti quest itu) dan **Batalkan** (progres hilang, quest bisa diambil lagi), hanya di kota.
+  - Peta: rumah tampil (ikon rumah, `!`/`?`, nama) setelah tempatnya terbuka dari kabut.
+  - Tidak ada perubahan struktur save; progres side quest memakai `quests.side` dari v17.
+
 ### 26.6 Side quest kota (9F-3)
 
 | Kota | Pemberi | Quest | Jenis |

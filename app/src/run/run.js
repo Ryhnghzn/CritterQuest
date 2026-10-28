@@ -16,7 +16,7 @@ import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
-import { startField, stepField, confineFieldEnemy } from './field.js';
+import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
 import { Vfx } from './vfx.js';
 import { stepHitFx, impactFx, stepPlayerFx } from './skillfx.js';
@@ -67,7 +67,7 @@ export class Game {
     return {
       time: this.time, kills: this.kills, exp: Math.floor(this.expGained), gold: this.gold, items: this.loot.slice(),
       mats: { ...this.mats }, gems: this.gemsFound.slice(),
-      bossKills: this.bossKills, killsBy: { ...this.killsBy }, elites: this.elites, floorsCleared: this.floorsCleared, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
+      bossKills: this.bossKills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy }, floorsCleared: this.floorsCleared, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
     };
   }
 
@@ -105,7 +105,8 @@ export class Game {
     this.dashSpeed = 0;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0;
-    this.killsBy = {}; this.elites = 0; this.floorsCleared = 0; // bounties & bestiary (spec §24)
+    this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0;
+    this.questItems = {}; this.reached = []; this.questSpots = []; this.questDrops = []; this.hidden = []; this.nearHidden = null; // quests (spec §26.5) // bounties & bestiary (spec §24)
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
@@ -148,10 +149,11 @@ export class Game {
   // (regions save every so often; spec §25.1). Level & EXP stay live in the run.
   takeProgress() {
     const out = {
-      exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites,
+      exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy },
+      questItems: { ...this.questItems }, reached: this.reached.splice(0),
       items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions },
     };
-    this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0;
+    this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.questItems = {};
     this.loot.length = 0; this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound.length = 0;
     return out;
   }
@@ -431,7 +433,8 @@ export class Game {
     this.kills += 1;
     const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin
     this.killsBy[kin] = (this.killsBy[kin] || 0) + 1;
-    if (e.elite) this.elites += 1;
+    if (e.elite) { this.elites += 1; this.elitesBy[kin] = (this.elitesBy[kin] || 0) + 1; }
+    if (this.field && this.questDrops.length) questDrop(this, e, kin);
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);

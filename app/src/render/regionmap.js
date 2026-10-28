@@ -112,7 +112,8 @@ function gateIcon(g, x, y, gt, size) {
 //   window: world width of a window centred on the player (minimap), gates: [{ dungeon, x, y, found }],
 //   treasures: [{ x, y, state, lord }] — shown where the fog is gone;
 //   target: { x, y } | null — shown even under the fog; at the window edge as an arrow when outside.
-//   quest: { kind: 'hint' | 'gate' | 'town', x, y, r? } | null — the tracked quest's goal (spec §26.3).
+//   quest: { kind: 'hint' | 'gate' | 'town' | 'spot' | 'hidden', x, y, r? } | null — the tracked quest's goal (spec §26.3);
+//   hidden: [{ x, y, hut, mark, name }] — homes in the wild, shown where the fog is gone.
 // a small arrow on the rect's edge pointing at (x, y) outside it
 function edgeArrow(g, ox, oy, w, h, x, y, color) {
   const cx = ox + w / 2, cy = oy + h / 2, a = Math.atan2(y - cy, x - cx);
@@ -171,6 +172,17 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
     g.lineWidth = 1.2; g.strokeStyle = '#2a1606'; g.stroke();
     g.beginPath(); g.moveTo(x - 6 * k, y); g.lineTo(x + 6 * k, y); g.stroke();
     g.globalAlpha = 1;
+  }
+  // hidden homes (spec §26.5): once their spot is uncovered, with their quest mark
+  for (const hd of opts.hidden || []) {
+    if (fog && !fogAt(fog, cols, Math.floor(hd.x / FIELD.fogCell), Math.floor(hd.y / FIELD.fogCell))) continue;
+    const x = sx(hd.x), y = sy(hd.y);
+    if (x < ox - 10 || x > ox + w + 10 || y < oy - 10 || y > oy + h + 10) continue;
+    const k = opts.labels ? 1 : 0.65;
+    g.beginPath(); g.moveTo(x - 7 * k, y); g.lineTo(x - 7 * k, y - 7 * k); g.lineTo(x, y - 13 * k); g.lineTo(x + 7 * k, y - 7 * k); g.lineTo(x + 7 * k, y); g.closePath();
+    g.fillStyle = hd.hut ? '#c89a6a' : '#9ab0c8'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = '#2a1606'; g.stroke();
+    if (hd.mark) { g.font = `900 ${opts.labels ? 13 : 9}px Barlow, system-ui, sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#2a1606'; g.strokeText(hd.mark, x, y - 15 * k); g.fillStyle = '#ffd24a'; g.fillText(hd.mark, x, y - 15 * k); }
+    if (opts.labels) label(g, hd.name, x, y + 13, '#f3e2b8', 'center', 11);
   }
   // quest target (spec §26.3): a hint circle around a gate not found yet, else a "!" pin
   const q = opts.quest;

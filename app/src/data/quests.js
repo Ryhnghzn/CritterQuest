@@ -5,10 +5,16 @@
 //   gate  { dungeon }               — find the dungeon's gate in its region
 //   boss  { dungeon }               — beat the dungeon's boss (its floor 5)
 //   kill  { enemy, n, region? }     — kills of a type (variants count to their kin)
-//   elite { n, region? }            — elite kills
-// (reach / give / drop / guard arrive with the side quests, 9F-2.)
+//   elite { n, region?, enemy? }    — elite kills (of a type, when given)
+//   reach { spots: [id], label }    — stand at fixed places (SPOTS); prog is a bit per spot
+//   drop  { item, n, enemy, region, chance } — quest items that only drop while this step is on
+//   guard { region, n?, lord? }     — treasure guardians beaten (chests of the region opened)
+//   give  { town, npc, who, say, mats?, gems?, potions?, gear? } — hand things over (ends a talk)
+// A talk / give in the wild uses town 'wild' and the hidden person's id as npc.
 // reward: { gold, exp } are multipliers of QUEST_REWARD at the player's level; shard: a Pecahan
-// Segel; gear: { rarity } a piece at the player's level; gems: [{ tier }] (random gem).
+// Segel; gear: { rarity } a piece at the player's level; gems: [{ gem?, tier }] (random gem when
+// none); marks: Lencana; mats: { id: n }; potions: { id: n } (up to the carry limit);
+// unique: a quest-only unique (UNIQUES with quest: true) at the player's level.
 
 export const QUEST_REWARD = {
   gold: { base: 40, perLevel: 12 },  // × reward.gold
@@ -79,5 +85,147 @@ export const MAIN = [
 ];
 
 export const MAIN_IDS = MAIN.map((q) => q.id);
-export const SIDE = []; // side quests (9F-2, 9F-3)
+
+// ——— hidden places in the regions (spec §26.5): fixed for every character ———
+export const HIDDEN_R = { talk: 90, solid: 58, calm: 400 }; // talk reach, hut collision radius, no packs within
+export const REACH_R = 160;                                  // standing this close to a spot counts
+export const DROP_ITEMS = {
+  glowcap: { name: 'Jamur Bercahaya', color: '#9fffb0' },
+  wormscale: { name: 'Sisik Cacing', color: '#e0b060' },
+};
+const L = (hair, hairColor) => ({ hair, hairColor });
+// at: [fx, fy] of the region's size; hut: a cabin (false = a person alone); gone: hidden once
+// that quest is taken (they walk off with you, or to town)
+export const HIDDEN = [
+  { id: 'gaharu', region: 'forest', at: [0.1325, 0.2347], hut: true, name: 'Pak Gaharu', title: 'Pemburu Tua', look: L(4, 2), outfit: ['#5a4a2a', '#3a301c'],
+    lines: ['Hutan ini dulu sunyi. Sekarang serigala bayang berkeliaran sampai ke pintuku.', 'Duduklah sebentar. Teh akar ini menghangatkan tulang.'] },
+  { id: 'kunyit', region: 'forest', at: [0.4182, 0.5554], hut: true, name: 'Nenek Kunyit', title: 'Peramu', look: L(4, 5), outfit: ['#8a7a2a', '#5e521c'],
+    lines: ['Setiap akar punya khasiat, Nak. Asal tahu cara merebusnya.', 'Bu Marta di Kota Awal masih ingat aku? Sup buatannya juara.'] },
+  { id: 'resi', region: 'forest', at: [0.6956, 0.1975], hut: true, name: 'Resi Sunyi', title: 'Pertapa', look: L(4, 3), outfit: ['#6a6a7a', '#44445a'],
+    lines: ['Hening adalah guru yang paling sabar.', 'Batu-batu tua di hutan ini mengingat lebih banyak daripada manusia.'] },
+  { id: 'lio', region: 'forest', at: [0.2938, 0.6912], hut: false, gone: 's_lio', name: 'Lio', title: 'Anak Tersesat', scale: 0.72, look: L(0, 2), outfit: ['#d6a03a', '#a87626'],
+    lines: ['Hiks… aku cuma mau memetik bunga kunang-kunang…'] },
+  { id: 'bjorn', region: 'ice', at: [0.1795, 0.318], hut: true, name: 'Bjorn', title: 'Pemburu Yeti', look: L(1, 1), outfit: ['#7a5a3a', '#54402a'],
+    lines: ['Jejak yeti sebesar perahu. Kau sudah lihat?', 'Api unggunku tak pernah padam. Di sini, itu soal hidup.'] },
+  { id: 'frida', region: 'ice', at: [0.4686, 0.3114], hut: true, name: 'Frida', title: 'Penyihir Es', look: L(2, 5), outfit: ['#6a8ad6', '#4a62a8'],
+    lines: ['Es menyimpan sihir lebih lama daripada kertas.', 'Jangan sentuh rak itu. Isinya bisa membekukan jarimu.'] },
+  { id: 'salju', region: 'ice', at: [0.6846, 0.7621], hut: true, name: 'Nenek Salju', title: 'Pengamat Bintang', look: L(4, 5), outfit: ['#4a4a8a', '#30305e'],
+    lines: ['Langit Padang Es adalah yang paling jernih di negeri ini.', 'Bintang tidak jatuh sembarangan, Nak. Mereka memilih.'] },
+  { id: 'gustav', region: 'ice', at: [0.8433, 0.4512], hut: false, gone: 's_gustav', name: 'Gustav', title: 'Kurir', look: L(1, 3), outfit: ['#8a3a2a', '#5e261c'],
+    lines: ['Kakiku membeku… suratnya harus sampai…'] },
+  { id: 'hasan', region: 'desert', at: [0.1411, 0.5629], hut: true, name: 'Hasan', title: 'Pengembara', look: L(1, 0), outfit: ['#c2843a', '#8a5a26'],
+    lines: ['Pasir tidak pernah diam. Begitu juga aku.', 'Tendaku kecil, tapi tehnya manis.'] },
+  { id: 'layla', region: 'desert', at: [0.3828, 0.7132], hut: true, name: 'Layla', title: 'Penjaga Oase', look: L(2, 0), outfit: ['#3aa89a', '#26766e'],
+    lines: ['Oase ini rahasia. Jangan ceritakan pada kafilah.', 'Airnya dingin, bahkan di siang hari.'] },
+  { id: 'amun', region: 'desert', at: [0.667, 0.5012], hut: true, name: 'Amun', title: 'Penjaga Makam Tua', look: L(4, 0), outfit: ['#d6c08a', '#a8925e'],
+    lines: ['Keluargaku menjaga makam ini sejak sebelum ada kota.', 'Raja-raja tidur. Kami memastikan mereka tetap tidur.'] },
+  { id: 'zaid', region: 'desert', at: [0.859, 0.2994], hut: false, name: 'Zaid', title: 'Kurir Kehausan', look: L(0, 1), outfit: ['#8a6a3a', '#644a26'],
+    lines: ['Air… sedikit saja…'] },
+  { id: 'grom', region: 'volcano', at: [0.1966, 0.4964], hut: true, name: 'Grom', title: 'Pandai Buangan', look: L(1, 3), outfit: ['#4a3a33', '#2e2420'],
+    lines: ['Mereka mengusirku dari Baraapi karena tungkuku terlalu panas. Pengecut.', 'Logam terbaik lahir dari api yang marah.'] },
+  { id: 'agni', region: 'volcano', at: [0.4199, 0.4612], hut: true, name: 'Agni', title: 'Pendeta Api', look: L(2, 3), outfit: ['#d6603a', '#a83e26'],
+    lines: ['Api itu suci. Imp-imp itu menodainya.', 'Duduklah di dekat bara. Biarkan ia mendengarmu.'] },
+  { id: 'kawah', region: 'volcano', at: [0.6578, 0.599], hut: true, name: 'Penjaga Kawah', title: 'Penjaga Kawah', look: L(1, 4), outfit: ['#8a2a1a', '#5e1c10'],
+    lines: ['Tiga api abadi menjaga gunung ini tetap tidur.', 'Kalau kau dengar gunung mendengkur, larilah.'] },
+  { id: 'bara', region: 'volcano', at: [0.8886, 0.0777], hut: false, gone: 's_bara', name: 'Bara', title: 'Penambang Terjebak', look: L(0, 3), outfit: ['#6a5a4a', '#4a3e32'],
+    lines: ['Kakiku terjepit batu… tolong…'] },
+];
+export const hiddenById = (id) => HIDDEN.find((h) => h.id === id) || null;
+
+// Places a quest sends you to: [fx, fy] in their region (spec §26.5–26.6)
+export const SPOTS = {
+  stone1: { region: 'forest', at: [0.2116, 0.4691] }, stone2: { region: 'forest', at: [0.5398, 0.3913] }, stone3: { region: 'forest', at: [0.8029, 0.4497] },
+  shell: { region: 'forest', at: [0.6417, 0.875] },
+  star1: { region: 'ice', at: [0.2926, 0.5359] }, star2: { region: 'ice', at: [0.5557, 0.1631] }, star3: { region: 'ice', at: [0.8094, 0.1359] },
+  pillar1: { region: 'desert', at: [0.2628, 0.4387] }, pillar2: { region: 'desert', at: [0.5294, 0.4306] }, pillar3: { region: 'desert', at: [0.7329, 0.6671] },
+  camel: { region: 'desert', at: [0.5145, 0.1751] },
+  flame1: { region: 'volcano', at: [0.312, 0.594] }, flame2: { region: 'volcano', at: [0.5758, 0.4208] }, flame3: { region: 'volcano', at: [0.7822, 0.4061] },
+};
+
+const wild = (npc) => ({ kind: 'talk', town: 'wild', npc, who: hiddenById(npc).name });
+const give = (npc, what) => ({ kind: 'give', town: 'wild', npc, who: hiddenById(npc).name, ...what });
+
+// Side quests (spec §26.5): the first step is the talk that starts them.
+export const SIDE = [
+  { id: 's_gaharu', title: 'Taring Serigala', steps: [
+    { ...wild('gaharu'), say: 'Serigala bayang makin berani. Semalam mereka mencakar pintuku. Kalahkan tiga puluh ekor, biar mereka belajar takut lagi.' },
+    { kind: 'kill', enemy: 'wolf', n: 30, region: 'forest' },
+    { ...wild('gaharu'), say: 'Sunyi lagi. Terima kasih. Ambil busur… eh, ambil ini. Aku sudah terlalu tua untuk memakainya.' },
+  ], reward: { gold: 3, exp: 3, marks: 2, gear: { rarity: 2 } } },
+  { id: 's_kunyit', title: 'Jamur Bercahaya', steps: [
+    { ...wild('kunyit'), say: 'Ramuanku butuh Jamur Bercahaya. Jamur Bom di hutan ini menyimpannya di kepalanya. Bawakan lima, ya?' },
+    { kind: 'drop', item: 'glowcap', n: 5, enemy: 'bomber', region: 'forest', chance: 0.4 },
+    { ...wild('kunyit'), say: 'Lihat cahayanya! Ini, ramuan hangat untukmu. Jangan diminum sekaligus.' },
+  ], reward: { gold: 3, exp: 3, marks: 2, potions: { big: 2, shield: 2 } } },
+  { id: 's_resi', title: 'Bisikan Batu Tulis', chain: true, steps: [
+    { ...wild('resi'), say: 'Tiga batu tulis di hutan ini menyimpan doa para tetua. Bacalah semuanya, lalu kembali padaku.' },
+    { kind: 'reach', spots: ['stone1', 'stone2', 'stone3'], label: 'batu tulis' },
+    { kind: 'guard', region: 'forest', lord: true },
+    give('resi', { say: 'Doanya meminta kekuatan sang Penguasa dan sepotong kegelapan. Bawakan satu Inti Kegelapan dan satu gear Epik, akan kutenun menjadi pelindung.', mats: { core: 1 }, gear: { rarity: 3, n: 1 } }),
+  ], reward: { gold: 5, exp: 5, marks: 4, unique: 'akartua' } },
+  { id: 's_lio', title: 'Anak Tersesat', steps: [
+    { ...wild('lio'), say: 'Kakak… aku tersesat. Rumahku di Rimbawana. Ibu pasti cemas… Antar aku pulang, ya?' },
+    { kind: 'talk', town: 'rimba', npc: 'folk1', who: 'Melati', say: 'Lio! Ya ampun, Nak! Terima kasih, petualang. Ambillah ini, hanya ini yang kupunya.' },
+  ], reward: { gold: 3, exp: 3, marks: 2, gems: [{ tier: 1 }, { tier: 1 }] } },
+  { id: 's_bjorn', title: 'Pemburu Yeti', steps: [
+    { ...wild('bjorn'), say: 'Enam yeti merusak perangkapku. Aku sudah tua untuk berburu sendirian. Kau mau?' },
+    { kind: 'kill', enemy: 'yeti', n: 6, region: 'ice' },
+    { ...wild('bjorn'), say: 'Enam! Ha! Kau pemburu sejati. Ambil ini, hasil tempaanku sendiri.' },
+  ], reward: { gold: 4, exp: 4, marks: 3, gear: { rarity: 3 } } },
+  { id: 's_frida', title: 'Tinta Es', steps: [
+    { ...wild('frida'), say: 'Mantraku butuh tinta dari kristal dan safir. Sepuluh Kristal Arkana dan dua Safir Retak, kalau kau punya.' },
+    give('frida', { say: 'Sempurna. Ini permata yang kuperkuat dengan es abadi.', mats: { crystal: 10 }, gems: [{ gem: 'sapphire', tier: 1, n: 2 }] }),
+  ], reward: { gold: 3, exp: 4, marks: 2, gems: [{ gem: 'sapphire', tier: 2 }], gear: { rarity: 2 } } },
+  { id: 's_salju', title: 'Bintang Jatuh', chain: true, steps: [
+    { ...wild('salju'), say: 'Tiga bintang jatuh di Padang Es minggu ini. Pergilah ke tempat mereka mendarat, sebelum roh es menghisap cahayanya.' },
+    { kind: 'reach', spots: ['star1', 'star2', 'star3'], label: 'bintang jatuh' },
+    { kind: 'elite', enemy: 'icewisp', n: 4, region: 'ice' },
+    { kind: 'guard', region: 'ice', lord: true },
+    { ...wild('salju'), say: 'Cahayanya kembali ke langit. Dan yang ini… sisa cahaya terakhir. Kubuat menjadi cincin untukmu.' },
+  ], reward: { gold: 6, exp: 6, marks: 4, unique: 'bintangbeku' } },
+  { id: 's_gustav', title: 'Surat Beku', steps: [
+    { ...wild('gustav'), say: 'Surat ini untuk Astrid di Bekubara… aku tak sanggup berjalan lagi. Tolong antarkan.' },
+    { kind: 'talk', town: 'beku', npc: 'folk4', who: 'Astrid', say: 'Surat dari Gustav? Dia selamat? Syukurlah… Terima kasih. Ambil ini untuk perjalananmu.' },
+  ], reward: { gold: 4, exp: 4, marks: 2, mats: { crystal: 6 } } },
+  { id: 's_hasan', title: 'Sengat', steps: [
+    { ...wild('hasan'), say: 'Kalajengking menyerbu jalur kafilahku. Empat puluh ekor, kurang lebih. Bersihkan, dan kau kubayar.' },
+    { kind: 'kill', enemy: 'scorpion', n: 40, region: 'desert' },
+    { ...wild('hasan'), say: 'Jalurnya aman lagi! Seperti janjiku.' },
+  ], reward: { gold: 5, exp: 5, marks: 3, gear: { rarity: 3 } } },
+  { id: 's_layla', title: 'Sisik Cacing', steps: [
+    { ...wild('layla'), say: 'Sisik Cacing Pasir menyaring air dengan sempurna. Delapan saja cukup untuk sumur oase ini.' },
+    { kind: 'drop', item: 'wormscale', n: 8, enemy: 'sandworm', region: 'desert', chance: 0.5 },
+    { ...wild('layla'), say: 'Airnya jernih lagi! Ambil ini, dan kembalilah kapan saja kau haus.' },
+  ], reward: { gold: 5, exp: 5, marks: 3, gems: [{ tier: 2 }], potions: { big: 3 } } },
+  { id: 's_amun', title: 'Makam yang Terlupa', chain: true, steps: [
+    { ...wild('amun'), say: 'Tiga tugu makam tua tertimbun pasir. Temukan semuanya, agar arwah raja tahu kita masih menjaga.' },
+    { kind: 'reach', spots: ['pillar1', 'pillar2', 'pillar3'], label: 'tugu makam' },
+    { kind: 'guard', region: 'desert', n: 2 },
+    give('amun', { say: 'Para penjaga sudah tumbang. Persembahkan tiga permata Biasa, dan topeng ini milikmu.', gems: [{ tier: 2, n: 3 }] }),
+  ], reward: { gold: 7, exp: 7, marks: 4, unique: 'topengpasir' } },
+  { id: 's_zaid', title: 'Kurir Kehausan', steps: [
+    { ...wild('zaid'), say: 'Airku habis sejak kemarin… Tiga Ramuan Merah saja, akan kubayar di kota.' },
+    give('zaid', { say: 'Ahh… hidup lagi! Ini, upahku untuk tiga hari. Pantas untukmu.', potions: { red: 3 } }),
+  ], reward: { gold: 6, exp: 4, marks: 2 } },
+  { id: 's_grom', title: 'Pandai Buangan', steps: [
+    { ...wild('grom'), say: 'Bawakan dua gear Epik. Akan kulebur di tungkuku dan kutempa jadi sesuatu yang lebih baik.' },
+    give('grom', { say: 'Lihat ini! Mereka bilang tungkuku terlalu panas. Hah!', gear: { rarity: 3, n: 2 } }),
+  ], reward: { gold: 5, exp: 5, marks: 3, mats: { core: 2 }, gear: { rarity: 4 } } },
+  { id: 's_agni', title: 'Api Suci', steps: [
+    { ...wild('agni'), say: 'Imp Api menodai api suci gunung ini. Lima puluh, kira-kira. Bersihkanlah.' },
+    { kind: 'kill', enemy: 'imp', n: 50, region: 'volcano' },
+    { ...wild('agni'), say: 'Bara di altar menyala jernih lagi. Terimalah berkat ini.' },
+  ], reward: { gold: 6, exp: 6, marks: 3, gems: [{ tier: 3 }] } },
+  { id: 's_kawah', title: 'Api Abadi', chain: true, steps: [
+    { ...wild('kawah'), say: 'Tiga api abadi meredup. Kunjungi semuanya dan nyalakan kembali dengan tanganmu.' },
+    { kind: 'reach', spots: ['flame1', 'flame2', 'flame3'], label: 'api abadi' },
+    { kind: 'elite', enemy: 'salamander', n: 4, region: 'volcano' },
+    { kind: 'guard', region: 'volcano', lord: true },
+    { ...wild('kawah'), say: 'Gunung kembali tidur. Sisik ini dari naga api terakhir. Pakailah, ia akan melindungimu.' },
+  ], reward: { gold: 8, exp: 8, marks: 5, unique: 'sisikkawah' } },
+  { id: 's_bara', title: 'Penambang Terjebak', steps: [
+    { ...wild('bara'), say: 'Kakiku terjepit… aku bisa merangkak pulang, tapi tolong kabari Ignis di Baraapi. Dia pasti mencariku.' },
+    { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Bara masih hidup? Aku segera menjemputnya! Ini, dari tabungan kami para penambang.' },
+  ], reward: { gold: 6, exp: 5, marks: 2, mats: { core: 1, crystal: 5 } } },
+];
 export const QUEST_IDS = [...MAIN_IDS, ...SIDE.map((q) => q.id)];

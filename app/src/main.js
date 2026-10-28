@@ -48,8 +48,8 @@ import { renderResults } from './ui/results.js';
 import { renderNpc, renderDungeonGate } from './ui/npc.js';
 import { renderCharPanel, setCharTab } from './ui/charpanel.js';
 import { stepText } from './ui/journal.js';
-import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards } from './meta/quests.js';
-import { SHARDS } from './data/quests.js';
+import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest } from './meta/quests.js';
+import { SHARDS, DROP_ITEMS } from './data/quests.js';
 import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
 import { FpsWatch, activeQuality } from './run/vfx.js';
@@ -321,7 +321,7 @@ const REFUSE = {
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
-  marks: 'Lencanamu belum cukup.', notdone: 'Tugas itu belum selesai.',
+  marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh — selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.',
   mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', stashfull: 'Gudang sudah penuh.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
@@ -359,6 +359,9 @@ function questText(r) {
   if (g.shard) bits.push(t('Pecahan Segel {n}/{max}', { n: shards(r.char), max: SHARDS }));
   for (const it of g.items) bits.push(`${itemName(it)} (${RARITIES[it.rarity].name})`);
   for (const gm of g.gems) bits.push(gemName(gm.gem, gm.tier));
+  if (g.marks) bits.push(t('+{n} Lencana', { n: g.marks }));
+  for (const [m, n] of Object.entries(g.mats)) bits.push(`+${n} ${MATS[m].name}`);
+  for (const [p, n] of Object.entries(g.potions)) bits.push(`+${n} ${POTIONS[p].name}`);
   if (g.items.length) showChestOpen(g.items[0]);
   return { text: `${tr('Quest selesai!')} ${bits.join(' · ')}${g.levelsGained ? ` ${tr('Naik level!')}` : ''}`, color: '#ffd24a' };
 }
@@ -410,6 +413,13 @@ function openCharPanel() {
       onEquip: (slot, id) => changeGear((c, now) => equipSkill(c, slot, id, now)),
       onTalents: (add) => changeGear((c, now) => { const n = allocateTalents(c, add, now); return n ? { ok: true, char: n } : { ok: false }; }),
     },
+    quest: {
+      onTrack: (id) => changeGear((c, now) => trackQuest(c, id, now)),
+      onAbandon: async (id) => {
+        if (await confirmDialog(tr('Batalkan quest ini? Progresnya hilang, tapi bisa diambil lagi.'), tr('Batalkan'))) changeGear((c, now) => abandonQuest(c, id, now));
+        else openCharPanel();
+      },
+    },
     gear: {
       editable: true,
       onEquip: (id) => changeGear((c, now) => equip(c, id, now)),
@@ -430,6 +440,7 @@ async function changeGear(action) {
   const r = action(current, Date.now());
   if (!r.ok) return;
   current = r.char;
+  town.marks = npcMarks(current, town.id);
   const s = finalStats(current);
   town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
   sfx.pickCard();
@@ -546,7 +557,7 @@ async function explore(regionId, at = 'west') {
   });
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
   if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
-  game.questTarget = questTarget(current, regionId);
+  refreshFieldQuests();
   game.liveQuest = liveQuestTarget;
   game.clock = worldClock;
   tripAttrs = {};
@@ -583,7 +594,7 @@ async function commitField() {
   tripAttrs = {};
   current = r.char;
   fieldSaveT = 0;
-  game.questTarget = questTarget(current, game.region.id);
+  refreshFieldQuests();
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
   else if (current.quests.main.step !== before.quests.main.step || current.quests.main.ch !== before.quests.main.ch) questNews(before);
   else if (r.bountiesDone > 0) toast(t('{n} tugas selesai — klaim di Balai Petualang', { n: r.bountiesDone }));
@@ -630,9 +641,45 @@ function openMap() {
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden });
   $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
   $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, game.region) * 100) });
+}
+
+// Quests in this region (spec §26.5): who lives here, places to find, items that may drop, the target.
+function refreshFieldQuests() {
+  const id = game.region.id, fq = fieldQuests(current, id);
+  game.hidden = hiddenIn(current, id);
+  game.questSpots = fq.spots.filter((s) => !game.reached.includes(s.spot));
+  game.questDrops = fq.drops;
+  game.questTarget = questTarget(current, id, { x: game.px, y: game.py });
+}
+
+// Someone living in the wild (spec §26.5): save what was earned, then talk.
+async function openWild(h, message = null) {
+  game.state = ST.PAUSE;
+  if (!message) { await commitField(); talkIdx[h.id] = (talkIdx[h.id] ?? -1) + 1; }
+  const npc = { id: h.id, role: 'talk', name: h.name, title: h.title, look: h.look, outfit: h.outfit, lines: h.lines };
+  renderNpc($('npc'), npc, {
+    char: current, hp: game.stats.hp, maxHp: game.stats.maxHp, message,
+    line: h.lines[(talkIdx[h.id] ?? 0) % h.lines.length],
+    quests: talkOffers(current, 'wild', h.id),
+    onQuest: async (id) => {
+      const r = questTalk(current, id, 'wild', h.id, Date.now());
+      if (!r.ok) { openWild(h, { text: tr(REFUSE[r.reason] || REFUSE.bad), ok: false }); return; }
+      current = r.char;
+      sfx.heart();
+      const err = await saveCurrent();
+      const msg = err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : { ...questText(r), ok: true };
+      // rewards / hand-overs change level, potions and the bag: pick the region up again from the save
+      if (r.done || r.given) { explore(game.region.id, { x: game.px, y: game.py }).then(() => toast(msg.text)); return; }
+      refreshFieldQuests();
+      openWild(h, msg);
+    },
+    onClose: () => resume(),
+  });
+  if (!message) { ensureAudio(); sfx.pickCard(); }
+  showOverlay('npc');
 }
 
 // The quest target, with a gate found during this visit shown as found already.
@@ -651,7 +698,7 @@ function drawMinimap() {
   if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden });
 }
 $('minimap').addEventListener('click', openMap);
 $('mapclose').addEventListener('click', () => resume());
@@ -706,6 +753,7 @@ $('charbtn').addEventListener('click', () => {
 });
 $('prompt').addEventListener('click', () => {
   if (scene === 'run' && game.field && game.nearGate && game.state === ST.PLAY) { openGate(game.nearGate); return; }
+  if (scene === 'run' && game.field && game.nearHidden && game.state === ST.PLAY) { openWild(game.nearHidden); return; }
   if (town?.near && screen === null) openNpc(town.near);
 });
 $('mute').addEventListener('click', () => {
@@ -923,6 +971,7 @@ function tickRun(pressed) {
     if (game.state === ST.PLAY && (fieldSaveT += STEP) >= FIELD.saveEvery) commitField();
   }
   if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearGate) { openGate(game.nearGate); return false; }
+  if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearHidden) { openWild(game.nearHidden); return false; }
   const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
   // react only on the PLAY -> OVER transition
@@ -962,8 +1011,10 @@ function frame(dt) {
     if (game.state === ST.PLAY) updateActions(game);
     if (game.field && game.state === ST.PLAY && (minimapT += dt) > 0.25) { minimapT = 0; drawMinimap(); }
     const gate = game.field && game.state === ST.PLAY ? game.nearGate : null;
-    $('prompt').classList.toggle('hidden', !gate);
+    const who = game.field && game.state === ST.PLAY && !gate ? game.nearHidden : null;
+    $('prompt').classList.toggle('hidden', !gate && !who);
     if (gate) $('prompttext').textContent = t('Masuk {name}', { name: dungeonById(gate.dungeon).name });
+    else if (who) $('prompttext').textContent = t('Bicara dengan {name}', { name: who.name });
   } else {
     TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60, current?.location || 'home');
     if (scene === 'town') {

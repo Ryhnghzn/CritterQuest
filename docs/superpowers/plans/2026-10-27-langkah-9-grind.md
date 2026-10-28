@@ -100,8 +100,8 @@ Keputusan pemilik (2026-10-28):
 - [ ] (ditunda, permintaan 2026-10-28) Petunjuk rute: baris rute di pelacak, panah di kota, panah ke pintu keluar di wilayah yang salah, tanda `!` di daftar gerbang & batu teleport
 - [ ] Verifikasi: tes, build, screenshot PC & HP
 #### 9F-2 — Rumah tersembunyi & side quest wilayah
-- [ ] 16 tempat tetap + 16 quest (4 rantai, 4 unik quest), barang quest jatuh, titik `reach` — tes
-- [ ] Gambar pondok per biome & penghuni, ikon peta; kamus EN
+- [x] 16 tempat tetap + 16 quest (4 rantai, 4 unik quest), barang quest jatuh, titik `reach` — tes
+- [x] Gambar pondok per biome & penghuni, ikon peta; kamus EN
 - [ ] Verifikasi
 #### 9F-3 — Side quest kota
 - [ ] 16 quest warga & penjaga toko — tes; kamus EN

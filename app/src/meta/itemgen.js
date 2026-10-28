@@ -74,7 +74,7 @@ export function dropItem({ source, classId, charLevel, floor, luk = 0, level = n
   const itemLevel = level ?? itemLevelFor(charLevel, floor, rng);
   let rarity = rollRarity(source, luk, rng);
   if (rarity >= LEGENDARY) {
-    const fits = UNIQUES.filter((u) => u.rarity === rarity && (u.classId === null || u.classId === classId));
+    const fits = UNIQUES.filter((u) => !u.quest && u.rarity === rarity && (u.classId === null || u.classId === classId));
     const u = fits[Math.floor(rng() * fits.length)];
     return makeItem({ slot: u.slot, classId, rarity, itemLevel, unique: u.id }, rng);
   }

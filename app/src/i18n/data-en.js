@@ -18,7 +18,7 @@ import { TOWN_DEFS } from '../data/towns.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { MARK_SHOP } from '../data/bounties.js';
 import { REGIONS, TOWNS } from '../data/world.js';
-import { MAIN, SIDE } from '../data/quests.js';
+import { MAIN, SIDE, HIDDEN, DROP_ITEMS } from '../data/quests.js';
 
 export const CLASS_EN = {
   'Tebal darah, tebasan jarak dekat.': 'Thick-blooded, cleaves up close.',
@@ -136,6 +136,7 @@ const UNIQUE_EN = {
   'Sepatu Kabut': 'Mistwalkers', 'Kalung Mata Naga': "Dragon's Eye Amulet", 'Liontin Keserakahan': 'Pendant of Greed', 'Cincin Sang Bijak': "Sage's Ring", 'Cincin Amarah': 'Ring of Wrath',
   'Taring Raja Maw': "King Maw's Fang", 'Busur Bintang Jatuh': 'Fallen Star Bow', 'Tongkat Kiamat': 'Staff of Ruin', 'Belati Ketiadaan': 'Voidpiercer',
   'Cincin Phoenix': 'Phoenix Ring', 'Zirah Raja Maw': "King Maw's Carapace", 'Mahkota Bayangan': 'Crown of Shadows',
+  'Kalung Akar Tua': 'Old Root Necklace', 'Cincin Bintang Beku': 'Frozen Star Ring', 'Topeng Pasir Abadi': 'Mask of Endless Sand', 'Zirah Sisik Kawah': 'Crater Scale Armor',
 };
 const CHEST_EN = { 'Peti Gear': 'Gear Chest', 'Peti Agung': 'Grand Chest' };
 
@@ -314,6 +315,99 @@ export const QUEST_LINE_EN = {
   "Lima pecahan… Gunung ini berhenti bergetar. Bawa semuanya ke Kakek Odo di Kota Awal. Tapi hati-hati: langit di timur Baraapi mulai menggelap.": "Five shards… The mountain has stopped shaking. Take them all to Old Odo in Hometown. But beware: the sky east of Emberfall is growing dark.",
 };
 
+// side quests & people in the wild (spec §26.5)
+const WILD_EN = {
+  "Pemburu Tua": "Old Hunter",
+  "Pengembara": "Wanderer",
+  "Peramu": "Herbalist",
+  "Pertapa": "Hermit",
+  "Anak Tersesat": "Lost Child",
+  "Pemburu Yeti": "Yeti Hunter",
+  "Penyihir Es": "Ice Witch",
+  "Pengamat Bintang": "Stargazer",
+  "Kurir": "Courier",
+  "Penjaga Oase": "Oasis Keeper",
+  "Penjaga Makam Tua": "Old Tomb Keeper",
+  "Kurir Kehausan": "Thirsty Courier",
+  "Pandai Buangan": "The Exiled Smith",
+  "Pendeta Api": "Fire Priest",
+  "Penjaga Kawah": "Crater Keeper",
+  "Penambang Terjebak": "Trapped Miner",
+  "Hutan ini dulu sunyi. Sekarang serigala bayang berkeliaran sampai ke pintuku.": "These woods used to be quiet. Now shadow wolves prowl right up to my door.",
+  "Duduklah sebentar. Teh akar ini menghangatkan tulang.": "Sit a while. This root tea warms the bones.",
+  "Setiap akar punya khasiat, Nak. Asal tahu cara merebusnya.": "Every root has its use, child. You just have to know how to brew it.",
+  "Bu Marta di Kota Awal masih ingat aku? Sup buatannya juara.": "Does Mrs. Marta in Hometown still remember me? Her soup is the best.",
+  "Hening adalah guru yang paling sabar.": "Silence is the most patient teacher.",
+  "Batu-batu tua di hutan ini mengingat lebih banyak daripada manusia.": "The old stones in this forest remember more than people do.",
+  "Hiks… aku cuma mau memetik bunga kunang-kunang…": "Sniff… I only wanted to pick firefly blossoms…",
+  "Jejak yeti sebesar perahu. Kau sudah lihat?": "Yeti tracks as big as boats. Have you seen them?",
+  "Api unggunku tak pernah padam. Di sini, itu soal hidup.": "My campfire never goes out. Out here, that is a matter of life.",
+  "Es menyimpan sihir lebih lama daripada kertas.": "Ice holds magic longer than paper does.",
+  "Jangan sentuh rak itu. Isinya bisa membekukan jarimu.": "Don't touch that shelf. What's on it can freeze your fingers.",
+  "Langit Padang Es adalah yang paling jernih di negeri ini.": "The sky over the Frost Plains is the clearest in the land.",
+  "Bintang tidak jatuh sembarangan, Nak. Mereka memilih.": "Stars don't fall just anywhere, child. They choose.",
+  "Kakiku membeku… suratnya harus sampai…": "My feet are frozen… the letter has to get there…",
+  "Pasir tidak pernah diam. Begitu juga aku.": "Sand never stays still. Neither do I.",
+  "Tendaku kecil, tapi tehnya manis.": "My tent is small, but the tea is sweet.",
+  "Oase ini rahasia. Jangan ceritakan pada kafilah.": "This oasis is a secret. Don't tell the caravans.",
+  "Airnya dingin, bahkan di siang hari.": "The water stays cold, even at noon.",
+  "Keluargaku menjaga makam ini sejak sebelum ada kota.": "My family has guarded this tomb since before there were towns.",
+  "Raja-raja tidur. Kami memastikan mereka tetap tidur.": "Kings sleep. We make sure they stay asleep.",
+  "Air… sedikit saja…": "Water… just a little…",
+  "Mereka mengusirku dari Baraapi karena tungkuku terlalu panas. Pengecut.": "They threw me out of Emberfall because my forge ran too hot. Cowards.",
+  "Logam terbaik lahir dari api yang marah.": "The best metal is born of an angry fire.",
+  "Api itu suci. Imp-imp itu menodainya.": "Fire is sacred. Those imps defile it.",
+  "Duduklah di dekat bara. Biarkan ia mendengarmu.": "Sit by the embers. Let them hear you.",
+  "Tiga api abadi menjaga gunung ini tetap tidur.": "Three eternal flames keep this mountain asleep.",
+  "Kalau kau dengar gunung mendengkur, larilah.": "If you hear the mountain snore, run.",
+  "Kakiku terjepit batu… tolong…": "My leg is pinned under a rock… help…",
+  "Taring Serigala": "Wolf Fangs",
+  "Jamur Bercahaya": "Glowcaps",
+  "Bisikan Batu Tulis": "Whispers of the Rune Stones",
+  "Tinta Es": "Ice Ink",
+  "Bintang Jatuh": "Fallen Stars",
+  "Surat Beku": "The Frozen Letter",
+  "Sengat": "Stingers",
+  "Sisik Cacing": "Worm Scales",
+  "Makam yang Terlupa": "The Forgotten Tomb",
+  "Api Suci": "Sacred Fire",
+  "Api Abadi": "Eternal Flames",
+  "Serigala bayang makin berani. Semalam mereka mencakar pintuku. Kalahkan tiga puluh ekor, biar mereka belajar takut lagi.": "The shadow wolves grow bolder. Last night they clawed at my door. Defeat thirty of them so they learn to fear again.",
+  "Sunyi lagi. Terima kasih. Ambil busur… eh, ambil ini. Aku sudah terlalu tua untuk memakainya.": "Quiet again. Thank you. Take my bow… er, take this. I'm too old to use it.",
+  "Ramuanku butuh Jamur Bercahaya. Jamur Bom di hutan ini menyimpannya di kepalanya. Bawakan lima, ya?": "My brews need Glowcaps. The Bomb Shrooms in this forest keep them on their heads. Bring me five, would you?",
+  "Lihat cahayanya! Ini, ramuan hangat untukmu. Jangan diminum sekaligus.": "Look at that glow! Here, some warm potions for you. Don't drink them all at once.",
+  "Tiga batu tulis di hutan ini menyimpan doa para tetua. Bacalah semuanya, lalu kembali padaku.": "Three rune stones in this forest hold the prayers of the elders. Read them all, then come back to me.",
+  "Doanya meminta kekuatan sang Penguasa dan sepotong kegelapan. Bawakan satu Inti Kegelapan dan satu gear Epik, akan kutenun menjadi pelindung.": "The prayer asks for the Overlord's strength and a piece of darkness. Bring me a Dark Core and an Epic piece of gear, and I will weave them into a ward.",
+  "Kakak… aku tersesat. Rumahku di Rimbawana. Ibu pasti cemas… Antar aku pulang, ya?": "I'm lost… My home is in Wildwood. Mom must be worried… Will you take me home?",
+  "Lio! Ya ampun, Nak! Terima kasih, petualang. Ambillah ini, hanya ini yang kupunya.": "Lio! Oh, my child! Thank you, adventurer. Take these, they're all I have.",
+  "Enam yeti merusak perangkapku. Aku sudah tua untuk berburu sendirian. Kau mau?": "Six yetis wrecked my traps. I'm too old to hunt alone. Will you?",
+  "Enam! Ha! Kau pemburu sejati. Ambil ini, hasil tempaanku sendiri.": "Six! Ha! You're a true hunter. Take this, I forged it myself.",
+  "Mantraku butuh tinta dari kristal dan safir. Sepuluh Kristal Arkana dan dua Safir Retak, kalau kau punya.": "My spells need ink made of crystal and sapphire. Ten Arcane Crystals and two Chipped Sapphires, if you have them.",
+  "Sempurna. Ini permata yang kuperkuat dengan es abadi.": "Perfect. Here is a gem I strengthened with everlasting ice.",
+  "Tiga bintang jatuh di Padang Es minggu ini. Pergilah ke tempat mereka mendarat, sebelum roh es menghisap cahayanya.": "Three stars fell on the Frost Plains this week. Go where they landed, before the ice wisps drink their light.",
+  "Cahayanya kembali ke langit. Dan yang ini… sisa cahaya terakhir. Kubuat menjadi cincin untukmu.": "Their light has gone back to the sky. And this… the last of it. I made it into a ring for you.",
+  "Surat ini untuk Astrid di Bekubara… aku tak sanggup berjalan lagi. Tolong antarkan.": "This letter is for Astrid in Frosthold… I can't walk any further. Please deliver it.",
+  "Surat dari Gustav? Dia selamat? Syukurlah… Terima kasih. Ambil ini untuk perjalananmu.": "A letter from Gustav? He's safe? Thank goodness… Thank you. Take this for your travels.",
+  "Kalajengking menyerbu jalur kafilahku. Empat puluh ekor, kurang lebih. Bersihkan, dan kau kubayar.": "Scorpions overran my caravan route. Forty or so. Clear them out, and I'll pay you.",
+  "Jalurnya aman lagi! Seperti janjiku.": "The route is safe again! As I promised.",
+  "Sisik Cacing Pasir menyaring air dengan sempurna. Delapan saja cukup untuk sumur oase ini.": "Sandworm scales filter water perfectly. Eight would be enough for this oasis well.",
+  "Airnya jernih lagi! Ambil ini, dan kembalilah kapan saja kau haus.": "The water is clear again! Take these, and come back whenever you're thirsty.",
+  "Tiga tugu makam tua tertimbun pasir. Temukan semuanya, agar arwah raja tahu kita masih menjaga.": "Three old tomb pillars lie buried in the sand. Find them all, so the spirits of the kings know we still keep watch.",
+  "Para penjaga sudah tumbang. Persembahkan tiga permata Biasa, dan topeng ini milikmu.": "The guardians have fallen. Offer three Flawed gems, and this mask is yours.",
+  "Airku habis sejak kemarin… Tiga Ramuan Merah saja, akan kubayar di kota.": "I ran out of water yesterday… Just three Red Potions, I'll pay you back in town.",
+  "Ahh… hidup lagi! Ini, upahku untuk tiga hari. Pantas untukmu.": "Ahh… alive again! Here, three days' wages. You've earned it.",
+  "Bawakan dua gear Epik. Akan kulebur di tungkuku dan kutempa jadi sesuatu yang lebih baik.": "Bring me two Epic pieces of gear. I'll melt them in my forge and make something better.",
+  "Lihat ini! Mereka bilang tungkuku terlalu panas. Hah!": "Look at this! And they said my forge ran too hot. Hah!",
+  "Imp Api menodai api suci gunung ini. Lima puluh, kira-kira. Bersihkanlah.": "Fire Imps defile this mountain's sacred fire. About fifty. Cleanse it.",
+  "Bara di altar menyala jernih lagi. Terimalah berkat ini.": "The embers on the altar burn clean again. Accept this blessing.",
+  "Tiga api abadi meredup. Kunjungi semuanya dan nyalakan kembali dengan tanganmu.": "The three eternal flames are fading. Visit each and rekindle it with your own hands.",
+  "Gunung kembali tidur. Sisik ini dari naga api terakhir. Pakailah, ia akan melindungimu.": "The mountain sleeps again. These scales came from the last fire dragon. Wear them; they will protect you.",
+  "Kakiku terjepit… aku bisa merangkak pulang, tapi tolong kabari Ignis di Baraapi. Dia pasti mencariku.": "My leg is pinned… I can crawl home, but please tell Ignis in Emberfall. He must be looking for me.",
+  "Bara masih hidup? Aku segera menjemputnya! Ini, dari tabungan kami para penambang.": "Bara's alive? I'll go fetch him right away! Here, from our miners' savings.",
+};
+const WILD_NAME_EN = {"Resi Sunyi": "Silent Sage", "Penjaga Kawah": "Crater Keeper", "Pak Gaharu": "Old Gaharu"};
+const DROP_EN = {"Jamur Bercahaya": "Glowcap", "Sisik Cacing": "Worm Scale"};
+
 // helpers: replace a field / array entries through a map (keyed by the Indonesian text)
 const swap = (obj, key, map) => { if (obj && obj[key] in map) obj[key] = map[obj[key]]; };
 const swapAll = (arr, map) => arr.forEach((v, i) => { if (v in map) arr[i] = map[v]; });
@@ -352,9 +446,14 @@ export function localizeData() {
     for (const r of Object.values(def.interiors)) swap(r, 'name', BUILDING_EN);
   }
   for (const q of [...MAIN, ...SIDE]) {
-    swap(q, 'title', QUEST_TITLE_EN);
-    for (const st of q.steps) { swap(st, 'say', QUEST_LINE_EN); if (st.who) st.who = NPC_NAME_EN[st.who] || nameEn(st.who); }
+    swap(q, 'title', QUEST_TITLE_EN); swap(q, 'title', WILD_EN);
+    for (const st of q.steps) {
+      swap(st, 'say', QUEST_LINE_EN); swap(st, 'say', WILD_EN);
+      if (st.who) st.who = WILD_NAME_EN[st.who] || NPC_NAME_EN[st.who] || nameEn(st.who);
+    }
   }
+  for (const h of HIDDEN) { h.name = WILD_NAME_EN[h.name] || nameEn(h.name); swap(h, 'title', WILD_EN); swapAll(h.lines, WILD_EN); }
+  for (const d of Object.values(DROP_ITEMS)) swap(d, 'name', DROP_EN);
   const people = new Set(Object.values(TOWN_DEFS).flatMap((d) => [...d.npcs, ...Object.values(d.interiors).flatMap((r) => r.npcs || [])]));
   for (const n of people) {
     n.name = NPC_NAME_EN[n.name] || nameEn(n.name);

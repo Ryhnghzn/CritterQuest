@@ -101,6 +101,11 @@ export const UNIQUES = [
   { id: 'phoenix', rarity: 5, slot: 'ring', classId: null, name: 'Cincin Phoenix', effect: 'phoenix', v: 0.3 },
   { id: 'zirahmaw', rarity: 5, slot: 'armor', classId: null, name: 'Zirah Raja Maw', effect: 'thorns', v: 1 },
   { id: 'mahkotabayang', rarity: 5, slot: 'helm', classId: null, name: 'Mahkota Bayangan', effect: 'bossdmg', v: 0.6 },
+  // quest rewards only (spec §26.5): never dropped, sold or rolled from chests
+  { id: 'akartua', rarity: 4, slot: 'amulet', classId: null, name: 'Kalung Akar Tua', effect: 'regen', v: 0.01, quest: true },
+  { id: 'bintangbeku', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Bintang Beku', effect: 'shield', v: 0.12, quest: true },
+  { id: 'topengpasir', rarity: 4, slot: 'helm', classId: null, name: 'Topeng Pasir Abadi', effect: 'lifesteal', v: 0.025, quest: true },
+  { id: 'sisikkawah', rarity: 4, slot: 'armor', classId: null, name: 'Zirah Sisik Kawah', effect: 'thorns', v: 0.7, quest: true },
 ];
 
 // Rarity weights per drop source (Biasa … Mitos). LUK multiplies the weights of

@@ -187,7 +187,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   c.bounties = advanceBounties(c.bounties, trip);
   const bountiesDone = c.bounties.filter(isDone).length - before;
   if (trip.dungeon && !c.found.includes(trip.dungeon)) c.found.push(trip.dungeon);
-  countQuests(c, { killsBy: trip.killsBy, elites: trip.elites, region: regionOfDungeon(trip.dungeon || 'shadow')?.id });
+  countQuests(c, { killsBy: trip.killsBy, elites: trip.elites, elitesBy: trip.elitesBy, region: regionOfDungeon(trip.dungeon || 'shadow')?.id });
   const x = c.expedition; // expedition: floors cleared in its dungeon (spec §25.5)
   if (x && x.dungeon === trip.dungeon) x.have = Math.min(x.need, x.have + (trip.floorsCleared || 0));
   const itemsKept = [], itemsLost = [], itemsLeft = [];
