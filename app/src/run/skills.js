@@ -5,6 +5,7 @@ import { CLASSES } from '../data/classes.js';
 import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/balance.js';
 import { makeArea, makeSweep, makeProjectile } from './hits.js';
 import { sfx } from '../core/audio.js';
+import { castFx } from './skillfx.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -56,6 +57,7 @@ export function stepSkills(run, intent, dt) {
     const before = run.hits.length;
     castSkill(run, skills[i]);
     for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true; // skill damage bonus, no energy, pierces shields
+    castFx(run, skills[i], before);
     run.attackT = ATTACK_POSE;
     sfx.skill(skills[i].id);
   }
@@ -65,12 +67,15 @@ export function stepSkills(run, intent, dt) {
     const u = run.ult;
     const before = run.hits.length;
     castSkill(run, u);
-    for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true;
+    for (let k = before; k < run.hits.length; k++) { run.hits[k].skill = true; run.hits[k].ult = true; } // gold-edged numbers
+    castFx(run, u, before);
     if (u.dmgTaken) { run.buffT = u.duration; run.dmgTakenMul = u.dmgTaken; }
     if (u.invuln) run.dodgeInv = Math.max(run.dodgeInv, u.invuln);
     run.attackT = ATTACK_POSE;
     run.showBanner(u.name.toUpperCase());
-    run.shake = 0.8;
+    run.addShake('heavy'); run.addHitStop('ult');
+    run.vfx.flash('#fff3c4', 0.4, 0.18);
+    run.vfx.ring(run.px, run.py, { r1: 120, life: 0.5, color: '#ffd166', width: 5 });
     sfx.boss();
   }
 }

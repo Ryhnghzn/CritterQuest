@@ -1,7 +1,8 @@
 // Open world on the save (spec §25.1): fog of war per region (one bit per
 // FIELD.fogCell square, stored as base64), progress written from a region,
 // and the light penalty for falling there. Pure.
-import { FIELD, regionById } from '../data/world.js';
+import { FIELD, regionById, EXPEDITIONS, EXPEDITION_REWARD, regionOfDungeon } from '../data/world.js';
+import { buildFieldMap, mulberry, sample, blocked } from '../run/fieldmap.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { addExp, allocate, finalStats } from './character.js';
@@ -73,7 +74,7 @@ function storeHp(c, hp) {
 }
 
 // Writes what was earned in a region since the last save.
-// part: { region, fog, exp, gold, kills, killsBy, elites, items, mats, gems, hp, potions, attrs }
+// part: { region, fog, found (dungeon gates found), exp, gold, kills, killsBy, elites, items, mats, gems, hp, potions, attrs }
 // → { char, levelsGained, itemsLeft, uniquesFound, bountiesDone }
 export function applyField(char, part, now) {
   const leveled = addExp(char, part.exp || 0);
@@ -98,6 +99,7 @@ export function applyField(char, part, now) {
   }
   for (const [m, n] of Object.entries(part.mats || {})) c.mats[m] += n;
   for (const gm of part.gems || []) c.gems[gm.gem][gm.tier - 1] += 1;
+  for (const id of part.found || []) if (!c.found.includes(id)) c.found.push(id);
   if (part.region && regionById(part.region)) c.regions = { ...c.regions, [part.region]: { fog: part.fog ?? c.regions[part.region]?.fog ?? '' } };
   c.updatedAt = now;
   return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone };
@@ -120,4 +122,73 @@ export function visitTown(char, townId, now) {
   if (!c.towns.includes(townId)) c.towns.push(townId);
   c.updatedAt = now;
   return c;
+}
+
+// ——— dungeon gates & expeditions (spec §25.5) ———
+const hash = (s) => [...s].reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7);
+
+// This character's dungeon gates in a region: off a path, in the dungeon's band,
+// clear of anything solid. Deterministic from the character's world seed.
+export function gateSpots(region, seed) {
+  const map = buildFieldMap(region);
+  return region.dungeons.map((d) => {
+    const rng = mulberry((seed ^ hash(region.id + d.id)) >>> 0);
+    const lo = region.w * d.at[0], hi = region.w * d.at[1];
+    const pts = map.paths.flatMap((p) => sample(p, 200)).filter(([x]) => x >= lo && x <= hi);
+    for (let tries = 0; tries < 500 && pts.length; tries++) {
+      const [px, py] = pts[Math.floor(rng() * pts.length)];
+      const a = rng() * Math.PI * 2, dist = 240 + rng() * 520;
+      const x = Math.round(px + Math.cos(a) * dist), y = Math.round(py + Math.sin(a) * dist);
+      if (x < lo || x > hi || y < 300 || y > region.h - 300) continue;
+      if (blocked(map, x, y, 90) || map.pathDist(x, y) < 150) continue;
+      return { dungeon: d.id, x, y };
+    }
+    const [px, py] = pts[0] || [lo, region.h / 2]; // fallback: right on the path
+    return { dungeon: d.id, x: Math.round(px), y: Math.round(py) };
+  });
+}
+
+// gates of a region with whether this character has found them
+export const regionGates = (char, region) => gateSpots(region, char.world.seed).map((g) => ({ ...g, found: char.found.includes(g.dungeon) }));
+
+export function expeditionReward(char) {
+  const r = EXPEDITION_REWARD, lv = char.level;
+  return { gold: r.gold.base + r.gold.perLevel * lv, exp: r.exp.base + r.exp.perLevel * lv, marks: r.marks };
+}
+
+// Every expedition with where its gate is and whether it suits the character's level.
+export function expeditionList(char) {
+  return Object.entries(EXPEDITIONS).map(([dungeon, e]) => {
+    const region = regionOfDungeon(dungeon);
+    return { dungeon, ...e, region: region?.id ?? null, found: char.found.includes(dungeon), fits: char.level >= e.levels[0] && char.level <= e.levels[1], active: char.expedition?.dungeon === dungeon };
+  });
+}
+
+export function takeExpedition(char, dungeon, now) {
+  const e = EXPEDITIONS[dungeon];
+  if (!e || !regionOfDungeon(dungeon)) return { ok: false, reason: 'none' };
+  const c = structuredClone(char);
+  c.expedition = { dungeon, need: e.floors, have: 0 };
+  c.updatedAt = now;
+  return { ok: true, char: c };
+}
+
+export function dropExpedition(char, now) {
+  if (!char.expedition) return { ok: false, reason: 'none' };
+  const c = structuredClone(char);
+  c.expedition = null;
+  c.updatedAt = now;
+  return { ok: true, char: c };
+}
+
+export function claimExpedition(char, now) {
+  const x = char.expedition;
+  if (!x || x.have < x.need) return { ok: false, reason: 'notdone' };
+  const reward = expeditionReward(char);
+  const { char: c, levelsGained } = addExp(char, reward.exp);
+  c.gold += reward.gold;
+  c.marks += reward.marks;
+  c.expedition = null;
+  c.updatedAt = now;
+  return { ok: true, char: c, reward, levelsGained };
 }

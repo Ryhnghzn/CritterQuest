@@ -6,7 +6,8 @@ import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
 import { FIELD, FIELD_SCALE, READY_TOWNS, TOWNS, regionById } from '../data/world.js';
 import { ENEMIES } from '../data/enemies.js';
-import { buildFieldMap, pushOut, blocked, distToLine } from './fieldmap.js';
+import { dungeonById } from '../data/dungeons.js';
+import { buildFieldMap, pushOut, blocked } from './fieldmap.js';
 import { makeElite } from './dungeon.js';
 import { revealFog } from '../meta/world.js';
 
@@ -24,8 +25,10 @@ export const fieldScale = (level) => ({
   reward: 1 + FIELD_SCALE.reward * (level - 1),
 });
 
-// at: 'west' (from the region's `from` town) or 'east'
-export function startField(run, regionId, at = 'west') {
+// at: 'west' (from the region's `from` town), 'east', or { x, y } (back out of a dungeon gate)
+// gates: [{ dungeon, x, y, found }] — this character's dungeon gates in the region (meta/world.js)
+// target: { x, y } | null — where the expedition arrow points
+export function startField(run, regionId, at = 'west', gates = [], target = null) {
   const region = regionById(regionId);
   const map = buildFieldMap(region);
   run.field = true;
@@ -34,8 +37,12 @@ export function startField(run, regionId, at = 'west') {
   // run.dungeon stands for "where we are" (rewards, theme, records key)
   run.dungeon = { id: region.id, name: region.name, short: region.name, hpMul: 1, dmgMul: 1, rewardMul: 1, itemLevel: 0, theme: region.theme };
   run.floor = 1; run.deepest = 0;
-  const p = at === 'east' ? map.end : map.start;
+  const p = at === 'east' ? map.end : at === 'west' ? map.start : at;
   run.px = p.x; run.py = p.y;
+  run.gates = gates.map((g) => ({ ...g }));
+  run.gatesFound = [];   // dungeon ids found this visit (written to the save)
+  run.nearGate = null;
+  run.target = target;
   run.packT = 1.5; run.fogT = 0; run.edgeT = 0;
   run.night = false;
   if (run.fog) revealFog(run.fog, region, run.px, run.py);
@@ -57,7 +64,7 @@ export function spawnPack(run) {
     const a = rand() * Math.PI * 2, d = rrange(FIELD.spawnMin, FIELD.spawnMax);
     x = run.px + Math.cos(a) * d; y = run.py + Math.sin(a) * d;
     ok = x > FIELD.exitZone + 60 && y > 60 && x < map.w - FIELD.exitZone - 60 && y < map.h - 60 && !blocked(map, x, y, 40);
-    if (ok && distToLine(region.path, x, y) < FIELD.pathWidth && rand() < FIELD.pathAvoid) ok = false;
+    if (ok && map.pathDist(x, y) < FIELD.pathWidth && rand() < FIELD.pathAvoid) ok = false;
   }
   if (!ok) return 0;
   const type = pickType(region);
@@ -93,6 +100,17 @@ export function stepField(run, dt) {
     if (!e.boss && (e.x - run.px) ** 2 + (e.y - run.py) ** 2 > far) { E[i] = E[E.length - 1]; E.pop(); }
   }
   if (run.fog && (run.fogT -= dt) <= 0) { run.fogT = 0.25; revealFog(run.fog, region, run.px, run.py); }
+  // dungeon gates: seen within the fog radius, usable up close (spec §25.5)
+  run.nearGate = null;
+  for (const g of run.gates) {
+    const d2 = (g.x - run.px) ** 2 + (g.y - run.py) ** 2;
+    if (!g.found && d2 < FIELD.fogRadius * FIELD.fogRadius) {
+      g.found = true;
+      run.gatesFound.push(g.dungeon);
+      run.showBanner(t('Gerbang {name} ditemukan!', { name: dungeonById(g.dungeon).name }));
+    }
+    if (d2 < FIELD.gateR * FIELD.gateR) run.nearGate = g;
+  }
   // edges: west goes back, east on to the next town (closed until it is built)
   if (run.edgeT > 0) run.edgeT -= dt;
   if (run.px < FIELD.exitZone) run.exit = 'west';

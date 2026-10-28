@@ -170,6 +170,18 @@ describe('save versi 2', () => {
     expect(r.data).toMatchObject({ location: 'home', towns: ['home'], regions: {} });
   });
 
+  it('migrasi v11 → v12: seed dunia, dungeon yang pernah dimasuki = ditemukan, kabut lama dihapus', () => {
+    const v11 = { ...fresh(), version: 11, regions: { forest: { fog: 'AAAA' } } };
+    v11.records = structuredClone(v11.records); v11.records.dungeons.shadow.bestFloor = 2;
+    delete v11.world; delete v11.found; delete v11.expedition;
+    const r = readSlot(v11);
+    expect(r.status).toBe('ok');
+    expect(r.data.found).toEqual(['shadow']);
+    expect(r.data.regions).toEqual({});
+    expect(r.data.expedition).toBe(null);
+    expect(Number.isInteger(r.data.world.seed)).toBe(true);
+  });
+
   it('menolak wilayah atau kota yang tidak dikenal', () => {
     expect(validateSlot({ ...fresh(), regions: { mars: { fog: '' } } })).toContain('regions');
     expect(validateSlot({ ...fresh(), location: 'atlantis' })).toContain('location/towns');
@@ -226,12 +238,16 @@ describe('readSlot', () => {
 
 describe('readSettings', () => {
   it('menerima pengaturan versi terkini', () => {
-    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id' };
+    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite' };
     expect(readSettings(s)).toEqual(s);
   });
-  it('memigrasi versi 1 → 3 (autoAttack mati, bahasa Inggris)', () => {
+  it('memigrasi versi 1 → 4 (autoAttack mati, bahasa Inggris, efek penuh)', () => {
     expect(readSettings({ version: 1, muted: true, lastSlot: 1 }))
-      .toEqual({ version: 3, muted: true, lastSlot: 1, autoAttack: false, lang: 'en' });
+      .toEqual({ version: 4, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'full' });
+  });
+  it('memigrasi versi 3 → 4 tanpa mengubah bahasa', () => {
+    expect(readSettings({ version: 3, muted: false, lastSlot: 0, autoAttack: true, lang: 'id' }))
+      .toEqual({ version: 4, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'full' });
   });
   it.each([
     [null],
@@ -241,5 +257,7 @@ describe('readSettings', () => {
     [{ version: 3, muted: false, lastSlot: 0, autoAttack: false }],
     [{ version: 3, muted: false, lastSlot: 0, autoAttack: false, lang: 'fr' }],
     [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' }],
+    [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'ultra' }],
+    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full' }],
   ])('menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); });
 });

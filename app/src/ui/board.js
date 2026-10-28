@@ -6,6 +6,8 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { MATS } from '../data/forge.js';
 import { MARK_SHOP } from '../data/bounties.js';
 import { bountyReward, isDone, rerollPrice } from '../meta/bounties.js';
+import { expeditionList, expeditionReward } from '../meta/world.js';
+import { regionById } from '../data/world.js';
 import { tr, t } from '../i18n.js';
 
 const dungeonOf = (id) => DUNGEONS.find((d) => d.id === id);
@@ -65,5 +67,32 @@ export function markShop(char, onMarkBuy) {
     row.append(txt, b);
     list.append(row);
   }
+  return list;
+}
+
+// Expeditions (spec §25.5): one at a time; its gate gets a marker on the map and an arrow.
+export function expeditionPanel(char, { onExpTake, onExpClaim, onExpDrop }) {
+  const list = el('div', 'shoplist expeditions');
+  const rw = expeditionReward(char);
+  for (const e of expeditionList(char)) {
+    const d = dungeonOf(e.dungeon);
+    const x = e.active ? char.expedition : null;
+    const done = x && x.have >= x.need;
+    const row = el('div', `shoprow bounty${e.active ? ' active' : ''}${done ? ' done' : ''}${e.fits ? '' : ' unfit'}`);
+    row.dataset.expedition = e.dungeon;
+    const ic = el('span', 'sic'); const boss = bossOf(d); ic.append(enemyCanvas(boss, ENEMIES[boss].r, 34));
+    const txt = el('div', 'stx');
+    txt.append(el('b', null, `${d.name} · LV ${e.levels[0]}–${e.levels[1]}`));
+    if (x) { const bar = el('div', 'bbar'); const fill = el('i'); fill.style.width = `${(x.have / x.need) * 100}%`; bar.append(fill); txt.append(bar); }
+    txt.append(el('span', null, `${t('Bersihkan {n} lantai', { n: e.floors })} · ${t('gerbang di {r}', { r: regionById(e.region).name })}${e.found ? ` · ${tr('sudah ditemukan')}` : ''}${x ? ` · ${x.have}/${x.need}` : ''}`),
+      el('span', null, t('+{g} koin · +{e} EXP · +{m} Lencana', { g: rw.gold, e: rw.exp, m: rw.marks })));
+    let act;
+    if (done) act = button(tr('Klaim'), 'btn small claim', onExpClaim);
+    else if (e.active) act = button(tr('Batal'), 'btn ghost small', onExpDrop);
+    else act = button(tr('Ambil'), 'btn small', () => onExpTake(e.dungeon));
+    row.append(ic, txt, act);
+    list.append(row);
+  }
+  list.append(el('div', 'note', tr('Satu ekspedisi sekaligus. Gerbangnya ditandai di peta dan panah emas menunjuk ke sana.')));
   return list;
 }

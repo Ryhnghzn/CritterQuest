@@ -1,9 +1,11 @@
-// Open world (spec §25): regions between towns. Each region is one fixed,
-// hand-shaped map (world units, origin top-left): a winding path from the west
-// edge (back to `from`) to the east edge (on to `to`), a river with bridges,
-// tree clusters and rocks generated from `seed`, a few ruins.
+// Open world (spec §25): regions out of the town gate. Each region is a big
+// map (world units, origin top-left) laid out from its `seed`: a winding main
+// path from the west edge (back to `from`) to the east edge (on to `to`) with
+// side branches, rivers with bridges where paths cross, lakes (lava pools on the
+// volcano), groves and rocks of the biome, ruins. Dungeon gates are placed per
+// character (meta/world.js gateSpots) inside the `at` band (fraction of width).
 //   levels: [west, east] enemy level across the map
-//   enemies: type → spawn weight
+//   density: solids per million square units; enemies: type → spawn weight
 export const TOWNS = {
   home: { name: 'Kota Awal' },
   rimba: { name: 'Rimbawana' },   // ready in 9D-2
@@ -14,37 +16,65 @@ export const TOWNS = {
 export const TOWN_IDS = Object.keys(TOWNS);
 export const READY_TOWNS = ['home'];
 
+const BIG = { w: 20000, h: 12000 };
+
 export const REGIONS = [
   {
-    id: 'forest', name: 'Hutan Kelam', biome: 'forest', levels: [1, 15], ready: true,
-    from: 'home', to: 'rimba', w: 4000, h: 2400, seed: 7,
-    path: [[0, 1200], [480, 1160], [900, 1360], [1300, 1310], [1620, 1010], [2000, 900], [2400, 1100], [2800, 1360], [3200, 1260], [3600, 1060], [4000, 1100]],
-    river: [[2150, -40], [2090, 480], [2250, 900], [2200, 1320], [2310, 1820], [2250, 2440]],
-    bridges: [[2228, 1012], [2290, 1720]],
-    ruins: [{ x: 3050, y: 520, r: 150 }, { x: 1150, y: 1920, r: 130 }, { x: 700, y: 520, r: 110 }],
-    trees: 430, rocks: 70, clusters: 34,
+    id: 'forest', name: 'Hutan Kelam', biome: 'forest', levels: [1, 15], from: 'home', to: 'rimba', ...BIG, seed: 7,
+    branches: 6, rivers: 2, lakes: 7, ruins: 16, density: { tree: 46, rock: 7 },
     enemies: { slink: 5, dart: 4, spitter: 3, bomber: 2, charger: 2, healer: 1, shielder: 1, summoner: 1, tank: 1 },
+    dungeons: [{ id: 'shadow', at: [0.05, 0.18] }, { id: 'fungus', at: [0.72, 0.92] }],
     theme: { ground: ['#1d2a1c', '#172317'], path: '#3a3022', water: '#1b3a4a', ambient: 'rgba(4,10,8,.78)' },
   },
-  { id: 'ice', name: 'Padang Es', biome: 'ice', levels: [10, 25], ready: false, from: 'home', to: 'beku' },
-  { id: 'desert', name: 'Gurun Merah', biome: 'desert', levels: [20, 35], ready: false, from: 'home', to: 'pasir' },
-  { id: 'volcano', name: 'Gunung Api', biome: 'volcano', levels: [30, 50], ready: false, from: 'home', to: 'bara' },
+  {
+    id: 'ice', name: 'Padang Es', biome: 'ice', levels: [10, 25], from: 'home', to: 'beku', ...BIG, seed: 21,
+    branches: 5, rivers: 2, lakes: 9, ruins: 12, density: { tree: 20, rock: 14 },
+    enemies: { dart: 4, shielder: 3, tank: 3, spitter: 3, charger: 2, slink: 2, summoner: 1, healer: 1 },
+    dungeons: [{ id: 'crystal', at: [0.08, 0.4] }],
+    theme: { ground: ['#2a3442', '#222b38'], path: '#4a5566', water: '#2b5878', ambient: 'rgba(6,10,20,.8)' },
+  },
+  {
+    id: 'desert', name: 'Gurun Merah', biome: 'desert', levels: [20, 35], from: 'home', to: 'pasir', ...BIG, seed: 33,
+    branches: 5, rivers: 1, lakes: 4, ruins: 20, density: { tree: 6, rock: 16 },
+    enemies: { spitter: 4, bomber: 3, charger: 3, summoner: 2, dart: 2, tank: 2, healer: 1 },
+    dungeons: [],
+    theme: { ground: ['#4a3324', '#3f2b1e'], path: '#6a4c32', water: '#2f6a6a', ambient: 'rgba(16,8,4,.78)' },
+  },
+  {
+    id: 'volcano', name: 'Gunung Api', biome: 'volcano', levels: [30, 50], from: 'home', to: 'bara', ...BIG, seed: 45,
+    branches: 5, rivers: 1, lakes: 10, ruins: 12, density: { tree: 9, rock: 20 },
+    enemies: { charger: 4, bomber: 4, tank: 3, spitter: 3, shielder: 2, summoner: 2, healer: 1 },
+    dungeons: [{ id: 'lava', at: [0.05, 0.35] }],
+    theme: { ground: ['#2a1a18', '#221413'], path: '#3e2a24', water: '#c2410c', ambient: 'rgba(14,4,2,.8)' },
+  },
 ];
 export const REGION_IDS = REGIONS.map((r) => r.id);
 export const regionById = (id) => REGIONS.find((r) => r.id === id);
+// the region that holds a dungeon's gate
+export const regionOfDungeon = (dungeonId) => REGIONS.find((r) => r.dungeons.some((d) => d.id === dungeonId)) || null;
 
-// Field rules (spec §25.1)
+// Field rules (spec §25.1, §25.5)
 export const FIELD = {
-  pathWidth: 90, riverWidth: 120, bridgeHalf: 80, edge: 40,
+  pathWidth: 90, riverWidth: 130, bridgeHalf: 90, edge: 40,
   exitZone: 70,            // walking this close to the west / east edge leaves the region
   spawnMin: 560, spawnMax: 760, despawn: 1500,
   maxEnemies: 25, pack: [3, 6],
   packEvery: 4.2, nightPackEvery: 2.8, // seconds between packs
   pathAvoid: 0.65,         // chance a pack rolled near the path is moved away
   eliteChance: 0.05,
-  fogCell: 100, fogRadius: 300,
+  fogCell: 150, fogRadius: 350,
+  gateR: 80,               // standing this close to a dungeon gate offers to enter
   saveEvery: 60,           // seconds between automatic saves in a region
   deathGoldLoss: 0.1,
 };
 // enemy strength by level (matches the dungeon tiers: LV 26 ≈ Benteng Lava)
 export const FIELD_SCALE = { hp: 0.2, dmg: 0.075, reward: 0.16 };
+
+// Expeditions (spec §25.5): find a dungeon's gate and clear `floors` floors in it.
+export const EXPEDITIONS = {
+  shadow: { levels: [1, 8], floors: 3 },
+  crystal: { levels: [8, 18], floors: 3 },
+  fungus: { levels: [14, 26], floors: 3 },
+  lava: { levels: [24, 45], floors: 3 },
+};
+export const EXPEDITION_REWARD = { gold: { base: 80, perLevel: 25 }, exp: { base: 60, perLevel: 20 }, marks: 4 };

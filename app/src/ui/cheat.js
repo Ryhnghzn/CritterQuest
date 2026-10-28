@@ -25,6 +25,13 @@ export function renderCheat(box, ctx, actions, redraw) {
 
   if (ctx.scene === 'menu') { box.append(el('div', 'note', tr('Muat karakter dulu.'))); return; }
 
+  const fx = (kind) => () => actions.fxTest(kind);
+  section('Efek',
+    ...(ctx.scene === 'run' ? [
+      row(b('Ledakan uji', fx('boom')), b('Angka uji', fx('numbers')), b('Hit-stop', fx('stop'))),
+      row(b('Getar ringan', fx('light')), b('Getar sedang', fx('medium')), b('Getar berat', fx('heavy')))] : []),
+    row(b(ctx.fps ? 'FPS: sembunyikan' : 'FPS: tampilkan', actions.fps)));
+
   if (ctx.scene === 'town') {
     section('Karakter',
       row(b('+1.000 koin', () => actions.gold(1000)), b('+10.000 koin', () => actions.gold(10000))),
@@ -53,7 +60,7 @@ export function renderCheat(box, ctx, actions, redraw) {
       section('Wilayah',
         row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),
         row(b('Buka seluruh peta', actions.revealMap), b('+100 EXP', () => actions.exp(100))),
-        row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5))));
+        row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5)), b('Ke gerbang', actions.warpGate)));
     } else {
       section('Dungeon',
         row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll)),

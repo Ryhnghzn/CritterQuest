@@ -8,35 +8,34 @@ import { gearCanvas } from '../art/gear.js';
 import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
-import { spentPoints, unlockedDungeons } from '../meta/character.js';
+import { spentPoints } from '../meta/character.js';
 import { spentTalents, talentRespecPrice } from '../meta/talents.js';
-import { DUNGEONS } from '../data/dungeons.js';
-import { REGIONS } from '../data/world.js';
+import { dungeonById } from '../data/dungeons.js';
+import { REGIONS, regionOfDungeon } from '../data/world.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
-import { bountyList, markShop } from './board.js';
+import { bountyList, markShop, expeditionPanel } from './board.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
 let newLook = null;     // Tukang Cukur: style being tried on
-let gateDungeon = null; // Penjaga gerbang: dungeon picked
 let smithTab = 'peti';  // Pandai Brom: peti | jual | tempa | urai
 let gemTab = 'pasang';  // Tukang Permata: pasang | gabung
-let boardTab = 'tugas'; // Kapten Vera: tugas | lencana
+let boardTab = 'tugas'; // Kapten Vera: tugas | ekspedisi | lencana
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
   potion: 'Hehehe… ramuan segar dari kuali. Mau yang mana?',
   gear: 'Tungku sudah panas! Beli peti, jual rongsokan, tempa gear-mu, atau urai jadi bahan.',
   jeweler: 'Permata yang tepat di soket yang tepat… itu seni, Sayang.',
-  gate: 'Gerbang ini membuka jalan ke semua dungeon yang sudah kau taklukkan. Mau ke mana?',
+  gate: 'Gerbang dungeon tidak ada di kota. Carilah sendiri di luar sana — atau ambil ekspedisi di Balai Petualang.',
   trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
   board: 'Papan tugas sudah dibuka! Selesaikan tugas di dungeon, lalu ambil hadiahmu di sini.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
 };
-const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Gerbang Dungeon', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga' };
+const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
@@ -87,36 +86,22 @@ export function renderNpc(box, npc, ctx) {
     panel.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
   } else if (npc.role === 'board') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    panel.append(tabBar([['tugas', 'Tugas'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
-    panel.append(boardTab === 'tugas' ? bountyList(char, ctx) : markShop(char, ctx.onMarkBuy));
+    panel.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
+    panel.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx) : markShop(char, ctx.onMarkBuy));
   } else if (npc.role === 'gate') {
-    const open = unlockedDungeons(char);
-    if (!open.some((d) => d.id === gateDungeon)) gateDungeon = open[open.length - 1].id;
-    panel.append(dungeonPicker(char, open, () => renderNpc(box, npc, { ...ctx, message: null })));
-    const rec = char.records.dungeons[gateDungeon];
-    const deepest = Math.max(1, rec.bestFloor);
-    const b = button(deepest > 1 ? t('Lanjut ke Lantai {n}', { n: deepest }) : tr('Masuk Dungeon'), 'btn big', () => ctx.onEnter(gateDungeon, deepest));
-    b.id = 'npc-enter';
-    actions.append(b);
-    panel.append(actions);
-    if (deepest > 1) {
-      const floors = el('div', 'floors');
-      floors.append(el('span', 'note', tr('atau mulai dari:')));
-      for (let f = 1; f < deepest; f++) {
-        const fb = button(t('Lantai {n}', { n: f }), 'btn ghost small', () => ctx.onEnter(gateDungeon, f));
-        fb.dataset.floor = f;
-        floors.append(fb);
-      }
-      panel.append(floors);
+    // open world (spec §25.5): the town gate only leads out; dungeon gates are found out there
+    const x = char.expedition;
+    if (x) {
+      const where = regionOfDungeon(x.dungeon);
+      panel.append(el('div', 'note exphint', t('Ekspedisi: {d} — gerbangnya di {r} ({a}/{b} lantai)', { d: dungeonById(x.dungeon).name, r: where.name, a: x.have, b: x.need })));
     }
-    // open world (spec §25.1): out through the gate into a region
     const regs = el('div', 'regions');
-    regs.append(el('span', 'note', tr('Atau keluar ke wilayah:')));
+    regs.append(el('span', 'note', tr('Keluar ke wilayah:')));
     for (const r of REGIONS) {
-      const b = button('', 'btn ghost small region', () => ctx.onExplore(r.id));
-      b.append(el('span', null, r.name), el('small', null, r.ready ? `LV ${r.levels[0]}–${r.levels[1]}` : t('LV {a}–{b} · segera', { a: r.levels[0], b: r.levels[1] })));
+      const b = button('', 'btn small region', () => ctx.onExplore(r.id));
+      const gates = r.dungeons.filter((d) => char.found.includes(d.id)).length;
+      b.append(el('span', null, r.name), el('small', null, `LV ${r.levels[0]}–${r.levels[1]}${r.dungeons.length ? ` · ${t('gerbang {a}/{b}', { a: gates, b: r.dungeons.length })}` : ''}`));
       b.dataset.region = r.id;
-      b.disabled = !r.ready;
       regs.append(b);
     }
     panel.append(regs);
@@ -300,27 +285,6 @@ function barberPanel(char, onHaircut, redraw) {
 }
 
 // one card per dungeon: open ones can be picked, the next locked one shows what opens it
-function dungeonPicker(char, open, redraw) {
-  const row = el('div', 'dungeons');
-  DUNGEONS.forEach((d, i) => {
-    const isOpen = open.includes(d);
-    if (!isOpen && i > open.length) return;
-    const rec = char.records.dungeons[d.id];
-    const card = button('', `dcard ${d.id}${d.id === gateDungeon ? ' sel' : ''}${isOpen ? '' : ' locked'}`, () => {
-      if (!isOpen) return;
-      gateDungeon = d.id;
-      redraw();
-    });
-    card.dataset.dungeon = d.id;
-    card.style.setProperty('--c', `rgb(${d.theme.light})`);
-    card.append(el('b', null, d.name));
-    if (isOpen) card.append(el('span', null, `${t('Lantai {n}/5', { n: rec.bestFloor })}${rec.clears ? ` · ${t('tamat {n}×', { n: rec.clears })}` : ''}`));
-    else card.append(el('span', null, t('Terkunci — tamatkan {d}', { d: DUNGEONS[i - 1].short })));
-    row.append(card);
-  });
-  return row;
-}
-
 function tabBar(tabs, current, onPick) {
   const bar = el('div', 'tabs');
   for (const [id, label] of tabs) {
@@ -329,4 +293,37 @@ function tabBar(tabs, current, onPick) {
     bar.append(b);
   }
   return bar;
+}
+
+// A dungeon gate found in a region (spec §25.5): enter on the deepest floor reached, or an earlier one.
+// ctx: { char, onEnter(dungeonId, floor), onClose }
+export function renderDungeonGate(box, dungeonId, ctx) {
+  const d = dungeonById(dungeonId);
+  const rec = ctx.char.records.dungeons[d.id];
+  box.replaceChildren();
+  const panel = el('div', 'panel npcpanel gatepanel');
+  panel.style.setProperty('--c', `rgb(${d.theme.light})`);
+  panel.append(el('h2', 'h', d.name));
+  panel.append(el('div', 'sub', `${t('Lantai {n}/5', { n: rec.bestFloor })}${rec.clears ? ` · ${t('tamat {n}×', { n: rec.clears })}` : ''}`));
+  const x = ctx.char.expedition;
+  if (x && x.dungeon === d.id) panel.append(el('div', 'note exphint', t('Ekspedisi: bersihkan {n} lantai ({a}/{b})', { n: x.need, a: x.have, b: x.need })));
+  const deepest = Math.max(1, rec.bestFloor);
+  const b = button(deepest > 1 ? t('Lanjut ke Lantai {n}', { n: deepest }) : tr('Masuk Dungeon'), 'btn big', () => ctx.onEnter(d.id, deepest));
+  b.id = 'npc-enter';
+  panel.append(b);
+  if (deepest > 1) {
+    const floors = el('div', 'floors');
+    floors.append(el('span', 'note', tr('atau mulai dari:')));
+    for (let f = 1; f < deepest; f++) {
+      const fb = button(t('Lantai {n}', { n: f }), 'btn ghost small', () => ctx.onEnter(d.id, f));
+      fb.dataset.floor = f;
+      floors.append(fb);
+    }
+    panel.append(floors);
+  }
+  panel.append(el('div', 'note', tr('Pulang lewat portal emas membawamu kembali ke gerbang ini.')));
+  const close = button(tr('Tutup'), 'btn ghost', ctx.onClose);
+  close.id = 'npc-close';
+  panel.append(close);
+  box.append(panel);
 }

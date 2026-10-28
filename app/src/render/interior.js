@@ -104,8 +104,8 @@ export class InteriorRenderer {
       const moving = Math.min(1, Math.hypot(town.moveX, town.moveY));
       this.walk += moving * 0.22;
       items.push({ y: town.y, draw: () => {
-        levelRing(g, town.x, town.y + 10, avatar.level || 1, t);
-        auraBack(g, town.x, town.y + 10, avatar.fx, t);
+        levelRing(g, town.x, town.y + 10, avatar.level || 1, t, { lite: avatar.lite });
+        auraBack(g, town.x, town.y + 10, avatar.fx, t, { host: this, lite: avatar.lite, best: bestRarity(avatar.look.gear), set: avatar.set, frenzyOn: false });
         actor(g, town.x, town.y, avatar.classId, avatar.look, { t, moving, walk: this.walk }, town.facing);
       } });
     }
@@ -122,7 +122,7 @@ export class InteriorRenderer {
     v.begin(cx, cy);
     glow(g, r, t);
     for (const p of npcs) tag(g, p.n, p.x, p.y, t, town.near === p.n);
-    if (town && avatar) auraFront(g, town.x, town.y + 10, avatar.fx, bestRarity(avatar.look.gear), t);
+    if (town && avatar) auraFront(g, town.x, town.y + 10, avatar.fx, bestRarity(avatar.look.gear), t, { host: this, lite: avatar.lite, level: avatar.level, set: avatar.set, facing: town.facing, frenzyOn: false });
     plate(g, tr('Keluar'), r.w / 2, r.h - 6, '#2a2440');
     v.vignetteOverlay();
     doorFade(v, town);

@@ -212,7 +212,7 @@ export function stepHazards(run, dt) {
       if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg);
       run.spawnBurst(h.x, h.y, '#ff7a3c', 18);
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.3, max: 0.3, color: '255,140,60' });
-      run.shake = Math.max(run.shake, 0.5);
+      run.addShake('medium');
       sfx.hurt();
       if (h.bomber) h.bomber.hp = 0;
     }

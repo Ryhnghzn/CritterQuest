@@ -10,13 +10,14 @@ import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
 import { DUNGEON_IDS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js';
+import { QUALITY_IDS } from '../data/fx.js';
 import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
 import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
 import { BESTIARY_IDS } from '../data/collection.js';
-import { TOWN_IDS, REGION_IDS, regionById } from '../data/world.js';
+import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS } from '../data/world.js';
 import { isFogValid } from './world.js';
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -81,7 +82,17 @@ export const MIGRATIONS = {
   },
   // v11 (spec §25.1): open world — last town, towns visited, explored regions.
   10: (d) => ({ ...d, version: 11, location: 'home', towns: ['home'], regions: {} }),
+  // v12 (spec §25.5): bigger regions (old fog no longer fits), gates placed per character,
+  // dungeons already entered count as found, expeditions.
+  11: (d) => ({
+    ...d, version: 12, regions: {}, expedition: null,
+    world: { seed: worldSeed(isInt(d.createdAt) ? d.createdAt : 0, isInt(d.slot) ? d.slot : 0) },
+    found: isObj(d.records) && isObj(d.records.dungeons)
+      ? DUNGEON_IDS.filter((id) => d.records.dungeons[id]?.bestFloor > 0 || d.records.dungeons[id]?.clears > 0) : [],
+  }),
 };
+
+export const worldSeed = (now, slot) => (Math.floor(Math.abs(now)) + slot * 7919) % 2147483647;
 
 export const freshBounties = () => structuredClone(STARTER_BOUNTIES);
 export const freshBestiary = () => Object.fromEntries(BESTIARY_IDS.map((id) => [id, 0]));
@@ -162,6 +173,10 @@ export function validateSlot(d) {
   need(isInt(d.marks, 0), 'marks');
   need(TOWN_IDS.includes(d.location) && Array.isArray(d.towns) && d.towns.every((id) => TOWN_IDS.includes(id))
     && new Set(d.towns).size === d.towns.length && d.towns.includes(d.location), 'location/towns');
+  need(isObj(d.world) && isInt(d.world.seed, 0), 'world');
+  need(Array.isArray(d.found) && d.found.every((id) => DUNGEON_IDS.includes(id)) && new Set(d.found).size === d.found.length, 'found');
+  need(d.expedition === null || (isObj(d.expedition) && Object.hasOwn(EXPEDITIONS, d.expedition.dungeon)
+    && isInt(d.expedition.need, 1) && isInt(d.expedition.have, 0, d.expedition.need)), 'expedition');
   need(isObj(d.regions) && Object.entries(d.regions).every(([id, r]) => REGION_IDS.includes(id) && isObj(r) && isFogValid(r.fog, regionById(id))), 'regions');
   need(Array.isArray(d.bounties) && d.bounties.length === BOUNTY_COUNT && d.bounties.every((b) => isObj(b)
     && Object.hasOwn(BOUNTY_KINDS, b.kind) && (b.target === null || typeof b.target === 'string')
@@ -213,11 +228,12 @@ export function readSlot(raw) {
   return { status: 'ok', data };
 }
 
-// Settings (spec §9.2) have their own version: v2 added autoAttack.
-export const SETTINGS_VERSION = 3;
+// Settings (spec §9.2) have their own version: v2 added autoAttack, v4 the effects level.
+export const SETTINGS_VERSION = 4;
 const SETTINGS_MIGRATIONS = {
   1: (d) => ({ ...d, version: 2, autoAttack: false }),
   2: (d) => ({ ...d, version: 3, lang: 'en' }), // spec §23: English by default
+  3: (d) => ({ ...d, version: 4, effects: 'full' }), // plan "Efek Lebay" §A
 };
 const SETTINGS_LANGS = ['en', 'id'];
 
@@ -226,6 +242,6 @@ export function readSettings(raw) {
   let s;
   try { s = migrate(raw, SETTINGS_MIGRATIONS, SETTINGS_VERSION); } catch (_) { return null; }
   if (typeof s.muted !== 'boolean' || !isInt(s.lastSlot, 0, SLOT_COUNT - 1)
-    || typeof s.autoAttack !== 'boolean' || !SETTINGS_LANGS.includes(s.lang)) return null;
-  return { version: SETTINGS_VERSION, muted: s.muted, lastSlot: s.lastSlot, autoAttack: s.autoAttack, lang: s.lang };
+    || typeof s.autoAttack !== 'boolean' || !SETTINGS_LANGS.includes(s.lang) || !QUALITY_IDS.includes(s.effects)) return null;
+  return { version: SETTINGS_VERSION, muted: s.muted, lastSlot: s.lastSlot, autoAttack: s.autoAttack, lang: s.lang, effects: s.effects };
 }

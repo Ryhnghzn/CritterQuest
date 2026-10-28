@@ -7,7 +7,8 @@ import { rand, rrange } from '../core/rng.js';
 import { ROOM, WAVE, PORTAL, COINS, FLOOR_HP_STEP } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { makeRoom, inside, confine, SHAPES } from './room.js';
-import { ELITE, DROP, RARITIES } from '../data/items.js';
+import { ELITE, DROP, RARITIES, MYTHIC } from '../data/items.js';
+import { MYTHIC_PICK } from '../data/itemfx.js';
 import { ENEMIES } from '../data/enemies.js';
 import { dropItem, itemName, itemLevelFor } from '../meta/itemgen.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
@@ -39,7 +40,7 @@ export function startFloor(run, floor) {
   run.deepest = Math.max(run.deepest, floor);
   run.enemies.length = 0; run.hits.length = 0;
   run.shots.length = 0; run.hazards.length = 0; run.pulses.length = 0;
-  run.particles.length = 0; run.floaters.length = 0;
+  run.vfx.clear(); run.floaters.length = 0;
   run.px = 0; run.py = 0;
   run.dodgeT = 0;
   run.floorT = 0;
@@ -179,6 +180,12 @@ export function dropGear(run, source, x, y) {
 export function gearPickedUp(run, item) {
   run.loot.push(item);
   run.addFloater(run.px, run.py - 50, itemName(item), RARITIES[item.rarity].color);
+  if (item.rarity === MYTHIC) { // red-gold flash; main.js shows the big card (visual only, no sim RNG)
+    for (const [c, a, life] of MYTHIC_PICK.flash) run.vfx.flash(c, a, life);
+    run.vfx.ring(run.px, run.py, { ...MYTHIC_PICK.ring, color: RARITIES[MYTHIC].color });
+    run.vfx.burst('stars', run.px, run.py, ['#ffd166', '#ff4d6d', '#ffffff'], { n: 14 });
+    run.mythicPick = item;
+  }
 }
 
 // Forge materials found this trip (spec §20): straight into run.mats, with a floater.

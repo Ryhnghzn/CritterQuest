@@ -10,7 +10,8 @@ import { isDone } from '../meta/bounties.js';
 import { tr, t } from '../i18n.js';
 
 // info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
-export function renderResults(box, info, { onContinue }) {
+// continueLabel: text of the button (default "Kembali ke Kota")
+export function renderResults(box, info, { onContinue, continueLabel = null }) {
   const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError, bountiesDone, uniquesFound } = info;
   box.replaceChildren();
   const titleText = tr(trip.died ? 'Tumbang!' : trip.cleared ? 'Dungeon Tamat!' : 'Pulang dengan Selamat');
@@ -31,6 +32,8 @@ export function renderResults(box, info, { onContinue }) {
   if (uniquesFound?.length) badges.append(el('span', 'badge', t('Kodeks: +{n} item unik', { n: uniquesFound.length })));
   // bounty board progress after this trip (spec §24)
   const board = el('div', 'rbounties');
+  const x = char.expedition; // expedition progress (spec §25.5)
+  if (x && x.dungeon === trip.dungeon) board.append(el('div', `rb${x.have >= x.need ? ' done' : ''}`, `${t('Ekspedisi {d}', { d: dungeonById(x.dungeon).name })} — ${x.have}/${x.need}`));
   for (const b of char.bounties) board.append(el('div', `rb${isDone(b) ? ' done' : ''}`, `${bountyText(b)} — ${b.have}/${b.need}`));
   const notes = el('div', 'sub');
   if (trip.died) notes.textContent = `${tr('Kamu terbangun di kota dengan sisa tenaga.')}${goldLost > 0 ? ` ${t('{n} koin hilang.', { n: goldLost })}` : ''}`;
@@ -50,7 +53,7 @@ export function renderResults(box, info, { onContinue }) {
   if (gemsGot) matRow.append(el('span', 'hchip', t('+{n} permata', { n: gemsGot })));
   if (itemsLeft.length) notes.append(el('div', null, t('Tas penuh: {n} gear ditinggal.', { n: itemsLeft.length })));
   const err = el('div', 'err', saveError ? t('Gagal menyimpan: {e}', { e: saveError }) : '');
-  const next = button(tr('Kembali ke Kota'), 'btn', onContinue);
+  const next = button(continueLabel || tr('Kembali ke Kota'), 'btn', onContinue);
   next.id = 'tocamp';
   box.append(title, where, tiles, badges);
   if (matRow.childElementCount) box.append(matRow);

@@ -4,8 +4,9 @@
 // head ≈ ⅓ of the body. Layer order: cape → back limbs → legs & boots → torso
 // → armour → arms → head, hair (hidden under most helms) → helm → weapon.
 // Gear shapes come from art/gear.js (one per look variant).
-import { drawWeapon, drawHelm, drawArmor, drawBoot, helmHidesHair, INK } from './gear.js';
-import { RARITIES } from '../data/items.js';
+import { drawWeapon, drawHelm, drawArmor, drawBoot, helmHidesHair, INK, halo } from './gear.js';
+import { RARITIES, MYTHIC } from '../data/items.js';
+import { DOLL_FX } from '../data/itemfx.js';
 
 const TAU = Math.PI * 2;
 const SKIN = ['#e3bfa3', '#b98a6e'];
@@ -31,13 +32,26 @@ export const HAIR_PALETTE = [
   ['#dcdbe6', '#9e9cb0'],
 ];
 
-// Epik and up glow in their rarity colour (canvas shadow, pulsing)
-function glowOn(g, piece, t) {
+// Epik and up glow in their rarity colour behind the piece (pulsing glow sprite)
+function pieceGlow(g, piece, x, y, r, t) {
   if (!piece || piece.rarity < 3) return;
-  g.shadowColor = RARITIES[piece.rarity].color;
-  g.shadowBlur = (piece.rarity - 1) * 2.5 * (0.75 + 0.25 * Math.sin(t * 3));
+  halo(g, x, y, r * (0.8 + piece.rarity * 0.12), RARITIES[piece.rarity].color, (0.3 + (piece.rarity - 3) * 0.12) * (0.75 + 0.25 * Math.sin(t * 3)));
 }
-function glowOff(g) { g.shadowBlur = 0; }
+
+// Legendaris+ weapon in the hand (plan "Efek Lebay" §E): glow along it and sparks
+// rising off it; Mitos also leaves afterimages while swinging. Weapon frame: grip at origin, up = −y.
+function weaponAura(g, w, t) {
+  if (w.rarity < DOLL_FX.glowFrom) return;
+  const c = RARITIES[w.rarity].color, mythic = w.rarity === MYTHIC;
+  const p = 0.75 + 0.25 * Math.sin(t * 4);
+  for (const y of [-6, -13, -20]) halo(g, 0, y, mythic ? 7 : 5.5, c, (mythic ? 0.55 : 0.4) * p);
+  const n = DOLL_FX.embers[w.rarity];
+  for (let i = 0; i < n; i++) {
+    const ph = (t * 0.9 + i / n) % 1;
+    const x = Math.sin(i * 7.3 + t * 3) * 3, y = -4 - ph * 24;
+    halo(g, x, y, 2.2, mythic && i % 2 ? '#ffd166' : c, 1 - ph);
+  }
+}
 
 function lin(g, y0, y1, c0, c1) {
   const gr = g.createLinearGradient(0, y0, 0, y1);
@@ -158,7 +172,7 @@ export function drawDoll(g, classId, look, pose = {}) {
   const hx = 1.2, hy = -35 + bob, hr = 6.4;
   const hairFill = lin(g, hy - hr, hy + hr, hMain, hShade);
   const robe = classId === 'mage';
-  const hideHair = gear.helm && helmHidesHair(gear.helm.tier);
+  const hideHair = gear.helm && helmHidesHair(gear.helm.tier, gear.helm.rarity);
 
   g.lineJoin = 'round';
   CLASS_BACK[classId]?.(g, bob, t, moving, outfit);
@@ -166,10 +180,10 @@ export function drawDoll(g, classId, look, pose = {}) {
 
   // legs and boots (back leg darker)
   limb(g, -2, -15 + bob, -2 - swing, -2.5, 3.4, '#211d27');
-  if (gear.boots) drawBoot(g, gear.boots.tier, -2 - swing, 0);
+  if (gear.boots) drawBoot(g, gear.boots.tier, -2 - swing, 0, t, gear.boots.rarity);
   else { g.beginPath(); g.ellipse(-1 - swing, -1.1, 3, 1.8, 0, 0, TAU); ink(g, BOOTS); }
   limb(g, 2, -15 + bob, 2 + swing, -2.5, 3.4, PANTS);
-  if (gear.boots) drawBoot(g, gear.boots.tier, 2 + swing, 0);
+  if (gear.boots) drawBoot(g, gear.boots.tier, 2 + swing, 0, t, gear.boots.rarity);
   else { g.beginPath(); g.ellipse(3 + swing, -1.1, 3, 1.8, 0, 0, TAU); ink(g, BOOTS); }
 
   // back arm
@@ -184,7 +198,7 @@ export function drawDoll(g, classId, look, pose = {}) {
   ink(g, lin(g, -28 + bob, bot, cMain, cShade));
   g.beginPath(); g.moveTo(-4, -25 + bob); g.quadraticCurveTo(-4.8, -21 + bob, -4, -18 + bob); g.lineWidth = 0.6; g.strokeStyle = 'rgba(255,255,255,.12)'; g.stroke();
   CLASS_FRONT[classId]?.(g, bob);
-  if (gear.armor) { glowOn(g, gear.armor, t); drawArmor(g, gear.armor.tier, -27.8 + bob, -15.5 + bob, 6.3, t); glowOff(g); }
+  if (gear.armor) { pieceGlow(g, gear.armor, 0, -22 + bob, 9, t); drawArmor(g, gear.armor.tier, -27.8 + bob, -15.5 + bob, 6.3, t, gear.armor.rarity); }
   // belt
   g.beginPath(); g.rect(-5, -16.4 + bob, 10, 1.6); ink(g, '#2a1e1a', 0.6);
 
@@ -222,16 +236,24 @@ export function drawDoll(g, classId, look, pose = {}) {
   } else {
     g.beginPath(); g.moveTo(hx + hr * 0.38, hy + 3.5); g.lineTo(hx + hr * 0.7, hy + (hurt ? 3.9 : 3.3)); g.lineWidth = 0.55; g.strokeStyle = '#6e4a40'; g.stroke();
   }
-  if (gear.helm) { glowOn(g, gear.helm, t); drawHelm(g, gear.helm.tier, hx, hy, hr, t); glowOff(g); }
+  if (gear.helm) { pieceGlow(g, gear.helm, hx, hy - 2, 8, t); drawHelm(g, gear.helm.tier, hx, hy, hr, t, gear.helm.rarity); }
 
   // front arm, weapon, hand on the grip
   const handX = 5.5 - swing * 0.5 + attack * 5, handY = -17 + bob - attack * 4;
   limb(g, 4.5, -26 + bob, handX, handY, 2.8, cMain);
   if (gear.weapon && classId) {
-    g.save(); g.translate(handX, handY); g.rotate(HOLD[classId](attack));
-    glowOn(g, gear.weapon, t);
-    drawWeapon(g, classId, gear.weapon.tier, t);
-    glowOff(g);
+    const w = gear.weapon, rot = HOLD[classId](attack);
+    g.save(); g.translate(handX, handY);
+    if (w.rarity === MYTHIC && attack > 0) { // afterimages trailing the swing
+      DOLL_FX.trail.forEach((a, i) => {
+        g.save(); g.globalAlpha *= a * attack; g.rotate(rot - DOLL_FX.trailStep * (i + 1));
+        drawWeapon(g, classId, w.tier, t, w.rarity); g.restore();
+      });
+    }
+    g.rotate(rot);
+    if (w.rarity >= 3 && w.rarity < DOLL_FX.glowFrom) pieceGlow(g, w, 0, -10, 7, t);
+    weaponAura(g, w, t);
+    drawWeapon(g, classId, w.tier, t, w.rarity);
     g.restore();
   }
   g.beginPath(); g.arc(handX, handY, 1.6, 0, TAU); ink(g, SKIN[0], 0.7);

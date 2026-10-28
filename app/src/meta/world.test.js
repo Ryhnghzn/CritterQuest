@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { fogSize, encodeFog, decodeFog, revealFog, fogAt, explored, isFogValid, applyField, fieldDeath, visitTown } from './world.js';
+import { fogSize, encodeFog, decodeFog, revealFog, fogAt, explored, isFogValid, applyField, fieldDeath, visitTown, gateSpots, regionGates, expeditionList, takeExpedition, claimExpedition, dropExpedition } from './world.js';
+import { createCharacter as cc, applyTrip } from './character.js';
+import { buildFieldMap, blocked } from '../run/fieldmap.js';
+import { REGIONS } from '../data/world.js';
 import { createCharacter } from './character.js';
 import { validateSlot } from './schema.js';
 import { regionById } from '../data/world.js';
@@ -17,15 +20,15 @@ describe('kabut', () => {
     expect([...decodeFog(s, forest)]).toEqual([...a]);
     expect([...decodeFog('', forest)].every((b) => b === 0)).toBe(true);
     expect([...decodeFog('!!rusak', forest)].every((b) => b === 0)).toBe(true);
-    expect(isFogValid('x'.repeat(999), forest)).toBe(false);
+    expect(isFogValid('x'.repeat(99999), forest)).toBe(false);
   });
   it('membuka sel dalam radius saja', () => {
     const { bytes, cols } = fogSize(forest);
     const f = new Uint8Array(bytes);
     expect(revealFog(f, forest, 1000, 1000, 300)).toBe(true);
     expect(revealFog(f, forest, 1000, 1000, 300)).toBe(false);
-    expect(fogAt(f, cols, 10, 10)).toBe(1);
-    expect(fogAt(f, cols, 14, 10)).toBe(0);
+    expect(fogAt(f, cols, 6, 6)).toBe(1);
+    expect(fogAt(f, cols, 12, 6)).toBe(0);
     expect(explored(f, forest)).toBeGreaterThan(0);
     expect(explored(f, forest)).toBeLessThan(0.05);
   });
@@ -63,5 +66,54 @@ describe('simpan dari wilayah', () => {
     expect(c.location).toBe('rimba');
     expect(c.towns).toEqual(['home', 'rimba']);
     expect(visitTown(c, 'rimba', 5)).toBe(c);
+  });
+});
+
+describe('gerbang dungeon per karakter', () => {
+  it('di pita dungeonnya, tidak terhalang, tetap untuk seed yang sama, beda untuk seed lain', () => {
+    for (const r of REGIONS) {
+      const map = buildFieldMap(r);
+      const a = gateSpots(r, 12345), b = gateSpots(r, 12345), c = gateSpots(r, 999);
+      expect(a).toEqual(b);
+      a.forEach((g, i) => {
+        const d = r.dungeons[i];
+        expect(g.x).toBeGreaterThanOrEqual(r.w * d.at[0]);
+        expect(g.x).toBeLessThanOrEqual(r.w * d.at[1]);
+        expect(blocked(map, g.x, g.y, 40)).toBe(false);
+      });
+      if (a.length) expect(c).not.toEqual(a);
+    }
+  });
+  it('tercatat ditemukan dari wilayah', () => {
+    const c = make();
+    expect(regionGates(c, forest).every((g) => !g.found)).toBe(true);
+    const r = applyField(c, { region: 'forest', found: ['shadow'], potions: pots, hp: 100 }, 2);
+    expect(regionGates(r.char, forest).find((g) => g.dungeon === 'shadow').found).toBe(true);
+    expect(validateSlot(r.char)).toEqual([]);
+  });
+});
+
+describe('ekspedisi', () => {
+  it('ambil → bersihkan lantai di dungeonnya → klaim hadiah', () => {
+    const c = make();
+    expect(expeditionList(c).find((e) => e.dungeon === 'shadow').fits).toBe(true);
+    const took = takeExpedition(c, 'shadow', 2).char;
+    expect(took.expedition).toEqual({ dungeon: 'shadow', need: 3, have: 0 });
+    expect(claimExpedition(took, 3).reason).toBe('notdone');
+    const trip = { exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 2, cleared: false, died: false, hp: 50, potions: pots, dungeon: 'shadow', floorsCleared: 5 };
+    const after = applyTrip(took, trip, 4).char;
+    expect(after.expedition.have).toBe(3);
+    expect(after.found).toContain('shadow');
+    const r = claimExpedition(after, 5);
+    expect(r.ok).toBe(true);
+    expect(r.char.expedition).toBe(null);
+    expect(r.char.marks).toBe(4);
+    expect(validateSlot(r.char)).toEqual([]);
+    expect(dropExpedition(took, 6).char.expedition).toBe(null);
+  });
+  it('dungeon lain tidak memajukan ekspedisi', () => {
+    const took = takeExpedition(make(), 'crystal', 2).char;
+    const trip = { exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 2, cleared: false, died: false, hp: 50, potions: pots, dungeon: 'shadow', floorsCleared: 2 };
+    expect(applyTrip(took, trip, 4).char.expedition.have).toBe(0);
   });
 });

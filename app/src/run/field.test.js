@@ -3,7 +3,7 @@ vi.mock('../core/audio.js', () => ({ sfx: new Proxy({}, { get: () => () => {} })
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { REGIONS, FIELD, regionById } from '../data/world.js';
-import { buildFieldMap, blocked, distToLine } from './fieldmap.js';
+import { buildFieldMap, blocked, sample } from './fieldmap.js';
 import { fieldLevel, fieldScale, spawnPack } from './field.js';
 import { fogSize } from '../meta/world.js';
 
@@ -12,21 +12,26 @@ const setup = (o = {}) => ({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLAS
 const idle = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, potion: -1 };
 
 describe('peta wilayah', () => {
-  const map = buildFieldMap(forest);
-  it('tetap sama tiap dibangun (seed)', () => {
-    expect(map.solids.length).toBeGreaterThan(400);
-    expect(buildFieldMap(forest)).toBe(map);
-  });
-  it('jalan setapak & jembatan bebas rintangan; sungai menghalangi', () => {
-    for (let i = 0; i <= 200; i++) {
-      // walk along the path: never blocked (bridges cross the river)
-      const k = i / 200, seg = Math.min(forest.path.length - 2, Math.floor(k * (forest.path.length - 1)));
-      const f = k * (forest.path.length - 1) - seg;
-      const [ax, ay] = forest.path[seg], [bx, by] = forest.path[seg + 1];
-      expect(blocked(map, ax + (bx - ax) * f, ay + (by - ay) * f, 12)).toBe(false);
+  it('keempat wilayah dibangun cepat & tetap sama (seed)', () => {
+    const t0 = Date.now();
+    for (const r of REGIONS) {
+      const m = buildFieldMap(r);
+      expect(m.solids.length).toBeGreaterThan(1000);
+      expect(buildFieldMap(r)).toBe(m);
     }
-    expect(blocked(map, 2283, 2100, 12)).toBe(true); // river away from the bridges
-    expect(blocked(map, map.start.x, map.start.y, 12)).toBe(false);
+    expect(Date.now() - t0).toBeLessThan(4000);
+  });
+  it('semua jalan bebas rintangan (jembatan menyeberangi sungai); sungai menghalangi', () => {
+    for (const r of REGIONS) {
+      const map = buildFieldMap(r);
+      for (const p of map.paths) for (const [x, y] of sample(p, 50)) {
+        if (x < 60 || x > r.w - 60 || y < 60 || y > r.h - 60) continue;
+        expect(blocked(map, x, y, 12)).toBe(false);
+      }
+      const water = map.solids.find((s) => s.kind === 'water' && map.bridges.every(([bx, by]) => Math.hypot(bx - s.x, by - s.y) > 400));
+      if (water) expect(blocked(map, water.x, water.y, 12)).toBe(true);
+      expect(blocked(map, map.start.x, map.start.y, 12)).toBe(false);
+    }
   });
 });
 
@@ -42,7 +47,7 @@ describe('mode wilayah', () => {
     g.explore(setup());
     expect(g.state).toBe(ST.PLAY);
     expect(g.field).toBe(true);
-    g.px = 1600; g.py = 1010;
+    g.px = 6000; g.py = g.fmap.paths[0][5][1];
     for (let i = 0; i < 30; i++) spawnPack(g);
     expect(g.enemies.length).toBeLessThanOrEqual(FIELD.maxEnemies);
     expect(g.enemies.length).toBeGreaterThan(0);
@@ -54,7 +59,7 @@ describe('mode wilayah', () => {
   it('musuh yang tertinggal jauh hilang', () => {
     const g = new Game();
     g.explore(setup());
-    g.px = 1600; g.py = 1010;
+    g.px = 6000; g.py = g.fmap.paths[0][5][1];
     spawnPack(g);
     const n = g.enemies.length;
     g.enemies[0].x = g.px + FIELD.despawn + 200;
@@ -73,7 +78,7 @@ describe('mode wilayah', () => {
     const h = new Game();
     h.explore(setup());
     h.intent = idle; h.packT = 99;
-    h.px = forest.w - FIELD.exitZone + 5; h.py = 1100;
+    h.px = forest.w - FIELD.exitZone + 5; h.py = h.fmap.end.y;
     h.step(1 / 60);
     expect(h.state).toBe(ST.PLAY);
     expect(h.px).toBeLessThan(forest.w - FIELD.exitZone);
@@ -94,10 +99,21 @@ describe('mode wilayah', () => {
     expect(g.expGained).toBeCloseTo(0.5);
     expect(g.takeProgress().kills).toBe(0);
   });
-  it('semua wilayah yang siap punya data peta', () => {
-    for (const r of REGIONS.filter((x) => x.ready)) {
-      expect(distToLine(r.path, 0, r.path[0][1])).toBe(0);
-      expect(r.levels[0]).toBeLessThan(r.levels[1]);
-    }
+  it('gerbang dungeon: ditemukan dari dekat, bisa dimasuki bila berdiri di dekatnya', () => {
+    const g = new Game();
+    g.explore(setup({ gates: [{ dungeon: 'shadow', x: 3000, y: 6000, found: false }] }));
+    g.intent = idle; g.packT = 99;
+    g.px = 3000 - FIELD.fogRadius + 20; g.py = 6000;
+    g.step(1 / 60);
+    expect(g.gatesFound).toEqual(['shadow']);
+    expect(g.nearGate).toBe(null);
+    g.px = 3000 - 40;
+    g.step(1 / 60);
+    expect(g.nearGate?.dungeon).toBe('shadow');
+  });
+  it('mulai di depan gerbang bila diminta', () => {
+    const g = new Game();
+    g.explore(setup({ at: { x: 4000, y: 5000 } }));
+    expect([g.px, g.py]).toEqual([4000, 5000]);
   });
 });

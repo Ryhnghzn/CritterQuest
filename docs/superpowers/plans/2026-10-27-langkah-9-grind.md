@@ -38,6 +38,15 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Render wilayah (tanah, jalan, pohon, sungai), peta M berkabut, peta mini HUD
 - [x] Gerbang: Dungeon / Wilayah; masuk & keluar wilayah; kamus EN
 - [x] Verifikasi: tes, build, screenshot PC & HP
+### 9D-1b — Dunia besar, gerbang dungeon di dunia, ekspedisi (§25.5)
+- [x] `data/world.js`: 4 wilayah 20000 × 12000 (biome, musuh, kepadatan), dungeon per wilayah, ekspedisi
+- [x] `run/fieldmap.js`: tata letak prosedural (jalan + cabang, sungai & jembatan, danau, rumpun, reruntuhan) — cepat, deterministik — tes
+- [x] `meta/world.js`: letak gerbang per karakter, temukan gerbang, ekspedisi — tes
+- [x] Save v12: `world.seed`, `found`, `expedition` — tes
+- [x] Mode wilayah: gerbang dungeon (dekat → E), kembali ke wilayah setelah dungeon, panah ekspedisi
+- [x] Render 4 biome, gerbang, danau/lava; peta mini berjendela; panah penunjuk
+- [x] Rolan tanpa daftar dungeon; Papan Tugas tab Ekspedisi; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
 ### 9D-2 — Kota besar & pedagang
 ### 9D-3 — Harta karun, mini bos, portal bos
 ### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir

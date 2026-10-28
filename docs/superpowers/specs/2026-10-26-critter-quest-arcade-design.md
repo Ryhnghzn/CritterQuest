@@ -719,3 +719,29 @@ Keputusan pemilik (2026-10-27):
 - Wilayah Padang Es, Gurun Merah, dan Gunung Api, masing-masing dengan musuh biome.
 - Dungeon baru Makam Pasir dengan bosnya.
 - Tiga kota besar dengan tingkat barang yang makin tinggi.
+
+### 25.5 Dunia besar & gerbang dungeon di dunia (9D-1b, permintaan 2026-10-27)
+- **Ukuran wilayah:** 20000 × 12000 (sekitar 3 menit melintas). **Keempat wilayah dibuat sekarang**, yaitu Hutan Kelam, Padang Es, Gurun Merah, dan Gunung Api. Semuanya berangkat dari gerbang kota awal, dengan kota tujuan di ujung timur yang masih ditutup sampai 9D-2.
+- **Tata letak** dibuat dari seed tetap per wilayah:
+  - jalan utama berkelok dari barat ke timur, dengan 4–6 cabang;
+  - 2 sungai dengan jembatan di setiap persilangan jalan, dan beberapa danau (di Gunung Api berupa kolam lava);
+  - rumpun pohon dan batu khas biome;
+  - reruntuhan.
+  
+  Musuh dasar sementara memakai jenis yang sudah ada, dengan campuran berbeda per biome; varian biome menyusul di 9D-4.
+- **Gerbang dungeon tidak lagi di kota.** Penjaga Rolan hanya mengantar ke wilayah.
+  - Letak gerbang diacak **per karakter** (`world.seed` di save), di pita level yang sesuai dan tidak jauh dari jalan atau cabangnya.
+  - Pembagian dungeon: Bayangan dan Hutan Jamur di Hutan Kelam, Gua Kristal di Padang Es, Benteng Lava di Gunung Api. Gurun Merah mendapat Makam Pasir di 9D-4.
+- **Menemukan gerbang:** gerbang tercatat begitu masuk radius pandang, lalu tampil di peta. Dekati gerbang dan tekan E untuk memilih lantai.
+  - Pulang lewat portal emas: kembali ke wilayah di depan gerbang.
+  - Tumbang di dungeon: bangun di kota (aturan §13.4).
+- **Ekspedisi** (tab di Papan Tugas):
+  - Satu ekspedisi aktif per dungeon pilihan, dengan rentang level yang disarankan: "bersihkan N lantai".
+  - Gerbangnya ditandai di peta walau masih berkabut, dan panah di layar menunjuk ke arahnya.
+  - Hadiah berupa koin, EXP, dan Lencana; diklaim di papan.
+- **Peta:** kabut dengan petak 150 dan radius 350. Peta mini menampilkan jendela sekitar pemain, sedangkan peta penuh menampilkan seluruh wilayah.
+- **Save versi 12:**
+  - `world { seed }`;
+  - `found` (dungeon yang gerbangnya ditemukan);
+  - `expedition` (`null` atau `{ dungeon, need, have }`).
+  - `migrate()` v11 → v12 membuat seed dari `createdAt`, menganggap dungeon yang pernah dimasuki sudah ditemukan, dan mengosongkan kabut lama karena petanya berubah.

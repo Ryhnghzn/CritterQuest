@@ -69,4 +69,23 @@ describe('gear per varian', () => {
       for (const slot of ['helm', 'armor', 'boots', 'amulet', 'ring']) drawGearIcon(fakeCtx(), { slot, classId: null, variant: tier, rarity: 5 }, 32, 1);
     }
   });
+
+  it('tiap rarity (Biasa–Mitos) bisa digambar di badan (diam & menyerang) dan sebagai ikon', async () => {
+    const { drawGearIcon } = await import('./gear.js');
+    for (let rarity = 0; rarity < 6; rarity++) {
+      for (const classId of Object.keys(CLASSES)) {
+        const gear = Object.fromEntries(['weapon', 'helm', 'armor', 'boots'].map((s) => [s, { tier: rarity, rarity }]));
+        for (const pose of [{ t: 2 }, { attack: 0.8, t: 3.3 }]) drawDoll(fakeCtx(), classId, { hair: 0, hairColor: 0, gear }, pose);
+        drawGearIcon(fakeCtx(), { slot: 'weapon', classId, variant: 6, rarity }, 32, 2.5);
+      }
+      for (const slot of ['helm', 'armor', 'boots', 'amulet', 'ring']) drawGearIcon(fakeCtx(), { slot, classId: null, variant: 3, rarity }, 32, 2.5);
+    }
+  });
+
+  it('helm Mitos menutupi rambut, lingkar Runa biasa tidak', async () => {
+    const { helmHidesHair } = await import('./gear.js');
+    expect(helmHidesHair(4, 3)).toBe(false);
+    expect(helmHidesHair(4, 5)).toBe(true);
+    expect(helmHidesHair(2, 0)).toBe(true);
+  });
 });

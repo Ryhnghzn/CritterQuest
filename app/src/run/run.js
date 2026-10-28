@@ -1,7 +1,7 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
 import { tr, t } from '../i18n.js';
-import { rand, rrange, rint, resetRng } from '../core/rng.js';
+import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT } from '../data/balance.js';
 import { expToNext } from '../meta/character.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
@@ -18,6 +18,10 @@ import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 import { startField, stepField, confineFieldEnemy } from './field.js';
 import { FIELD } from '../data/world.js';
+import { Vfx } from './vfx.js';
+import { stepHitFx, impactFx, stepPlayerFx } from './skillfx.js';
+import { bloodThread, thornsBurst, killBlast, phoenixRise, shieldFlash, goldGlint } from './auraevents.js';
+import { SHAKE, SHAKE_DECAY, HITSTOP, FLOATER, PALETTES, elementOf } from '../data/fx.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 
@@ -43,10 +47,12 @@ export class Game {
     this.hazards = [];    // telegraphed danger zones
     this.pulses = [];     // expanding rings (heal, blast) — visual only
     this.gems = [];
-    this.particles = [];
+    this.vfx = new Vfx(); // particles, rings, cracks, flashes (run/vfx.js) — visual only
     this.floaters = [];
     this.state = ST.TITLE;
     this.shake = 0;
+    this.hitStop = 0;     // seconds the loop holds the simulation (main.js), set by addHitStop
+    this.weaponRarity = 0; // weapon rarity, colours attack sparks (set by main.js)
     this.reset(DEFAULT_START);
     const run = this;
     this.hitCtx = {
@@ -80,7 +86,7 @@ export class Game {
     this.enemies.length = 0; this.hits.length = 0;
     this.shots.length = 0; this.hazards.length = 0; this.pulses.length = 0;
     this.gems.length = 0;
-    this.particles.length = 0; this.floaters.length = 0;
+    this.vfx.clear(); this.floaters.length = 0;
     this.px = 0; this.py = 0;
     this.intent = IDLE;
     this.moveX = 0; this.moveY = 0;
@@ -113,6 +119,7 @@ export class Game {
     this.floorT = 0; this.floorClear = false; this.clearT = 0;
     this.portals = []; this.exit = null;
     this.field = false; this.region = null; this.fmap = null; this.fog = null; this.exitTo = null; this.night = false; // open world (run/field.js)
+    this.gates = []; this.gatesFound = []; this.nearGate = null; this.target = null;
     this.baseStats = { ...stats }; // final stats before potion buffs
     this.stats = { ...stats, hp };
     this.potions = { ...potions }; this.belt = belt.slice(); this.potionCd = 0;
@@ -121,7 +128,8 @@ export class Game {
     this.dodgeCdMul = 1;
     this.fx = { ...effects }; this.fxShieldT = 0; this.frenzyOn = false; this.revived = false;
     this.applyBuffs();
-    this.invuln = 0; this.flash = 0; this.shake = 0;
+    this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0;
+    this.dashSid = null; this.buffSid = null; // skill whose dash trail / buff aura is showing (run/skillfx.js)
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
   }
@@ -131,7 +139,7 @@ export class Game {
   explore(setup) {
     this.reset(setup);
     this.fog = setup.fog || null;
-    startField(this, setup.region, setup.at);
+    startField(this, setup.region, setup.at, setup.gates, setup.target);
     this.state = ST.PLAY;
   }
 
@@ -209,13 +217,15 @@ export class Game {
 
     if (this.invuln > 0) this.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;
-    if (this.shake > 0) this.shake -= dt * 3;
+    if (this.shake > 0) this.shake -= dt * SHAKE_DECAY;
     if (this.bannerT > 0) this.bannerT -= dt;
 
     stepAttack(this, this.intent, dt);
     stepSkills(this, this.intent, dt);
     this.stepPotion(dt);
     this.stepEffects(dt);
+    for (const h of this.hits) stepHitFx(this, h, dt);
+    stepPlayerFx(this, dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
     if (this.field) stepField(this, dt); else stepDungeon(this, dt);
     this.updateEnemies(dt);
@@ -226,6 +236,7 @@ export class Game {
     if (this.state !== ST.PLAY) return; // died this step: no gem pickup after death
     this.updateGems(dt);
     this.updateParticles(dt);
+    this.vfx.step(dt);
     this.updateFloaters(dt);
     if (this.exit) this.takeExit();
   }
@@ -315,11 +326,16 @@ export class Game {
       const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy) || 1;
       e.kx += (dx / d) * h.knock; e.ky += (dy / d) * h.knock;
     }
-    if (fx.lifesteal) s.hp = Math.min(s.maxHp, s.hp + dmg * fx.lifesteal);
+    if (fx.lifesteal) { s.hp = Math.min(s.maxHp, s.hp + dmg * fx.lifesteal); bloodThread(this, e); }
     if (fx.chain && !h.chained && rand() < fx.chain) this.chainFrom(e);
     e.flash = 0.12;
     if (h.freeze) e.frozen = Math.max(e.frozen, h.freeze);
-    this.floaters.push({ x: e.x + rrange(-4, 4), y: e.y - e.r, text: String(Math.round(dmg)), color: crit ? '#ffd166' : '#ffffff', life: 0.7, big: crit });
+    const el = elementOf(h.fx);
+    const kind = h.ult ? 'ult' : crit ? 'crit' : 'normal';
+    const color = kind === 'normal' ? '#ffffff' : el === 'steel' ? '#ffd166' : PALETTES[el][1];
+    this.addFloater(e.x + rrange(-4, 4), e.y - e.r, String(Math.round(dmg)), color, kind);
+    impactFx(this, h, e, crit);
+    if (crit) this.addHitStop('crit');
     sfx.hit();
   }
 
@@ -376,7 +392,7 @@ export class Game {
       const rr = e.r + 10;
       if (e.dmg > 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg)) {
         const a = Math.atan2(this.py - e.y, this.px - e.x);
-        if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; }
+        if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; thornsBurst(this, e); }
         e.kx = -Math.cos(a) * 220; e.ky = -Math.sin(a) * 220;
         if (this.state !== ST.PLAY) return;
       }
@@ -388,10 +404,10 @@ export class Game {
   hurtPlayer(raw) {
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
     let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul;
-    if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; }
+    if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; shieldFlash(this); }
     this.stats.hp -= dmg;
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
-    this.invuln = 0.7; this.flash = 0.25; this.shake = 0.6;
+    this.invuln = 0.7; this.flash = 0.25; this.addShake('medium');
     sfx.hurt();
     this.spawnBurst(this.px, this.py, '#ff5a6e', 8);
     if (this.stats.hp <= 0) this.die();
@@ -407,8 +423,9 @@ export class Game {
     sfx.enemyDie();
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);
     dropLoot(this, e);
+    if (this.fx.goldfind) goldGlint(this, e);
     if (this.fx.explode) {
-      this.spawnBurst(e.x, e.y, '#ff9a3c', 12);
+      killBlast(this, e.x, e.y);
       for (const o of this.enemies) {
         if (o !== e && o.hp > 0 && (o.x - e.x) ** 2 + (o.y - e.y) ** 2 < FX.explodeRadius ** 2) { o.hp -= this.stats.atk * this.fx.explode; o.flash = 0.12; }
       }
@@ -420,7 +437,9 @@ export class Game {
         const a = (i / 8) * Math.PI * 2;
         this.gems.push({ x: e.x + Math.cos(a) * 30, y: e.y + Math.sin(a) * 30, v: 5, mag: false, big: true, t: rand() * 6 });
       }
-      this.shake = 1;
+      this.addShake('heavy'); this.addHitStop('boss');
+      this.vfx.ring(e.x, e.y, { r1: e.r * 4, life: 0.6, color: '#c26bd8', width: 5 });
+      this.vfx.flash('#f0d8ff', 0.35, 0.2);
       return;
     }
     // xp gem
@@ -487,7 +506,7 @@ export class Game {
       this.stats.hp = this.stats.maxHp * this.fx.phoenix;
       this.invuln = FX.phoenixInvuln;
       this.showBanner(tr('Bangkit dari abu!'));
-      this.spawnBurst(this.px, this.py, '#ff9a3c', 30);
+      phoenixRise(this);
       sfx.levelup();
       return;
     }
@@ -499,40 +518,38 @@ export class Game {
 
   // ——————————————— fx ———————————————
   spawnBurst(x, y, color, n) {
-    for (let i = 0; i < n; i++) {
-      const a = rand() * Math.PI * 2, sp = rrange(30, 140);
-      this.particles.push({
-        x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        life: rrange(0.25, 0.6), maxLife: 0.6, color, size: rint(2, 4), line: false,
-      });
-    }
+    this.vfx.burst('kill', x, y, color, { n });
   }
 
   spawnLightning(x1, y1, x2, y2) {
-    this.particles.push({ x: x1, y: y1, x2, y2, vx: 0, vy: 0, life: 0.32, maxLife: 0.32, color: '#ffe95a', size: 2, line: true });
+    this.vfx.bolt(x1, y1, x2, y2);
+  }
+
+  // tier: 'light' | 'medium' | 'heavy' (data/fx.js SHAKE); the strongest one wins
+  addShake(tier) {
+    this.shake = Math.max(this.shake, SHAKE[tier]);
+  }
+
+  // kind: 'crit' | 'boss' | 'ult' (data/fx.js HITSTOP)
+  addHitStop(kind) {
+    this.hitStop = Math.min(HITSTOP.max, Math.max(this.hitStop, HITSTOP[kind]));
   }
 
   updateParticles(dt) {
     const Q = this.pulses;
     for (let i = Q.length - 1; i >= 0; i--) { if ((Q[i].t -= dt) <= 0) { Q[i] = Q[Q.length - 1]; Q.pop(); } }
-    const P = this.particles;
-    for (let i = P.length - 1; i >= 0; i--) {
-      const p = P[i];
-      p.life -= dt;
-      if (p.life <= 0) { P[i] = P[P.length - 1]; P.pop(); continue; }
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      p.vx *= 0.92; p.vy *= 0.92;
-    }
   }
 
-  addFloater(x, y, text, color) {
-    this.floaters.push({ x, y, text, color, life: 0.8 });
+  // kind: 'normal' | 'crit' | 'ult' (data/fx.js FLOATER); plain text uses normal with a longer life
+  addFloater(x, y, text, color, kind = null) {
+    const life = kind ? FLOATER[kind].life : 0.8;
+    this.floaters.push({ x, y, text, color, kind: kind || 'normal', life, max: life });
   }
   updateFloaters(dt) {
     const F = this.floaters;
     for (let i = F.length - 1; i >= 0; i--) {
       const f = F[i];
-      f.life -= dt; f.y -= 26 * dt;
+      f.life -= dt; f.y -= FLOATER[f.kind].rise * dt;
       if (f.life <= 0) { F[i] = F[F.length - 1]; F.pop(); }
     }
   }
