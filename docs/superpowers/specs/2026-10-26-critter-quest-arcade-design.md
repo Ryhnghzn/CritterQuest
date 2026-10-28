@@ -784,7 +784,13 @@ Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang 
   - Gunung Api: Lendir Magma (membakar), Jamur Bara (ledakan lebih besar, membakar).
 - **Efek pada pemain** (`onHit`): lambat `[−k kecepatan, detik]`; racun/api `[k × damage pukulan per detik, detik]`. Racun dan api tetap melukai walau pemain sedang kebal sesaat setelah dipukul.
 - **Bestiari** bertambah 7 musuh khas. **Save versi 15:** `migrate()` v14 → v15 menambah entri bestiari bernilai 0.
-- **Makam Pasir** (9D-4b): dungeon Gurun Merah dengan bosnya.
+- **Makam Pasir** (9D-4b): dungeon kelima, di Gurun Merah (gerbang di pita 25–70% lebar wilayah, diacak per karakter seperti gerbang lain).
+  - Tingkat kesulitan di antara Hutan Jamur dan Benteng Lava: HP ×5,5, damage ×2,5, hadiah ×4,2, level item +21.
+  - Musuhnya Kalajengking, Cacing Pasir, Lendir Pasir, Burung Nasar, dan musuh lama.
+  - **Bos Raja Mumi:** spiral & cincin pasir, hantaman bertubi, terjangan, memanggil kalajengking.
+  - **Ekspedisi** LV 20–32.
+  - Tampilan makam: lantai batu pasir berdebu pasir, pilar berukir, sarkofagus, guci, obor hangat.
+  - **Save versi 16:** `migrate()` v15 → v16 menambah rekor `tomb` dan entri bestiari `tombboss`.
 
 ### 25.5 Dunia besar & gerbang dungeon di dunia (9D-1b, permintaan 2026-10-27)
 - **Ukuran wilayah:** 20000 × 12000 (sekitar 3 menit melintas). **Keempat wilayah dibuat sekarang**, yaitu Hutan Kelam, Padang Es, Gurun Merah, dan Gunung Api. Semuanya berangkat dari gerbang kota awal, dengan kota tujuan di ujung timur yang masih ditutup sampai 9D-2.

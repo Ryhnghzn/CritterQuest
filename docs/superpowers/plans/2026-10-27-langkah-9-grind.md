@@ -82,6 +82,9 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Gambar 14 musuh, cacing di bawah pasir, efek status pemain; kamus EN
 - [x] Verifikasi: tes, build, screenshot PC & HP
 #### 9D-4b — Makam Pasir
+- [x] Dungeon `tomb` (5 lantai, musuh gurun), bos Raja Mumi, gerbang di Gurun Merah, ekspedisi; bestiari; save v16 — tes
+- [x] Gambar Raja Mumi & dekor makam; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
 ## 9F — Petualangan: quest utama & side quest (permintaan 2026-10-28; dikerjakan setelah 9D-3 & 9D-4)
 Keputusan pemilik (2026-10-28):
 - **Quest utama** menuntun ke semua kota & dungeon; setelah 5 bos dungeon (termasuk Makam Pasir) terbuka **dungeon akhir baru** dengan bos akhir bertahap, ada akhir cerita.

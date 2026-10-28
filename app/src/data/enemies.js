@@ -107,6 +107,17 @@ export const ENEMIES = {
     windup: 0.9, dash: { speed: 400, time: 0.6 }, rest: 0.6,
     summon: { type: 'bomber', count: 3, max: 6 },
   },
+  // Raja Mumi (Makam Pasir): sand rings and spirals, buried slams, calls scorpions.
+  tombboss: {
+    name: 'Raja Mumi', boss: true, hp: 900, speed: 34, dmg: 26, r: 32, xp: 0, sprite: 'tombboss', score: 100,
+    ai: 'boss', every: 2.4, enrageAt: 0.5, enragedEvery: 1.6,
+    patterns: ['spiral', 'slam', 'summon', 'ring', 'charge'],
+    ring: { count: 16, speed: 140, dmg: 13, waves: 3, gap: 0.4, r: 7, color: '#e8c070' },
+    spiral: { arms: 4, time: 2.6, every: 0.11, speed: 150, dmg: 11, turn: 2.4, r: 6, color: '#f2d38a' },
+    slam: { count: 5, gap: 0.35, fuse: 0.85, radius: 80, dmg: 30 },
+    windup: 0.8, dash: { speed: 440, time: 0.55 }, rest: 0.6,
+    summon: { type: 'scorpion', count: 2, max: 4 },
+  },
   // Raja Lava (Benteng Lava): heavy fire slams and fire rings.
   lavaboss: {
     name: 'Raja Lava', boss: true, hp: 900, speed: 34, dmg: 30, r: 34, xp: 0, sprite: 'lavaboss', score: 100,

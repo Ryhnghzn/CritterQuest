@@ -214,6 +214,53 @@ export const ENEMY_ART = {
     for (const x of [-0.2, 0.35]) { ellipse(g, x * r, -r * 0.35, r * 0.14, r * 0.1); g.fillStyle = '#ffd36b'; g.shadowColor = '#ff8a3c'; g.shadowBlur = r * 0.5; g.fill(); g.shadowBlur = 0; }
     ellipse(g, r * 0.08, r * 0.15, r * 0.4, r * 0.16); g.fillStyle = '#ff6a1a'; g.shadowColor = '#ff6a1a'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0;
   },
+  tombboss(g, r) { // Raja Mumi: towering mummy in dusty wraps, gold-and-blue headdress, glowing teal eyes
+    // sand swirl at the feet
+    g.save(); g.globalAlpha = 0.45;
+    for (const [x, y, rr] of [[-0.9, 0.75, 0.22], [0.85, 0.7, 0.2], [-0.3, 0.95, 0.18], [0.35, 0.92, 0.16]]) { ellipse(g, x * r, y * r, rr * r, rr * r * 0.45); g.fillStyle = '#d8b27a'; g.fill(); }
+    g.restore();
+    // body: tall wrapped figure
+    g.beginPath(); g.moveTo(-r * 0.85, r * 0.85); g.bezierCurveTo(-r * 1.0, -r * 0.1, -r * 0.7, -r * 0.75, 0, -r * 0.8);
+    g.bezierCurveTo(r * 0.7, -r * 0.75, r * 1.0, -r * 0.1, r * 0.85, r * 0.85); g.quadraticCurveTo(0, r * 1.0, -r * 0.85, r * 0.85);
+    ink(g, grad(g, -r * 0.8, r, '#d9caa4', '#7d6a4a'), r * 0.08);
+    // wrap bands
+    g.save(); g.clip();
+    g.strokeStyle = 'rgba(70,52,30,.55)'; g.lineWidth = r * 0.045;
+    for (let i = 0; i < 9; i++) { const y = -r * 0.6 + i * r * 0.19, tilt = (i % 2 ? 1 : -1) * r * 0.12; g.beginPath(); g.moveTo(-r * 1.1, y - tilt); g.lineTo(r * 1.1, y + tilt); g.stroke(); }
+    g.restore();
+    // loose trailing wraps
+    g.lineCap = 'round'; g.lineWidth = r * 0.1; g.strokeStyle = '#b8a47c';
+    g.beginPath(); g.moveTo(-r * 0.75, r * 0.2); g.quadraticCurveTo(-r * 1.25, r * 0.35, -r * 1.15, r * 0.85); g.stroke();
+    g.beginPath(); g.moveTo(r * 0.7, -r * 0.1); g.quadraticCurveTo(r * 1.3, 0, r * 1.25, r * 0.5); g.stroke();
+    g.lineWidth = r * 0.03; g.strokeStyle = OUT;
+    g.beginPath(); g.moveTo(-r * 0.75, r * 0.2); g.quadraticCurveTo(-r * 1.25, r * 0.35, -r * 1.15, r * 0.85); g.stroke();
+    // gold collar with teal inlay
+    g.beginPath(); g.ellipse(0, -r * 0.05, r * 0.72, r * 0.32, 0, 0, Math.PI); g.closePath();
+    ink(g, grad(g, -r * 0.05, r * 0.3, '#ffd36b', '#a8761e'), r * 0.05);
+    g.strokeStyle = '#2fb8a8'; g.lineWidth = r * 0.06;
+    g.beginPath(); g.ellipse(0, -r * 0.05, r * 0.55, r * 0.2, 0, 0.15, Math.PI - 0.15); g.stroke();
+    // headdress: striped gold & deep-blue cloth falling to the shoulders
+    g.beginPath(); g.moveTo(-r * 0.62, r * 0.05); g.lineTo(-r * 0.5, -r * 0.95); g.quadraticCurveTo(0, -r * 1.35, r * 0.5, -r * 0.95); g.lineTo(r * 0.62, r * 0.05);
+    g.lineTo(r * 0.32, -r * 0.1); g.lineTo(r * 0.3, -r * 0.6); g.lineTo(-r * 0.3, -r * 0.6); g.lineTo(-r * 0.32, -r * 0.1); g.closePath();
+    ink(g, grad(g, -r * 1.3, 0, '#ffd36b', '#b8862a'), r * 0.06);
+    g.save(); g.clip();
+    g.strokeStyle = '#24407a'; g.lineWidth = r * 0.08;
+    for (let i = 0; i < 6; i++) { const y = -r * 1.05 + i * r * 0.2; g.beginPath(); g.moveTo(-r * 0.8, y); g.lineTo(r * 0.8, y); g.stroke(); }
+    g.restore();
+    // face: dark wrapped mask
+    g.beginPath(); g.roundRect(-r * 0.3, -r * 0.82, r * 0.6, r * 0.62, r * 0.14); ink(g, grad(g, -r * 0.8, -r * 0.2, '#8a7656', '#4a3a26'), r * 0.05);
+    g.strokeStyle = 'rgba(30,20,10,.5)'; g.lineWidth = r * 0.03;
+    for (const y of [-0.66, -0.42, -0.28]) { g.beginPath(); g.moveTo(-r * 0.3, y * r); g.lineTo(r * 0.3, (y + 0.05) * r); g.stroke(); }
+    glowEye(g, -r * 0.12, -r * 0.55, r * 0.09, '#5affd8', 0.2); glowEye(g, r * 0.12, -r * 0.55, r * 0.09, '#5affd8', -0.2);
+    // cobra-like crest on the brow (gold with a teal jewel)
+    g.beginPath(); g.moveTo(-r * 0.08, -r * 1.02); g.quadraticCurveTo(0, -r * 1.32, r * 0.08, -r * 1.02); g.closePath(); ink(g, '#ffc94d', r * 0.04);
+    g.beginPath(); g.arc(0, -r * 1.12, r * 0.05, 0, TAU); g.fillStyle = '#5affd8'; g.shadowColor = '#5affd8'; g.shadowBlur = r * 0.4; g.fill(); g.shadowBlur = 0;
+    // sceptre-like crook arm
+    g.lineWidth = r * 0.09; g.strokeStyle = '#ffc94d';
+    g.beginPath(); g.moveTo(r * 0.55, r * 0.6); g.lineTo(r * 0.75, -r * 0.55); g.quadraticCurveTo(r * 0.85, -r * 0.85, r * 1.05, -r * 0.7); g.stroke();
+    g.lineWidth = r * 0.03; g.strokeStyle = OUT; g.stroke();
+    g.lineCap = 'butt';
+  },
   boss(g, r) { // Raja Maw: horned maw beast with a tarnished crown
     for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(sd * r * 0.55, -r * 0.7); g.quadraticCurveTo(sd * r * 1.25, -r * 1.0, sd * r * 1.05, -r * 1.55); g.quadraticCurveTo(sd * r * 0.9, -r * 1.05, sd * r * 0.3, -r * 0.85); g.closePath(); ink(g, '#cfc2a8', r * 0.05); }
     g.beginPath();

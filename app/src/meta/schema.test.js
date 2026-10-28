@@ -211,6 +211,17 @@ describe('save versi 2', () => {
     expect(r.data.records.bestiary.sandworm).toBe(0);
   });
 
+  it('migrasi v15 → v16: rekor Makam Pasir & bos barunya mulai dari 0', () => {
+    const v15 = structuredClone({ ...fresh(), version: 15 });
+    delete v15.records.dungeons.tomb; delete v15.records.bestiary.tombboss;
+    v15.records.dungeons.shadow.clears = 2;
+    const r = readSlot(v15);
+    expect(r.status).toBe('ok');
+    expect(r.data.records.dungeons.tomb).toEqual({ bestFloor: 0, clears: 0 });
+    expect(r.data.records.dungeons.shadow.clears).toBe(2);
+    expect(r.data.records.bestiary.tombboss).toBe(0);
+  });
+
   it('menolak catatan toko & Gudang yang rusak', () => {
     expect(validateSlot({ ...fresh(), shops: { 'mars:weapons': { day: 1, sold: {} } } })).toContain('shops');
     expect(validateSlot({ ...fresh(), shops: { 'rimba:weapons': { day: 1, sold: { 0: 0 } } } })).toContain('shops');

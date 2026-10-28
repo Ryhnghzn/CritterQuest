@@ -6,7 +6,7 @@ import {
 
 const NOW = 1761436800000;
 const dungeonRecs = (shadow = { bestFloor: 0, clears: 0 }, more = {}) => ({
-  shadow, crystal: { bestFloor: 0, clears: 0 }, fungus: { bestFloor: 0, clears: 0 }, lava: { bestFloor: 0, clears: 0 }, ...more,
+  shadow, crystal: { bestFloor: 0, clears: 0 }, fungus: { bestFloor: 0, clears: 0 }, tomb: { bestFloor: 0, clears: 0 }, lava: { bestFloor: 0, clears: 0 }, ...more,
 });
 const pots = (o = {}) => ({ red: 0, big: 0, shield: 0, wind: 0, rage: 0, ...o });
 const make = (over = {}) => createCharacter(
@@ -30,7 +30,7 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 15, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 16, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
       mats: { dust: 0, crystal: 0, core: 0 },
@@ -52,7 +52,7 @@ describe('createCharacter', () => {
       equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
       records: {
         trips: 0, kills: 0, bossKills: 0, dungeons: dungeonRecs(), uniques: [],
-        bestiary: { slink: 0, mini: 0, dart: 0, tank: 0, spitter: 0, charger: 0, summoner: 0, healer: 0, bomber: 0, shielder: 0, wolf: 0, yeti: 0, icewisp: 0, scorpion: 0, sandworm: 0, imp: 0, salamander: 0, boss: 0, crystalboss: 0, sporeboss: 0, lavaboss: 0 },
+        bestiary: { slink: 0, mini: 0, dart: 0, tank: 0, spitter: 0, charger: 0, summoner: 0, healer: 0, bomber: 0, shielder: 0, wolf: 0, yeti: 0, icewisp: 0, scorpion: 0, sandworm: 0, imp: 0, salamander: 0, boss: 0, crystalboss: 0, sporeboss: 0, tombboss: 0, lavaboss: 0 },
       },
     });
   });

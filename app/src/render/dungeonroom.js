@@ -1,7 +1,8 @@
 // Dungeon room look (spec §18.3): any room shape from run/room.js drawn in the
 // theme of its dungeon — floor slabs, walls along the outline, lane corridors,
 // pillars, and decor per theme (torches & mushrooms, crystals, giant
-// mushrooms, lava cracks & braziers). Decor is placed once per room.
+// mushrooms, lava cracks & braziers, the tomb's sand drifts, sarcophagi, urns
+// and treasure). Decor is placed once per room.
 import { ROOM } from '../data/dungeon.js';
 import { OUT } from '../art/sprites.js';
 import { outline, inside } from '../run/room.js';
@@ -64,9 +65,11 @@ export function dress(room, theme) {
     }
     return { x: 200, y: 0 };
   };
-  d = { lamps: [], glows: [], rubble: [], cracks: [] };
+  d = { lamps: [], glows: [], rubble: [], cracks: [], sand: [], falls: [] };
   const [g0, g1] = theme.glow;
-  for (const p of wall) d.lamps.push({ x: p.x - p.nx * 4, y: p.y - p.ny * 4, kind: theme.decor === 'lava' ? 'brazier' : theme.decor === 'crystal' ? 'crystal' : 'torch' });
+  const tomb = theme.decor === 'tomb';
+  const lampKind = theme.decor === 'lava' ? 'brazier' : theme.decor === 'crystal' ? 'crystal' : tomb ? 'sconce' : 'torch';
+  for (const p of wall) d.lamps.push({ x: p.x - p.nx * 4, y: p.y - p.ny * 4, kind: lampKind });
   const glowCount = theme.decor === 'shroom' ? 16 : theme.decor === 'crystal' ? 14 : 12;
   for (let i = 0; i < glowCount; i++) {
     const at = theme.decor === 'lava' ? onFloor() : nearWall();
@@ -75,6 +78,11 @@ export function dress(room, theme) {
     for (let k = 0, n = 2 + Math.floor(r() * 3); k < n; k++) caps.push({ dx: (r() - 0.5) * 22, dy: (r() - 0.5) * 12, s: 0.6 + r() * 0.7 });
     caps.sort((a, b) => a.dy - b.dy);
     d.glows.push({ ...at, rgb: cool ? g0 : g1, caps, big: theme.decor === 'shroom' && r() < 0.4 });
+    if (tomb) { const k = r(); d.glows[d.glows.length - 1].item = k < 0.3 ? 'sarco' : k < 0.7 ? 'urn' : 'coins'; d.glows[d.glows.length - 1].rgb = k < 0.3 ? g1 : g0; }
+  }
+  if (tomb) { // sand piled against the walls, and a few spots where sand trickles from the ceiling
+    for (let i = 0; i < 26; i++) { const p = wall[Math.floor(r() * wall.length)]; d.sand.push({ x: p.x - p.nx * 18, y: p.y - p.ny * 18, rx: 30 + r() * 40, ry: 12 + r() * 10, rot: Math.atan2(p.ny, p.nx) + Math.PI / 2 }); }
+    for (let i = 0; i < 5; i++) d.falls.push({ ...onFloor(), ph: r() });
   }
   if (theme.decor === 'lava') {
     for (let i = 0; i < 9; i++) {
@@ -133,6 +141,15 @@ export function drawRoom(g, room, theme, ground, t, visible) {
     g.lineWidth = 6; g.strokeStyle = '#2a120c'; g.stroke();
     g.lineWidth = 3; g.strokeStyle = `rgba(255,${110 + Math.sin(t * 2 + c[0][0]) * 30},40,.95)`; g.stroke();
   }
+  for (const m of d.sand) {
+    if (!visible(m.x, m.y, 70)) continue;
+    g.beginPath(); g.ellipse(m.x, m.y, m.rx, m.ry, m.rot, 0, TAU); g.fillStyle = 'rgba(214,176,112,.55)'; g.fill();
+    g.beginPath(); g.ellipse(m.x - 4, m.y - 3, m.rx * 0.6, m.ry * 0.5, m.rot, 0, TAU); g.fillStyle = 'rgba(240,210,150,.35)'; g.fill();
+  }
+  for (const f of d.falls) { // little sand cones under the trickles
+    if (!visible(f.x, f.y, 30)) continue;
+    g.beginPath(); g.ellipse(f.x, f.y, 14, 6, 0, 0, TAU); g.fillStyle = 'rgba(214,176,112,.6)'; g.fill();
+  }
   for (const r of d.rubble) {
     if (!visible(r.x, r.y)) continue;
     if (r.bone) {
@@ -153,6 +170,7 @@ export function drawRoom(g, room, theme, ground, t, visible) {
 
 function pillar(g, q, theme) {
   g.beginPath(); g.ellipse(q.x, q.y + q.r * 0.5, q.r * 1.1, q.r * 0.45, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.4)'; g.fill();
+  if (theme.decor === 'tomb') { tombPillar(g, q); return; }
   g.beginPath(); g.roundRect(q.x - q.r, q.y - q.r * 2.4, q.r * 2, q.r * 2.9, q.r * 0.4);
   const gr = g.createLinearGradient(q.x - q.r, 0, q.x + q.r, 0);
   gr.addColorStop(0, theme.wall); gr.addColorStop(0.5, '#8a86a0'); gr.addColorStop(1, theme.wall);
@@ -160,8 +178,36 @@ function pillar(g, q, theme) {
   g.beginPath(); g.ellipse(q.x, q.y - q.r * 2.4, q.r, q.r * 0.4, 0, 0, TAU); g.fillStyle = '#9a96b0'; g.fill(); g.stroke();
 }
 
+// sandstone column with carved bands of made-up glyphs and a gold-painted capital
+function tombPillar(g, q) {
+  const x = q.x - q.r, y = q.y - q.r * 2.4, w = q.r * 2, h = q.r * 2.9;
+  g.beginPath(); g.rect(x, y, w, h);
+  const gr = g.createLinearGradient(x, 0, x + w, 0);
+  gr.addColorStop(0, '#6a5236'); gr.addColorStop(0.5, '#c9a878'); gr.addColorStop(1, '#6a5236');
+  g.fillStyle = gr; g.fill(); g.lineWidth = 2; g.strokeStyle = OUT; g.stroke();
+  // glyph bands: simple shapes (eye, wave, sun, staff) that read as carving, not text
+  g.strokeStyle = 'rgba(60,40,20,.75)'; g.lineWidth = 1.2;
+  for (let row = 0; row < 3; row++) {
+    const yy = y + h * (0.22 + row * 0.25), sx = q.r * 0.45;
+    const kind = (row + Math.round(q.x)) % 4;
+    g.beginPath();
+    if (kind === 0) { g.ellipse(q.x, yy, sx, sx * 0.45, 0, 0, TAU); g.moveTo(q.x + 1.5, yy); g.arc(q.x, yy, 1.5, 0, TAU); }
+    else if (kind === 1) { g.moveTo(q.x - sx, yy); for (let i = 1; i <= 4; i++) g.lineTo(q.x - sx + (i * sx) / 2, yy + (i % 2 ? -3 : 3)); }
+    else if (kind === 2) { g.arc(q.x, yy, sx * 0.5, 0, TAU); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; g.moveTo(q.x + Math.cos(a) * sx * 0.7, yy + Math.sin(a) * sx * 0.7); g.lineTo(q.x + Math.cos(a) * sx, yy + Math.sin(a) * sx); } }
+    else { g.moveTo(q.x, yy - sx); g.lineTo(q.x, yy + sx); g.moveTo(q.x - sx * 0.5, yy - sx * 0.5); g.quadraticCurveTo(q.x, yy - sx * 1.1, q.x + sx * 0.5, yy - sx * 0.5); }
+    g.stroke();
+  }
+  g.beginPath(); g.ellipse(q.x, y, q.r * 1.15, q.r * 0.45, 0, 0, TAU); g.fillStyle = '#d9b46a'; g.fill(); g.lineWidth = 2; g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.ellipse(q.x, y, q.r * 0.8, q.r * 0.28, 0, 0, TAU); g.fillStyle = '#2fa89a'; g.fill();
+}
+
 function lampBase(g, l) {
-  if (l.kind === 'brazier') {
+  if (l.kind === 'sconce') { // sandstone fire bowl with a gold rim
+    g.beginPath(); g.rect(l.x - 3, l.y - 10, 6, 10); g.fillStyle = '#8a6a44'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.moveTo(l.x - 10, l.y - 16); g.lineTo(l.x + 10, l.y - 16); g.quadraticCurveTo(l.x + 8, l.y - 9, l.x, l.y - 9); g.quadraticCurveTo(l.x - 8, l.y - 9, l.x - 10, l.y - 16); g.closePath();
+    g.fillStyle = '#b8925c'; g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(l.x - 10, l.y - 16); g.lineTo(l.x + 10, l.y - 16); g.lineWidth = 2; g.strokeStyle = '#ffc94d'; g.stroke();
+  } else if (l.kind === 'brazier') {
     g.beginPath(); g.moveTo(l.x - 9, l.y - 14); g.lineTo(l.x + 9, l.y - 14); g.lineTo(l.x + 5, l.y - 4); g.lineTo(l.x - 5, l.y - 4); g.closePath();
     g.fillStyle = '#3a2a22'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
     g.beginPath(); g.rect(l.x - 1.5, l.y - 4, 3, 6); g.fillStyle = '#2a1d19'; g.fill();
@@ -189,6 +235,7 @@ function glowThing(g, s, theme) {
     }
     return;
   }
+  if (theme.decor === 'tomb') { tombThing(g, s); return; }
   if (theme.decor === 'lava') {
     g.beginPath(); g.ellipse(s.x, s.y, 16, 7, 0, 0, TAU); g.fillStyle = '#2a120c'; g.fill();
     g.beginPath(); g.ellipse(s.x, s.y, 12, 5, 0, 0, TAU); g.fillStyle = `rgb(${s.rgb})`; g.fill();
@@ -206,6 +253,35 @@ function glowThing(g, s, theme) {
   }
 }
 
+// tomb furniture: a sarcophagus with a teal-gemmed lid, clay urns, heaps of coins
+function tombThing(g, s) {
+  const { x, y } = s;
+  if (s.item === 'sarco') {
+    g.beginPath(); g.ellipse(x, y + 4, 26, 8, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill();
+    g.beginPath(); g.roundRect(x - 24, y - 14, 48, 18, 7); g.fillStyle = '#8a6a44'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.roundRect(x - 22, y - 20, 44, 12, 6); g.fillStyle = '#d9b46a'; g.fill(); g.stroke();
+    g.strokeStyle = '#24407a'; g.lineWidth = 2;
+    for (const dx of [-12, -4, 4, 12]) { g.beginPath(); g.moveTo(x + dx, y - 19); g.lineTo(x + dx, y - 9); g.stroke(); }
+    g.beginPath(); g.arc(x - 16, y - 14, 3, 0, TAU); g.fillStyle = `rgb(${s.rgb})`; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
+    return;
+  }
+  if (s.item === 'urn') {
+    for (const c of s.caps) {
+      const ux = x + c.dx, uy = y + c.dy, k = 0.8 + c.s * 0.5;
+      g.beginPath(); g.ellipse(ux, uy, 6 * k, 2.5 * k, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill();
+      g.beginPath(); g.moveTo(ux - 3 * k, uy - 15 * k); g.quadraticCurveTo(ux - 9 * k, uy - 9 * k, ux - 4 * k, uy); g.lineTo(ux + 4 * k, uy);
+      g.quadraticCurveTo(ux + 9 * k, uy - 9 * k, ux + 3 * k, uy - 15 * k); g.closePath();
+      g.fillStyle = '#a8603a'; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
+      g.beginPath(); g.moveTo(ux - 6 * k, uy - 8 * k); g.lineTo(ux + 6 * k, uy - 8 * k); g.strokeStyle = '#2fa89a'; g.lineWidth = 1.4; g.stroke();
+    }
+    return;
+  }
+  // coins: a low heap with a few gems
+  g.beginPath(); g.ellipse(x, y, 16, 6, 0, 0, TAU); g.fillStyle = '#b8862a'; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.ellipse(x, y - 3, 11, 5, 0, 0, TAU); g.fillStyle = '#ffd36b'; g.fill();
+  for (const c of s.caps) { g.beginPath(); g.arc(x + c.dx * 0.6, y + c.dy * 0.4 - 4, 1.6 * c.s, 0, TAU); g.fillStyle = '#fff2b0'; g.fill(); }
+}
+
 // lights for the room decor
 export function decorLights(room, theme, t, out) {
   const d = dress(room, theme);
@@ -213,7 +289,7 @@ export function decorLights(room, theme, t, out) {
     const f = 1 + Math.sin(t * 9 + i * 1.7) * 0.05 + Math.sin(t * 23 + i) * 0.03;
     out.push({ x: l.x, y: l.y - 12, r: (l.kind === 'crystal' ? 140 : 180) * f, rgb: l.kind === 'crystal' ? theme.glow[0] : theme.light, tint: 0.13 });
   });
-  for (const s of d.glows) out.push({ x: s.x, y: s.y - 4, r: s.big ? 120 : 75, rgb: s.rgb, tint: 0.12 });
+  for (const s of d.glows) out.push({ x: s.x, y: s.y - 4, r: s.big ? 120 : s.item === 'sarco' ? 60 : 75, rgb: s.rgb, tint: s.item ? 0.08 : 0.12 });
   for (const c of d.cracks) out.push({ x: c[2][0], y: c[2][1], r: 110, rgb: '255,100,30', tint: 0.12 });
 }
 
@@ -231,13 +307,25 @@ export function decorGlow(g, room, theme, t) {
   };
   d.lamps.forEach((l, i) => {
     if (l.kind === 'torch') flame(l.x, l.y - 22, 1, i * 2);
+    else if (l.kind === 'sconce') { flame(l.x - 3, l.y - 17, 0.8, i); flame(l.x + 3, l.y - 17, 0.7, i + 3); }
     else if (l.kind === 'brazier') { flame(l.x - 4, l.y - 15, 0.9, i); flame(l.x + 4, l.y - 15, 0.8, i + 2); }
     else { // crystal sparkle
       const k = 0.5 + 0.5 * Math.sin(t * 3 + i);
       g.beginPath(); g.arc(l.x + 2, l.y - 20, 2 + k * 2, 0, TAU); g.fillStyle = `rgba(${theme.glow[0]},${0.4 + k * 0.5})`; g.fill();
     }
   });
+  for (const f of d.falls) { // sand trickling from cracks in the ceiling, on and off
+    const on = (t * 0.15 + f.ph) % 1;
+    if (on > 0.55) continue;
+    const a = Math.min(1, on * 8, (0.55 - on) * 8) * 0.8;
+    for (let i = 0; i < 8; i++) {
+      const ph = (t * 1.6 + i / 8) % 1;
+      g.beginPath(); g.arc(f.x + Math.sin(i * 5) * 2, f.y - 120 + ph * 120, 1.3, 0, TAU);
+      g.fillStyle = `rgba(232,200,140,${(a * (0.4 + ph * 0.6)).toFixed(2)})`; g.fill();
+    }
+  }
   for (const s of d.glows) {
+    if (s.item === 'sarco' || s.item === 'urn') continue; // no sparks from tomb furniture
     for (let i = 0; i < 2; i++) {
       const ph = (t * (theme.decor === 'lava' ? 0.6 : 0.25) + i * 0.5 + s.x * 0.01) % 1;
       g.beginPath(); g.arc(s.x + Math.sin(t + i * 3 + s.y) * 8, s.y - 10 - ph * 26, 1.3 * (1 - ph) * (s.big ? 1.6 : 1), 0, TAU);

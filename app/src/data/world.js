@@ -40,7 +40,7 @@ export const REGIONS = [
     id: 'desert', name: 'Gurun Merah', biome: 'desert', levels: [20, 35], from: 'home', to: 'pasir', ...BIG, seed: 33,
     branches: 5, rivers: 1, lakes: 4, ruins: 20, density: { tree: 6, rock: 16 },
     enemies: { scorpion: 4, sandslink: 3, vulture: 3, sandworm: 2, spitter: 2, bomber: 2, charger: 2, summoner: 1, healer: 1 },
-    dungeons: [],
+    dungeons: [{ id: 'tomb', at: [0.25, 0.7] }],
     theme: { ground: ['#4a3324', '#3f2b1e'], path: '#6a4c32', water: '#2f6a6a', ambient: 'rgba(16,8,4,.78)' },
   },
   {
@@ -93,6 +93,7 @@ export const EXPEDITIONS = {
   shadow: { levels: [1, 8], floors: 3 },
   crystal: { levels: [8, 18], floors: 3 },
   fungus: { levels: [14, 26], floors: 3 },
+  tomb: { levels: [20, 32], floors: 3 },
   lava: { levels: [24, 45], floors: 3 },
 };
 export const EXPEDITION_REWARD = { gold: { base: 80, perLevel: 25 }, exp: { base: 60, perLevel: 20 }, marks: 4 };

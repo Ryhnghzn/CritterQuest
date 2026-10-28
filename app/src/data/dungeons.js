@@ -1,4 +1,4 @@
-// The four themed dungeons (spec §18.3), unlocked one after another. Each has
+// The themed dungeons (spec §18.3, §25.4), in order of difficulty. Each has
 // 5 floors of waves, its own boss on floor 5, a difficulty step and a look.
 //   mix: enemy type → count (a boss always comes first); every: seconds between spawns
 //   hpMul / dmgMul: on top of the per-floor HP step; rewardMul: EXP & coins;
@@ -65,6 +65,19 @@ export const DUNGEONS = [
     ],
   },
   {
+    // Makam Pasir (spec §25.4): under the Red Desert — scorpions, sand worms and the Mummy King
+    id: 'tomb', name: 'Makam Pasir', short: 'Makam',
+    hpMul: 5.5, dmgMul: 2.5, rewardMul: 4.2, itemLevel: 21,
+    theme: { floor: ['#4a3826', '#33261a'], wall: '#6a5236', light: '255,200,120', ambient: 'rgba(12,8,2,.82)', decor: 'tomb', glow: ['255,210,120', '110,230,200'] },
+    floors: [
+      { waves: [W({ sandslink: 8, scorpion: 2 }, 0.45), W({ vulture: 6, spitter: 3 }, 0.4), W({ scorpion: 4, sandslink: 6 }, 0.4)] },
+      { waves: [W({ scorpion: 4, shielder: 2 }, 0.4), W({ sandworm: 2, vulture: 6 }, 0.4), W({ summoner: 1, scorpion: 4, spitter: 3 }, 0.35)] },
+      { waves: [W({ sandworm: 3, sandslink: 8 }, 0.35), W({ scorpion: 5, healer: 1, vulture: 6 }, 0.35), W({ tank: 3, spitter: 4 }, 0.35), W({ summoner: 2, scorpion: 4 }, 0.35)] },
+      { waves: [W({ scorpion: 7, sandworm: 2 }, 0.3), W({ shielder: 4, summoner: 2, vulture: 6 }, 0.3), W({ sandworm: 4, healer: 2, spitter: 5 }, 0.3), W({ scorpion: 6, tank: 3, sandslink: 8 }, 0.25)] },
+      { waves: [W({ scorpion: 4, sandworm: 2, spitter: 3 }, 0.35), W({ tombboss: 1, scorpion: 2, vulture: 4 }, 0.5)] },
+    ],
+  },
+  {
     id: 'lava', name: 'Benteng Lava', short: 'Lava',
     hpMul: 7, dmgMul: 2.9, rewardMul: 5, itemLevel: 26,
     theme: { floor: ['#33201a', '#20130f'], wall: '#5a2f22', light: '255,120,50', ambient: 'rgba(14,3,2,.8)', decor: 'lava', glow: ['255,110,40', '255,190,80'] },
@@ -79,4 +92,4 @@ export const DUNGEONS = [
 ];
 export const DUNGEON_IDS = DUNGEONS.map((d) => d.id);
 export const dungeonById = (id) => DUNGEONS.find((d) => d.id === id) || DUNGEONS[0];
-export const BOSS_TYPES = ['boss', 'crystalboss', 'sporeboss', 'lavaboss'];
+export const BOSS_TYPES = ['boss', 'crystalboss', 'sporeboss', 'tombboss', 'lavaboss'];

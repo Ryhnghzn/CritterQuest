@@ -25,6 +25,7 @@ export const BESTIARY = {
   boss: { stat: 'atk', v: 2 },
   crystalboss: { stat: 'def', v: 2 },
   sporeboss: { stat: 'maxHp', v: 20 },
+  tombboss: { stat: 'crit', v: 1 },
   lavaboss: { stat: 'critDmg', v: 0.05 },
 };
 export const BESTIARY_IDS = Object.keys(BESTIARY);
