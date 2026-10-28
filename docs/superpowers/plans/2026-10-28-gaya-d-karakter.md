@@ -1,0 +1,33 @@
+# Gaya D — karakter komik gelap & animasi luwes
+
+Permintaan pemilik (2026-10-28): karakter sekarang (chibi, kepala bulat) terasa "game anak kecil". Dari simulasi `app/char.html` dipilih **gaya D — komik gelap terinspirasi Hades** (desain sendiri): bentuk bersudut, bayangan cel tegas dari kiri atas, sorot hangat di sisi terang, cahaya tepi berwarna di sisi gelap, garis tinta tipis, proporsi heroik (kepala ±⅙). Animasi berkeyframe: ancang-ancang, jeda, serangan cepat, overshoot, langkah maju. "Ubah semuanya langsung" — dikerjakan per bagian, dicek manual tiap bagian.
+
+Prinsip:
+- Logika `run/` & `meta/` dan save **tidak berubah**; hanya `art/` (+ sedikit `render/` untuk waktu animasi).
+- Titik masuk tetap `drawDoll(g, classId, look, pose)` — pemanggil (dunia, kota, interior, potret UI) tidak perlu diubah. Tinggi tetap ±44 unit agar ukuran di game sama.
+- Kelas yang belum dipindah tetap memakai boneka lama sampai bagiannya selesai.
+- Cahaya dihitung di ruang layar, jadi tetap dari kiri atas walau karakter menghadap kiri.
+
+## Ciri khas kelas (keputusan pemilik 2026-10-28)
+- Satu jenis tubuh per kelas (belum ada pilihan pria/wanita — save tidak berubah).
+- Ukuran tampilan berbeda (hitbox & jangkauan tetap): Warrior ±110%, Archer & Mage ±105%, Assassin ±90%.
+- **Warrior**: paling besar & kekar (bahu sangat lebar, lengan & paha tebal, leher pendek), **pedang satu tangan + perisai**, langkah berat, tebasan berat; cahaya tepi merah bara.
+- **Archer**: ramping, tinggi, kaki panjang; tudung & mantel panjang, busur tinggi, tabung panah; cahaya tepi hijau zamrud.
+- **Mage**: kurus jangkung, siluet jubah segitiga, tudung/topi lancip, tongkat lebih tinggi dari badan; cahaya tepi toska/ungu.
+- **Assassin**: paling kecil, membungkuk, syal panjang, topeng, dua belati terbalik, gerak cepat; cahaya tepi ungu gelap.
+
+## Bagian 1 — Mesin & Warrior
+- [x] `art/hero/rig.js`: kerangka + keyframe dengan easing per segmen (profil cepat untuk game: tebasan terlihat ±0,1 dtk setelah serangan), pose terkena pukulan
+- [x] `art/hero/cel.js`: bayangan cel, cahaya tepi, arsiran, anggota badan bersudut, palet redup untuk sisi belakang (tanpa `filter` agar jalan di Safari)
+- [x] `art/hero/warrior.js`: 5 gaya rambut × 6 warna; gear per tingkat (helm 0–6, zirah 0–6, sepatu, senjata 0–6) dan rarity (warna rune/tepi/permata; Mitos menyala)
+- [x] `drawDoll` meneruskan Warrior ke gaya D; potret UI ikut
+- [x] `render/world.js`: waktu animasi serangan sendiri (tidak bergantung `ATTACK_POSE` 0,15 dtk)
+- [x] Tes: semua kombinasi rambut × warna × gear × pose bisa digambar
+- [x] Warrior besar + pedang & perisai (masukan pemilik), langkah berat
+- [ ] Verifikasi: tes & build lulus; cek manual di game (PC & HP) oleh pemilik
+
+## Bagian 2 — Archer, Mage, Assassin (badan, gear, serangan dasar)
+## Bagian 3 — Gerakan skill & ultimate (24 + 4), menghindar, mati
+## Bagian 4 — Monster & bos (29 jenis)
+## Bagian 5 — NPC rakitan (bentuk badan, pakaian, kepala, barang, gerakan profesi)
+## Bagian 6 — Ikon gear & sentuhan akhir (font/UI bila perlu)

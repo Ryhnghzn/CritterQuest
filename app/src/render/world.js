@@ -22,6 +22,7 @@ import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, playerAlpha } from 
 import { SHAKE_PX } from '../data/fx.js';
 
 const DOLL_SCALE = 0.82;   // player doll size in world units
+const ATTACK_ANIM = 0.45;  // seconds of the keyframed swing (style-D heroes)
 const TAU = Math.PI * 2;
 const ENEMY_R = Object.fromEntries(Object.entries(ENEMIES).map(([k, e]) => [k, e.r]));
 const PORTAL_RGB = { down: '90,170,255', home: '255,200,90' };
@@ -37,6 +38,7 @@ export class Renderer {
     this.avatar = null;   // { classId, look } of the character being played
     this.facing = 1;
     this.walk = 0;
+    this.atkStart = -9; this.lastAttackT = 0; // keyframed swing: starts when a new attack fires
     this.trail = [];      // dodge afterimages: { x, y, life }
     this.shakeOn = true;  // off in the 'lite' effects setting (main.js)
     this.rect = { x0: 0, y0: 0, x1: 0, y1: 0 }; // visible world area, for culling effects
@@ -191,7 +193,10 @@ export class Renderer {
       if (dodging) g.rotate(game.dodgeX * 0.25);
       g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
       const attack = Math.max(0, game.attackT / ATTACK_POSE);
-      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, hurt: game.flash > 0 });
+      if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
+      this.lastAttackT = game.attackT;
+      const ph = (t - this.atkStart) / ATTACK_ANIM;
+      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, hurt: game.flash > 0 });
       g.restore();
     }
     playerStatus(g, game, t);

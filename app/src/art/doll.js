@@ -7,6 +7,7 @@
 import { drawWeapon, drawHelm, drawArmor, drawBoot, helmHidesHair, INK, halo } from './gear.js';
 import { RARITIES, MYTHIC } from '../data/items.js';
 import { DOLL_FX } from '../data/itemfx.js';
+import { drawHero } from './hero/index.js';
 
 const TAU = Math.PI * 2;
 const SKIN = ['#e3bfa3', '#b98a6e'];
@@ -159,9 +160,11 @@ const HOLD = {
 
 // look: { hair, hairColor, outfit?, gear? } — outfit [main, shade] overrides the
 // class colours (NPCs pass classId null and an outfit); gear: { weapon|helm|armor|boots: { tier, rarity } }.
-// pose: { t: seconds, moving: 0..1, walk: phase (rad), attack: 0..1, hurt: bool }
-// Returns anchor points (head, body, hand).
+// pose: { t: seconds, moving: 0..1, walk: phase (rad), attack: 0..1, hurt: bool, attackPhase?: 0..1 }
+// Returns anchor points (head, body, hand). Classes already in style D (art/hero) are drawn there.
 export function drawDoll(g, classId, look, pose = {}) {
+  const hero = drawHero(g, classId, look, pose);
+  if (hero) return hero;
   const { t = 0, moving = 0, walk = 0, attack = 0, hurt = false } = pose;
   const outfit = look.outfit || OUTFIT[classId] || OUTFIT.warrior;
   const [cMain, cShade] = outfit;
