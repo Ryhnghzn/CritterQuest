@@ -106,6 +106,7 @@ const LAYOUTS = {
   // Rimbawana: a ring village of timber huts around a giant lantern tree, behind a palisade
   rimba: {
     w: 1900, h: 1500, gateX: 860, spawn: [950, 780], stone: [1130, 820], barber: [640, 830],
+    night: [1350, 880], // the travelling merchant, 18:00–05:00
     houses: [['inn', 300, 120], ['potion', 560, 40], ['gear', 1150, 40], ['guild', 1410, 120], ['weapons', 130, 500], ['armor', 1580, 500],
       ['jewelry', 300, 960], ['storage', 560, 1060], ['mats', 1150, 1060], [null, 1410, 960, 160, 160], [null, 1660, 1180, 150, 150], [null, 80, 1180, 150, 150]],
     features: [
@@ -121,6 +122,7 @@ const LAYOUTS = {
   // the frozen pond in the middle and the citadel (materials hall) at the top
   beku: {
     w: 1400, h: 1700, gateX: 610, spawn: [700, 820], stone: [880, 900], barber: [450, 1060],
+    night: [450, 900], // the travelling merchant, 18:00–05:00
     houses: [['inn', 120, 60], ['potion', 120, 430], ['weapons', 120, 800], ['jewelry', 120, 1170],
       ['gear', 1090, 60], ['guild', 1090, 430], ['armor', 1090, 800], ['storage', 1090, 1170], ['mats', 595, 50, 210, 210]],
     features: [
@@ -137,6 +139,7 @@ const LAYOUTS = {
   // middle and rows of market stalls on the way to the gate
   pasir: {
     w: 2400, h: 1150, gateX: 1110, spawn: [1200, 640], stone: [1450, 470], barber: [560, 470],
+    night: [1750, 450], // the travelling merchant, 18:00–05:00
     houses: [['inn', 100, 40], ['potion', 360, 40], ['gear', 620, 40], ['guild', 1590, 40], ['weapons', 1850, 40], ['armor', 2110, 40],
       ['jewelry', 100, 660], ['storage', 360, 660], ['mats', 1850, 660], [null, 2110, 680, 170, 170], [null, 880, 40, 160, 160], [null, 1380, 40, 160, 160]],
     features: [
@@ -154,6 +157,7 @@ const LAYOUTS = {
   // the north bank, the great anvil between them, the plaza and gate on the south bank
   bara: {
     w: 1900, h: 1500, gateX: 860, spawn: [950, 470], stone: [1130, 1020], barber: [560, 1000],
+    night: [1450, 450], // the travelling merchant, 18:00–05:00
     houses: [['inn', 100, 60], ['potion', 360, 60], ['gear', 620, 60], ['guild', 1090, 60], ['weapons', 1350, 60], ['armor', 1610, 60],
       ['jewelry', 100, 880], ['storage', 360, 880], ['mats', 1350, 880], [null, 1610, 880, 170, 170]],
     features: [
@@ -188,6 +192,7 @@ function bigTown(id, t) {
     npc('gate', 'gate', k.gate[0], gate.x + gate.w / 2, gate.y - 18, k.gate[1], k.gate[2]),
     npc('barber', 'barber', k.barber[0], lay.barber[0] + 58, lay.barber[1] + 80, k.barber[1], k.barber[2]),
     npc('stone', 'teleport', 'Batu Teleport', lay.stone[0], lay.stone[1], null, ['#8f7bff', '#4b3aa8'], { object: 'stone' }),
+    npc('night', 'night', 'Garo', lay.night[0], lay.night[1], { hair: 4, hairColor: 3 }, ['#3a2a5a', '#241a3a'], { night: true }),
     ...t.folk.map((f, i) => npc(`folk${i}`, 'talk', f.name, lay.folk[i][0], lay.folk[i][1], f.look, f.outfit, { title: f.title, lines: f.lines, wander: lay.folk[i][2] || f.wander, scale: f.scale })),
   ];
   const interiors = {};

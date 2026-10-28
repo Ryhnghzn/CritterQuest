@@ -24,7 +24,7 @@ import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalen
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
-import { itemName, makeItem, statText } from './meta/itemgen.js';
+import { itemName, makeItem, statText, gemName } from './meta/itemgen.js';
 import { renderCheat, CHEAT_ON } from './ui/cheat.js';
 import { showChestOpen, showMythicCard } from './ui/reveal.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
@@ -35,6 +35,7 @@ import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
 import { FIELD, TOWNS, TOWN_IDS, regionById, regionOfDungeon } from './data/world.js';
 import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
+import { buyDisplay, buyNight, buyMats, isNight } from './meta/market.js';
 import { phaseOf } from './meta/clock.js';
 import { drawRegionMap } from './render/regionmap.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
@@ -250,6 +251,7 @@ function openNpc(npc, message = null) {
   if (npc.role === 'talk' && screen !== 'npc') talkIdx[npc.id] = (talkIdx[npc.id] ?? -1) + 1; // next line each chat
   townNpc = npc;
   syncHp();
+  current = { ...current, clock: Math.floor(worldClock) }; // shops read the day / night from it
   renderNpc($('npc'), npc, {
     char: current, hp: town.hp, maxHp: town.maxHp, message,
     line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
@@ -287,13 +289,16 @@ function openNpc(npc, message = null) {
     onBountyReroll: (i) => serve((c, now) => rerollBounty(c, i, Math.random, now), tr('Tugas baru ditempel di papan.')),
     onMarkBuy: (id) => serve((c, now) => buyWithMarks(c, id, Math.random, now), (r) => (r.item
       ? { text: t('Kau mendapat {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color }
-      : r.gem ? t('Kau mendapat {gem}!', { gem: `${GEMS[r.gem.gem].name} ${GEM_TIER_NAMES[r.gem.tier - 1]}` }) : tr('Bahan masuk ke tasmu.'))),
+      : r.gem ? t('Kau mendapat {gem}!', { gem: gemName(r.gem.gem, r.gem.tier) }) : tr('Bahan masuk ke tasmu.'))),
     onEnter: enterDungeon,
     onExpTake: (id) => serve((c, now) => takeExpedition(c, id, now), (r) => t('Ekspedisi diterima: {d}. Gerbangnya kutandai di petamu.', { d: dungeonById(r.char.expedition.dungeon).name })),
     onExpDrop: () => serve(dropExpedition, tr('Ekspedisi dibatalkan.')),
     onExpClaim: () => serve(claimExpedition, (r) => ({ text: t('Ekspedisi tuntas! +{g} koin, +{e} EXP, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, m: r.reward.marks }) + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a' })),
     onExplore: (id) => explore(id, regionById(id).from === current.location ? 'west' : 'east'),
     onTeleport: travel,
+    onBuyDisplay: (key) => serve((c, now) => buyDisplay(c, c.location, townNpc.role, key, now), boughtText),
+    onBuyNight: (key) => serve((c, now) => buyNight(c, c.location, key, now), (r) => (r.item ? boughtText(r) : t('Kau mendapat {gem}!', { gem: gemName(r.gem.gem, r.gem.tier) }))),
+    onBuyMat: (key, n) => serve((c, now) => buyMats(c, c.location, key, n, now), (r) => t('+{n} {what}', { n: r.count, what: r.entry.kind === 'mat' ? MATS[r.entry.id].name : gemName(r.entry.id, r.entry.tier) })),
     onClose: closeTownOverlay,
   });
   if (screen !== 'npc') { ensureAudio(); sfx.pickCard(); }
@@ -306,7 +311,7 @@ const REFUSE = {
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
   marks: 'Lencanamu belum cukup.', notdone: 'Tugas itu belum selesai.',
-  mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
+  mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
 // Belt slot cycles: empty → each potion type in turn → empty.
@@ -333,6 +338,8 @@ async function serve(action, okText) {
   openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
   updateTownHUD(current, town);
 }
+
+const boughtText = (r) => ({ text: t('Kau membeli {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color });
 
 // Teleport stone (spec §25.2): pay, save, appear on the plaza of the other town.
 async function travel(townId) {
@@ -818,6 +825,7 @@ let hudT = 0;
 // ——— main loop ———
 function tickTown(pressed) {
   if (screen !== null) return;
+  town.night = isNight(worldClock); // the night merchant (spec §25.2)
   stepTown(town, { move: { x: input.x, y: input.y } }, STEP);
   if (town.entered) sfx.dodge();
   if (pressed.has('talk') && town.near) { openNpc(town.near); return; }

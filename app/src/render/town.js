@@ -45,6 +45,7 @@ function layoutOf(def) {
     // one continuous lava band under the bridges
     lavaBand: lava.length ? { x: Math.min(...lava.map((f) => f.x)), y: lava[0].y, w: Math.max(...lava.map((f) => f.x + f.w)) - Math.min(...lava.map((f) => f.x)), h: lava[0].h } : null,
     stones: def.npcs.filter((n) => n.object === 'stone'),
+    night: def.npcs.filter((n) => n.night),
     trees: treesOf(def),
     wall: theme.wall || WALL_HOME,
     big: def.w > 1200,
@@ -187,8 +188,12 @@ export class TownRenderer {
     L.player = town && avatar ? { x: town.x, y: town.y } : null; // the canopy fades when the player walks under it
     for (const f of L.tall) if (seen(f.x - 200, f.y - 260, f.w + 400, f.h + 280)) items.push({ y: f.y + f.h, draw: () => tallFeature(g, f, t, L) });
     const nt = town ? town.t : t;
-    const npcs = def.npcs.map((n) => ({ n, ...npcAt(n, nt) }));
-    for (const p of npcs) if (seen(p.x - 40, p.y - 90, 80, 100)) items.push({ y: p.y, draw: () => drawNpc(g, p, t, town) });
+    const npcs = def.npcs.filter((n) => !n.night || town?.night).map((n) => ({ n, ...npcAt(n, nt) }));
+    for (const p of npcs) {
+      if (!seen(p.x - 80, p.y - 90, 160, 100)) continue;
+      if (p.n.night) items.push({ y: p.y - 6, draw: () => nightCart(g, p.x + 46, p.y - 4, t) });
+      items.push({ y: p.y, draw: () => drawNpc(g, p, t, town) });
+    }
     if (town && avatar) {
       const moving = Math.min(1, Math.hypot(town.moveX, town.moveY));
       this.walk += moving * 0.22;
@@ -262,6 +267,7 @@ function lightList(t, town, f, L) {
   const { houses, gate } = L;
   const out = L.fire ? [{ x: L.fireX, y: L.fireY, r: 200 * f, rgb: WARM, tint: 0.16, always: true }] : [];
   for (const ft of L.feats) featureLights(ft, f, out);
+  if (town?.night) for (const n of L.night) out.push({ x: n.x + 46, y: n.y - 44, r: 110 * f, rgb: '255,190,110', tint: 0.14, always: true });
   for (const n of L.stones) out.push({ x: n.x, y: n.y - 30, r: 130 * f, rgb: '150,110,255', tint: 0.18, always: true });
   if (L.theme.tree === 'charred') for (const n of L.trees) if (n.v < 0.3) out.push({ x: n.x, y: n.y, r: 70, rgb: '255,110,40', tint: 0.1, always: true });
   for (const l of L.def.lamps) out.push({ x: l.x, y: l.y - 40, r: 130, rgb: WARM, tint: 0.1 });
@@ -1340,4 +1346,16 @@ function featureLights(f, flick, out) {
   else if (f.kind === 'pond') out.push({ x: cx, y: y + h / 2, r: 200, rgb: '170,210,255', tint: 0.08 });
   else if (f.kind === 'tower') out.push({ x: cx, y: base - 70, r: 70, rgb: WARM, tint: 0.08 });
   else if (f.kind === 'market') out.push({ x: cx, y: base - 30, r: 90, rgb: WARM, tint: 0.07 });
+}
+
+// the night merchant's cart: a covered wagon with a hanging lantern
+function nightCart(g, x, y, t) {
+  shadow(g, x, y + 4, 34, 6);
+  for (const wx of [x - 20, x + 20]) { g.beginPath(); g.arc(wx, y - 2, 9, 0, TAU); ink(g, '#4c3324', 1.4); g.beginPath(); g.arc(wx, y - 2, 3, 0, TAU); ink(g, '#2a1d19', 1); }
+  g.beginPath(); g.rect(x - 30, y - 30, 60, 22); ink(g, lin(g, y - 30, y - 8, '#7a5236', '#4c3324'), 1.6);
+  g.beginPath(); g.moveTo(x - 32, y - 30); g.quadraticCurveTo(x, y - 66, x + 32, y - 30); g.closePath(); ink(g, lin(g, y - 60, y - 30, '#5a3f8a', '#3a2a5a'), 1.6);
+  for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(x - 18 + i * 12, y - 24, 4, 0, TAU); ink(g, ['#c26bd8', '#6ec9ff', '#ffb547', '#6ee7a0'][i], 1); }
+  const sw = Math.sin(t * 2) * 2;
+  g.strokeStyle = '#2a1d19'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x + 30, y - 34); g.lineTo(x + 30 + sw, y - 26); g.stroke();
+  g.beginPath(); g.roundRect(x + 25 + sw, y - 26, 10, 12, 3); ink(g, '#ffd98a', 1.2);
 }

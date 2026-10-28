@@ -3,7 +3,7 @@
 import { tr, t } from '../i18n.js';
 import { CLASSES } from '../data/classes.js';
 import {
-  SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, ATTRS, POINTS_PER_LEVEL, SKILL_SLOTS,
+  SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, STASH_MAX, ATTRS, POINTS_PER_LEVEL, SKILL_SLOTS,
 } from '../data/balance.js';
 import { POTION_IDS, POTION_MAX, BELT_SIZE, DEFAULT_BELT } from '../data/potions.js';
 import { BONUS_IDS, RARITIES, UNIQUES } from '../data/items.js';
@@ -17,7 +17,7 @@ import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS } from '../data/world.js';
 import { isFogValid } from './world.js';
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -90,6 +90,8 @@ export const MIGRATIONS = {
     found: isObj(d.records) && isObj(d.records.dungeons)
       ? DUNGEON_IDS.filter((id) => d.records.dungeons[id]?.bestFloor > 0 || d.records.dungeons[id]?.clears > 0) : [],
   }),
+  // v13 (spec §25.2): what was bought from the big-town merchants today, the Gudang.
+  12: (d) => ({ ...d, version: 13, shops: {}, stash: [] }),
 };
 
 export const worldSeed = (now, slot) => (Math.floor(Math.abs(now)) + slot * 7919) % 2147483647;
@@ -201,6 +203,14 @@ export function validateSlot(d) {
     need(spent <= POINTS_PER_LEVEL * (d.level - 1), 'attrs: poin melebihi level');
   }
 
+  need(isObj(d.shops) && Object.entries(d.shops).every(([k, v]) => /^[a-z]+:[a-z]+$/.test(k) && TOWN_IDS.includes(k.split(':')[0])
+    && isObj(v) && isInt(v.day) && isObj(v.sold) && Object.values(v.sold).every((n) => isInt(n, 1))), 'shops');
+  const stash = Array.isArray(d.stash) && d.stash.length <= STASH_MAX ? d.stash : null;
+  need(stash, 'stash');
+  if (stash) {
+    stash.forEach((it, i) => need(validateItem(it), `stash[${i}]`));
+    need(new Set(stash.map((it) => it?.id)).size === stash.length, 'stash: id ganda');
+  }
   const inv = Array.isArray(d.inventory) && d.inventory.length <= INVENTORY_MAX ? d.inventory : null;
   need(inv, 'inventory');
   if (inv) {

@@ -68,11 +68,12 @@ export function npcAt(n, t) {
   return { x: n.x + Math.sin(a) * w.rx, y: n.y + Math.sin(a * 2) * w.ry, moving: 1, facing: Math.cos(a) >= 0 ? 1 : -1 };
 }
 
-// id: which town (data/towns.js); at: 'spawn' (plaza) or 'gate' (back from outside)
+// id: which town (data/towns.js); town.night (set by the caller from the clock) shows
+// the night merchant; at: 'spawn' (plaza) or 'gate' (back from outside)
 export function createTown({ id = 'home', moveSpd, hp, maxHp, at = 'spawn' }) {
   const def = townDef(id);
   const p = at === 'gate' ? def.gateSpawn : def.spawn;
-  return { id: def.id, map: 'town', x: p.x, y: p.y, moveSpd, hp, maxHp, moveX: 0, moveY: 0, facing: 1, near: null, t: 0, doorT: 0, entered: null };
+  return { id: def.id, night: false, map: 'town', x: p.x, y: p.y, moveSpd, hp, maxHp, moveX: 0, moveY: 0, facing: 1, near: null, t: 0, doorT: 0, entered: null };
 }
 
 // intent: { move: { x, y } }. town.entered is set to the map id on the step a door is used.
@@ -106,6 +107,7 @@ export function stepTown(town, intent, dt) {
   const here = maps[town.map];
   let near = null, best = here.talkRadius;
   for (const n of here.npcs) {
+    if (n.night && !town.night) continue; // the night merchant is only there after dark
     const p = npcAt(n, town.t);
     const d = Math.hypot(p.x - town.x, p.y - town.y);
     if (d < best) { best = d; near = n; }

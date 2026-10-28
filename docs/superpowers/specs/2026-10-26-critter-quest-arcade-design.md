@@ -734,12 +734,22 @@ Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang 
 - **Batu teleport** ada di alun-alun setiap kota, termasuk Kota Awal:
   - hanya ke kota yang sudah pernah dikunjungi;
   - biaya `15 + 25 × tingkat` kota tujuan (`TELEPORT` di `data/world.js`).
-- **Pedagang** (9D-2b):
-  - etalase gear berstok harian per pedagang dan tingkat kota, ditambah peti;
-  - Pandai Senjata, Penjahit Zirah, Toko Perhiasan;
-  - pedagang keliling malam;
-  - pedagang bahan & permata.
-- **Gudang** per karakter (9D-2c).
+- **Pedagang** (9D-2b; semua angka di `data/market.js`, logika di `meta/market.js`):
+  - **Hari pasar** berganti pukul 05:00 jam game. Stok dibuat dari `world.seed` + kota + toko + hari, jadi sama sepanjang hari dan tidak disimpan. Yang disimpan hanya barang yang sudah dibeli: `shops["kota:toko"] = { day, sold }`.
+  - **Etalase gear:** Pandai Senjata (senjata kelasmu), Penjahit Zirah (helm, armor, sepatu), Toko Perhiasan (kalung, cincin). Tiap barang hanya satu.
+
+    | Tingkat | Barang per toko (senjata / zirah / perhiasan) | Rarity (Bagus … Mitos) | Rentang LV barang | Harga |
+    |---|---|---|---|---|
+    | 1 Rimbawana | 4 / 6 / 4 | 30 · 45 · 20 · 5 · 0 | 3–18 | harga jual × 5 |
+    | 2 Bekubara | 5 / 7 / 5 | 10 · 45 · 35 · 9 · 1 | 10–28 | × 5,5 |
+    | 3 Pasirluas | 5 / 8 / 5 | 0 · 35 · 45 · 17 · 3 | 20–38 | × 6 |
+    | 4 Baraapi | 6 / 9 / 6 | 0 · 20 · 45 · 28 · 7 | 30–50 | × 6,5 |
+
+    LV barang = level pemain (dibatasi rentang kota) + 0–2. Legendaris/Mitos selalu item unik yang cocok slot & kelas (bila tak ada, turun ke Epik). Peti tetap dijual di Pandai Besi.
+  - **Pedagang malam (Garo)** muncul dengan gerobaknya di alun-alun kota besar pukul 18:00–05:00: 3–4 gear Langka ke atas dari slot apa pun (harga × 8–9) dan 2–3 permata tingkat 1–4 (× 1,5 harga permata).
+  - **Pedagang bahan & permata:** debu, kristal, inti, dan permata dengan stok harian terbatas yang bertambah di kota sulit; harga +10% per tingkat kota di atas 1. Permata: tingkat 1 (Rimbawana), 1–2 (Bekubara, Pasirluas), 2–3 (Baraapi).
+- **Gudang** per karakter (9D-2c), maks 120 barang.
+- **Save versi 13:** `shops` (pembelian hari ini per toko) dan `stash` (isi Gudang). `migrate()` v12 → v13 mengisi keduanya kosong.
 
 ### 25.3 Isi wilayah (9D-3)
 - Harta karun tersembunyi yang dijaga mini bos.

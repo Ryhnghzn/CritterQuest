@@ -4,7 +4,7 @@ import { el, button } from './screens.js';
 import { gearCanvas } from '../art/gear.js';
 import { RARITIES, BONUSES } from '../data/items.js';
 import { MATS, MAT_IDS, ENHANCE, enhanceCost, GEMS, GEM_IDS, GEM_TIERS, GEM_TIER_NAMES, GEM_COMBINE, UNSOCKET_GOLD } from '../data/forge.js';
-import { itemName, itemStats, statText } from '../meta/itemgen.js';
+import { itemName, itemStats, statText, gemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { rerollCost, salvageYield, combineCost } from '../meta/forge.js';
 import { tr, t } from '../i18n.js';
@@ -133,7 +133,7 @@ export function salvagePanel(char, onSalvage, redraw) {
 }
 
 // ——— Tukang Permata: Pasang ———
-const gemLabel = (gem, tier) => `${GEMS[gem].name} ${GEM_TIER_NAMES[tier - 1]}`;
+const gemLabel = gemName;
 const gemText = (gem, tier) => statText(GEMS[gem].stat, GEMS[gem].values[tier - 1]);
 
 export function socketPanel(char, { onSocket, onUnsocket }, redraw) {

@@ -18,6 +18,7 @@ import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
 import { bountyList, markShop, expeditionPanel } from './board.js';
+import { displayPanel, nightPanel, matsPanel } from './market.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -36,14 +37,15 @@ const LINES = {
   board: 'Papan tugas sudah dibuka! Selesaikan tugas di dungeon, lalu ambil hadiahmu di sini.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
   teleport: 'Batu rune ini berdengung pelan. Sentuh, dan sebut kota yang pernah kau datangi.',
-  weapons: 'Etalase senjataku sedang ditata. Kembalilah sebentar lagi!',
-  armor: 'Zirah-zirah baru masih kujahit. Sebentar lagi siap dipajang.',
-  jewelry: 'Perhiasan terbaik butuh etalase terbaik. Tokoku segera buka.',
+  weapons: 'Bilah-bilah terbaik kota ini. Pilih, pegang, rasakan beratnya.',
+  armor: 'Zirah yang pas di badan menyelamatkan nyawa. Lihat-lihat dulu.',
+  jewelry: 'Kalung dan cincin, masing-masing dengan kisahnya sendiri.',
+  night: 'Psst… barang yang tak dijual di etalase. Hanya malam ini.',
   storage: 'Gudang masih dibersihkan. Sebentar lagi kau bisa menitip barang di sini.',
-  mats: 'Karung-karung bahan baru tiba. Aku masih menghitungnya.',
+  mats: 'Debu, kristal, inti, permata — semua yang dibutuhkan pandai besi. Jumlahnya terbatas.',
 };
 const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga',
-  teleport: 'Perjalanan Cepat', weapons: 'Pandai Senjata', armor: 'Penjahit Zirah', jewelry: 'Toko Perhiasan', storage: 'Gudang', mats: 'Pedagang Bahan' };
+  teleport: 'Perjalanan Cepat', weapons: 'Pandai Senjata', armor: 'Penjahit Zirah', jewelry: 'Toko Perhiasan', storage: 'Gudang', mats: 'Pedagang Bahan', night: 'Pedagang Malam' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
@@ -113,6 +115,12 @@ export function renderNpc(box, npc, ctx) {
       regs.append(b);
     }
     panel.append(regs);
+  } else if (npc.role === 'weapons' || npc.role === 'armor' || npc.role === 'jewelry') {
+    panel.append(displayPanel(char, char.location, npc.role, ctx.onBuyDisplay, () => renderNpc(box, npc, { ...ctx, message: null })));
+  } else if (npc.role === 'night') {
+    panel.append(nightPanel(char, char.location, ctx, () => renderNpc(box, npc, { ...ctx, message: null })));
+  } else if (npc.role === 'mats') {
+    panel.append(matsPanel(char, char.location, ctx));
   } else if (npc.role === 'teleport') {
     panel.append(teleportList(char, ctx.onTeleport));
   }

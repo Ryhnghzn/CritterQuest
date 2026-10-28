@@ -8,7 +8,7 @@ import { GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { RARITIES, SLOTS, BONUSES } from '../data/items.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { EQUIP_SLOTS } from '../meta/schema.js';
-import { itemName, statText, effectText } from '../meta/itemgen.js';
+import { itemName, statText, effectText, gemName } from '../meta/itemgen.js';
 import { equippedItem, isEquipped, canEquip, compare } from '../meta/gear.js';
 import { tr, t, num } from '../i18n.js';
 
@@ -81,7 +81,8 @@ const signed = (stat, d) => {
   return `${d > 0 ? '+' : '−'}${num(v)}${b.pct || b.unit === '%' ? '%' : ''} ${b.label}`;
 };
 
-function detail(box, char, it, opts) {
+// opts: { editable, quiet (no 'change gear in town' note), onEquip, onUnequip, onDiscard }
+export function detail(box, char, it, opts) {
   const r = RARITIES[it.rarity];
   box.style.setProperty('--c', r.color);
   const top = el('div', 'gdhead');
@@ -96,7 +97,7 @@ function detail(box, char, it, opts) {
   for (const [k, v] of Object.entries(it.base)) lines.append(el('div', 'base', statText(k, v)));
   for (const b of it.bonuses) lines.append(el('div', 'bonus', statText(b.stat, b.value)));
   it.sockets.forEach((s) => lines.append(s
-    ? el('div', 'gem', `◆ ${GEMS[s.gem].name} ${GEM_TIER_NAMES[s.tier - 1]}: ${statText(GEMS[s.gem].stat, GEMS[s.gem].values[s.tier - 1])}`)
+    ? el('div', 'gem', `◆ ${gemName(s.gem, s.tier)}: ${statText(GEMS[s.gem].stat, GEMS[s.gem].values[s.tier - 1])}`)
     : el('div', 'gem empty', `◇ ${tr('Soket kosong')}`)));
   const fx = effectText(it);
   if (fx) lines.append(el('div', 'fx', `★ ${fx}`));
@@ -114,7 +115,7 @@ function detail(box, char, it, opts) {
     box.append(cmp);
   }
 
-  if (!opts.editable) { box.append(el('div', 'note', tr('Ganti gear di kota.'))); return; }
+  if (!opts.editable) { if (!opts.quiet) box.append(el('div', 'note', tr('Ganti gear di kota.'))); return; }
   const act = el('div', 'row');
   if (!canEquip(char, it)) act.append(el('span', 'note', tr('Bukan senjata kelasmu.')));
   else if (worn) { const b = button(tr('Lepas'), 'btn small', () => opts.onUnequip(it.slot)); b.id = 'gear-unequip'; act.append(b); }

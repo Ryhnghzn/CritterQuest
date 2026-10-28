@@ -61,7 +61,15 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Render: gaya rumah, tembok, tanah, dan fitur per kota; rumah diurutkan kedalaman & tembus pandang saat pemain di belakangnya
 - [x] Verifikasi: tes, build, screenshot PC & HP
 #### 9D-2b — Pedagang: etalase harian, toko gear khusus, pedagang malam, bahan & permata
+- [x] `data/market.js` + `meta/market.js`: hari pasar, etalase per tingkat, pedagang malam, bahan & permata — tes
+- [x] Save v13: `shops`, `stash` — tes
+- [x] Pandai Senjata / Penjahit Zirah / Toko Perhiasan (etalase + detail + beli), Garo & gerobak malam, Pedagang Bahan; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
 #### 9D-2c — Gudang
 ### 9D-3 — Harta karun, mini bos, portal bos
 ### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir
+## 9F — Petualangan: quest utama & side quest (permintaan 2026-10-28, rancangan menyusul)
+- Quest utama yang menuntun ke semua kota & dungeon sampai bos terakhir
+- Rumah/orang tersembunyi di jalan wilayah dengan side quest berhadiah item
+- Side quest dari warga & penjaga toko di kota
 ## 9E — Tingkat kesulitan & Celah tanpa batas

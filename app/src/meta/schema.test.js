@@ -182,6 +182,21 @@ describe('save versi 2', () => {
     expect(Number.isInteger(r.data.world.seed)).toBe(true);
   });
 
+  it('migrasi v12 → v13: stok toko & Gudang kosong', () => {
+    const v12 = { ...fresh(), version: 12 };
+    delete v12.shops; delete v12.stash;
+    const r = readSlot(v12);
+    expect(r.status).toBe('ok');
+    expect(r.data.shops).toEqual({});
+    expect(r.data.stash).toEqual([]);
+  });
+
+  it('menolak catatan toko & Gudang yang rusak', () => {
+    expect(validateSlot({ ...fresh(), shops: { 'mars:weapons': { day: 1, sold: {} } } })).toContain('shops');
+    expect(validateSlot({ ...fresh(), shops: { 'rimba:weapons': { day: 1, sold: { 0: 0 } } } })).toContain('shops');
+    expect(validateSlot({ ...fresh(), stash: [{ id: 'x' }] })).toContain('stash[0]');
+  });
+
   it('menolak wilayah atau kota yang tidak dikenal', () => {
     expect(validateSlot({ ...fresh(), regions: { mars: { fog: '' } } })).toContain('regions');
     expect(validateSlot({ ...fresh(), location: 'atlantis' })).toContain('location/towns');

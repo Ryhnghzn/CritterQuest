@@ -4,7 +4,7 @@ import {
   RARITIES, LEGENDARY, SLOTS, SLOT_IDS, TIER_LEVELS, VARIANTS, LEVEL_GROWTH, BONUSES, BONUS_IDS,
   ROLL_MIN, UNIQUES, EFFECTS, DROP_WEIGHTS, LUK_RARITY, DROP,
 } from '../data/items.js';
-import { SOCKETS, ENHANCE, GEMS } from '../data/forge.js';
+import { SOCKETS, ENHANCE, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
 import { getLang, num } from '../i18n.js';
 
@@ -119,3 +119,6 @@ export function statText(stat, value) {
   const shown = b.pct ? `${Math.round(value * 1000) / 10}%` : `${value}${b.unit || ''}`;
   return `+${num(shown)} ${b.label}`;
 }
+
+// "Rubi Retak" in Indonesian, "Chipped Ruby" in English (the tier is an adjective there)
+export const gemName = (gem, tier) => (getLang() === 'en' ? `${GEM_TIER_NAMES[tier - 1]} ${GEMS[gem].name}` : `${GEMS[gem].name} ${GEM_TIER_NAMES[tier - 1]}`);
