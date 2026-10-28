@@ -51,3 +51,6 @@ Prinsip:
 - [ ] NPC di `render/hideout.js` (milik sesi lain, belum di-commit) tampil sebagai warga biasa sampai file itu ikut mengirim `npc`
 - [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 6 — Ikon gear & sentuhan akhir (font/UI bila perlu)
+- [x] `art/hero/icons.js`: bentuk ikon gear gaya D (pedang, busur, tongkat, belati kembar, helm, zirah, sepatu, kalung, cincin) per tingkat & rarity; `drawGearIcon` tetap memberi halo, sinar Mitos & kilau
+- [ ] Font/UI bernuansa gelap (opsional, menunggu keputusan pemilik; `index.html` sedang diubah sesi lain)
+- [ ] Cek manual di game (PC & HP) oleh pemilik

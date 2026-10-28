@@ -7,6 +7,7 @@
 import { RARITIES, MYTHIC } from '../data/items.js';
 import { ICON_FX } from '../data/itemfx.js';
 import { glow } from '../render/fxkit.js';
+import { drawGearShape } from './hero/icons.js';
 
 const TAU = Math.PI * 2;
 export const INK = '#16121c';           // thin dark outline of the new style
@@ -502,34 +503,6 @@ function mythRing(g, t) {
   }
 }
 
-// ——— rarity accents on ordinary shapes (Bagus → Legendaris) ———
-// anchor per slot in the shape's own coordinates: gem spot + an engraving line
-function accentSpot(slot, classId) {
-  switch (slot) {
-    case 'weapon':
-      if (classId === 'archer') return { gx: 4.5, gy: 0, line: [2.2, -9, 3.6, -4], rx: 3, ry: -11 };
-      if (classId === 'mage') return { gx: 0, gy: -16, line: [-1, -12, 1, -12], rx: 0, ry: -9 };
-      if (classId === 'assassin') return { gx: 0, gy: -1.3, line: [0, -3, 0, -8], rx: 0, ry: -10 };
-      return { gx: 0, gy: -1.7, line: [0, -5, 0, -13], rx: 0, ry: -16 };
-    case 'helm': return { gx: 2, gy: -5.6, line: [-6.4, -2.8, 7.2, -3.2], rx: -3, ry: -6 };
-    case 'armor': return { gx: 0, gy: -9, line: [-3.9, -12, 0, -10, 3.9, -12], rx: 0, ry: -5 };
-    case 'boots': return { gx: -1.4, gy: -0.4, line: [-3, 2, 2, 2], rx: 0.4, ry: -1.6 };
-    case 'amulet': return { gx: -4.9, gy: -1, line: [4.9, -1, 4.9, -1], rx: 0, ry: -9 };
-    default: return { gx: -3.6, gy: 3, line: [-4.4, 5.4, 4.4, 5.4], rx: 3.6, ry: 3 };
-  }
-}
-function accents(g, item, t) {
-  const r = item.rarity;
-  if (r < 1 || r === MYTHIC) return;
-  const c = RARITIES[r].color, a = accentSpot(item.slot, item.classId);
-  const L = a.line;
-  g.beginPath(); g.moveTo(L[0], L[1]); for (let i = 2; i < L.length; i += 2) g.lineTo(L[i], L[i + 1]);
-  if (r >= 3) glowLine(g, c, 0.45, 2, 0.7);
-  else { g.lineWidth = 0.5; g.strokeStyle = c; g.stroke(); }
-  if (r >= 2) gemAt(g, a.gx, a.gy, r >= 4 ? 1.2 : 1, c, r >= 3 ? 0.5 + (r >= 4 ? 0.3 * Math.sin(t * 4) : 0) : 0);
-  if (r >= 3) rune(g, a.rx, a.ry, 0.9, c, r >= 4 ? 0.6 + 0.4 * Math.sin(t * 3) : 0.8);
-}
-
 // ——— bag / ground icons ———
 // Draws an item centred at the origin inside size × size. t animates Legendaris+.
 export function drawGearIcon(g, item, size, t = 0) {
@@ -553,28 +526,7 @@ export function drawGearIcon(g, item, size, t = 0) {
     }
     g.restore();
   }
-  const tier = item.variant;
-  g.save();
-  switch (item.slot) {
-    case 'weapon':
-      g.rotate(item.classId === 'archer' ? 0.6 : Math.PI / 4);
-      g.translate(0, item.classId === 'mage' ? 8 : item.classId === 'archer' ? 0 : 6);
-      if (item.classId === 'mage') g.scale(0.72, 0.72);
-      if (r === MYTHIC) { // grand shapes are bigger: shrink them back into the frame
-        if (item.classId === 'warrior') { g.translate(0, 2); g.scale(0.74, 0.74); }
-        else if (item.classId === 'archer') { g.translate(-3, 0); g.scale(0.72, 0.72); }
-        else if (item.classId === 'mage') { g.translate(0, -2); g.scale(0.9, 0.9); }
-      }
-      drawWeapon(g, item.classId, tier, t, r);
-      break;
-    case 'helm': g.translate(0, r === MYTHIC ? 8.5 : 3); if (r === MYTHIC) g.scale(0.72, 0.72); drawHelm(g, tier, 0, 0, 8, t, r); break;
-    case 'armor': g.scale(1.25, 1.25); g.translate(0, r === MYTHIC ? 9 : 8); if (r === MYTHIC) g.scale(0.88, 0.88); drawArmor(g, tier, -14, -1, 6.5, t, r); break;
-    case 'boots': if (r === MYTHIC) { g.scale(1.95, 1.95); g.translate(1.6, 0); } else g.scale(2.3, 2.3); drawBoot(g, tier, -1, 3.2, t, r); break;
-    case 'amulet': g.scale(1.25, 1.25); g.translate(0, 2); if (r === MYTHIC) mythAmulet(g, t); else drawAmulet(g, tier, t); break;
-    default: g.scale(1.25, 1.25); if (r === MYTHIC) mythRing(g, t); else drawRing(g, tier); break;
-  }
-  accents(g, item, t);
-  g.restore();
+  drawGearShape(g, item, t); // style D (art/hero/icons.js)
   for (let i = 0; i < ICON_FX.motes[r]; i++) { // sparkles circling and rising
     const ph = (t * 0.35 + i / ICON_FX.motes[r]) % 1, a = i * 2.4 + t * 0.8;
     const x = Math.cos(a) * (8 + i % 3), y = 9 - ph * 20;
