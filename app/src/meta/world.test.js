@@ -147,3 +147,15 @@ describe('harta tersimpan', () => {
     expect(validateSlot(b.char)).toEqual([]);
   });
 });
+
+describe('Tanah Gerhana (spec §26.7)', () => {
+  it('terbuka setelah kelima Pecahan Segel; jalan buntu di timur', async () => {
+    const { regionById, regionOpen } = await import('../data/world.js');
+    const r = regionById('eclipse');
+    expect(r.from).toBe('bara');
+    expect(r.to).toBe(null);
+    expect(regionOpen(r, 4)).toBe(false);
+    expect(regionOpen(r, 5)).toBe(true);
+    expect(regionOpen(regionById('forest'), 0)).toBe(true);
+  });
+});

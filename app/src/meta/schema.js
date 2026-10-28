@@ -18,7 +18,7 @@ import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data
 import { isFogValid } from './world.js';
 import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -104,6 +104,8 @@ export const MIGRATIONS = {
   }),
   // v17 (spec §26): quests — the main quest starts at chapter 1 (synced to what was done when played).
   16: (d) => ({ ...d, version: 17, quests: freshQuests() }),
+  // v18 (spec §26.7): Hantu Gerhana in the bestiary.
+  17: (d) => ({ ...d, version: 18, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
   14: (d) => ({ ...d, version: 15, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
 };
 

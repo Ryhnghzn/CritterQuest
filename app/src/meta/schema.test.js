@@ -233,6 +233,14 @@ describe('save versi 2', () => {
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, side: { mars: { step: 0, prog: 0 } } } })).toContain('quests');
   });
 
+  it('migrasi v17 → v18: Hantu Gerhana di bestiari mulai dari 0', () => {
+    const v17 = structuredClone({ ...fresh(), version: 17 });
+    delete v17.records.bestiary.wraith;
+    const r = readSlot(v17);
+    expect(r.status).toBe('ok');
+    expect(r.data.records.bestiary.wraith).toBe(0);
+  });
+
   it('menolak catatan toko & Gudang yang rusak', () => {
     expect(validateSlot({ ...fresh(), shops: { 'mars:weapons': { day: 1, sold: {} } } })).toContain('shops');
     expect(validateSlot({ ...fresh(), shops: { 'rimba:weapons': { day: 1, sold: { 0: 0 } } } })).toContain('shops');

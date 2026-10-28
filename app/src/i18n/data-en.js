@@ -140,7 +140,7 @@ const UNIQUE_EN = {
 };
 const CHEST_EN = { 'Peti Gear': 'Gear Chest', 'Peti Agung': 'Grand Chest' };
 
-const REGION_EN = { 'Hutan Kelam': 'Gloomwood', 'Padang Es': 'Frost Plains', 'Gurun Merah': 'Red Desert', 'Gunung Api': 'Fire Mountain' };
+const REGION_EN = { 'Tanah Gerhana': 'Eclipse Lands', 'Hutan Kelam': 'Gloomwood', 'Padang Es': 'Frost Plains', 'Gurun Merah': 'Red Desert', 'Gunung Api': 'Fire Mountain' };
 const TOWN_EN = { 'Kota Awal': 'Hometown', Rimbawana: 'Wildwood', Bekubara: 'Frosthold', Pasirluas: 'Sandreach', Baraapi: 'Emberfall' };
 
 const MARK_EN = {
@@ -152,6 +152,7 @@ const MARK_EN = {
 };
 
 const ENEMY_EN = {
+  'Lendir Hampa': 'Void Slime', 'Kelelawar Gerhana': 'Eclipse Bat', 'Katak Hampa': 'Void Frog', 'Golem Gerhana': 'Eclipse Golem', 'Hantu Gerhana': 'Eclipse Wraith',
   Lendir: 'Ooze', Kelelawar: 'Bat', Golem: 'Golem', 'Lendir Kecil': 'Oozeling', 'Katak Ludah': 'Spitting Toad', 'Babi Batu': 'Stone Boar',
   'Dukun Tengkorak': 'Skull Shaman', 'Peri Lumut': 'Moss Wisp', 'Jamur Bom': 'Bomb Shroom', 'Kura Baja': 'Iron Tortoise',
   'Raja Maw': 'King Maw', 'Golem Kristal': 'Crystal Golem', 'Ratu Spora': 'Spore Queen', 'Raja Lava': 'Lava King',

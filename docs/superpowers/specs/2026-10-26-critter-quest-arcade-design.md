@@ -932,14 +932,20 @@ Urutan dungeon sama dengan urutan buka dungeon (§18.3). Rentang level wilayah t
 Hadiah side quest disesuaikan tingkat wilayah/kota: koin & EXP (rumus seperti Papan Tugas, ×3), Lencana 2–6, dan satu hadiah khas (gear Langka–Epik, permata, bahan, atau ramuan). Angka di `data/quests.js`.
 
 ### 26.7 Tanah Gerhana & Menara Gerhana (9F-4)
-- **Tanah Gerhana:** wilayah kelima yang kecil (8000 × 5000), LV 45–50, terbuka setelah bab 6 dimulai. Masuk dari gerbang Baraapi; tepi barat kembali ke Baraapi, tepi timur tertutup. Tampilan: tanah ungu gelap, kristal hitam, batu melayang, langit gerhana. Musuh: varian gerhana dari musuh lama (lebih kuat, berkilau ungu) dan 1 musuh khas. Peti: 2 + Penguasa.
+- **Tanah Gerhana** (9F-4a): wilayah kelima yang kecil (8000 × 5000), LV 45–50.
+  - Muncul di daftar gerbang Baraapi setelah kelima Pecahan Segel terkumpul (`unlock` di `data/world.js`). Tepi barat kembali ke Baraapi; tepi timur buntu ("Tidak ada jalan lagi ke timur").
+  - Tampilan: tanah ungu kehitaman, menara kristal hitam, batu melayang, kolam hampa berbintang.
+  - Musuh varian gerhana: Lendir Hampa (memperlambat), Kelelawar Gerhana, Katak Hampa (3 tembakan menyebar), dan Golem Gerhana (memperlambat).
+  - Musuh khas **Hantu Gerhana**: menghilang (tak bisa dipukul), muncul 130–190 dari pemain, lalu menembak cincin 10 peluru.
+  - Peti harta: 4, termasuk Penguasa, seperti wilayah lain.
+  - **Save versi 18:** `migrate()` v17 → v18 menambah Hantu Gerhana ke bestiari.
 - **Menara Gerhana:** dungeon keenam, gerbang di titik tetap ujung timur. 5 lantai, kesulitan di atas Benteng Lava; ekspedisi LV 45–50.
 - **Sang Gerhana**, bos akhir 3 fase:
   1. **Matahari Hitam:** cincin & spiral cahaya, sinar berputar.
   2. **Gerhana** (HP ≤ 66%): arena menggelap (cahaya hanya di sekitar pemain), bergantian memakai satu serangan khas tiap bos dungeon.
   3. **Kehampaan** (HP ≤ 33%): lebih cepat, lubang hitam yang menarik pemain, memanggil bayangan.
 - **Epilog:** layar cerita singkat dan rangkuman (waktu bermain, kill, bos), lalu kembali ke Kota Awal. Game tetap berlanjut; Menara bisa diulang. Rekor `records.ending` (waktu tamat pertama).
-- Save naik (v18) untuk rekor dungeon baru, bestiari musuh baru, dan `records.ending`.
+- **Save versi 19** (9F-4b): rekor dungeon Menara Gerhana, bos baru di bestiari, `records.ending`.
 
 ### 26.8 Pembagian kerja
 - **9F-1:** mesin quest, save v17, jurnal, tanda NPC, penanda peta/panah, quest utama bab 1–5 (bab 6 menunggu 9F-4).

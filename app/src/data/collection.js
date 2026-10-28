@@ -22,6 +22,7 @@ export const BESTIARY = {
   sandworm: { stat: 'def', v: 1.5 },
   imp: { stat: 'critDmg', v: 0.03 },
   salamander: { stat: 'atk', v: 1.5 },
+  wraith: { stat: 'cdr', v: 1 },
   boss: { stat: 'atk', v: 2 },
   crystalboss: { stat: 'def', v: 2 },
   sporeboss: { stat: 'maxHp', v: 20 },

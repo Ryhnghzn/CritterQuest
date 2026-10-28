@@ -39,6 +39,7 @@ export function aiStep(run, e, dt) {
     }
     case 'boss': return boss(run, e, b, dt);
     case 'burrow': return burrow(run, e, b);
+    case 'blink': return blink(run, e, b);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }
@@ -147,6 +148,36 @@ function burrow(run, e, b) {
   }
   if (e.modeT <= 0) { e.mode = 'under'; e.modeT = b.under; e.hidden = true; run.spawnBurst(e.x, e.y, '#c9a26a', 10); return { vx: 0, vy: 0 }; }
   return toward(e, run.px, run.py, b.upSpeed);
+}
+
+// Hantu Gerhana: drifts at a distance, fades out (cannot be hit), appears beside the
+// player and bursts into a ring of shots.
+function blink(run, e, b) {
+  if (e.mode === 'fade') {
+    if (e.modeT <= 0) {
+      const a = rand() * TAU, d = b.near[0] + rand() * (b.near[1] - b.near[0]);
+      e.x = run.px + Math.cos(a) * d; e.y = run.py + Math.sin(a) * d;
+      e.mode = 'appear'; e.modeT = b.appear; e.hidden = false;
+      run.spawnBurst(e.x, e.y, b.ring.color, 12);
+    }
+    return { vx: 0, vy: 0 };
+  }
+  if (e.mode === 'appear') {
+    if (e.modeT <= 0) {
+      for (let i = 0; i < b.ring.count; i++) fire(run, e.x, e.y, (i / b.ring.count) * TAU, b.ring);
+      e.mode = 'walk'; e.actT = b.every;
+    }
+    return { vx: 0, vy: 0 };
+  }
+  if (e.actT <= 0) {
+    e.mode = 'fade'; e.modeT = b.fade; e.hidden = true;
+    run.spawnBurst(e.x, e.y, b.ring.color, 10);
+    return { vx: 0, vy: 0 };
+  }
+  const t = toward(e, run.px, run.py, e.speed);
+  if (t.d > b.keep + 20) return t;
+  if (t.d < b.keep - 40) return { vx: -t.vx, vy: -t.vy };
+  return { vx: -t.vy * 0.5, vy: t.vx * 0.5 };
 }
 
 // Called when an enemy dies (before it is removed).

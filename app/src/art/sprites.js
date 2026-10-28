@@ -4,6 +4,7 @@
 // device scale and is re-run when the screen size changes.
 import { POTIONS } from '../data/potions.js';
 import { MONSTER_ART } from './monsters.js';
+import { ECLIPSE_ART } from './eclipse.js';
 
 export const OUT = '#16121c'; // shared outline colour (thin, dark — langkah 8)
 
@@ -440,6 +441,7 @@ export const ENEMY_ART = {
 // ——— pickups (centered, world units) ———
 // style D (plan "Gaya D" §4): every enemy is redrawn in art/monsters.js
 Object.assign(ENEMY_ART, MONSTER_ART);
+Object.assign(ENEMY_ART, ECLIPSE_ART);
 
 export const PICKUP_ART = {
   gem(g) { diamond(g, 1, '#8ff3ff', '#10a5c9'); },

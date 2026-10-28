@@ -124,10 +124,10 @@ export function stepField(run, dt) {
   if (run.edgeT > 0) run.edgeT -= dt;
   if (run.px < FIELD.exitZone) run.exit = 'west';
   else if (run.px > map.w - FIELD.exitZone) {
-    if (READY_TOWNS.includes(region.to)) run.exit = 'east';
+    if (region.to && READY_TOWNS.includes(region.to)) run.exit = 'east';
     else {
       run.px = map.w - FIELD.exitZone - 4;
-      if (run.edgeT <= 0) { run.edgeT = 3; run.showBanner(t('Gerbang {name} masih ditutup', { name: TOWNS[region.to].name })); }
+      if (run.edgeT <= 0) { run.edgeT = 3; run.showBanner(region.to ? t('Gerbang {name} masih ditutup', { name: TOWNS[region.to].name }) : t('Tidak ada jalan lagi ke timur')); }
     }
   }
 }

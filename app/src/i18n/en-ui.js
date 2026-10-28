@@ -404,4 +404,5 @@ export default {
   "kerang bercahaya": "glowing shell",
   "unta Omar": "Omar's camel",
   "Kumpulkan {n} {item} dari musuh di {r} pada malam hari": "Collect {n} {item} from enemies in {r} at night",
+  "Tidak ada jalan lagi ke timur": "There is no road further east",
 };

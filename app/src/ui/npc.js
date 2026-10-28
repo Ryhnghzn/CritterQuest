@@ -11,7 +11,7 @@ import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints } from '../meta/character.js';
 import { spentTalents, talentRespecPrice } from '../meta/talents.js';
 import { dungeonById } from '../data/dungeons.js';
-import { REGIONS, TOWNS, TOWN_IDS, regionOfDungeon } from '../data/world.js';
+import { REGIONS, TOWNS, TOWN_IDS, regionOfDungeon, regionOpen } from '../data/world.js';
 import { teleportPrice } from '../meta/world.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
@@ -19,7 +19,7 @@ import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
 import { bountyList, markShop, expeditionPanel } from './board.js';
 import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
-import { questDef } from '../meta/quests.js';
+import { questDef, shards } from '../meta/quests.js';
 import { rewardText, giveLines } from './journal.js';
 import { SIDE_MAX } from '../data/quests.js';
 import { tr, t, num } from '../i18n.js';
@@ -113,7 +113,7 @@ export function renderNpc(box, npc, ctx) {
     }
     const regs = el('div', 'regions');
     regs.append(el('span', 'note', tr('Keluar ke wilayah:')));
-    for (const r of REGIONS.filter((q) => q.from === char.location || q.to === char.location)) {
+    for (const r of REGIONS.filter((q) => (q.from === char.location || q.to === char.location) && regionOpen(q, shards(char)))) {
       const b = button('', 'btn small region', () => ctx.onExplore(r.id));
       const gates = r.dungeons.filter((d) => char.found.includes(d.id)).length;
       b.append(el('span', null, r.name), el('small', null, `LV ${r.levels[0]}–${r.levels[1]}${r.dungeons.length ? ` · ${t('gerbang {a}/{b}', { a: gates, b: r.dungeons.length })}` : ''}`));

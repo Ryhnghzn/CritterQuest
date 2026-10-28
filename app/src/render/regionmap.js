@@ -13,9 +13,9 @@ const statics = new Map(); // `${region}:${width}` → canvas of the whole regio
 let fogCanvas = null, fogKey = '';
 const MAX_STATIC = 2400;   // px; larger scales are drawn from this one, upscaled
 
-const LAKE = { forest: '#1b3a4a', ice: '#9cc6e6', desert: '#2f8a86', volcano: '#f97316' };
-const DOT = { forest: '#0f2416', ice: '#173027', desert: '#3f6b3a', volcano: '#1c1513' };
-const ROCK = { forest: '#3d3d46', ice: '#5b6878', desert: '#9a6a44', volcano: '#24201f' };
+const LAKE = { forest: '#1b3a4a', ice: '#9cc6e6', desert: '#2f8a86', volcano: '#f97316', eclipse: '#3a1f5c' };
+const DOT = { forest: '#0f2416', ice: '#173027', desert: '#3f6b3a', volcano: '#1c1513', eclipse: '#120b1c' };
+const ROCK = { forest: '#3d3d46', ice: '#5b6878', desert: '#9a6a44', volcano: '#24201f', eclipse: '#2a2238' };
 
 function line(g, pts, k) {
   g.beginPath();
@@ -151,7 +151,7 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
   if (fog) g.drawImage(fogLayer(map, fog), sx(0), sy(0), full, fullH);
   const pulse = 0.5 + 0.5 * Math.sin((opts.t ?? performance.now() / 1000) * 5);
   townMarker(g, sx(0) + 6, sy(map.start.y), TOWNS[region.from].name, -1, opts.labels);
-  townMarker(g, sx(map.w) - 6, sy(map.end.y), TOWNS[region.to].name, 1, opts.labels);
+  if (region.to) townMarker(g, sx(map.w) - 6, sy(map.end.y), TOWNS[region.to].name, 1, opts.labels);
   // dungeon gates already found
   for (const gt of opts.gates || []) {
     if (!gt.found) continue;

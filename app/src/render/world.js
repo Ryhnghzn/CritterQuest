@@ -108,8 +108,10 @@ export class Renderer {
       const out = [];
       fieldDecorLights(game, t, out, rect);
       actorLights(game, out, playing, 260 + sky.night * 60);
-      this.lighting.draw(cx, cy, out, `rgba(${sky.rgb.join(',')},${Math.max(0.16, sky.dark).toFixed(3)})`);
-      daylight(v, g, sky);
+      // Tanah Gerhana (spec §26.7) lies under the eclipse: always dusk-dark and violet, no sunlight
+      const eclipse = game.region.biome === 'eclipse';
+      this.lighting.draw(cx, cy, out, eclipse ? `rgba(16,6,34,${Math.max(0.62, sky.dark).toFixed(3)})` : `rgba(${sky.rgb.join(',')},${Math.max(0.16, sky.dark).toFixed(3)})`);
+      if (!eclipse) daylight(v, g, sky);
       v.begin(cx, cy);
       if (playing) this.drawFx(g, game, t);
       if (playing) targetArrow(g, game, t); // expedition (spec §25.5)
@@ -162,6 +164,7 @@ export class Renderer {
     // enemies
     for (const e of game.enemies) {
       if (!visible(e.x, e.y, 40)) continue;
+      if (e.hidden && e.ai === 'blink') continue; // a wraith between places (spec §26.7)
       if (e.hidden) { sandMound(g, e, t); continue; } // a burrowed sandworm (spec §25.4)
       shadow(g, e.x, e.y + e.r * 0.75, e.r * 0.85, e.r * 0.3);
       const squash = 1 + Math.sin(e.wob) * 0.06;

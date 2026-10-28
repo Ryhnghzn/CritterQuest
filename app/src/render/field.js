@@ -13,6 +13,7 @@ import { drawHideout, drawQuestSpot, hideoutLights } from './hideout.js';
 const cache = new Map(); // region id → { decals, pines, lakeShapes }
 const DCELL = 400;       // bucket size for floor decals & edge silhouettes
 let stamp = null, frame = 0; // de-duplicates solids seen in several grid cells
+const spires = [];           // eclipse crystal spires drawn this frame
 
 function seeded(seed) {
   let s = seed % 2147483647 || 1;
@@ -57,6 +58,22 @@ export function groundTile(scale, [c0, c1], biome = 'forest') {
       wrap(() => { g.beginPath(); pts.forEach(([px, py], k) => (k ? g.lineTo(px, py) : g.moveTo(px, py))); g.strokeStyle = 'rgba(255,110,40,.22)'; g.stroke(); });
     }
     for (let i = 0; i < 26; i++) { const x = r() * T, y = r() * T, s = 0.6 + r(); wrap(() => { g.beginPath(); g.arc(x, y, s, 0, TAU); g.fillStyle = 'rgba(160,150,150,.18)'; g.fill(); }); }
+  } else if (biome === 'eclipse') {
+    g.lineWidth = 1;
+    for (let i = 0; i < 6; i++) { // faint violet veins
+      const x = r() * T, y = r() * T, a = r() * TAU;
+      const pts = [[x, y]];
+      for (let k = 0; k < 5; k++) { const p = pts[k]; pts.push([p[0] + Math.cos(a + (r() - 0.5) * 1.2) * 9, p[1] + Math.sin(a + (r() - 0.5) * 1.2) * 9]); }
+      wrap(() => { g.beginPath(); pts.forEach(([px, py], k) => (k ? g.lineTo(px, py) : g.moveTo(px, py))); g.strokeStyle = 'rgba(170,120,255,.16)'; g.stroke(); });
+    }
+    for (let i = 0; i < 34; i++) { // dust of tiny stars
+      const x = r() * T, y = r() * T, s = 0.5 + r() * 0.9, a = 0.12 + r() * 0.3;
+      wrap(() => { g.beginPath(); g.arc(x, y, s, 0, TAU); g.fillStyle = `rgba(220,200,255,${a.toFixed(2)})`; g.fill(); });
+    }
+    for (let i = 0; i < 8; i++) { // black glassy shards
+      const x = r() * T, y = r() * T, a = r() * TAU;
+      wrap(() => { g.save(); g.translate(x, y); g.rotate(a); g.beginPath(); g.moveTo(-4, 0); g.lineTo(0, -1.6); g.lineTo(5, 0); g.lineTo(0, 1.4); g.closePath(); g.fillStyle = 'rgba(8,4,16,.5)'; g.fill(); g.restore(); });
+    }
   } else {
     for (let i = 0; i < 26; i++) { // fallen leaves
       const x = r() * T, y = r() * T, a = r() * TAU, k = r();
@@ -182,18 +199,22 @@ function bridge(g, map, [x, y], lava) {
 
 function drawRivers(g, map, rect, theme, biome, t, bridges) {
   const W = FIELD.riverWidth;
-  const lava = biome === 'volcano', ice = biome === 'ice';
+  const lava = biome === 'volcano', ice = biome === 'ice', ecl = biome === 'eclipse';
   for (const river of map.rivers) {
     const pts = visibleRange(river, rect, W + 60);
     if (!pts) continue;
     g.lineCap = 'round'; g.lineJoin = 'round';
-    g.lineWidth = W + 26; g.strokeStyle = lava ? '#1a0e0b' : ice ? '#c9d6e6' : '#26241a'; strokeLine(g, pts);
+    g.lineWidth = W + 26; g.strokeStyle = lava ? '#1a0e0b' : ice ? '#c9d6e6' : ecl ? '#0c0816' : '#26241a'; strokeLine(g, pts);
     g.lineWidth = W + 8; g.strokeStyle = shade(theme.water, lava ? 0.55 : 0.7); strokeLine(g, pts);
     g.lineWidth = W - 6; g.strokeStyle = theme.water; strokeLine(g, pts);
     if (lava) {
       g.lineWidth = W * 0.5; g.strokeStyle = 'rgba(255,190,80,.55)'; strokeLine(g, pts);
       g.setLineDash([26, 40]); g.lineDashOffset = -t * 14; g.lineWidth = W * 0.2; g.strokeStyle = 'rgba(255,240,170,.5)'; strokeLine(g, pts);
       g.setLineDash([8, 60]); g.lineDashOffset = -t * 9 + 30; g.lineWidth = W * 0.7; g.strokeStyle = 'rgba(40,14,8,.45)'; strokeLine(g, pts); // drifting crust
+    } else if (ecl) { // a stream of night: violet sheen and drifting star specks
+      g.lineWidth = W * 0.45; g.strokeStyle = 'rgba(150,90,230,.16)'; strokeLine(g, pts);
+      g.setLineDash([2, 34]); g.lineDashOffset = -t * 22; g.lineWidth = 3; g.strokeStyle = 'rgba(235,215,255,.55)'; strokeLine(g, pts);
+      g.setLineDash([2, 51]); g.lineDashOffset = -t * 15 + 17; g.lineWidth = 2; g.strokeStyle = 'rgba(200,170,255,.45)'; strokeLine(g, pts);
     } else {
       g.lineWidth = W * 0.45; g.strokeStyle = ice ? 'rgba(220,240,255,.22)' : 'rgba(120,190,220,.12)'; strokeLine(g, pts);
       g.setLineDash([18, 46]); g.lineDashOffset = -t * 30; g.lineWidth = 2; g.strokeStyle = 'rgba(190,230,255,.28)'; strokeLine(g, pts);
@@ -220,7 +241,7 @@ function lake(g, l, theme, biome, t) {
   } else if (biome === 'ice') {
     g.save(); g.translate(l.x, l.y); g.scale(1.07, 1.07); g.translate(-l.x, -l.y); lakePath(g, l); g.fillStyle = '#d6e2f0'; g.fill(); g.restore();
   } else {
-    g.save(); g.translate(l.x, l.y); g.scale(1.06, 1.06); g.translate(-l.x, -l.y); lakePath(g, l); g.fillStyle = biome === 'volcano' ? '#140a08' : '#26241a'; g.fill(); g.restore();
+    g.save(); g.translate(l.x, l.y); g.scale(1.06, 1.06); g.translate(-l.x, -l.y); lakePath(g, l); g.fillStyle = biome === 'volcano' ? '#140a08' : biome === 'eclipse' ? '#2a1c40' : '#26241a'; g.fill(); g.restore();
   }
   lakePath(g, l);
   if (biome === 'volcano') {
@@ -240,6 +261,19 @@ function lake(g, l, theme, biome, t) {
       g.beginPath(); g.arc(l.x + Math.cos(a) * d, l.y + Math.sin(a) * d, 4 + ph * 10, 0, TAU);
       g.strokeStyle = `rgba(255,240,180,${(0.6 * (1 - ph)).toFixed(2)})`; g.lineWidth = 2; g.stroke();
     }
+  } else if (biome === 'eclipse') { // a pool of void with stars far below
+    const gr = g.createRadialGradient(l.x, l.y, l.r * 0.05, l.x, l.y, l.r);
+    gr.addColorStop(0, '#020106'); gr.addColorStop(0.7, '#120a22'); gr.addColorStop(1, '#3a2260');
+    g.fillStyle = gr; g.fill();
+    g.clip();
+    const r = seeded(Math.floor(l.seed * 1e6) + 11);
+    for (let i = 0; i < 18; i++) {
+      const a = r() * TAU, d = Math.sqrt(r()) * l.r * 0.85, tw = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(t * (1 + r() * 2) + i));
+      g.beginPath(); g.arc(l.x + Math.cos(a) * d, l.y + Math.sin(a) * d, 0.8 + r() * 1.6, 0, TAU);
+      g.fillStyle = `rgba(235,220,255,${tw.toFixed(2)})`; g.fill();
+    }
+    g.beginPath(); g.ellipse(l.x, l.y, l.r * 0.92, l.r * 0.86, 0, 0, TAU);
+    g.strokeStyle = `rgba(190,140,255,${(0.25 + Math.sin(t * 1.4 + l.seed * 7) * 0.1).toFixed(2)})`; g.lineWidth = 3; g.stroke();
   } else if (biome === 'ice') {
     const gr = g.createRadialGradient(l.x - l.r * 0.3, l.y - l.r * 0.3, 0, l.x, l.y, l.r);
     gr.addColorStop(0, '#d9efff'); gr.addColorStop(1, '#7fb2d8');
@@ -290,6 +324,40 @@ function forestTree(g, s, t) {
   }
 }
 
+// eclipse: a cluster of black crystal spires with a violet sheen on the lit faces
+function crystalSpire(g, s, t) {
+  const r = s.r, x = s.x, y = s.y, v = s.v || 0;
+  shadow(g, x + 3, y + r * 0.3, r * 0.9, r * 0.34);
+  const shards = [[-0.42, 0.9, -0.18], [0.38, 1.05, 0.14], [0, 1.7, 0.02]];
+  if (v > 0.5) shards.unshift([0.62, 0.7, 0.32]);
+  for (const [dx, h, lean] of shards) {
+    const bx = x + dx * r, top = y - h * r * 1.3, w = r * (0.2 + h * 0.08);
+    const tx = bx + lean * r;
+    g.beginPath(); g.moveTo(bx - w, y + 2); g.lineTo(tx - w * 0.35, top + w * 0.6); g.lineTo(tx, top); g.lineTo(tx + w * 0.35, top + w * 0.6); g.lineTo(bx + w, y + 2); g.closePath();
+    g.fillStyle = '#120c1c'; g.fill(); g.lineWidth = 1.8; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.moveTo(bx - w, y + 2); g.lineTo(tx - w * 0.35, top + w * 0.6); g.lineTo(tx, top); g.lineTo(bx - w * 0.1, y + 2); g.closePath();
+    g.fillStyle = 'rgba(150,100,230,.32)'; g.fill(); // lit facet
+    const a = 0.35 + 0.3 * Math.sin(t * 1.6 + x * 0.01 + h);
+    g.beginPath(); g.moveTo(tx, top); g.lineTo(bx + w * 0.15, y - h * r * 0.25); g.strokeStyle = `rgba(215,185,255,${a.toFixed(2)})`; g.lineWidth = 1.3; g.stroke();
+  }
+}
+
+// eclipse: a small rock hanging in the air, bobbing above its own shadow
+function floatingRock(g, s, t) {
+  const r = s.r, v = s.v || 0, lift = r * 0.55 + Math.sin(t * 1.2 + s.x * 0.013) * r * 0.12;
+  g.beginPath(); g.ellipse(s.x, s.y + r * 0.35, r * 0.8, r * 0.26, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.38)'; g.fill();
+  const y = s.y - lift;
+  g.beginPath();
+  g.moveTo(s.x - r, y); g.lineTo(s.x - r * 0.55, y - r * 0.62); g.lineTo(s.x + r * 0.35, y - r * 0.7); g.lineTo(s.x + r, y - r * 0.1);
+  g.lineTo(s.x + r * 0.35, y + r * 0.35); g.lineTo(s.x, y + r * 0.8); g.lineTo(s.x - r * 0.45, y + r * 0.3); g.closePath();
+  g.fillStyle = v < 0.5 ? '#2a2236' : '#30283e'; g.fill(); g.lineWidth = 1.8; g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.moveTo(s.x - r * 0.55, y - r * 0.62); g.lineTo(s.x + r * 0.35, y - r * 0.7); g.lineTo(s.x + r * 0.2, y - r * 0.25); g.lineTo(s.x - r * 0.6, y - r * 0.15); g.closePath();
+  g.fillStyle = 'rgba(190,150,255,.16)'; g.fill();
+  const a = 0.4 + 0.3 * Math.sin(t * 2 + s.x);
+  g.strokeStyle = `rgba(190,140,255,${a.toFixed(2)})`; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(s.x - r * 0.3, y + r * 0.1); g.lineTo(s.x + r * 0.05, y - r * 0.2); g.lineTo(s.x + r * 0.4, y - r * 0.05); g.stroke();
+}
+
 // snow-laden pine: three dark tiers with white caps
 function snowPine(g, s) {
   const r = s.r, x = s.x, y = s.y;
@@ -335,6 +403,7 @@ function deadShrub(g, s, color = '#5a4632', ember = false) {
 }
 
 function rock(g, s, biome, t) {
+  if (biome === 'eclipse') { floatingRock(g, s, t); return; }
   const r = s.r, v = s.v || 0;
   shadow(g, s.x + 2, s.y + r * 0.45, r * 1.05, r * 0.4);
   g.beginPath();
@@ -367,7 +436,7 @@ function rock(g, s, biome, t) {
 function stone(g, s, t, biome) {
   shadow(g, s.x + 3, s.y + 10, 16, 6);
   g.beginPath(); g.roundRect(s.x - 12, s.y - 34, 24, 44, [10, 10, 3, 3]);
-  g.fillStyle = biome === 'desert' ? '#8a6448' : biome === 'volcano' ? '#2e2a2c' : biome === 'ice' ? '#566373' : '#4b4a5c';
+  g.fillStyle = biome === 'desert' ? '#8a6448' : biome === 'volcano' ? '#2e2a2c' : biome === 'ice' ? '#566373' : biome === 'eclipse' ? '#2a2236' : '#4b4a5c';
   g.fill(); g.lineWidth = 2; g.strokeStyle = OUT; g.stroke();
   g.beginPath(); g.roundRect(s.x - 8, s.y - 30, 6, 34, 3); g.fillStyle = 'rgba(255,255,255,.08)'; g.fill();
   if (biome === 'ice') { g.beginPath(); g.roundRect(s.x - 12, s.y - 36, 24, 8, 4); g.fillStyle = '#e8f1fb'; g.fill(); }
@@ -378,11 +447,15 @@ function stone(g, s, t, biome) {
 
 function ruinFloor(g, ru, biome) {
   g.beginPath(); g.arc(ru.x, ru.y, ru.r + 14, 0, TAU);
-  g.fillStyle = biome === 'desert' ? 'rgba(120,90,60,.45)' : biome === 'ice' ? 'rgba(120,135,160,.4)' : 'rgba(60,62,76,.42)'; g.fill();
+  g.fillStyle = biome === 'desert' ? 'rgba(120,90,60,.45)' : biome === 'ice' ? 'rgba(120,135,160,.4)' : biome === 'eclipse' ? 'rgba(60,40,96,.45)' : 'rgba(60,62,76,.42)'; g.fill();
   g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1.2;
   for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU; g.beginPath(); g.moveTo(ru.x + Math.cos(a) * 30, ru.y + Math.sin(a) * 30); g.lineTo(ru.x + Math.cos(a) * (ru.r + 12), ru.y + Math.sin(a) * (ru.r + 12)); g.stroke(); }
   for (const k of [0.3, 0.65]) { g.beginPath(); g.arc(ru.x, ru.y, ru.r * k + 14, 0, TAU); g.stroke(); }
   if (biome === 'forest') { g.beginPath(); g.arc(ru.x, ru.y, ru.r + 14, 0, TAU); g.fillStyle = 'rgba(70,120,60,.18)'; g.fill(); }
+  if (biome === 'eclipse') { // an eclipse sigil: a dark disc ringed in light
+    g.beginPath(); g.arc(ru.x, ru.y, ru.r * 0.3 + 6, 0, TAU); g.fillStyle = 'rgba(4,2,10,.6)'; g.fill();
+    g.beginPath(); g.arc(ru.x, ru.y, ru.r * 0.3 + 10, 0, TAU); g.strokeStyle = 'rgba(190,140,255,.35)'; g.lineWidth = 2.4; g.stroke();
+  }
 }
 
 function edgeShape(g, p, biome) {
@@ -391,6 +464,9 @@ function edgeShape(g, p, biome) {
     g.beginPath(); g.moveTo(-70, 22); g.quadraticCurveTo(-10, -40, 70, 22); g.closePath(); g.fillStyle = '#1c120b'; g.fill();
   } else if (biome === 'volcano') { // jagged basalt
     g.beginPath(); g.moveTo(-30, 22); g.lineTo(-18, -50); g.lineTo(-4, -20); g.lineTo(8, -70); g.lineTo(30, 22); g.closePath(); g.fillStyle = '#0d0706'; g.fill();
+  } else if (biome === 'eclipse') { // crystal spires against the dark
+    g.beginPath(); g.moveTo(-34, 22); g.lineTo(-22, -40); g.lineTo(-12, 0); g.lineTo(0, -90); g.lineTo(12, -6); g.lineTo(24, -52); g.lineTo(34, 22); g.closePath(); g.fillStyle = '#0b0714'; g.fill();
+    g.beginPath(); g.moveTo(0, -90); g.lineTo(-5, -50); g.lineTo(0, -30); g.strokeStyle = 'rgba(170,120,255,.3)'; g.lineWidth = 2; g.stroke();
   } else {
     g.beginPath(); g.moveTo(0, -80); g.lineTo(28, -14); g.lineTo(15, -14); g.lineTo(36, 22); g.lineTo(-36, 22); g.lineTo(-15, -14); g.lineTo(-28, -14); g.closePath();
     g.fillStyle = biome === 'ice' ? '#0e1820' : '#0c140f'; g.fill();
@@ -412,6 +488,14 @@ function decal(g, d, biome, t) {
       g.strokeStyle = 'rgba(170,140,70,.55)'; g.lineWidth = 1.2;
       g.beginPath(); g.moveTo(x - 3 * s, y); g.lineTo(x - 6 * s, y - 5 * s); g.moveTo(x, y); g.lineTo(x + 1 * s, y - 7 * s); g.moveTo(x + 3 * s, y); g.lineTo(x + 6 * s, y - 4 * s); g.stroke();
     } else { g.beginPath(); g.ellipse(x, y, 4 * s, 1.6 * s, 0.3, 0, TAU); g.fillStyle = 'rgba(235,225,200,.55)'; g.fill(); } // bleached bone
+  } else if (biome === 'eclipse') {
+    if (k < 0.65) { // a sliver of black glass
+      g.beginPath(); g.moveTo(x - 4 * s, y); g.lineTo(x, y - 2 * s); g.lineTo(x + 5 * s, y); g.lineTo(x, y + 1.5 * s); g.closePath(); g.fillStyle = 'rgba(16,10,28,.65)'; g.fill();
+    } else { // a twinkle
+      const a = 0.3 + 0.45 * (0.5 + 0.5 * Math.sin(t * 2.5 + x * 0.7));
+      g.strokeStyle = `rgba(215,190,255,${a.toFixed(2)})`; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x - 3 * s, y); g.lineTo(x + 3 * s, y); g.moveTo(x, y - 3 * s); g.lineTo(x, y + 3 * s); g.stroke();
+    }
   } else if (biome === 'volcano') {
     if (k < 0.6) { g.beginPath(); g.arc(x, y, 2 * s, 0, TAU); g.fillStyle = 'rgba(120,110,110,.35)'; g.fill(); } else {
       const a = 0.4 + 0.4 * Math.sin(t * 3 + x * 0.3);
@@ -494,7 +578,7 @@ export function drawField(g, game, ground, t, rect) {
   const d = dressOf(map);
   const vis = (x, y, m) => x > rect.x0 - m && x < rect.x1 + m && y > rect.y0 - m && y < rect.y1 + m;
   // the land past the edge
-  g.fillStyle = biome === 'desert' ? '#120c08' : biome === 'volcano' ? '#0a0605' : biome === 'ice' ? '#080c12' : '#070b08';
+  g.fillStyle = biome === 'desert' ? '#120c08' : biome === 'volcano' ? '#0a0605' : biome === 'ice' ? '#080c12' : biome === 'eclipse' ? '#06030c' : '#070b08';
   g.fillRect(rect.x0 - 10, rect.y0 - 10, rect.x1 - rect.x0 + 20, rect.y1 - rect.y0 + 20);
   const edges = [];
   for (const list of buckets(d.pines, rect, 160)) for (const p of list) if (vis(p.x, p.y, 120)) edges.push(p);
@@ -521,8 +605,9 @@ export function drawField(g, game, ground, t, rect) {
   // signposts at the exits
   const from = TOWNS[region.from], to = TOWNS[region.to];
   if (vis(map.start.x, map.start.y, 200)) signpost(g, FIELD.exitZone + 40, map.start.y - 70, tf('Ke {name}', { name: from.name }), -1);
-  if (vis(map.end.x, map.end.y, 200)) signpost(g, map.w - FIELD.exitZone - 40, map.end.y - 70, tf('Ke {name}', { name: to.name }), 1);
+  if (to && vis(map.end.x, map.end.y, 200)) signpost(g, map.w - FIELD.exitZone - 40, map.end.y - 70, tf('Ke {name}', { name: to.name }), 1);
   // solids & gates in y order (trees overlap what stands behind them)
+  spires.length = 0; // eclipse crystals seen this frame (their glow is added in fieldDecorLights)
   if (!stamp || stamp.length < map.solids.length) stamp = new Uint32Array(Math.max(map.solids.length, 1024));
   frame = (frame + 1) >>> 0 || 1;
   const list = [];
@@ -552,6 +637,7 @@ export function drawField(g, game, ground, t, rect) {
     else if (s.spot) drawQuestSpot(g, s.spot, t);
     else if (s.kind === 'tree') {
       if (biome === 'ice') snowPine(g, s);
+      else if (biome === 'eclipse') { crystalSpire(g, s, t); if ((s.v || 0) > 0.5) spires.push(s); }
       else if (biome === 'desert') { if ((s.v || 0) < 0.6) cactus(g, s); else deadShrub(g, s); } else if (biome === 'volcano') deadShrub(g, s, '#1c1513', true);
       else forestTree(g, s, t);
     } else if (s.kind === 'rock') rock(g, s, biome, t);
@@ -559,7 +645,7 @@ export function drawField(g, game, ground, t, rect) {
   }
   for (const p of edges) if (p.y >= 0) edgeShape(g, p, biome);
   // soft darkening along the map edge
-  const edgeRgb = biome === 'desert' ? '18,12,8' : biome === 'volcano' ? '10,6,5' : biome === 'ice' ? '8,12,18' : '7,11,8';
+  const edgeRgb = biome === 'desert' ? '18,12,8' : biome === 'volcano' ? '10,6,5' : biome === 'ice' ? '8,12,18' : biome === 'eclipse' ? '6,3,12' : '7,11,8';
   for (const [x, y, w, h, gx0, gy0, gx1, gy1] of [
     [0, 0, map.w, 60, 0, 0, 0, 60], [0, map.h - 60, map.w, 60, 0, map.h, 0, map.h - 60],
     [0, 0, 60, map.h, 0, 0, 60, 0], [map.w - 60, 0, 60, map.h, map.w, 0, map.w - 60, 0],
@@ -570,6 +656,21 @@ export function drawField(g, game, ground, t, rect) {
     gr.addColorStop(0, `rgba(${edgeRgb},.85)`); gr.addColorStop(1, `rgba(${edgeRgb},0)`);
     g.fillStyle = gr; g.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
   }
+  if (biome === 'eclipse') eclipseMotes(g, rect, t);
+}
+
+// eclipse: flecks of violet light drifting slowly upward through the view (from t only)
+function eclipseMotes(g, rect, t) {
+  const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 28; i++) {
+    const px = ((i * 0.6180339 + Math.sin(t * 0.13 + i) * 0.03) % 1 + 1) % 1, py = 1 - (((t * 0.018 * (0.6 + (i % 5) * 0.12) + i * 0.137) % 1 + 1) % 1);
+    const x = rect.x0 + px * w + Math.sin(t * 0.7 + i * 2.1) * 14, y = rect.y0 + py * h;
+    const a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2.2 + i * 1.7));
+    g.beginPath(); g.moveTo(x, y - 3); g.lineTo(x + 1.6, y); g.lineTo(x, y + 3); g.lineTo(x - 1.6, y); g.closePath();
+    g.fillStyle = `rgba(200,160,255,${a.toFixed(2)})`; g.fill();
+  }
+  g.restore();
 }
 
 // lights of the region itself (visible ones only): ruin runes, exit lanterns,
@@ -579,7 +680,7 @@ export function fieldDecorLights(game, t, out, rect) {
   const vis = (x, y, m) => !rect || (x > rect.x0 - m && x < rect.x1 + m && y > rect.y0 - m && y < rect.y1 + m);
   for (const ru of map.ruins) if (vis(ru.x, ru.y, ru.r + 120)) out.push({ x: ru.x, y: ru.y, r: ru.r + 80, rgb: biome === 'volcano' ? '255,140,60' : '150,140,255', tint: 0.035 + Math.sin(t * 1.3 + ru.x) * 0.01 });
   if (vis(map.start.x, map.start.y, 200)) out.push({ x: FIELD.exitZone + 40, y: map.start.y - 90, r: 120, rgb: '255,190,110', tint: 0.08 });
-  if (vis(map.end.x, map.end.y, 200)) out.push({ x: map.w - FIELD.exitZone - 40, y: map.end.y - 90, r: 120, rgb: '255,190,110', tint: 0.08 });
+  if (map.region.to && vis(map.end.x, map.end.y, 200)) out.push({ x: map.w - FIELD.exitZone - 40, y: map.end.y - 90, r: 120, rgb: '255,190,110', tint: 0.08 });
   for (const gt of game.gates || []) {
     if (!vis(gt.x, gt.y, 260)) continue;
     const [, c1] = gateGlow(gt);
@@ -590,6 +691,11 @@ export function fieldDecorLights(game, t, out, rect) {
     out.push({ x: tr.x, y: tr.y - 20, r: (tr.lord ? 200 : 150) + Math.sin(t * 3) * 10, rgb: tr.state === 'unlocked' ? '255,210,110' : '255,170,60', tint: tr.state === 'unlocked' ? 0.2 : 0.1 });
   }
   hideoutLights(game, t, out, vis);
+  if (biome === 'eclipse') {
+    for (const l of map.lakes) if (vis(l.x, l.y, l.r + 200)) out.push({ x: l.x, y: l.y, r: l.r * 1.5, rgb: '150,90,255', tint: 0.1 + Math.sin(t * 1.2 + l.x) * 0.02 });
+    for (const s of spires) out.push({ x: s.x, y: s.y - s.r * 1.2, r: s.r * 3, rgb: '170,120,255', tint: 0.07 + Math.sin(t * 1.6 + s.x * 0.01) * 0.02 });
+    return;
+  }
   if (biome !== 'volcano') return;
   for (const l of map.lakes) if (vis(l.x, l.y, l.r + 200)) out.push({ x: l.x, y: l.y, r: l.r * 1.7, rgb: '255,120,40', tint: 0.16 + Math.sin(t * 1.1 + l.x) * 0.02 });
   for (const river of map.rivers) {

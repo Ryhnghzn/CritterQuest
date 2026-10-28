@@ -73,6 +73,20 @@ export const ENEMIES = {
     ai: 'charge', range: 260, every: 2.4, windup: 0.6, dash: { speed: 400, time: 0.5 }, rest: 0.7,
     trail: { every: 0.08, r: 26, fuse: 0.45, dmg: 0.6 }, onHit: { burn: [0.3, 2] },
   },
+  // ——— Tanah Gerhana (spec §26.7): eclipse variants and the wraith ———
+  voidslink: { kin: 'slink', name: 'Lendir Hampa', hp: 26, speed: 64, dmg: 10, r: 11, xp: 1, sprite: 'voidslink', score: 1, onHit: { slow: [0.3, 1.2] } },
+  voiddart: { kin: 'dart', name: 'Kelelawar Gerhana', hp: 16, speed: 115, dmg: 8, r: 9, xp: 1, sprite: 'voiddart', score: 1 },
+  voidspitter: {
+    kin: 'spitter', name: 'Katak Hampa', hp: 32, speed: 52, dmg: 7, r: 11, xp: 2, sprite: 'voidspitter', score: 2,
+    ai: 'ranged', keep: 200, every: 2.2, windup: 0.5, shot: { speed: 190, dmg: 11, r: 6, color: '#b98aff', count: 3, spread: 0.22 },
+  },
+  voidtank: { kin: 'tank', name: 'Golem Gerhana', hp: 120, speed: 32, dmg: 18, r: 18, xp: 6, sprite: 'voidtank', score: 6, onHit: { slow: [0.35, 1.5] } },
+  // Hantu Gerhana: fades out, reappears right beside the player and bursts into a ring of shots
+  wraith: {
+    name: 'Hantu Gerhana', hp: 70, speed: 58, dmg: 12, r: 13, xp: 7, sprite: 'wraith', score: 7,
+    ai: 'blink', keep: 220, every: 3.4, fade: 0.55, appear: 0.45, near: [130, 190],
+    ring: { count: 10, speed: 160, dmg: 12, r: 6, color: '#c79bff' },
+  },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {

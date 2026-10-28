@@ -185,3 +185,23 @@ describe('Raja Maw', () => {
     expect(play()).toEqual(play());
   });
 });
+
+describe('Hantu Gerhana (spec §26.7)', () => {
+  it('menghilang (tak bisa dipukul), muncul di dekat pemain, lalu menembak cincin', () => {
+    const g = start();
+    const b = ENEMIES.wraith;
+    const e = place(g, 'wraith', 400, 0);
+    step(g, 2);
+    expect(e.mode).toBe('fade');
+    expect(e.hidden).toBe(true);
+    step(g, secs(b.fade) + 1);
+    expect(e.mode).toBe('appear');
+    expect(e.hidden).toBe(false);
+    const d = Math.hypot(e.x - g.px, e.y - g.py);
+    expect(d).toBeGreaterThan(b.near[0] - 30);
+    expect(d).toBeLessThan(b.near[1] + 30);
+    step(g, secs(b.appear) + 1);
+    expect(g.shots.length).toBe(b.ring.count);
+    expect(e.mode).toBe('walk');
+  });
+});

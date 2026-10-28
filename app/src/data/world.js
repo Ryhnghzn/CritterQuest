@@ -50,8 +50,19 @@ export const REGIONS = [
     dungeons: [{ id: 'lava', at: [0.05, 0.35] }],
     theme: { ground: ['#2a1a18', '#221413'], path: '#3e2a24', water: '#c2410c', ambient: 'rgba(14,4,2,.8)' },
   },
+  // Tanah Gerhana (spec §26.7): past Baraapi, open once all five Seal Shards are in; a dead end
+  // in the east (to: null) where Menara Gerhana stands (9F-4b).
+  {
+    id: 'eclipse', name: 'Tanah Gerhana', biome: 'eclipse', levels: [45, 50], from: 'bara', to: null, w: 8000, h: 5000, seed: 57,
+    branches: 3, rivers: 1, lakes: 6, ruins: 10, density: { tree: 30, rock: 16 }, unlock: { shards: 5 },
+    enemies: { voidslink: 3, voidspitter: 3, wraith: 3, voiddart: 2, voidtank: 2, shielder: 1, summoner: 1, healer: 1 },
+    dungeons: [],
+    theme: { ground: ['#1c1426', '#160f1f'], path: '#33284a', water: '#2a1640', ambient: 'rgba(8,4,16,.82)' },
+  },
 ];
 export const REGION_IDS = REGIONS.map((r) => r.id);
+// regions the town gate offers: next to the town, and opened (Tanah Gerhana: after the shards)
+export const regionOpen = (region, shards) => !region.unlock || shards >= region.unlock.shards;
 export const regionById = (id) => REGIONS.find((r) => r.id === id);
 // the region that holds a dungeon's gate
 export const regionOfDungeon = (dungeonId) => REGIONS.find((r) => r.dungeons.some((d) => d.id === dungeonId)) || null;
