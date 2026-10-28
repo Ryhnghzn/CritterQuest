@@ -173,3 +173,52 @@ describe('kota besar (§25.2)', () => {
     }
   });
 });
+
+describe('denah kota besar bisa dijelajahi', () => {
+  // flood fill over a 10-unit grid from the plaza spawn
+  function reach(id) {
+    const def = townDef(id), m = mapsOf(id).town, S = 10;
+    const cols = Math.ceil(def.w / S), rows = Math.ceil(def.h / S), seen = new Uint8Array(cols * rows);
+    const q = [[Math.round(def.spawn.x / S), Math.round(def.spawn.y / S)]];
+    seen[q[0][1] * cols + q[0][0]] = 1;
+    while (q.length) {
+      const [cx, cy] = q.pop();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || seen[ny * cols + nx]) continue;
+        if (!free(m, nx * S, ny * S)) continue;
+        seen[ny * cols + nx] = 1; q.push([nx, ny]);
+      }
+    }
+    return (x, y) => seen[Math.round(y / S) * cols + Math.round(x / S)] === 1;
+  }
+
+  it('dari alun-alun bisa ke semua pintu, gerbang, batu teleport, dan warga', () => {
+    for (const id of ['rimba', 'beku', 'pasir', 'bara']) {
+      const ok = reach(id), def = townDef(id);
+      for (const d of doorsOf(def)) expect(ok(d.outside.x, d.outside.y), `${id}: pintu ${d.house}`).toBe(true);
+      expect(ok(def.gateSpawn.x, def.gateSpawn.y), `${id}: gerbang`).toBe(true);
+      for (const n of def.npcs) {
+        const near = [[0, 30], [30, 0], [-30, 0], [0, -30]].some(([dx, dy]) => ok(n.x + dx, n.y + dy));
+        expect(near, `${id}: ${n.id}`).toBe(true);
+      }
+    }
+  });
+
+  it('warga yang berjalan tidak menembus bangunan', () => {
+    for (const id of ['rimba', 'beku', 'pasir', 'bara']) {
+      const m = mapsOf(id).town;
+      for (const n of townDef(id).npcs.filter((x) => x.wander)) {
+        for (let s = 0; s < 120; s += 0.5) {
+          const p = npcAt(n, s);
+          expect(free(m, p.x, p.y), `${id}: ${n.id} @${s}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('denah keempat kota berbeda', () => {
+    const sig = (id) => { const d = townDef(id); return `${d.w}x${d.h}:` + d.buildings.filter((b) => b.kind !== 'house' && b.kind !== 'gate' && b.kind !== 'stall').map((b) => b.kind).sort().join(','); };
+    expect(new Set(['rimba', 'beku', 'pasir', 'bara'].map(sig)).size).toBe(4);
+  });
+});

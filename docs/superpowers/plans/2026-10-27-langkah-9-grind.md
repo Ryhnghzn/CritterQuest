@@ -56,6 +56,10 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Render kota per tema (tanah, tembok, atap, pepohonan, partikel), batu teleport, perabot toko baru
 - [x] Kamus EN (nama kota, bangunan, warga, dialog)
 - [x] Verifikasi: tes, build, screenshot PC & HP
+#### 9D-2a+ — Denah & gaya unik per kota (permintaan 2026-10-28)
+- [x] `data/towns.js`: denah sendiri per kota (pohon raksasa, benteng & kolam beku, bazar & oasis, kanal lava & jembatan) — tes jangkauan pintu & jalur warga
+- [x] Render: gaya rumah, tembok, tanah, dan fitur per kota; rumah diurutkan kedalaman & tembus pandang saat pemain di belakangnya
+- [x] Verifikasi: tes, build, screenshot PC & HP
 #### 9D-2b — Pedagang: etalase harian, toko gear khusus, pedagang malam, bahan & permata
 #### 9D-2c — Gudang
 ### 9D-3 — Harta karun, mini bos, portal bos

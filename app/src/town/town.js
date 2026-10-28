@@ -34,7 +34,7 @@ export function mapsOf(townId) {
         { x: 0, y: def.h - def.wall, w: def.w, h: def.wall },
         { x: 0, y: 0, w: def.wall, h: def.h },
         { x: def.w - def.wall, y: 0, w: def.wall, h: def.h },
-        ...def.buildings,
+        ...def.buildings.filter((b) => b.solid !== false),
       ],
       // walk up into a house door → its interior
       doors: doors.map((d) => ({ ...d.out, dy: -1, to: d.house, at: d.inside })),

@@ -717,12 +717,16 @@ Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang 
   | Pasirluas | Gurun Merah | 3 |
   | Baraapi | Gunung Api | 4 |
 
-- **Tata letak kota besar** sama untuk keempatnya, berukuran 1800 × 1300 (Kota Awal 960 × 780):
-  - baris utara menghadap alun-alun: Penginapan, Toko Ramuan, Pandai Besi, Balai Petualang, Pandai Senjata, Penjahit Zirah;
-  - baris selatan menghadap jalan ke gerbang: Toko Perhiasan, Gudang, Pedagang Bahan, dan rumah warga;
-  - alun-alun dengan api unggun, batu teleport, dan Tukang Cukur;
-  - 5 warga per kota yang bisa diajak bicara.
-- **Tema per kota:** warna tanah, tembok, dan atap; pepohonan di luar tembok; kabut malam; partikel melayang (daun, salju, pasir, bara).
+- **Tata letak:** setiap kota besar punya denah dan gaya bangunan sendiri (permintaan pemilik 2026-10-28: tidak boleh satu cetakan). Semuanya memuat 9 bangunan: Penginapan, Toko Ramuan, Pandai Besi, Balai Petualang, Pandai Senjata, Penjahit Zirah, Toko Perhiasan, Gudang, Pedagang Bahan. Selain itu ada rumah warga, batu teleport, Tukang Cukur, dan 5 warga.
+
+  | Kota | Ukuran | Bentuk |
+  |---|---|---|
+  | Rimbawana | 1900 × 1500 | Desa cincin pondok kayu di sekitar pohon raksasa berlentera, pagar kayu runcing, sumur, kebun |
+  | Bekubara | 1400 × 1700 | Benteng tinggi: dua kolom balai batu bersalju di kiri-kanan jalan tengah, kolam beku, patung, menara di sudut, citadel di puncak |
+  | Pasirluas | 2400 × 1150 | Kota bazar lebar: rumah bata lumpur beratap datar, oasis di tengah, deretan lapak pasar menuju gerbang |
+  | Baraapi | 1900 × 1500 | Kota tempa terbelah kanal lava dengan tiga jembatan batu, landasan tempa raksasa, rumah basalt, api unggun di alun-alun selatan |
+
+- **Tema per kota:** warna tanah dan pola lantai, gaya tembok, pepohonan di luar tembok, kabut malam, dan partikel melayang (daun, salju, pasir, bara).
 - **Perjalanan:**
   - Tepi timur wilayah membawa ke kota tujuannya; tepi barat membawa ke kota asalnya.
   - Gerbang kota besar membawa ke wilayahnya, masuk dari timur.

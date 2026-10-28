@@ -88,41 +88,110 @@ const KEEPER_AT = {
   storage: { storage: [240, 100] }, mats: { mats: [220, 112] },
 };
 
-// north row (doors face the plaza) and south row (doors face the street to the gate)
-const W = 1800, H = 1300, WALL = 30, ROW_N = 30, ROW_S = 730;
-const NORTH = [['inn', 70], ['potion', 330], ['gear', 590], ['guild', 1020], ['weapons', 1280], ['armor', 1540]];
-const SOUTH = [['jewelry', 110], ['storage', 370], ['mats', 1240], [null, 1500]];
-const GATE = { x: 810, y: H - WALL - 100, w: 180, h: 100 };
 const SIGNS = {
   inn: ['inn', 'Penginapan'], potion: ['potion', 'Toko Ramuan'], gear: ['pow', 'Pandai Besi'], guild: ['arm', 'Balai Petualang'],
   weapons: ['gearSword', 'Pandai Senjata'], armor: ['gearArmor', 'Penjahit Zirah'], jewelry: ['gearRing', 'Toko Perhiasan'],
   storage: ['chest', 'Gudang'], mats: ['gem', 'Pedagang Bahan'],
 };
 const HOUSE_THEME = { inn: 'inn', potion: 'potion', gear: 'smith', weapons: 'smith', guild: 'guild' };
+const WALL = 30;
+const lampsOf = (pts) => pts.map(([x, y]) => ({ x, y }));
+const decorOf = (list) => list.map(([kind, x, y]) => ({ kind, x, y }));
+
+// Each big town has its own plan (owner's request 2026-10-28: no two alike).
+// houses: [id | null (townsfolk home), x, y, w?, h?] — doors face south;
+// features: extra boxes (solid unless solid: false); gateX: gate in the south wall;
+// stone / barber / folk: where the teleport stone, the barber's stall and the townsfolk stand.
+const LAYOUTS = {
+  // Rimbawana: a ring village of timber huts around a giant lantern tree, behind a palisade
+  rimba: {
+    w: 1900, h: 1500, gateX: 860, spawn: [950, 780], stone: [1130, 820], barber: [640, 830],
+    houses: [['inn', 300, 120], ['potion', 560, 40], ['gear', 1150, 40], ['guild', 1410, 120], ['weapons', 130, 500], ['armor', 1580, 500],
+      ['jewelry', 300, 960], ['storage', 560, 1060], ['mats', 1150, 1060], [null, 1410, 960, 160, 160], [null, 1660, 1180, 150, 150], [null, 80, 1180, 150, 150]],
+    features: [
+      { id: 'bigtree', kind: 'bigtree', x: 880, y: 560, w: 140, h: 110 },
+      { id: 'well', kind: 'well', x: 420, y: 700, w: 50, h: 40 },
+      { id: 'garden1', kind: 'garden', x: 1330, y: 720, w: 140, h: 60 },
+    ],
+    lamps: [[760, 470], [1140, 470], [760, 760], [1140, 760], [400, 450], [1500, 450], [860, 1300], [1040, 1300]],
+    decor: [['barrel', 520, 330], ['crate', 1380, 330], ['bench', 820, 880], ['bench', 1080, 880], ['crate', 260, 760], ['barrel', 1640, 760], ['barrel', 1656, 772]],
+    folk: [[620, 420], [1300, 640], [950, 960], [950, 420, { rx: 300, ry: 6, speed: 0.12 }], [1300, 1320]],
+  },
+  // Bekubara: a tall fortress — two columns of stone halls along a central avenue,
+  // the frozen pond in the middle and the citadel (materials hall) at the top
+  beku: {
+    w: 1400, h: 1700, gateX: 610, spawn: [700, 820], stone: [880, 900], barber: [450, 1060],
+    houses: [['inn', 120, 60], ['potion', 120, 430], ['weapons', 120, 800], ['jewelry', 120, 1170],
+      ['gear', 1090, 60], ['guild', 1090, 430], ['armor', 1090, 800], ['storage', 1090, 1170], ['mats', 595, 50, 210, 210]],
+    features: [
+      { id: 'pond', kind: 'pond', x: 560, y: 520, w: 280, h: 170 },
+      { id: 'statue', kind: 'statue', x: 680, y: 1180, w: 40, h: 30 },
+      { id: 'tower1', kind: 'tower', x: WALL, y: WALL, w: 60, h: 60 }, { id: 'tower2', kind: 'tower', x: 1310, y: WALL, w: 60, h: 60 },
+      { id: 'tower3', kind: 'tower', x: WALL, y: 1610, w: 60, h: 60 }, { id: 'tower4', kind: 'tower', x: 1310, y: 1610, w: 60, h: 60 },
+    ],
+    lamps: [[520, 330], [880, 330], [520, 760], [880, 760], [520, 1120], [880, 1120], [520, 1500], [880, 1500]],
+    decor: [['barrel', 380, 300], ['crate', 1020, 300], ['bench', 620, 780], ['bench', 780, 780], ['crate', 380, 1400], ['barrel', 1020, 1410]],
+    folk: [[450, 700], [950, 700], [700, 1320], [700, 330, { rx: 150, ry: 6, speed: 0.15 }], [700, 1480]],
+  },
+  // Pasirluas: a wide bazaar town — flat-roofed houses on two rows, an oasis in the
+  // middle and rows of market stalls on the way to the gate
+  pasir: {
+    w: 2400, h: 1150, gateX: 1110, spawn: [1200, 640], stone: [1450, 470], barber: [560, 470],
+    houses: [['inn', 100, 40], ['potion', 360, 40], ['gear', 620, 40], ['guild', 1590, 40], ['weapons', 1850, 40], ['armor', 2110, 40],
+      ['jewelry', 100, 660], ['storage', 360, 660], ['mats', 1850, 660], [null, 2110, 680, 170, 170], [null, 880, 40, 160, 160], [null, 1380, 40, 160, 160]],
+    features: [
+      { id: 'oasis', kind: 'oasis', x: 1080, y: 300, w: 240, h: 150 },
+      { id: 'market1', kind: 'market', x: 680, y: 720, w: 130, h: 60, goods: 'cloth' },
+      { id: 'market2', kind: 'market', x: 860, y: 800, w: 130, h: 60, goods: 'fruit' },
+      { id: 'market3', kind: 'market', x: 1400, y: 720, w: 130, h: 60, goods: 'pots' },
+      { id: 'market4', kind: 'market', x: 1580, y: 800, w: 130, h: 60, goods: 'spice' },
+    ],
+    lamps: [[1000, 560], [1400, 560], [700, 300], [1700, 300], [1050, 940], [1350, 940], [250, 560], [2150, 560]],
+    decor: [['barrel', 600, 600], ['crate', 1780, 600], ['crate', 1796, 612], ['bench', 1120, 560], ['bench', 1280, 560], ['barrel', 330, 960], ['crate', 2000, 960]],
+    folk: [[900, 500], [1600, 520], [760, 920], [1200, 560, { rx: 500, ry: 6, speed: 0.1 }], [1700, 960]],
+  },
+  // Baraapi: a forge city split by a lava channel with three stone bridges — halls on
+  // the north bank, the great anvil between them, the plaza and gate on the south bank
+  bara: {
+    w: 1900, h: 1500, gateX: 860, spawn: [950, 470], stone: [1130, 1020], barber: [560, 1000],
+    houses: [['inn', 100, 60], ['potion', 360, 60], ['gear', 620, 60], ['guild', 1090, 60], ['weapons', 1350, 60], ['armor', 1610, 60],
+      ['jewelry', 100, 880], ['storage', 360, 880], ['mats', 1350, 880], [null, 1610, 880, 170, 170]],
+    features: [
+      { id: 'anvil', kind: 'monument', x: 880, y: 130, w: 140, h: 90 },
+      { id: 'fire', kind: 'fire', x: 928, y: 980, w: 44, h: 30 },
+      { id: 'lava1', kind: 'lava', x: WALL, y: 690, w: 470, h: 80 },
+      { id: 'lava2', kind: 'lava', x: 620, y: 690, w: 270, h: 80 },
+      { id: 'lava3', kind: 'lava', x: 1010, y: 690, w: 270, h: 80 },
+      { id: 'lava4', kind: 'lava', x: 1400, y: 690, w: 470, h: 80 },
+      { id: 'bridge1', kind: 'bridge', x: 500, y: 680, w: 120, h: 100, solid: false },
+      { id: 'bridge2', kind: 'bridge', x: 890, y: 680, w: 120, h: 100, solid: false },
+      { id: 'bridge3', kind: 'bridge', x: 1280, y: 680, w: 120, h: 100, solid: false },
+    ],
+    lamps: [[480, 640], [640, 640], [870, 640], [1030, 640], [1260, 640], [1420, 640], [760, 1200], [1140, 1200]],
+    decor: [['barrel', 840, 300], ['crate', 1040, 300], ['bench', 820, 1100], ['bench', 1080, 1100], ['crate', 620, 1250], ['barrel', 1300, 1250]],
+    folk: [[700, 450], [1250, 450], [950, 1180], [950, 360], [1450, 1200]],
+  },
+};
 
 function bigTown(id, t) {
-  const roofs = t.theme.roofs;
-  const buildings = [];
-  [...NORTH.map(([h, x]) => [h, x, ROW_N]), ...SOUTH.map(([h, x]) => [h, x, ROW_S])].forEach(([h, x, y], i) => {
+  const lay = LAYOUTS[id], roofs = t.theme.roofs;
+  const gate = { x: lay.gateX, y: lay.h - WALL - 100, w: 180, h: 100 };
+  const buildings = lay.houses.map(([h, x, y, w = HOUSE_W, hh = HOUSE_H], i) => {
     const [sign, name] = h ? SIGNS[h] : [null, null];
-    buildings.push(house(h || `home${i}`, x, y, { theme: HOUSE_THEME[h] || null, sign, name, roof: roofs[i % roofs.length] }));
+    return { ...house(h || `home${i}`, x, y, { theme: HOUSE_THEME[h] || null, sign, name, roof: roofs[i % roofs.length] }), w, h: hh };
   });
-  for (const [, x] of NORTH) buildings.push({ id: `fence${x}`, kind: 'fence', x: x - 40, y: 150, w: 28, h: 70 });
-  buildings.push({ id: 'fenceE', kind: 'fence', x: 1742, y: 150, w: 28, h: 70 });
-  buildings.push(
-    { id: 'fire', kind: 'fire', x: 878, y: 455, w: 44, h: 30 },
-    { id: 'gate', kind: 'gate', ...GATE },
-    { id: 'barber', kind: 'stall', x: 170, y: 470, w: 116, h: 56, name: 'Tukang Cukur' },
-  );
+  buildings.push(...lay.features.map((f) => ({ ...f })),
+    { id: 'gate', kind: 'gate', ...gate },
+    { id: 'barber', kind: 'stall', x: lay.barber[0], y: lay.barber[1], w: 116, h: 56, name: 'Tukang Cukur' });
   const k = t.keepers;
   const npcs = [
-    npc('gate', 'gate', k.gate[0], 900, GATE.y - 18, k.gate[1], k.gate[2]),
-    npc('barber', 'barber', k.barber[0], 228, 550, k.barber[1], k.barber[2]),
-    npc('stone', 'teleport', 'Batu Teleport', 1090, 470, null, ['#8f7bff', '#4b3aa8'], { object: 'stone' }),
-    ...t.folk.map((f, i) => npc(`folk${i}`, 'talk', f.name, f.at[0], f.at[1], f.look, f.outfit, { title: f.title, lines: f.lines, wander: f.wander, scale: f.scale })),
+    npc('gate', 'gate', k.gate[0], gate.x + gate.w / 2, gate.y - 18, k.gate[1], k.gate[2]),
+    npc('barber', 'barber', k.barber[0], lay.barber[0] + 58, lay.barber[1] + 80, k.barber[1], k.barber[2]),
+    npc('stone', 'teleport', 'Batu Teleport', lay.stone[0], lay.stone[1], null, ['#8f7bff', '#4b3aa8'], { object: 'stone' }),
+    ...t.folk.map((f, i) => npc(`folk${i}`, 'talk', f.name, lay.folk[i][0], lay.folk[i][1], f.look, f.outfit, { title: f.title, lines: f.lines, wander: lay.folk[i][2] || f.wander, scale: f.scale })),
   ];
   const interiors = {};
-  for (const [h] of [...NORTH, ...SOUTH]) {
+  for (const [h] of lay.houses) {
     if (!h) continue;
     const base = INTERIORS[h] || NEW_ROOMS[h];
     const r = { ...base, furniture: base.furniture, lights: base.lights, npcs: [] };
@@ -133,15 +202,10 @@ function bigTown(id, t) {
     interiors[h] = r;
   }
   return {
-    id, w: W, h: H, wall: WALL, talkRadius: 48,
-    spawn: { x: 900, y: 600 }, gateSpawn: { x: 900, y: GATE.y - 110 },
+    id, w: lay.w, h: lay.h, wall: WALL, talkRadius: 48,
+    spawn: { x: lay.spawn[0], y: lay.spawn[1] }, gateSpawn: { x: gate.x + gate.w / 2, y: gate.y - 110 },
     buildings, npcs, interiors, theme: t.theme,
-    lamps: [[300, 320], [1500, 320], [640, 650], [1160, 650], [300, 1060], [1500, 1060], [700, 1110], [1100, 1110], [900, 330]].map(([x, y]) => ({ x, y })),
-    decor: [
-      ['barrel', 50, 250], ['barrel', 66, 262], ['crate', 1752, 250], ['crate', 560, 250], ['barrel', 1000, 252],
-      ['bench', 800, 560], ['bench', 1000, 560], ['bench', 760, 400], ['bench', 1040, 400],
-      ['crate', 90, 1180], ['barrel', 1700, 1190], ['barrel', 1720, 1176], ['crate', 620, 1000], ['barrel', 1180, 990],
-    ].map(([kind, x, y]) => ({ kind, x, y })),
+    lamps: lampsOf(lay.lamps), decor: decorOf(lay.decor),
   };
 }
 
@@ -160,11 +224,11 @@ const BIG = {
       mats: ['Saga', L(0, 4), ['#3a6a4a', '#264a34']],
     },
     folk: [
-      { name: 'Raka', title: 'Pemburu', at: [700, 420], look: L(0, 2), outfit: ['#4a6b2a', '#30481c'], lines: ['Di Hutan Kelam bagian timur, musuhnya jauh lebih galak. Hati-hati.', 'Rimbawana dibangun di atas akar pohon tertua di hutan ini.'] },
-      { name: 'Melati', title: 'Penjual Bunga', at: [1150, 580], look: L(2, 4), outfit: ['#d6608a', '#a83a64'], lines: ['Bunga kunang-kunang hanya mekar di malam hari. Cantik, kan?', 'Pedagang di sini menjual barang lebih bagus dari Kota Awal — tapi lebih mahal juga.'] },
-      { name: 'Tole', title: 'Anak Kota', at: [880, 640], look: L(0, 5), outfit: ['#3fa7d6', '#2a7aa3'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Batu teleport itu bisa membawamu ke kota mana pun yang pernah kau datangi!', 'Aku pernah lihat jamur raksasa di ujung timur hutan. Sumpah!'] },
-      { name: 'Prajurit Bayu', title: 'Penjaga Kota', at: [900, 300], look: L(1, 3), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Hutan Kelam. Jalan ke Kota Awal ada di ujung baratnya.', 'Malam hari kawanan musuh di hutan bertambah banyak.'] },
-      { name: 'Dewi', title: 'Pengelana', at: [1400, 1050], look: L(3, 1), outfit: ['#8a5a9a', '#5e3a6e'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Kudengar ada dungeon tersembunyi di Hutan Kelam. Gerbangnya berbeda bagi tiap orang.', 'Gudang di sini menyimpan barangmu, dan bisa kau ambil di kota besar mana pun.'] },
+      { name: 'Raka', title: 'Pemburu', look: L(0, 2), outfit: ['#4a6b2a', '#30481c'], lines: ['Di Hutan Kelam bagian timur, musuhnya jauh lebih galak. Hati-hati.', 'Rimbawana dibangun di atas akar pohon tertua di hutan ini.'] },
+      { name: 'Melati', title: 'Penjual Bunga', look: L(2, 4), outfit: ['#d6608a', '#a83a64'], lines: ['Bunga kunang-kunang hanya mekar di malam hari. Cantik, kan?', 'Pedagang di sini menjual barang lebih bagus dari Kota Awal — tapi lebih mahal juga.'] },
+      { name: 'Tole', title: 'Anak Kota', look: L(0, 5), outfit: ['#3fa7d6', '#2a7aa3'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Batu teleport itu bisa membawamu ke kota mana pun yang pernah kau datangi!', 'Aku pernah lihat jamur raksasa di ujung timur hutan. Sumpah!'] },
+      { name: 'Prajurit Bayu', title: 'Penjaga Kota', look: L(1, 3), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Hutan Kelam. Jalan ke Kota Awal ada di ujung baratnya.', 'Malam hari kawanan musuh di hutan bertambah banyak.'] },
+      { name: 'Dewi', title: 'Pengelana', look: L(3, 1), outfit: ['#8a5a9a', '#5e3a6e'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Kudengar ada dungeon tersembunyi di Hutan Kelam. Gerbangnya berbeda bagi tiap orang.', 'Gudang di sini menyimpan barangmu, dan bisa kau ambil di kota besar mana pun.'] },
     ],
   }),
   beku: bigTown('beku', {
@@ -179,11 +243,11 @@ const BIG = {
       mats: ['Sigrun', L(1, 5), ['#4a7a9a', '#30566e']],
     },
     folk: [
-      { name: 'Arne', title: 'Nelayan Es', at: [700, 420], look: L(0, 1), outfit: ['#3a5a7a', '#26405a'], lines: ['Danau di Padang Es membeku keras. Tapi jangan berdiri terlalu lama di atasnya.', 'Sup ikan Bu Hangat adalah alasan aku masih hidup.'] },
-      { name: 'Liv', title: 'Pemahat Es', at: [1150, 580], look: L(2, 5), outfit: ['#9ab0d6', '#6a80a8'], lines: ['Patung esku meleleh tiap siang. Jadi aku memahat lagi tiap pagi.', 'Gua Kristal ada di sisi barat Padang Es. Kristalnya berkilau seperti bintang.'] },
-      { name: 'Kai', title: 'Anak Kota', at: [880, 640], look: L(0, 2), outfit: ['#d64a4a', '#a83030'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Mau perang bola salju? Ah, kau sibuk ya…', 'Ayahku bilang golem kristal itu dulunya manusia. Seram!'] },
-      { name: 'Prajurit Eskil', title: 'Penjaga Kota', at: [900, 300], look: L(1, 0), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Bekubara tidak pernah jatuh. Dinginnya saja sudah mengusir musuh.', 'Gerbang selatan menuju Padang Es.'] },
-      { name: 'Astrid', title: 'Pengelana', at: [1400, 1050], look: L(3, 4), outfit: ['#6a4a8a', '#4a3060'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Etalase di sini lebih banyak barang Langka. Lihat-lihat dulu sebelum pergi.', 'Kalau tumbang di Padang Es, kau bangun di kota terakhir yang kau datangi.'] },
+      { name: 'Arne', title: 'Nelayan Es', look: L(0, 1), outfit: ['#3a5a7a', '#26405a'], lines: ['Danau di Padang Es membeku keras. Tapi jangan berdiri terlalu lama di atasnya.', 'Sup ikan Bu Hangat adalah alasan aku masih hidup.'] },
+      { name: 'Liv', title: 'Pemahat Es', look: L(2, 5), outfit: ['#9ab0d6', '#6a80a8'], lines: ['Patung esku meleleh tiap siang. Jadi aku memahat lagi tiap pagi.', 'Gua Kristal ada di sisi barat Padang Es. Kristalnya berkilau seperti bintang.'] },
+      { name: 'Kai', title: 'Anak Kota', look: L(0, 2), outfit: ['#d64a4a', '#a83030'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Mau perang bola salju? Ah, kau sibuk ya…', 'Ayahku bilang golem kristal itu dulunya manusia. Seram!'] },
+      { name: 'Prajurit Eskil', title: 'Penjaga Kota', look: L(1, 0), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Bekubara tidak pernah jatuh. Dinginnya saja sudah mengusir musuh.', 'Gerbang selatan menuju Padang Es.'] },
+      { name: 'Astrid', title: 'Pengelana', look: L(3, 4), outfit: ['#6a4a8a', '#4a3060'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Etalase di sini lebih banyak barang Langka. Lihat-lihat dulu sebelum pergi.', 'Kalau tumbang di Padang Es, kau bangun di kota terakhir yang kau datangi.'] },
     ],
   }),
   pasir: bigTown('pasir', {
@@ -198,11 +262,11 @@ const BIG = {
       mats: ['Yusuf', L(1, 1), ['#6a8a3a', '#4a6226']],
     },
     folk: [
-      { name: 'Omar', title: 'Kafilah', at: [700, 420], look: L(0, 0), outfit: ['#c2843a', '#8a5a26'], lines: ['Untaku hilang di Gurun Merah. Kalau kau melihatnya, jangan dimakan.', 'Oase di gurun itu nyata. Fatamorgana juga nyata. Bedanya, yang satu bisa diminum.'] },
-      { name: 'Zahra', title: 'Penari', at: [1150, 580], look: L(2, 0), outfit: ['#d6508a', '#a83064'], lines: ['Pasirluas tidak pernah tidur. Pasar malamnya paling ramai di negeri ini.', 'Konon ada makam kuno di bawah pasir, penuh harta dan kutukan.'] },
-      { name: 'Ali', title: 'Anak Kota', at: [880, 640], look: L(0, 0), outfit: ['#3fa7d6', '#2a7aa3'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Aku bisa berjalan di pasir panas tanpa sandal! Aw, aw, aw.', 'Kak, kakak pernah melihat kalajengking raksasa?'] },
-      { name: 'Prajurit Tariq', title: 'Penjaga Kota', at: [900, 300], look: L(1, 0), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Gurun Merah. Bawa ramuan yang cukup.', 'Siang di gurun panas, malamnya lebih berbahaya.'] },
-      { name: 'Samira', title: 'Pengelana', at: [1400, 1050], look: L(3, 2), outfit: ['#6a8a5a', '#4a6a3a'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Pedagang di sini menjual barang Epik. Mahal, tapi pantas.', 'Teleport ke Kota Awal murah. Ke sini dari sana yang mahal.'] },
+      { name: 'Omar', title: 'Kafilah', look: L(0, 0), outfit: ['#c2843a', '#8a5a26'], lines: ['Untaku hilang di Gurun Merah. Kalau kau melihatnya, jangan dimakan.', 'Oase di gurun itu nyata. Fatamorgana juga nyata. Bedanya, yang satu bisa diminum.'] },
+      { name: 'Zahra', title: 'Penari', look: L(2, 0), outfit: ['#d6508a', '#a83064'], lines: ['Pasirluas tidak pernah tidur. Pasar malamnya paling ramai di negeri ini.', 'Konon ada makam kuno di bawah pasir, penuh harta dan kutukan.'] },
+      { name: 'Ali', title: 'Anak Kota', look: L(0, 0), outfit: ['#3fa7d6', '#2a7aa3'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Aku bisa berjalan di pasir panas tanpa sandal! Aw, aw, aw.', 'Kak, kakak pernah melihat kalajengking raksasa?'] },
+      { name: 'Prajurit Tariq', title: 'Penjaga Kota', look: L(1, 0), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Gurun Merah. Bawa ramuan yang cukup.', 'Siang di gurun panas, malamnya lebih berbahaya.'] },
+      { name: 'Samira', title: 'Pengelana', look: L(3, 2), outfit: ['#6a8a5a', '#4a6a3a'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Pedagang di sini menjual barang Epik. Mahal, tapi pantas.', 'Teleport ke Kota Awal murah. Ke sini dari sana yang mahal.'] },
     ],
   }),
   bara: bigTown('bara', {
@@ -217,11 +281,11 @@ const BIG = {
       mats: ['Sela Api', L(1, 3), ['#a84a2a', '#7a321c']],
     },
     folk: [
-      { name: 'Ignis', title: 'Penambang', at: [700, 420], look: L(0, 3), outfit: ['#6a5a4a', '#4a3e32'], lines: ['Batu di Gunung Api masih hangat. Sebagian masih bergerak.', 'Benteng Lava ada di sisi barat gunung. Rajanya tidur di kolam api.'] },
-      { name: 'Seruni', title: 'Pandai Kaca', at: [1150, 580], look: L(2, 3), outfit: ['#d6603a', '#a83e26'], lines: ['Kaca terbaik dibuat dari pasir gurun dan api gunung ini.', 'Baraapi adalah kota terakhir. Di sini, barang Legendaris dijual di etalase.'] },
-      { name: 'Puntung', title: 'Anak Kota', at: [880, 640], look: L(0, 1), outfit: ['#3a3a3a', '#222'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Aku tidak takut api! …Tapi aku takut gelap.', 'Kalau sudah besar aku mau jadi pandai besi seperti Pandai Magma!'] },
-      { name: 'Prajurit Karang', title: 'Penjaga Kota', at: [900, 300], look: L(1, 3), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Gunung Api. Hanya yang terkuat yang kembali.', 'Hujan abu lagi. Tutup mulutmu kalau berjalan.'] },
-      { name: 'Vesta', title: 'Pengelana', at: [1400, 1050], look: L(3, 1), outfit: ['#8a2a4a', '#5e1c32'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Aku datang ke sini lewat batu teleport. Berjalan kaki? Tidak, terima kasih.', 'Gunung Api: level 30 sampai 50. Jangan sok berani.'] },
+      { name: 'Ignis', title: 'Penambang', look: L(0, 3), outfit: ['#6a5a4a', '#4a3e32'], lines: ['Batu di Gunung Api masih hangat. Sebagian masih bergerak.', 'Benteng Lava ada di sisi barat gunung. Rajanya tidur di kolam api.'] },
+      { name: 'Seruni', title: 'Pandai Kaca', look: L(2, 3), outfit: ['#d6603a', '#a83e26'], lines: ['Kaca terbaik dibuat dari pasir gurun dan api gunung ini.', 'Baraapi adalah kota terakhir. Di sini, barang Legendaris dijual di etalase.'] },
+      { name: 'Puntung', title: 'Anak Kota', look: L(0, 1), outfit: ['#3a3a3a', '#222'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Aku tidak takut api! …Tapi aku takut gelap.', 'Kalau sudah besar aku mau jadi pandai besi seperti Pandai Magma!'] },
+      { name: 'Prajurit Karang', title: 'Penjaga Kota', look: L(1, 3), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Gunung Api. Hanya yang terkuat yang kembali.', 'Hujan abu lagi. Tutup mulutmu kalau berjalan.'] },
+      { name: 'Vesta', title: 'Pengelana', look: L(3, 1), outfit: ['#8a2a4a', '#5e1c32'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Aku datang ke sini lewat batu teleport. Berjalan kaki? Tidak, terima kasih.', 'Gunung Api: level 30 sampai 50. Jangan sok berani.'] },
     ],
   }),
 };

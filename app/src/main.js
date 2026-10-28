@@ -235,6 +235,7 @@ function enterTown(char, at) {
   town = createTown({ id: char.location, moveSpd: s.moveSpd, hp: currentHp(char), maxHp: s.maxHp, at });
   scene = 'town';
   game.state = ST.TITLE;
+  $('banner').style.opacity = 0; // a region / floor title may still be fading
   showTownOverlay(null);
   updateTownHUD(current, town);
 }
