@@ -33,8 +33,8 @@ import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
-import { FIELD, TOWNS, regionById, regionOfDungeon } from './data/world.js';
-import { applyField, fieldDeath, encodeFog, decodeFog, explored, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
+import { FIELD, TOWNS, TOWN_IDS, regionById, regionOfDungeon } from './data/world.js';
+import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
 import { phaseOf } from './meta/clock.js';
 import { drawRegionMap } from './render/regionmap.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
@@ -232,7 +232,7 @@ function enterTown(char, at) {
   saveSettings();
   stopMusic();
   const s = finalStats(char);
-  town = createTown({ moveSpd: s.moveSpd, hp: currentHp(char), maxHp: s.maxHp, at });
+  town = createTown({ id: char.location, moveSpd: s.moveSpd, hp: currentHp(char), maxHp: s.maxHp, at });
   scene = 'town';
   game.state = ST.TITLE;
   showTownOverlay(null);
@@ -291,7 +291,8 @@ function openNpc(npc, message = null) {
     onExpTake: (id) => serve((c, now) => takeExpedition(c, id, now), (r) => t('Ekspedisi diterima: {d}. Gerbangnya kutandai di petamu.', { d: dungeonById(r.char.expedition.dungeon).name })),
     onExpDrop: () => serve(dropExpedition, tr('Ekspedisi dibatalkan.')),
     onExpClaim: () => serve(claimExpedition, (r) => ({ text: t('Ekspedisi tuntas! +{g} koin, +{e} EXP, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, m: r.reward.marks }) + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a' })),
-    onExplore: (id) => explore(id),
+    onExplore: (id) => explore(id, regionById(id).from === current.location ? 'west' : 'east'),
+    onTeleport: travel,
     onClose: closeTownOverlay,
   });
   if (screen !== 'npc') { ensureAudio(); sfx.pickCard(); }
@@ -304,7 +305,7 @@ const REFUSE = {
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
   marks: 'Lencanamu belum cukup.', notdone: 'Tugas itu belum selesai.',
-  mats: 'Bahanmu belum cukup.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
+  mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
 // Belt slot cycles: empty → each potion type in turn → empty.
@@ -330,6 +331,18 @@ async function serve(action, okText) {
   const ok = typeof okText === 'function' ? okText(r) : okText;
   openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
   updateTownHUD(current, town);
+}
+
+// Teleport stone (spec §25.2): pay, save, appear on the plaza of the other town.
+async function travel(townId) {
+  syncHp();
+  const r = teleport({ ...current, clock: Math.floor(worldClock) }, townId, Date.now());
+  if (!r.ok) { openNpc(townNpc, { text: tr(REFUSE[r.reason] || REFUSE.bad), ok: false }); return; }
+  current = r.char;
+  const err = await saveCurrent();
+  sfx.dodge();
+  enterTown(current, 'spawn');
+  toast(err ? t('Gagal menyimpan: {err}', { err }) : t('Kau tiba di {town}. −{n} koin.', { town: TOWNS[townId].name, n: r.price }));
 }
 
 function closeTownOverlay() {
@@ -533,12 +546,24 @@ async function commitField() {
   return saveCurrent();
 }
 
-// Leaving a region: through the west edge (home) or by falling (wake in the last town).
+// Leaving a region: off the west edge (its `from` town), the east edge (its `to`
+// town) or by falling (wake in the last town visited).
 async function endField(died) {
   screen = 'ending';
   stopMusic();
   const region = game.region;
   await commitField();
+  if (!died) {
+    const to = game.exitTo === 'east' ? region.to : region.from;
+    const first = !current.towns.includes(to);
+    current = visitTown(current, to, Date.now());
+    await saveCurrent();
+    if (first) {
+      enterTown(current, 'gate');
+      toast(t('Selamat datang di {town}! Batu teleport di alun-alun kini bisa membawamu ke sini.', { town: TOWNS[to].name }));
+      return;
+    }
+  }
   let text = t('Kembali ke {town}.', { town: TOWNS[current.location].name });
   if (died) {
     const r = fieldDeath(current, Date.now());
@@ -691,6 +716,7 @@ const cheatActions = {
   heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
   resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
   hours: (n) => { worldClock += n * 60; toast(t('+{n} jam', { n })); },
+  allTowns: () => cheatChar((c) => { c.towns = [...TOWN_IDS]; }, 'Semua kota dikunjungi'),
   mats: () => cheatChar((c) => { c.mats.dust += 500; c.mats.crystal += 100; c.mats.core += 20; }, 'Material bertambah'),
   gems: () => cheatChar((c) => { for (const g in c.gems) c.gems[g][0] += 6; }, 'Permata bertambah'),
   marks: () => cheatChar((c) => { c.marks += 10; }, 'Lencana bertambah'),
@@ -864,7 +890,7 @@ function frame(dt) {
     $('prompt').classList.toggle('hidden', !gate);
     if (gate) $('prompttext').textContent = t('Masuk {name}', { name: dungeonById(gate.dungeon).name });
   } else {
-    TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60);
+    TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60, current?.location || 'home');
     if (scene === 'town') {
       if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); updateClock(worldClock); }
       const near = screen === null ? town.near : null;

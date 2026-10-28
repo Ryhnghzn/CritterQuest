@@ -47,7 +47,17 @@ Tiap bagian dicek manual sebelum commit.
 - [x] Render 4 biome, gerbang, danau/lava; peta mini berjendela; panah penunjuk
 - [x] Rolan tanpa daftar dungeon; Papan Tugas tab Ekspedisi; kamus EN
 - [x] Verifikasi: tes, build, screenshot PC & HP
-### 9D-2 — Kota besar & pedagang
+### 9D-2 — Kota besar & pedagang (§25.2)
+#### 9D-2a — Empat kota besar, ujung timur terbuka, batu teleport
+- [x] `data/towns.js`: denah kota besar bersama + 4 tema, penjaga toko & warga per kota; `data/world.js` tingkat kota & harga teleport
+- [x] `town/town.js`: banyak kota (`mapsOf(id)`), mulai di kota `location` — tes
+- [x] Tepi timur wilayah → kota tujuan; gerbang kota besar → wilayahnya dari timur; `visitTown` — tes
+- [x] `meta/world.js`: `teleport()` — tes; Batu Teleport di alun-alun; cheat Kunjungi semua kota
+- [x] Render kota per tema (tanah, tembok, atap, pepohonan, partikel), batu teleport, perabot toko baru
+- [x] Kamus EN (nama kota, bangunan, warga, dialog)
+- [x] Verifikasi: tes, build, screenshot PC & HP
+#### 9D-2b — Pedagang: etalase harian, toko gear khusus, pedagang malam, bahan & permata
+#### 9D-2c — Gudang
 ### 9D-3 — Harta karun, mini bos, portal bos
 ### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir
 ## 9E — Tingkat kesulitan & Celah tanpa batas

@@ -14,7 +14,7 @@ import { TALENTS } from '../data/talents.js';
 import { UPGRADES } from '../data/shop.js';
 import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
-import { TOWN, INTERIORS } from '../data/town.js';
+import { TOWN_DEFS } from '../data/towns.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { MARK_SHOP } from '../data/bounties.js';
 import { REGIONS, TOWNS } from '../data/world.js';
@@ -139,7 +139,7 @@ const UNIQUE_EN = {
 const CHEST_EN = { 'Peti Gear': 'Gear Chest', 'Peti Agung': 'Grand Chest' };
 
 const REGION_EN = { 'Hutan Kelam': 'Gloomwood', 'Padang Es': 'Frost Plains', 'Gurun Merah': 'Red Desert', 'Gunung Api': 'Fire Mountain' };
-const TOWN_EN = { 'Kota Awal': 'Hometown' };
+const TOWN_EN = { 'Kota Awal': 'Hometown', Rimbawana: 'Wildwood', Bekubara: 'Frosthold', Pasirluas: 'Sandreach', Baraapi: 'Emberfall' };
 
 const MARK_EN = {
   'Peti Lencana': ['Badge Chest', '1 Epic gear piece'],
@@ -185,17 +185,73 @@ const PHASE_EN = { Pagi: 'Morning', Siang: 'Day', Sore: 'Evening', Malam: 'Night
 const HAIR_EN = { Pendek: 'Short', Jabrik: 'Spiky', Panjang: 'Long', Bob: 'Bob', Kuncir: 'Ponytail' };
 const HAIR_COLOR_EN = { Hitam: 'Black', Cokelat: 'Brown', Pirang: 'Blond', Merah: 'Red', Biru: 'Blue', Putih: 'White' };
 
-const BUILDING_EN = { Penginapan: 'Inn', 'Toko Ramuan': 'Potion Shop', 'Pandai Besi': 'Smithy', 'Balai Petualang': "Adventurers' Hall", 'Tukang Cukur': 'Barber' };
+const BUILDING_EN = {
+  Penginapan: 'Inn', 'Toko Ramuan': 'Potion Shop', 'Pandai Besi': 'Smithy', 'Balai Petualang': "Adventurers' Hall", 'Tukang Cukur': 'Barber',
+  'Pandai Senjata': 'Weaponsmith', 'Penjahit Zirah': 'Armorer', 'Toko Perhiasan': 'Jeweller', Gudang: 'Storehouse', 'Pedagang Bahan': 'Materials Trader',
+};
+// honorifics of the big towns' people: 'Pak Rimbun' → 'Mr. Rimbun'
+const HONORIFIC_EN = [
+  ['Penjaga ', 'Warden '], ['Prajurit ', 'Guard '], ['Guru ', 'Master '], ['Kapten ', 'Captain '], ['Tabib ', 'Healer '],
+  ['Nenek ', 'Granny '], ['Ibu ', 'Madam '], ['Nona ', 'Miss '], ['Bu ', 'Mrs. '], ['Pak ', 'Mr. '], ['Mak ', 'Ma '], ['Bang ', ''],
+];
+const nameEn = (name) => {
+  if (name.startsWith('Pandai ')) return `${name.slice(7)} the Smith`;
+  const h = HONORIFIC_EN.find(([id]) => name.startsWith(id));
+  return h ? h[1] + name.slice(h[0].length) : name;
+};
 const NPC_NAME_EN = {
   'Penjaga Rolan': 'Warden Rolan', 'Bang Rudi': 'Rudi', 'Kakek Odo': 'Old Odo', 'Prajurit Gani': 'Guard Gani', 'Bu Marta': 'Mrs. Marta',
   'Petualang Lelah': 'Weary Adventurer', 'Nenek Mira': 'Granny Mira', 'Pandai Brom': 'Brom the Smith', 'Guru Hadi': 'Master Hadi', 'Kapten Vera': 'Captain Vera',
+  'Batu Teleport': 'Teleport Stone', 'Sela Api': 'Sela Fire',
 };
 const NPC_TITLE_EN = {
   Petualang: 'Adventurer', 'Tetua Kota': 'Town Elder', 'Anak Kota': 'Town Kid', 'Penjaga Kota': 'Town Guard', 'Penyanyi Keliling': 'Wandering Bard',
   Tamu: 'Guest', 'Pedagang Keliling': 'Travelling Merchant', 'Murid Penyihir': 'Mage Apprentice', 'Murid Pandai Besi': 'Smith Apprentice',
   'Ketua Balai': 'Hall Master', Pemanah: 'Archer', Penyihir: 'Mage', Ksatria: 'Knight',
+  Pemburu: 'Hunter', 'Penjual Bunga': 'Flower Seller', Pengelana: 'Wanderer', 'Nelayan Es': 'Ice Fisher', 'Pemahat Es': 'Ice Carver',
+  Kafilah: 'Caravaneer', Penari: 'Dancer', Penambang: 'Miner', 'Pandai Kaca': 'Glassblower',
 };
 export const NPC_LINE_EN = {
+  "Di Hutan Kelam bagian timur, musuhnya jauh lebih galak. Hati-hati.": "In the east of Gloomwood the enemies are far fiercer. Careful.",
+  "Rimbawana dibangun di atas akar pohon tertua di hutan ini.": "Wildwood was built on the roots of the oldest tree in this forest.",
+  "Bunga kunang-kunang hanya mekar di malam hari. Cantik, kan?": "Firefly blossoms only bloom at night. Pretty, aren't they?",
+  "Pedagang di sini menjual barang lebih bagus dari Kota Awal — tapi lebih mahal juga.": "Merchants here sell better goods than Hometown — but pricier, too.",
+  "Batu teleport itu bisa membawamu ke kota mana pun yang pernah kau datangi!": "That teleport stone can take you to any town you've been to!",
+  "Aku pernah lihat jamur raksasa di ujung timur hutan. Sumpah!": "I once saw a giant mushroom at the east end of the forest. I swear!",
+  "Gerbang selatan menuju Hutan Kelam. Jalan ke Kota Awal ada di ujung baratnya.": "The south gate leads to Gloomwood. The road to Hometown is at its west end.",
+  "Malam hari kawanan musuh di hutan bertambah banyak.": "At night more packs of enemies roam the forest.",
+  "Kudengar ada dungeon tersembunyi di Hutan Kelam. Gerbangnya berbeda bagi tiap orang.": "I hear there are hidden dungeons in Gloomwood. Their gates are different for everyone.",
+  "Gudang di sini menyimpan barangmu, dan bisa kau ambil di kota besar mana pun.": "The storehouse here keeps your things, and you can collect them in any big town.",
+  "Danau di Padang Es membeku keras. Tapi jangan berdiri terlalu lama di atasnya.": "The lakes of the Frost Plains are frozen hard. Still, don't stand on them too long.",
+  "Sup ikan Bu Hangat adalah alasan aku masih hidup.": "Mrs. Hangat's fish soup is the reason I'm still alive.",
+  "Patung esku meleleh tiap siang. Jadi aku memahat lagi tiap pagi.": "My ice statues melt every noon. So I carve them again every morning.",
+  "Gua Kristal ada di sisi barat Padang Es. Kristalnya berkilau seperti bintang.": "The Crystal Cave is on the west side of the Frost Plains. Its crystals sparkle like stars.",
+  "Mau perang bola salju? Ah, kau sibuk ya…": "Snowball fight? Ah, you're busy…",
+  "Ayahku bilang golem kristal itu dulunya manusia. Seram!": "My dad says the crystal golem used to be a person. Creepy!",
+  "Bekubara tidak pernah jatuh. Dinginnya saja sudah mengusir musuh.": "Frosthold has never fallen. The cold alone drives enemies away.",
+  "Gerbang selatan menuju Padang Es.": "The south gate leads to the Frost Plains.",
+  "Etalase di sini lebih banyak barang Langka. Lihat-lihat dulu sebelum pergi.": "The displays here hold more Rare goods. Have a look before you go.",
+  "Kalau tumbang di Padang Es, kau bangun di kota terakhir yang kau datangi.": "Fall in the Frost Plains and you wake in the last town you visited.",
+  "Untaku hilang di Gurun Merah. Kalau kau melihatnya, jangan dimakan.": "My camel is lost in the Red Desert. If you see it, please don't eat it.",
+  "Oase di gurun itu nyata. Fatamorgana juga nyata. Bedanya, yang satu bisa diminum.": "Oases in the desert are real. So are mirages. The difference: you can drink one of them.",
+  "Pasirluas tidak pernah tidur. Pasar malamnya paling ramai di negeri ini.": "Sandreach never sleeps. Its night market is the busiest in the land.",
+  "Konon ada makam kuno di bawah pasir, penuh harta dan kutukan.": "They say an ancient tomb lies under the sand, full of treasure and curses.",
+  "Aku bisa berjalan di pasir panas tanpa sandal! Aw, aw, aw.": "I can walk on hot sand without sandals! Ow, ow, ow.",
+  "Kak, kakak pernah melihat kalajengking raksasa?": "Hey, have you ever seen a giant scorpion?",
+  "Gerbang selatan menuju Gurun Merah. Bawa ramuan yang cukup.": "The south gate leads to the Red Desert. Bring enough potions.",
+  "Siang di gurun panas, malamnya lebih berbahaya.": "Desert days are hot; its nights are more dangerous.",
+  "Pedagang di sini menjual barang Epik. Mahal, tapi pantas.": "Merchants here sell Epic goods. Expensive, but worth it.",
+  "Teleport ke Kota Awal murah. Ke sini dari sana yang mahal.": "Teleporting to Hometown is cheap. Coming here from there is what costs.",
+  "Batu di Gunung Api masih hangat. Sebagian masih bergerak.": "The rocks of Fire Mountain are still warm. Some of them still move.",
+  "Benteng Lava ada di sisi barat gunung. Rajanya tidur di kolam api.": "The Lava Fortress is on the mountain's west side. Its king sleeps in a pool of fire.",
+  "Kaca terbaik dibuat dari pasir gurun dan api gunung ini.": "The finest glass is made of desert sand and this mountain's fire.",
+  "Baraapi adalah kota terakhir. Di sini, barang Legendaris dijual di etalase.": "Emberfall is the last town. Here, Legendary goods sit on the displays.",
+  "Aku tidak takut api! …Tapi aku takut gelap.": "I'm not scared of fire! …But I'm scared of the dark.",
+  "Kalau sudah besar aku mau jadi pandai besi seperti Pandai Magma!": "When I grow up I want to be a smith like Magma the Smith!",
+  "Gerbang selatan menuju Gunung Api. Hanya yang terkuat yang kembali.": "The south gate leads to Fire Mountain. Only the strongest come back.",
+  "Hujan abu lagi. Tutup mulutmu kalau berjalan.": "Ash rain again. Keep your mouth shut when you walk.",
+  "Aku datang ke sini lewat batu teleport. Berjalan kaki? Tidak, terima kasih.": "I came here by teleport stone. Walking? No, thank you.",
+  "Gunung Api: level 30 sampai 50. Jangan sok berani.": "Fire Mountain: level 30 to 50. Don't be a hero.",
   'Lendir itu lambat, tapi jangan biarkan mereka mengepungmu.': "Oozes are slow, but don't let them surround you.",
   'Kalau lantai sudah bersih, ambil dulu semua permata sebelum masuk portal.': 'Once a floor is clear, grab every gem before stepping into the portal.',
   'Musuh yang bersinar emas itu elite. Kuat, tapi selalu menjatuhkan barang bagus.': 'Enemies glowing gold are elites. Tough, but they always drop good loot.',
@@ -266,10 +322,13 @@ export function localizeData() {
   for (const p of PHASES) swap(p, 'name', PHASE_EN);
   swapAll(HAIR_NAMES, HAIR_EN);
   swapAll(HAIR_COLOR_NAMES, HAIR_COLOR_EN);
-  for (const b of TOWN.buildings) swap(b, 'name', BUILDING_EN);
-  for (const r of Object.values(INTERIORS)) swap(r, 'name', BUILDING_EN);
-  for (const n of [...TOWN.npcs, ...Object.values(INTERIORS).flatMap((r) => r.npcs || [])]) {
-    swap(n, 'name', NPC_NAME_EN);
+  for (const def of Object.values(TOWN_DEFS)) {
+    for (const b of def.buildings) swap(b, 'name', BUILDING_EN);
+    for (const r of Object.values(def.interiors)) swap(r, 'name', BUILDING_EN);
+  }
+  const people = new Set(Object.values(TOWN_DEFS).flatMap((d) => [...d.npcs, ...Object.values(d.interiors).flatMap((r) => r.npcs || [])]));
+  for (const n of people) {
+    n.name = NPC_NAME_EN[n.name] || nameEn(n.name);
     swap(n, 'title', NPC_TITLE_EN);
     if (n.lines) swapAll(n.lines, NPC_LINE_EN);
   }

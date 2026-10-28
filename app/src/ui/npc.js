@@ -11,7 +11,8 @@ import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints } from '../meta/character.js';
 import { spentTalents, talentRespecPrice } from '../meta/talents.js';
 import { dungeonById } from '../data/dungeons.js';
-import { REGIONS, regionOfDungeon } from '../data/world.js';
+import { REGIONS, TOWNS, TOWN_IDS, regionOfDungeon } from '../data/world.js';
+import { teleportPrice } from '../meta/world.js';
 import { CHESTS, DROP_WEIGHTS, RARITIES, SELL_PRICE } from '../data/items.js';
 import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
@@ -34,8 +35,15 @@ const LINES = {
   trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
   board: 'Papan tugas sudah dibuka! Selesaikan tugas di dungeon, lalu ambil hadiahmu di sini.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
+  teleport: 'Batu rune ini berdengung pelan. Sentuh, dan sebut kota yang pernah kau datangi.',
+  weapons: 'Etalase senjataku sedang ditata. Kembalilah sebentar lagi!',
+  armor: 'Zirah-zirah baru masih kujahit. Sebentar lagi siap dipajang.',
+  jewelry: 'Perhiasan terbaik butuh etalase terbaik. Tokoku segera buka.',
+  storage: 'Gudang masih dibersihkan. Sebentar lagi kau bisa menitip barang di sini.',
+  mats: 'Karung-karung bahan baru tiba. Aku masih menghitungnya.',
 };
-const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga' };
+const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga',
+  teleport: 'Perjalanan Cepat', weapons: 'Pandai Senjata', armor: 'Penjahit Zirah', jewelry: 'Toko Perhiasan', storage: 'Gudang', mats: 'Pedagang Bahan' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
@@ -51,7 +59,7 @@ export function renderNpc(box, npc, ctx) {
   const role = el('span', 'pill', npc.title || tr(TITLES[npc.role]));
   role.style.setProperty('--c', npc.outfit[0]);
   info.append(el('div', 'nm', npc.name), role);
-  head.append(stage(portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
+  head.append(stage(npc.object ? iconCanvas('zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
   panel.append(head, el('div', 'npcline', `“${npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
 
   if (npc.role !== 'talk') {
@@ -97,7 +105,7 @@ export function renderNpc(box, npc, ctx) {
     }
     const regs = el('div', 'regions');
     regs.append(el('span', 'note', tr('Keluar ke wilayah:')));
-    for (const r of REGIONS) {
+    for (const r of REGIONS.filter((q) => q.from === char.location || q.to === char.location)) {
       const b = button('', 'btn small region', () => ctx.onExplore(r.id));
       const gates = r.dungeons.filter((d) => char.found.includes(d.id)).length;
       b.append(el('span', null, r.name), el('small', null, `LV ${r.levels[0]}–${r.levels[1]}${r.dungeons.length ? ` · ${t('gerbang {a}/{b}', { a: gates, b: r.dungeons.length })}` : ''}`));
@@ -105,6 +113,8 @@ export function renderNpc(box, npc, ctx) {
       regs.append(b);
     }
     panel.append(regs);
+  } else if (npc.role === 'teleport') {
+    panel.append(teleportList(char, ctx.onTeleport));
   }
   if (actions.childElementCount && !actions.parentNode) panel.append(actions);
 
@@ -119,6 +129,21 @@ export function renderNpc(box, npc, ctx) {
   close.id = 'npc-close';
   panel.append(msg, close);
   box.append(panel);
+}
+
+// Teleport stone (spec §25.2): every town already visited, priced by its tier.
+function teleportList(char, onGo) {
+  const list = el('div', 'regions');
+  for (const id of TOWN_IDS) {
+    const known = char.towns.includes(id), here = char.location === id, price = teleportPrice(id);
+    const b = button('', 'btn small region', () => onGo(id));
+    b.append(el('span', null, known ? TOWNS[id].name : '???'),
+      el('small', null, here ? tr('Kamu di sini') : known ? t('{n} koin', { n: price }) : tr('Belum pernah dikunjungi')));
+    b.disabled = !known || here || char.gold < price;
+    b.dataset.town = id;
+    list.append(b);
+  }
+  return list;
 }
 
 function potionList(char, onBuy) {

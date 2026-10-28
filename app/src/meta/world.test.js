@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fogSize, encodeFog, decodeFog, revealFog, fogAt, explored, isFogValid, applyField, fieldDeath, visitTown, gateSpots, regionGates, expeditionList, takeExpedition, claimExpedition, dropExpedition } from './world.js';
+import { fogSize, encodeFog, decodeFog, revealFog, fogAt, explored, isFogValid, applyField, fieldDeath, visitTown, teleport, teleportPrice, gateSpots, regionGates, expeditionList, takeExpedition, claimExpedition, dropExpedition } from './world.js';
 import { createCharacter as cc, applyTrip } from './character.js';
 import { buildFieldMap, blocked } from '../run/fieldmap.js';
 import { REGIONS } from '../data/world.js';
@@ -115,5 +115,25 @@ describe('ekspedisi', () => {
     const took = takeExpedition(make(), 'crystal', 2).char;
     const trip = { exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 2, cleared: false, died: false, hp: 50, potions: pots, dungeon: 'shadow', floorsCleared: 2 };
     expect(applyTrip(took, trip, 4).char.expedition.have).toBe(0);
+  });
+});
+
+describe('batu teleport', () => {
+  it('harga naik dengan tingkat kota tujuan', () => {
+    expect(teleportPrice('home')).toBeLessThan(teleportPrice('rimba'));
+    expect(teleportPrice('rimba')).toBeLessThan(teleportPrice('bara'));
+  });
+
+  it('hanya ke kota yang sudah dikunjungi, bukan kota sekarang, bayar koin', () => {
+    let c = { ...make(), gold: 1000 };
+    expect(teleport(c, 'rimba', 1)).toEqual({ ok: false, reason: 'unknown' });
+    expect(teleport(c, 'home', 1)).toEqual({ ok: false, reason: 'here' });
+    c = visitTown(c, 'rimba', 2);
+    const r = teleport(c, 'home', 3);
+    expect(r.ok).toBe(true);
+    expect(r.char.location).toBe('home');
+    expect(r.char.gold).toBe(1000 - teleportPrice('home'));
+    expect(validateSlot(r.char)).toEqual([]);
+    expect(teleport({ ...r.char, gold: 0 }, 'rimba', 4)).toEqual({ ok: false, reason: 'gold' });
   });
 });

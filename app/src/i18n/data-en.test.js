@@ -15,7 +15,7 @@ import { TALENTS } from '../data/talents.js';
 import { UPGRADES } from '../data/shop.js';
 import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
-import { TOWN, INTERIORS } from '../data/town.js';
+import { TOWN_DEFS } from '../data/towns.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { itemName, statText, effectText } from '../meta/itemgen.js';
 
@@ -32,7 +32,7 @@ function strings() {
   for (const b of Object.values(BONUSES)) out.push(b.suffix);
   out.push(...Object.values(EFFECTS).map((e) => e.desc), ...UNIQUES.map((u) => u.name), ...Object.values(CHESTS).map((c) => c.name));
   for (const o of MARK_SHOP) out.push(o.name, o.desc);
-  out.push(...REGIONS.map((r) => r.name), TOWNS.home.name);
+  out.push(...REGIONS.map((r) => r.name), ...Object.values(TOWNS).map((tw) => tw.name));
   out.push(...Object.values(ENEMIES).map((e) => e.name).filter((n) => n !== 'Golem'));
   for (const d of DUNGEONS) out.push(d.name, d.short);
   for (const p of Object.values(POTIONS)) out.push(p.name, p.desc);
@@ -41,8 +41,8 @@ function strings() {
   for (const u of Object.values(UPGRADES)) out.push(u.name, u.desc);
   out.push(...ATTRS.slice(1).map((a) => a.desc), ...PHASES.map((p) => p.name));
   out.push(...HAIR_NAMES.filter((h) => h !== 'Bob'), ...HAIR_COLOR_NAMES);
-  out.push(...TOWN.buildings.map((b) => b.name).filter(Boolean), ...Object.values(INTERIORS).map((r) => r.name));
-  for (const n of [...TOWN.npcs, ...Object.values(INTERIORS).flatMap((r) => r.npcs || [])]) {
+  for (const def of Object.values(TOWN_DEFS)) out.push(...def.buildings.map((b) => b.name).filter(Boolean), ...Object.values(def.interiors).map((r) => r.name));
+  for (const n of new Set(Object.values(TOWN_DEFS).flatMap((d) => [...d.npcs, ...Object.values(d.interiors).flatMap((r) => r.npcs || [])]))) {
     if (n.title) out.push(n.title);
     out.push(...(n.lines || []));
   }
@@ -81,7 +81,7 @@ describe('localizeData (English)', () => {
     expect(DUNGEONS[0].name).toBe('Shadow Crypt');
     expect(MATS.dust.name).toBe('Rune Dust');
     expect(PHASES.map((p) => p.name)).toEqual(['Morning', 'Day', 'Evening', 'Night']);
-    const odo = TOWN.npcs.find((n) => n.name === 'Old Odo');
+    const odo = TOWN_DEFS.home.npcs.find((n) => n.name === 'Old Odo');
     expect(odo.title).toBe('Town Elder');
     expect(odo.lines).toContain('This bonfire has never gone out since the town was founded.');
   });

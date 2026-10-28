@@ -535,6 +535,22 @@ const ICONS = {
       g.lineWidth = 2; g.strokeStyle = 'rgba(167,139,250,.9)'; g.stroke();
     }
   },
+  chest(g) { // treasure chest (Gudang sign)
+    g.beginPath(); g.roundRect(-11, -2, 22, 12, 2); ink(g, grad(g, -2, 10, '#a0683a', '#5e3a1e'), 1.6);
+    g.beginPath(); g.moveTo(-11, -2); g.lineTo(-11, -5); g.quadraticCurveTo(0, -13, 11, -5); g.lineTo(11, -2); g.closePath();
+    ink(g, grad(g, -12, -2, '#c08048', '#7a4a26'), 1.6);
+    g.fillStyle = '#d8b25a';
+    for (const x of [-8, 6]) { g.fillRect(x, -9, 2.4, 19); }
+    g.beginPath(); g.roundRect(-3, -4, 6, 7, 1.5); ink(g, '#ffd36b', 1.2);
+    g.beginPath(); g.arc(0, -0.5, 1, 0, TAU); g.fillStyle = OUT; g.fill();
+  },
+  gem(g) { // faceted gem (Pedagang Bahan sign)
+    g.beginPath(); g.moveTo(-10, -3); g.lineTo(-5, -9); g.lineTo(5, -9); g.lineTo(10, -3); g.lineTo(0, 10); g.closePath();
+    ink(g, grad(g, -9, 10, '#9ff3ff', '#2f6fd6'), 1.6);
+    g.beginPath(); g.moveTo(-10, -3); g.lineTo(10, -3); g.moveTo(-5, -9); g.lineTo(-3, -3); g.lineTo(0, 10); g.lineTo(3, -3); g.lineTo(5, -9);
+    g.lineWidth = 1; g.strokeStyle = 'rgba(20,40,90,.55)'; g.stroke();
+    shine(g, -4, -6, 2.4, 1.2, -0.5, 0.9);
+  },
   fan(g) {
     for (const a of [-0.5, 0, 0.5]) {
       g.save(); g.rotate(a - Math.PI / 2); g.translate(0, -2);
@@ -552,6 +568,7 @@ export const gearIcon = (item) => (item.slot === 'weapon' ? WEAPON_ICON[item.cla
 
 // Accepts icon ids with or without the prototype "icon" prefix (iconEmber → ember).
 export function drawIcon(g, id, size) {
+  if (!id) return;
   const key = id.replace(/^icon/, '');
   const fn = ICONS[key] || ICONS[key.charAt(0).toLowerCase() + key.slice(1)];
   if (!fn) return;

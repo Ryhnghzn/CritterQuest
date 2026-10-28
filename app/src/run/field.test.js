@@ -67,7 +67,7 @@ describe('mode wilayah', () => {
     g.step(1 / 60);
     expect(g.enemies.length).toBe(n - 1);
   });
-  it('keluar di tepi barat; tepi timur tertutup bila kota belum siap', () => {
+  it('keluar di tepi barat (kota asal) dan tepi timur (kota tujuan)', () => {
     const g = new Game();
     g.explore(setup());
     g.intent = idle; g.packT = 99;
@@ -80,8 +80,16 @@ describe('mode wilayah', () => {
     h.intent = idle; h.packT = 99;
     h.px = forest.w - FIELD.exitZone + 5; h.py = h.fmap.end.y;
     h.step(1 / 60);
-    expect(h.state).toBe(ST.PLAY);
-    expect(h.px).toBeLessThan(forest.w - FIELD.exitZone);
+    expect(h.state).toBe(ST.OVER);
+    expect(h.exitTo).toBe('east');
+  });
+  it('masuk dari timur tidak langsung keluar lagi', () => {
+    const g = new Game();
+    g.explore({ ...setup(), at: 'east' });
+    g.intent = idle; g.packT = 99;
+    g.step(1 / 60);
+    expect(g.state).toBe(ST.PLAY);
+    expect(g.px).toBeGreaterThan(forest.w * 0.9);
   });
   it('membuka kabut di sekitar pemain', () => {
     const fog = new Uint8Array(fogSize(forest).bytes);

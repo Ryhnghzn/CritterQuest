@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createTown, stepTown, npcAt, MAPS, PLAYER_R } from './town.js';
-import { TOWN, INTERIORS, DOORS } from '../data/town.js';
+import { createTown, stepTown, npcAt, mapsOf, PLAYER_R } from './town.js';
+import { TOWN, INTERIORS } from '../data/town.js';
+import { TOWN_DEFS, townDef, doorsOf } from '../data/towns.js';
+import { TOWN_IDS } from '../data/world.js';
+
+const MAPS = mapsOf('home'), DOORS = doorsOf(townDef('home'));
 
 const DT = 1 / 60;
 const fresh = (over = {}) => ({ ...createTown({ moveSpd: 120, hp: 50, maxHp: 100 }), ...over });
@@ -110,5 +114,62 @@ describe('NPC & HP', () => {
     expect(t.hp).toBeCloseTo(60);
     walk(t, 0, 0, 60);
     expect(t.hp).toBe(100);
+  });
+});
+
+// a point is free when no solid box is within the player's radius
+const free = (map, x, y) => map.solids.every((b) => {
+  const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
+  return (x - cx) ** 2 + (y - cy) ** 2 >= PLAYER_R * PLAYER_R;
+});
+
+describe('kota besar (§25.2)', () => {
+  it('setiap kota di data dunia punya denah', () => {
+    for (const id of TOWN_IDS) expect(TOWN_DEFS[id]?.id).toBe(id);
+  });
+
+  it('mulai di alun-alun / depan gerbang kota yang diminta, di tempat kosong', () => {
+    for (const id of TOWN_IDS) {
+      const def = townDef(id), maps = mapsOf(id);
+      for (const at of ['spawn', 'gate']) {
+        const t = createTown({ id, moveSpd: 120, hp: 1, maxHp: 1, at });
+        expect(t.id).toBe(id);
+        expect([t.x, t.y]).toEqual(at === 'gate' ? [def.gateSpawn.x, def.gateSpawn.y] : [def.spawn.x, def.spawn.y]);
+        expect(free(maps.town, t.x, t.y)).toBe(true);
+      }
+    }
+  });
+
+  it('tiap toko punya interior, pintu, dan penjaga; pintu bisa dimasuki', () => {
+    for (const id of ['rimba', 'beku', 'pasir', 'bara']) {
+      const def = townDef(id), maps = mapsOf(id);
+      for (const h of ['inn', 'potion', 'gear', 'guild', 'weapons', 'armor', 'jewelry', 'storage', 'mats']) {
+        expect(maps[h], `${id}:${h}`).toBeDefined();
+        expect(maps[h].npcs.length).toBeGreaterThan(0);
+        const d = doorsOf(def).find((x) => x.house === h);
+        const t = createTown({ id, moveSpd: 120, hp: 1, maxHp: 1 });
+        Object.assign(t, { x: d.outside.x, y: d.outside.y });
+        walk(t, 0, -1, 1);
+        expect(t.map, `${id}:${h}`).toBe(h);
+      }
+    }
+  });
+
+  it('NPC tidak berdiri di dalam benda padat; ada batu teleport dan penjaga gerbang', () => {
+    for (const id of TOWN_IDS) {
+      const maps = mapsOf(id);
+      for (const m of Object.values(maps)) for (const n of m.npcs) expect(free({ solids: m.solids.filter((b) => b.kind !== 'fire') }, n.x, n.y), `${id}:${n.id}`).toBe(true);
+      expect(maps.town.npcs.some((n) => n.role === 'teleport')).toBe(true);
+      expect(maps.town.npcs.some((n) => n.role === 'gate')).toBe(true);
+    }
+  });
+
+  it('kota besar lebih besar dan lebih ramai dari kota awal', () => {
+    const home = townDef('home');
+    for (const id of ['rimba', 'beku', 'pasir', 'bara']) {
+      const def = townDef(id);
+      expect(def.w * def.h).toBeGreaterThan(2 * home.w * home.h);
+      expect(def.buildings.filter((b) => b.kind === 'house').length).toBeGreaterThan(home.buildings.filter((b) => b.kind === 'house').length);
+    }
   });
 });

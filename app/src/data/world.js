@@ -6,15 +6,18 @@
 // character (meta/world.js gateSpots) inside the `at` band (fraction of width).
 //   levels: [west, east] enemy level across the map
 //   density: solids per million square units; enemies: type → spawn weight
+// tier: goods & prices of the town's merchants (spec §25.2); 0 = the starting town
 export const TOWNS = {
-  home: { name: 'Kota Awal' },
-  rimba: { name: 'Rimbawana' },   // ready in 9D-2
-  beku: { name: 'Bekubara' },
-  pasir: { name: 'Pasirluas' },
-  bara: { name: 'Baraapi' },
+  home: { name: 'Kota Awal', tier: 0 },
+  rimba: { name: 'Rimbawana', tier: 1 },
+  beku: { name: 'Bekubara', tier: 2 },
+  pasir: { name: 'Pasirluas', tier: 3 },
+  bara: { name: 'Baraapi', tier: 4 },
 };
 export const TOWN_IDS = Object.keys(TOWNS);
-export const READY_TOWNS = ['home'];
+export const READY_TOWNS = TOWN_IDS;
+// teleport stone: base + perTier × tier of the destination, only to towns already visited
+export const TELEPORT = { base: 15, perTier: 25 };
 
 const BIG = { w: 20000, h: 12000 };
 

@@ -1,7 +1,7 @@
 // Walking around town (spec §13.2, §15.1): movement with box collisions, doors
 // between the town and the building interiors, the NPC in talking range, slow
 // HP regeneration. Pure — the caller writes HP back to the save.
-import { TOWN, INTERIORS, DOORS } from '../data/town.js';
+import { townDef, doorsOf } from '../data/towns.js';
 import { TOWN_REGEN } from '../data/dungeon.js';
 
 export const PLAYER_R = 10;
@@ -20,27 +20,37 @@ function interiorSolids(r) {
   ];
 }
 
-export const MAPS = {
-  town: {
-    w: TOWN.w, h: TOWN.h, npcs: TOWN.npcs, talkRadius: TOWN.talkRadius,
-    solids: [
-      { x: 0, y: 0, w: TOWN.w, h: TOWN.wall },
-      { x: 0, y: TOWN.h - TOWN.wall, w: TOWN.w, h: TOWN.wall },
-      { x: 0, y: 0, w: TOWN.wall, h: TOWN.h },
-      { x: TOWN.w - TOWN.wall, y: 0, w: TOWN.wall, h: TOWN.h },
-      ...TOWN.buildings,
-    ],
-    // walk up into a house door → its interior
-    doors: DOORS.map((d) => ({ ...d.out, dy: -1, to: d.house, at: d.inside })),
-  },
-  ...Object.fromEntries(Object.values(INTERIORS).map((r) => {
-    const d = DOORS.find((x) => x.house === r.id);
-    return [r.id, {
+// walkable maps of a town: 'town' (outdoors) + one per house interior; cached per town
+const mapCache = new Map();
+export function mapsOf(townId) {
+  const def = townDef(townId);
+  if (mapCache.has(def.id)) return mapCache.get(def.id);
+  const doors = doorsOf(def);
+  const maps = {
+    town: {
+      w: def.w, h: def.h, npcs: def.npcs, talkRadius: def.talkRadius,
+      solids: [
+        { x: 0, y: 0, w: def.w, h: def.wall },
+        { x: 0, y: def.h - def.wall, w: def.w, h: def.wall },
+        { x: 0, y: 0, w: def.wall, h: def.h },
+        { x: def.w - def.wall, y: 0, w: def.wall, h: def.h },
+        ...def.buildings,
+      ],
+      // walk up into a house door → its interior
+      doors: doors.map((d) => ({ ...d.out, dy: -1, to: d.house, at: d.inside })),
+    },
+  };
+  for (const r of Object.values(def.interiors)) {
+    const d = doors.find((x) => x.house === r.id);
+    if (!d) continue;
+    maps[r.id] = {
       w: r.w, h: r.h, npcs: r.npcs, talkRadius: r.talkRadius, solids: interiorSolids(r),
       doors: [{ ...d.in, dy: 1, to: 'town', at: d.outside }],
-    }];
-  })),
-};
+    };
+  }
+  mapCache.set(def.id, maps);
+  return maps;
+}
 
 function blocked(map, x, y) {
   for (const b of map.solids) {
@@ -58,10 +68,11 @@ export function npcAt(n, t) {
   return { x: n.x + Math.sin(a) * w.rx, y: n.y + Math.sin(a * 2) * w.ry, moving: 1, facing: Math.cos(a) >= 0 ? 1 : -1 };
 }
 
-// at: 'spawn' (plaza) or 'gate' (back from the dungeon)
-export function createTown({ moveSpd, hp, maxHp, at = 'spawn' }) {
-  const p = at === 'gate' ? TOWN.gateSpawn : TOWN.spawn;
-  return { map: 'town', x: p.x, y: p.y, moveSpd, hp, maxHp, moveX: 0, moveY: 0, facing: 1, near: null, t: 0, doorT: 0, entered: null };
+// id: which town (data/towns.js); at: 'spawn' (plaza) or 'gate' (back from outside)
+export function createTown({ id = 'home', moveSpd, hp, maxHp, at = 'spawn' }) {
+  const def = townDef(id);
+  const p = at === 'gate' ? def.gateSpawn : def.spawn;
+  return { id: def.id, map: 'town', x: p.x, y: p.y, moveSpd, hp, maxHp, moveX: 0, moveY: 0, facing: 1, near: null, t: 0, doorT: 0, entered: null };
 }
 
 // intent: { move: { x, y } }. town.entered is set to the map id on the step a door is used.
@@ -69,7 +80,7 @@ export function stepTown(town, intent, dt) {
   town.t += dt;
   town.entered = null;
   if (town.doorT > 0) town.doorT -= dt;
-  const map = MAPS[town.map];
+  const maps = mapsOf(town.id), map = maps[town.map];
   const { x: mx, y: my } = intent.move;
   town.moveX = mx; town.moveY = my;
   if (mx > 0.1) town.facing = 1; else if (mx < -0.1) town.facing = -1;
@@ -92,7 +103,7 @@ export function stepTown(town, intent, dt) {
 
   town.hp = Math.min(town.maxHp, town.hp + town.maxHp * TOWN_REGEN * dt);
 
-  const here = MAPS[town.map];
+  const here = maps[town.map];
   let near = null, best = here.talkRadius;
   for (const n of here.npcs) {
     const p = npcAt(n, town.t);

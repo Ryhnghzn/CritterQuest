@@ -706,10 +706,36 @@ Keputusan pemilik (2026-10-27):
   - `regions { id: { fog } }`, dengan fog berupa string base64 bit per petak.
 
 ### 25.2 Kota besar & pedagang (9D-2)
-- Kota Rimbawana di ujung Hutan Kelam, lebih besar dan ramai.
-- Etalase gear berstok harian per pedagang dan tingkat kota, ditambah peti.
-- Toko gear khusus, pedagang keliling malam, Gudang bersama, pedagang bahan & permata.
-- Teleport cepat antar kota yang sudah dikunjungi.
+Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang **per karakter** (bisa dibuka di kota besar mana pun), teleport lewat **batu teleport berbayar**.
+
+- **Kota besar** (`data/towns.js`), satu di ujung timur tiap wilayah. Tingkat barang naik dari kota ke kota (`TOWNS[].tier`):
+
+  | Kota | Wilayah | Tingkat |
+  |---|---|---|
+  | Rimbawana | Hutan Kelam | 1 |
+  | Bekubara | Padang Es | 2 |
+  | Pasirluas | Gurun Merah | 3 |
+  | Baraapi | Gunung Api | 4 |
+
+- **Tata letak kota besar** sama untuk keempatnya, berukuran 1800 × 1300 (Kota Awal 960 × 780):
+  - baris utara menghadap alun-alun: Penginapan, Toko Ramuan, Pandai Besi, Balai Petualang, Pandai Senjata, Penjahit Zirah;
+  - baris selatan menghadap jalan ke gerbang: Toko Perhiasan, Gudang, Pedagang Bahan, dan rumah warga;
+  - alun-alun dengan api unggun, batu teleport, dan Tukang Cukur;
+  - 5 warga per kota yang bisa diajak bicara.
+- **Tema per kota:** warna tanah, tembok, dan atap; pepohonan di luar tembok; kabut malam; partikel melayang (daun, salju, pasir, bara).
+- **Perjalanan:**
+  - Tepi timur wilayah membawa ke kota tujuannya; tepi barat membawa ke kota asalnya.
+  - Gerbang kota besar membawa ke wilayahnya, masuk dari timur.
+  - Kota yang dimasuki dicatat di `towns` dan menjadi `location`; tumbang di wilayah atau di dungeon membuatmu bangun di `location`.
+- **Batu teleport** ada di alun-alun setiap kota, termasuk Kota Awal:
+  - hanya ke kota yang sudah pernah dikunjungi;
+  - biaya `15 + 25 × tingkat` kota tujuan (`TELEPORT` di `data/world.js`).
+- **Pedagang** (9D-2b):
+  - etalase gear berstok harian per pedagang dan tingkat kota, ditambah peti;
+  - Pandai Senjata, Penjahit Zirah, Toko Perhiasan;
+  - pedagang keliling malam;
+  - pedagang bahan & permata.
+- **Gudang** per karakter (9D-2c).
 
 ### 25.3 Isi wilayah (9D-3)
 - Harta karun tersembunyi yang dijaga mini bos.

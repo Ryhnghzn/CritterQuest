@@ -1,7 +1,7 @@
 // Open world on the save (spec §25.1): fog of war per region (one bit per
 // FIELD.fogCell square, stored as base64), progress written from a region,
 // and the light penalty for falling there. Pure.
-import { FIELD, regionById, EXPEDITIONS, EXPEDITION_REWARD, regionOfDungeon } from '../data/world.js';
+import { FIELD, TOWNS, TELEPORT, regionById, EXPEDITIONS, EXPEDITION_REWARD, regionOfDungeon } from '../data/world.js';
 import { buildFieldMap, mulberry, sample, blocked } from '../run/fieldmap.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
@@ -122,6 +122,22 @@ export function visitTown(char, townId, now) {
   if (!c.towns.includes(townId)) c.towns.push(townId);
   c.updatedAt = now;
   return c;
+}
+
+// ——— teleport stone (spec §25.2) ———
+export const teleportPrice = (townId) => TELEPORT.base + TELEPORT.perTier * TOWNS[townId].tier;
+
+// Travel to a town already visited, for coins. { ok, char } | { ok: false, reason }.
+export function teleport(char, townId, now) {
+  if (!TOWNS[townId] || !char.towns.includes(townId)) return { ok: false, reason: 'unknown' };
+  if (char.location === townId) return { ok: false, reason: 'here' };
+  const price = teleportPrice(townId);
+  if (char.gold < price) return { ok: false, reason: 'gold' };
+  const c = structuredClone(char);
+  c.gold -= price;
+  c.location = townId;
+  c.updatedAt = now;
+  return { ok: true, char: c, price };
 }
 
 // ——— dungeon gates & expeditions (spec §25.5) ———
