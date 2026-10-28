@@ -17,7 +17,7 @@ import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
 import { isFogValid } from './world.js';
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -94,6 +94,8 @@ export const MIGRATIONS = {
   12: (d) => ({ ...d, version: 13, shops: {}, stash: [] }),
   // v14 (spec §25.3): hidden treasure chests already opened, per region.
   13: (d) => ({ ...d, version: 14, treasures: {} }),
+  // v15 (spec §25.4): bestiary entries for the biome enemies.
+  14: (d) => ({ ...d, version: 15, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
 };
 
 export const worldSeed = (now, slot) => (Math.floor(Math.abs(now)) + slot * 7919) % 2147483647;

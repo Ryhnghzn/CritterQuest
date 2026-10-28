@@ -30,6 +30,49 @@ export const ENEMIES = {
     name: 'Kura Baja', hp: 85, speed: 34, dmg: 12, r: 16, xp: 5, sprite: 'shielder', score: 5,
     ai: 'shield', turn: 1.4, guard: { arc: 140, reduce: 0.85 },
   },
+  // ——— biome enemies (spec §25.4) ———
+  // kin: the older enemy a biome variant is drawn from (bestiary counts it there);
+  // onHit: what a landed hit does to the player — slow: [speed −k, seconds],
+  // poison / burn: [k × the hit's damage per second, seconds].
+  wolf: {
+    name: 'Serigala Bayang', hp: 30, speed: 80, dmg: 10, r: 12, xp: 3, sprite: 'wolf', score: 3,
+    ai: 'charge', range: 200, every: 1.6, windup: 0.35, dash: { speed: 420, time: 0.3 }, rest: 0.4,
+  },
+  frostslink: { kin: 'slink', name: 'Lendir Beku', hp: 22, speed: 46, dmg: 8, r: 11, xp: 1, sprite: 'frostslink', score: 1, onHit: { slow: [0.3, 1.2] } },
+  frostspitter: {
+    kin: 'spitter', name: 'Katak Salju', hp: 28, speed: 48, dmg: 6, r: 11, xp: 2, sprite: 'frostspitter', score: 2,
+    ai: 'ranged', keep: 190, every: 2.4, windup: 0.5, shot: { speed: 170, dmg: 10, r: 6, color: '#bfe8ff', onHit: { slow: [0.35, 1.5] } },
+  },
+  frosttank: { kin: 'tank', name: 'Golem Es', hp: 100, speed: 28, dmg: 16, r: 17, xp: 5, sprite: 'frosttank', score: 5, onHit: { slow: [0.4, 1.5] } },
+  yeti: {
+    name: 'Yeti', hp: 140, speed: 36, dmg: 20, r: 19, xp: 8, sprite: 'yeti', score: 8,
+    ai: 'charge', range: 260, every: 3, windup: 0.8, dash: { speed: 360, time: 0.5 }, rest: 1, onHit: { slow: [0.45, 1.8] },
+  },
+  icewisp: {
+    name: 'Roh Es', hp: 30, speed: 55, dmg: 4, r: 10, xp: 3, sprite: 'icewisp', score: 3,
+    ai: 'ranged', keep: 220, every: 2.2, windup: 0.5, shot: { speed: 190, dmg: 8, r: 5, color: '#a8e4ff', count: 3, spread: 0.26, onHit: { slow: [0.3, 1.2] } },
+  },
+  sandslink: { kin: 'slink', name: 'Lendir Pasir', hp: 18, speed: 64, dmg: 8, r: 11, xp: 1, sprite: 'sandslink', score: 1 },
+  vulture: { kin: 'dart', name: 'Burung Nasar', hp: 16, speed: 100, dmg: 7, r: 10, xp: 1, sprite: 'vulture', score: 1 },
+  scorpion: {
+    name: 'Kalajengking', hp: 55, speed: 60, dmg: 10, r: 14, xp: 4, sprite: 'scorpion', score: 4,
+    ai: 'charge', range: 180, every: 2, windup: 0.5, dash: { speed: 380, time: 0.35 }, rest: 0.6, onHit: { poison: [0.35, 3] },
+  },
+  sandworm: {
+    name: 'Cacing Pasir', hp: 120, speed: 120, dmg: 18, r: 16, xp: 7, sprite: 'sandworm', score: 7,
+    ai: 'burrow', under: 2.2, rise: 0.7, up: 2.6, upSpeed: 30, blast: { radius: 70, dmg: 24 },
+  },
+  magmaslink: { kin: 'slink', name: 'Lendir Magma', hp: 22, speed: 50, dmg: 9, r: 11, xp: 1, sprite: 'magmaslink', score: 1, onHit: { burn: [0.3, 2] } },
+  emberbomber: { kin: 'bomber', name: 'Jamur Bara', hp: 22, speed: 92, dmg: 0, r: 11, xp: 2, sprite: 'emberbomber', score: 2, ai: 'bomb', trigger: 44, fuse: 0.6, blast: { radius: 78, dmg: 26, onHit: { burn: [0.3, 2.5] } } },
+  imp: {
+    name: 'Imp Api', hp: 34, speed: 70, dmg: 6, r: 10, xp: 4, sprite: 'imp', score: 4,
+    ai: 'ranged', keep: 200, every: 1.8, windup: 0.4, shot: { speed: 220, dmg: 10, r: 6, color: '#ff7a2a', onHit: { burn: [0.3, 2.5] } },
+  },
+  salamander: {
+    name: 'Salamander', hp: 80, speed: 46, dmg: 16, r: 15, xp: 6, sprite: 'salamander', score: 6,
+    ai: 'charge', range: 260, every: 2.4, windup: 0.6, dash: { speed: 400, time: 0.5 }, rest: 0.7,
+    trail: { every: 0.08, r: 26, fuse: 0.45, dmg: 0.6 }, onHit: { burn: [0.3, 2] },
+  },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {

@@ -31,6 +31,7 @@ export function makeProjectile({ x, y, angle, speed, range, r, mult, pierce = 0,
 
 // Does the hit's shape touch the enemy circle?
 export function inShape(h, e) {
+  if (e.hidden) return false; // under the sand
   const dx = e.x - h.x, dy = e.y - h.y;
   const reach = h.r + e.r;
   const d2 = dx * dx + dy * dy;

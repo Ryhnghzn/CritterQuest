@@ -29,7 +29,7 @@ export function aiStep(run, e, dt) {
   if (e.actT > 0) e.actT -= dt;
   switch (e.ai) {
     case 'ranged': case 'summon': case 'heal': return caster(run, e, b, dt);
-    case 'charge': return charge(run, e, b);
+    case 'charge': return charge(run, e, b, dt);
     case 'bomb': return bomb(run, e, b);
     case 'shield': {
       const want = Math.atan2(run.py - e.y, run.px - e.x);
@@ -38,6 +38,7 @@ export function aiStep(run, e, dt) {
       return toward(e, run.px, run.py, e.speed);
     }
     case 'boss': return boss(run, e, b, dt);
+    case 'burrow': return burrow(run, e, b);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }
@@ -57,8 +58,8 @@ function caster(run, e, b) {
 
 function act(run, e, b) {
   if (b.shot) {
-    const a = Math.atan2(run.py - e.y, run.px - e.x);
-    fire(run, e.x, e.y, a, b.shot);
+    const a = Math.atan2(run.py - e.y, run.px - e.x), n = b.shot.count || 1;
+    for (let i = 0; i < n; i++) fire(run, e.x, e.y, a + (i - (n - 1) / 2) * (b.shot.spread || 0), b.shot);
   } else if (b.summon) summon(run, e, b.summon);
   else if (b.heal) {
     for (const o of run.enemies) {
@@ -70,7 +71,7 @@ function act(run, e, b) {
 }
 
 export function fire(run, x, y, angle, s) {
-  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color });
+  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null });
 }
 
 function summon(run, e, s) {
@@ -86,7 +87,7 @@ function summon(run, e, s) {
 }
 
 // Walk up, freeze with a warning line, dash straight, rest.
-function charge(run, e, b) {
+function charge(run, e, b, dt = 1 / 60) {
   const t = toward(e, run.px, run.py, e.speed);
   if (e.mode === 'wind') {
     if (e.modeT <= 0) { e.mode = 'dash'; e.modeT = b.dash.time; }
@@ -94,6 +95,10 @@ function charge(run, e, b) {
   }
   if (e.mode === 'dash') {
     if (e.modeT <= 0) { e.mode = 'rest'; e.modeT = b.rest; }
+    if (b.trail && (e.trailT = (e.trailT || 0) - dt) <= 0) { // fire bursts left behind (Salamander)
+      e.trailT = b.trail.every;
+      run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.trail.r, t: b.trail.fuse, max: b.trail.fuse, dmg: e.dmg * b.trail.dmg, onHit: b.onHit || null, small: true });
+    }
     return { vx: e.dirX * b.dash.speed, vy: e.dirY * b.dash.speed };
   }
   if (e.mode === 'rest') {
@@ -120,14 +125,35 @@ function bomb(run, e, b) {
 
 function explodeLater(run, e, b) {
   e.mode = 'fuse';
-  run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.fuse, max: b.fuse, dmg: b.blast.dmg, bomber: e });
+  run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.fuse, max: b.fuse, dmg: b.blast.dmg, bomber: e, onHit: b.blast.onHit || null });
+}
+
+// Cacing Pasir (spec §25.4): swims under the sand (can't be hit) toward the player,
+// stops, a danger circle shows where it will burst out, erupts, stays up a while, dives again.
+function burrow(run, e, b) {
+  if (e.mode === 'walk') { e.mode = 'under'; e.modeT = b.under; e.hidden = true; }
+  if (e.mode === 'under') {
+    const t = toward(e, run.px, run.py, e.speed);
+    if (e.modeT <= 0 || t.d < 30) {
+      e.mode = 'rise'; e.modeT = b.rise;
+      run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.rise, max: b.rise, dmg: b.blast.dmg });
+      return { vx: 0, vy: 0 };
+    }
+    return t;
+  }
+  if (e.mode === 'rise') {
+    if (e.modeT <= 0) { e.mode = 'up'; e.modeT = b.up; e.hidden = false; run.spawnBurst(e.x, e.y, '#c9a26a', 14); }
+    return { vx: 0, vy: 0 };
+  }
+  if (e.modeT <= 0) { e.mode = 'under'; e.modeT = b.under; e.hidden = true; run.spawnBurst(e.x, e.y, '#c9a26a', 10); return { vx: 0, vy: 0 }; }
+  return toward(e, run.px, run.py, b.upSpeed);
 }
 
 // Called when an enemy dies (before it is removed).
 export function onDeath(run, e) {
   const b = ENEMIES[e.type];
   if (e.ai === 'bomb' && e.mode !== 'fuse') {
-    run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: 0.4, max: 0.4, dmg: b.blast.dmg });
+    run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: 0.4, max: 0.4, dmg: b.blast.dmg, onHit: b.blast.onHit || null });
   }
 }
 
@@ -195,7 +221,7 @@ export function stepShots(run, dt, bound, cx = 0, cy = 0) {
     const s = S[i];
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     const hit = (s.x - run.px) ** 2 + (s.y - run.py) ** 2 < (s.r + 9) ** 2;
-    if (hit && run.hurtPlayer(s.dmg)) s.life = 0;
+    if (hit && run.hurtPlayer(s.dmg, s.onHit)) s.life = 0;
     if (s.life <= 0 || (s.x - cx) ** 2 + (s.y - cy) ** 2 > (bound + 40) ** 2) { S[i] = S[S.length - 1]; S.pop(); }
   }
 }
@@ -209,11 +235,10 @@ export function stepHazards(run, dt) {
     if (h.bomber) { h.x = h.bomber.x; h.y = h.bomber.y; }
     if (h.t > 0) continue;
     if (h.kind === 'circle' && h.dmg > 0) {
-      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg);
-      run.spawnBurst(h.x, h.y, '#ff7a3c', 18);
+      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg, h.onHit);
+      run.spawnBurst(h.x, h.y, '#ff7a3c', h.small ? 6 : 18);
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.3, max: 0.3, color: '255,140,60' });
-      run.addShake('medium');
-      sfx.hurt();
+      if (!h.small) { run.addShake('medium'); sfx.hurt(); }
       if (h.bomber) h.bomber.hp = 0;
     }
     H[i] = H[H.length - 1]; H.pop();

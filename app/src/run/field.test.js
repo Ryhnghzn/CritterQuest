@@ -177,3 +177,58 @@ describe('harta karun & mini bos (§25.3)', () => {
     expect(g.enemies).toHaveLength(0);
   });
 });
+
+describe('musuh biome (§25.4)', () => {
+  const fresh = () => { const g = new Game(); g.explore(setup()); g.intent = idle; g.packT = 999; g.god = false; return g; };
+
+  it('serangan es memperlambat langkah', () => {
+    const g = fresh();
+    const x0 = g.px;
+    g.intent = { ...idle, move: { x: 1, y: 0 } };
+    g.step(0.1);
+    const normal = g.px - x0;
+    expect(g.hurtPlayer(10, { slow: [0.5, 2] })).toBe(true);
+    const x1 = g.px;
+    g.step(0.1);
+    expect(g.px - x1).toBeCloseTo(normal * 0.5, 1);
+  });
+
+  it('racun & api memberi damage berkala yang menembus kebal sesaat', () => {
+    const g = fresh();
+    g.hurtPlayer(20, { poison: [0.5, 2] });
+    expect(g.dotKind).toBe('poison');
+    const hp = g.stats.hp;
+    for (let i = 0; i < 60; i++) g.step(1 / 60);
+    expect(g.stats.hp).toBeLessThan(hp - 1);
+    for (let i = 0; i < 120; i++) g.step(1 / 60);
+    expect(g.dotT).toBeLessThanOrEqual(0);
+  });
+
+  it('cacing pasir tidak bisa dipukul saat menyelam, lalu muncul dengan semburan', () => {
+    const g = fresh();
+    const w = g.spawnEnemy('sandworm');
+    w.x = g.px + 300; w.y = g.py;
+    g.step(1 / 60);
+    expect(w.hidden).toBe(true);
+    const hp = w.hp;
+    g.damageEnemy({ mult: 5 }, w);
+    expect(w.hp).toBe(hp);
+    let rose = false;
+    for (let i = 0; i < 60 * 5 && !rose; i++) { g.step(1 / 60); if (w.mode === 'up') rose = true; }
+    expect(rose).toBe(true);
+    expect(w.hidden).toBe(false);
+  });
+
+  it('varian biome dihitung di bestiari musuh asalnya', () => {
+    const g = fresh();
+    const e = g.spawnEnemy('frostslink');
+    g.killEnemy(e);
+    expect(g.killsBy.slink).toBe(1);
+    expect(g.killsBy.frostslink).toBeUndefined();
+  });
+
+  it('setiap wilayah hanya memakai musuh yang ada', async () => {
+    const { ENEMIES } = await import('../data/enemies.js');
+    for (const r of REGIONS) for (const id of Object.keys(r.enemies)) expect(ENEMIES[id], `${r.id}:${id}`).toBeDefined();
+  });
+});

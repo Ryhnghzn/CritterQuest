@@ -49,8 +49,9 @@ export function stepPlayer(run, intent, dt) {
     run.py += run.dodgeY * run.dashSpeed * step;
     run.dodgeT -= dt;
   } else {
-    run.px += mx * run.stats.moveSpd * dt;
-    run.py += my * run.stats.moveSpd * dt;
+    const spd = run.stats.moveSpd * (run.slowT > 0 ? 1 - run.slowK : 1); // frost slows (spec §25.4)
+    run.px += mx * spd * dt;
+    run.py += my * spd * dt;
   }
 
   if (run.field) confineFieldPlayer(run); else confinePlayer(run);

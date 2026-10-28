@@ -75,7 +75,13 @@ Tiap bagian dicek manual sebelum commit.
 - [x] `run/field.js`: penjaga (mini bos bermahkota + pengawal), peti terkunci → terbuka → hadiah — tes
 - [x] Render peti (rantai, kilau, tutup terbuka), mahkota penjaga, ikon peti di peta; cheat Ke harta; kamus EN
 - [x] Verifikasi: tes, build, screenshot PC & HP
-### 9D-4 — Padang Es, Gurun Merah, Gunung Api, Makam Pasir
+### 9D-4 — Musuh biome & Makam Pasir (§25.4)
+#### 9D-4a — Musuh biome
+- [x] `data/enemies.js`: 7 musuh khas + 7 varian; campuran musuh per wilayah; bestiari + save v15 — tes
+- [x] AI: cacing menyelam (`burrow`), tembakan menyebar, jejak api; efek lambat/racun/api pada pemain — tes
+- [x] Gambar 14 musuh, cacing di bawah pasir, efek status pemain; kamus EN
+- [x] Verifikasi: tes, build, screenshot PC & HP
+#### 9D-4b — Makam Pasir
 ## 9F — Petualangan: quest utama & side quest (permintaan 2026-10-28; dikerjakan setelah 9D-3 & 9D-4)
 Keputusan pemilik (2026-10-28):
 - **Quest utama** menuntun ke semua kota & dungeon; setelah 5 bos dungeon (termasuk Makam Pasir) terbuka **dungeon akhir baru** dengan bos akhir bertahap, ada akhir cerita.

@@ -144,6 +144,7 @@ export class Renderer {
     // enemies
     for (const e of game.enemies) {
       if (!visible(e.x, e.y, 40)) continue;
+      if (e.hidden) { sandMound(g, e, t); continue; } // a burrowed sandworm (spec §25.4)
       shadow(g, e.x, e.y + e.r * 0.75, e.r * 0.85, e.r * 0.3);
       const squash = 1 + Math.sin(e.wob) * 0.06;
       const sprite = SPRITES[e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type];
@@ -193,6 +194,7 @@ export class Renderer {
       drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, hurt: game.flash > 0 });
       g.restore();
     }
+    playerStatus(g, game, t);
 
   }
 
@@ -506,4 +508,51 @@ function crown(g, x, y, w, lord) {
   g.lineTo(x + w * 0.5, y + 2); g.lineTo(x + w, y - 4); g.lineTo(x + w, y + 8); g.closePath();
   g.fillStyle = '#ffc94d'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#3a2408'; g.stroke();
   g.beginPath(); g.arc(x, y + 2, 3, 0, Math.PI * 2); g.fillStyle = lord ? '#ff4d6d' : '#6ec9ff'; g.fill();
+}
+
+// a burrowed sandworm: a moving hump of sand with dust; it shakes just before it bursts out
+function sandMound(g, e, t) {
+  const shake = e.mode === 'rise' ? Math.sin(t * 60) * 3 : 0;
+  const x = e.x + shake, y = e.y + e.r * 0.4;
+  g.beginPath(); g.ellipse(x, y, e.r * 1.1, e.r * 0.45, 0, 0, Math.PI * 2);
+  g.fillStyle = '#8a6440'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = 'rgba(30,18,10,.7)'; g.stroke();
+  g.beginPath(); g.ellipse(x - e.r * 0.2, y - e.r * 0.15, e.r * 0.6, e.r * 0.2, 0, 0, Math.PI * 2);
+  g.fillStyle = 'rgba(220,180,120,.45)'; g.fill();
+  for (let i = 0; i < 5; i++) {
+    const ph = (t * 1.6 + i / 5) % 1, a = i * 2.3 + e.x * 0.01;
+    g.beginPath(); g.arc(x + Math.cos(a) * e.r * (0.6 + ph), y - ph * e.r * 0.8, e.r * 0.12 * (1 - ph) + 0.6, 0, Math.PI * 2);
+    g.fillStyle = `rgba(200,160,100,${(0.6 * (1 - ph)).toFixed(2)})`; g.fill();
+  }
+}
+
+// what clings to the player: frost (slowed), poison bubbles, flames (spec §25.4)
+function playerStatus(g, game, t) {
+  const x = game.px, y = game.py;
+  if (game.slowT > 0) {
+    g.save();
+    g.beginPath(); g.ellipse(x, y + 10, 14, 4.5, 0, 0, Math.PI * 2); g.fillStyle = 'rgba(170,225,255,.45)'; g.fill();
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + 0.3, cx = x + Math.cos(a) * 11, cy = y + 9 + Math.sin(a) * 3.5, h = 5 + (i % 2) * 3;
+      g.beginPath(); g.moveTo(cx - 2, cy); g.lineTo(cx, cy - h); g.lineTo(cx + 2, cy); g.closePath();
+      g.fillStyle = '#e8f8ff'; g.fill(); g.lineWidth = 0.8; g.strokeStyle = '#6ab8ff'; g.stroke();
+    }
+    g.restore();
+    g.save(); g.globalAlpha = 0.18; g.beginPath(); g.ellipse(x, y - 8, 11, 18, 0, 0, Math.PI * 2); g.fillStyle = '#8fd0ff'; g.fill(); g.restore();
+  }
+  if (game.dotT > 0) {
+    const burn = game.dotKind === 'burn';
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 6; i++) {
+      const ph = (t * (burn ? 1.8 : 1.1) + i / 6) % 1, ox = Math.sin(i * 4.1 + t * 2) * 8;
+      if (burn) {
+        const fx = x + ox, fy = y - 2 - ph * 26, s = 4 * (1 - ph) + 1;
+        g.beginPath(); g.moveTo(fx, fy - s * 2.2); g.quadraticCurveTo(fx + s, fy, fx, fy + s); g.quadraticCurveTo(fx - s, fy, fx, fy - s * 2.2);
+        g.fillStyle = `rgba(255,${120 + (i % 3) * 40},40,${(0.9 * (1 - ph)).toFixed(2)})`; g.fill();
+      } else {
+        g.beginPath(); g.arc(x + ox, y - 4 - ph * 28, 2.6 * (1 - ph) + 0.8, 0, Math.PI * 2);
+        g.fillStyle = `rgba(140,255,90,${(0.85 * (1 - ph)).toFixed(2)})`; g.fill();
+      }
+    }
+    g.restore();
+  }
 }

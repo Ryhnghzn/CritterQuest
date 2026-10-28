@@ -50,7 +50,7 @@ function strings() {
 }
 
 // words that are the same in both languages
-const SAME = ['Meteor', 'Shuriken', 'Armor', 'EXP +{v}%', 'Lava', 'ATK +3%', 'ATK +5%', 'Magnet +20'];
+const SAME = ['Meteor', 'Shuriken', 'Armor', 'Yeti', 'Salamander', 'EXP +{v}%', 'Lava', 'ATK +3%', 'ATK +5%', 'Magnet +20'];
 
 const item = (o) => ({ slot: 'weapon', classId: 'warrior', variant: 1, rarity: 1, itemLevel: 5, base: {}, bonuses: [], unique: null, plus: 0, sockets: [], ...o });
 

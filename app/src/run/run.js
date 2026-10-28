@@ -129,6 +129,7 @@ export class Game {
     this.fx = { ...effects }; this.fxShieldT = 0; this.frenzyOn = false; this.revived = false;
     this.applyBuffs();
     this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0;
+    this.slowT = 0; this.slowK = 0; this.dotT = 0; this.dotDps = 0; this.dotKind = null; // biome status (spec §25.4)
     this.dashSid = null; this.buffSid = null; // skill whose dash trail / buff aura is showing (run/skillfx.js)
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
@@ -216,6 +217,12 @@ export class Game {
     stepPlayer(this, this.intent, dt);
 
     if (this.invuln > 0) this.invuln -= dt;
+    if (this.slowT > 0) this.slowT -= dt;
+    if (this.dotT > 0) { // poison / burn: damage over time, ignores the hit invulnerability
+      this.dotT -= dt;
+      this.stats.hp -= this.dotDps * dt;
+      if (this.stats.hp <= 0) { this.die(); return; }
+    }
     if (this.flash > 0) this.flash -= dt;
     if (this.shake > 0) this.shake -= dt * SHAKE_DECAY;
     if (this.bannerT > 0) this.bannerT -= dt;
@@ -314,6 +321,7 @@ export class Game {
   // ——————————————— combat ———————————————
   // Damage rules (spec §5.2): atk × skill multiplier × (crit ? critDmg : 1).
   damageEnemy(h, e) {
+    if (e.hidden) return; // a sand worm under the sand
     const s = this.stats;
     const crit = rand() * 100 < s.crit;
     const fx = this.fx;
@@ -380,7 +388,7 @@ export class Game {
         const ga = Math.atan2(goal.y - e.y, goal.x - e.x);
         vx = Math.cos(ga) * e.speed; vy = Math.sin(ga) * e.speed;
       } else ({ vx, vy } = aiStep(this, e, dt));
-      if (e.type === 'dart') { // zig-zag flight
+      if (e.type === 'dart' || e.type === 'vulture') { // zig-zag flight
         const z = Math.sin(e.wob) * 0.7, c = Math.cos(z), s = Math.sin(z);
         [vx, vy] = [vx * c - vy * s, vx * s + vy * c];
       }
@@ -390,7 +398,7 @@ export class Game {
       if (this.field) confineFieldEnemy(this, e); else confineEnemy(this, e);
       // touch damage
       const rr = e.r + 10;
-      if (e.dmg > 0 && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg)) {
+      if (e.dmg > 0 && !e.hidden && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg, ENEMIES[e.type].onHit)) {
         const a = Math.atan2(this.py - e.y, this.px - e.x);
         if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; thornsBurst(this, e); }
         e.kx = -Math.cos(a) * 220; e.ky = -Math.sin(a) * 220;
@@ -401,9 +409,13 @@ export class Game {
 
   // Any damage to the player (touch, projectile, blast): def, Teriakan Baja, shield,
   // short invulnerability. Returns false when it did not land (dodging / invulnerable).
-  hurtPlayer(raw) {
+  // onHit: { slow: [k, s] } | { poison | burn: [k × damage per second, s] } (biome enemies, spec §25.4)
+  hurtPlayer(raw, onHit = null) {
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
     let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul;
+    if (onHit?.slow) { this.slowK = onHit.slow[0]; this.slowT = Math.max(this.slowT, onHit.slow[1]); }
+    const dot = onHit?.poison ? 'poison' : onHit?.burn ? 'burn' : null;
+    if (dot) { this.dotKind = dot; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }
     if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; shieldFlash(this); }
     this.stats.hp -= dmg;
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
@@ -417,7 +429,8 @@ export class Game {
   killEnemy(e) {
     onDeath(this, e);
     this.kills += 1;
-    this.killsBy[e.type] = (this.killsBy[e.type] || 0) + 1;
+    const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin
+    this.killsBy[kin] = (this.killsBy[kin] || 0) + 1;
     if (e.elite) this.elites += 1;
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
     sfx.enemyDie();

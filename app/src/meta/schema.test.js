@@ -201,6 +201,16 @@ describe('save versi 2', () => {
     expect(validateSlot({ ...fresh(), treasures: { mars: [0] } })).toContain('treasures');
   });
 
+  it('migrasi v14 → v15: bestiari musuh biome mulai dari 0, hitungan lama tetap', () => {
+    const v14 = structuredClone({ ...fresh(), version: 14 });
+    v14.records.bestiary = { ...v14.records.bestiary, slink: 7 };
+    for (const id of ['wolf', 'yeti', 'icewisp', 'scorpion', 'sandworm', 'imp', 'salamander']) delete v14.records.bestiary[id];
+    const r = readSlot(v14);
+    expect(r.status).toBe('ok');
+    expect(r.data.records.bestiary.slink).toBe(7);
+    expect(r.data.records.bestiary.sandworm).toBe(0);
+  });
+
   it('menolak catatan toko & Gudang yang rusak', () => {
     expect(validateSlot({ ...fresh(), shops: { 'mars:weapons': { day: 1, sold: {} } } })).toContain('shops');
     expect(validateSlot({ ...fresh(), shops: { 'rimba:weapons': { day: 1, sold: { 0: 0 } } } })).toContain('shops');

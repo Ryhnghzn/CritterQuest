@@ -764,10 +764,27 @@ Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang 
 - **Save versi 14:** `treasures { regionId: [indeks peti terbuka] }`; `migrate()` v13 → v14 mengisinya kosong.
 - Cheat wilayah: "Ke harta".
 
-### 25.4 Tiga biome lain (9D-4)
-- Wilayah Padang Es, Gurun Merah, dan Gunung Api, masing-masing dengan musuh biome.
-- Dungeon baru Makam Pasir dengan bosnya.
-- Tiga kota besar dengan tingkat barang yang makin tinggi.
+### 25.4 Musuh biome & Makam Pasir (9D-4)
+(Ketiga wilayah dan kota besar lainnya sudah dibuat di 9D-1b dan 9D-2.)
+- **Musuh khas** (perilaku baru atau gabungan, angka di `data/enemies.js`):
+
+  | Wilayah | Musuh khas | Perilaku |
+  |---|---|---|
+  | Hutan Kelam | Serigala Bayang | terjangan pendek dan sering |
+  | Padang Es | Yeti | terjangan berat, memperlambat |
+  | Padang Es | Roh Es | 3 tembakan menyebar, memperlambat |
+  | Gurun Merah | Kalajengking | terjangan, meracuni |
+  | Gurun Merah | Cacing Pasir | menyelam (tak bisa dipukul) mendekati pemain, lingkaran bahaya, menyembur keluar, lalu menyelam lagi |
+  | Gunung Api | Imp Api | bola api, membakar |
+  | Gunung Api | Salamander | terjangan yang meninggalkan semburan api, membakar |
+
+- **Varian biome** (`kin` = musuh asal; bestiari menghitung ke musuh asal):
+  - Padang Es: Lendir Beku, Katak Salju, Golem Es (memperlambat);
+  - Gurun Merah: Lendir Pasir (cepat), Burung Nasar;
+  - Gunung Api: Lendir Magma (membakar), Jamur Bara (ledakan lebih besar, membakar).
+- **Efek pada pemain** (`onHit`): lambat `[−k kecepatan, detik]`; racun/api `[k × damage pukulan per detik, detik]`. Racun dan api tetap melukai walau pemain sedang kebal sesaat setelah dipukul.
+- **Bestiari** bertambah 7 musuh khas. **Save versi 15:** `migrate()` v14 → v15 menambah entri bestiari bernilai 0.
+- **Makam Pasir** (9D-4b): dungeon Gurun Merah dengan bosnya.
 
 ### 25.5 Dunia besar & gerbang dungeon di dunia (9D-1b, permintaan 2026-10-27)
 - **Ukuran wilayah:** 20000 × 12000 (sekitar 3 menit melintas). **Keempat wilayah dibuat sekarang**, yaitu Hutan Kelam, Padang Es, Gurun Merah, dan Gunung Api. Semuanya berangkat dari gerbang kota awal, dengan kota tujuan di ujung timur yang masih ditutup sampai 9D-2.
