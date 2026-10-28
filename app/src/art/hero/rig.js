@@ -4,7 +4,8 @@
 // Motion is keyframed: each segment between two poses has its own easing.
 export const lerp = (a, b, k) => a + (b - a) * k;
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const smooth = (k) => (k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k));
+const PI = Math.PI;
+function smooth(k) { return k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k); }
 export const EASE = { inOut: smooth, in: (k) => k * k * k, out: (k) => 1 - (1 - k) ** 3, lin: (k) => k };
 
 // keys: [[phase, ...values]], eases: one per segment → values at phase a
@@ -66,9 +67,30 @@ const CLASSES = {
     snappyEase: ['inOut', 'out', 'inOut'],
     strike: { slow: [0.3, 0.42, 0.66], snappy: [-0.01, 0.03, 0.3] },
   },
+  npc: { // townsfolk: the idle comes from the archetype's job (hammering, guarding, a cane…)
+    sF: [4.8, -21], sB: [-4, -21.2], bob: 0.9, reachB: 20,
+    idle: (s, m, t, kind) => (NPC_IDLE[kind] || NPC_IDLE.gesture)(t, s, m),
+    slow: [[0, 'idle'], [1, 'idle']], slowEase: ['lin'], snappy: [[0, 'idle'], [1, 'idle']], snappyEase: ['lin'],
+  },
+};
+// NPC idles → [phi, k, lean, crouch, step, phiB, x1, x2]
+const NPC_IDLE = {
+  gesture: (t, s, m) => [0.15 - s * 0.4 * m, 0.6, 0.05 * m, 0, 0, -0.1 + s * 0.4 * m + Math.max(0, Math.sin(t * 0.8)) ** 6 * 1.7, 0, 0],
+  wait: (t, s, m) => [0.95 - s * 0.3 * m, 0.5, 0.04 * m, 0, 0, 0.95 + Math.sin(t * 1.7) * 0.05, 0, 0],
+  hammer: (t) => {
+    const u = (t * 1.1) % 1;
+    const phi = u < 0.55 ? lerp(0.9, 2.9, smooth(u / 0.55)) : lerp(2.9, 0.8, clamp((u - 0.55) / 0.12, 0, 1));
+    return [phi, 0.9, 0.15 + (u > 0.55 && u < 0.7 ? 0.08 : 0), 1, 0, 0.95, 0, 0];
+  },
+  guard: (t, s, m) => [0.55, PI - 0.55, 0.03 * m, 0, 0, -0.1 + s * 0.3 * m, 0, 0],
+  old: (t, s, m) => [0.75, -0.65, 0.26, 2.4, 0, 0.3 + Math.sin(t * 1.2) * 0.05, 0, 0],
+  snip: (t) => [1.2 + Math.sin(t * 9) * 0.12, 0.4, 0.06, 0, 0, 1.05, 0, 0],
+  read: (t) => [1.15, 1.6, 0.08, 0, 0, 1.05 + Math.sin(t * 0.6) * 0.04, 0, 0],
+  sway: (t) => [2.3 + Math.sin(t * 1.6) * 0.35, 0.6, Math.sin(t * 1.6) * 0.12, 1 + Math.sin(t * 3.2) * 0.8, 0, 2.1 - Math.sin(t * 1.6) * 0.35, 0, 0],
+  child: (t, s, m) => [0.3 - s * 0.6 * m + Math.sin(t * 4) * 0.3, 0.6, 0.06, -Math.abs(Math.sin(t * 3)) * 2.4, 0, -0.2 + s * 0.6 * m - Math.sin(t * 4) * 0.3, 0, 0],
+  stance: (t) => [1.35, 0.4, 0.08, 2.4 + Math.sin(t * 2) * 0.3, 2, 1.25, 0, 0],
 };
 const pad = (row) => { const r = row.slice(); while (r.length < 10) r.push(0); return r; };
-const PI = Math.PI;
 
 // Skill moves (plan "Gaya D" §3). Rows: [phase, phi, k, lean, crouch, step, phiB, x1, x2, lift]
 // (lift = jump height). dur: seconds, or 'skill' = the skill's own duration (spins);
@@ -135,7 +157,7 @@ export function rig(classId, pose) {
   const fF = { x: 4 + s * stride, y: -2.5 - Math.max(0, c) * 6 * moving };
   const fB = { x: -4 - s * stride, y: -2.5 - Math.max(0, -c) * 6 * moving };
 
-  const idle = [...C.idle(s, moving), 0];
+  const idle = [...C.idle(s, moving, t, pose.kind), 0];
   let [phi, k, lean, crouch, step, phiB, x1, x2, lift] = idle;
   let swing = 0, trail = 0, flip = 1;
   const M = pose.move && MOVES[classId]?.[pose.move.id];

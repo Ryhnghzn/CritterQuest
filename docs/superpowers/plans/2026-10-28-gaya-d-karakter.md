@@ -45,4 +45,9 @@ Prinsip:
 - [x] `sprites.js` memakai gambar baru (`Object.assign(ENEMY_ART, MONSTER_ART)`); tetap dipanggang sekali per ukuran
 - [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 5 — NPC rakitan (bentuk badan, pakaian, kepala, barang, gerakan profesi)
+- [x] `art/hero/npc.js`: 22 tipe dari peran & julukan (pandai besi, penjaga, tetua, nenek, anak, penyihir, pemburu, pedagang, pedagang malam, penari, penjual bunga, kapten, guru, juru tulis, …); badan normal/kekar/kurus/tua; tunik/rompi/celemek/zirah/jubah/gaun/mantel; tudung/kerudung/topi/helm/serban/topi lebar, janggut; palu/tombak/tongkat/buku/lentera/gunting/keranjang/ransel/busur
+- [x] `rig.js`: gerakan diam per profesi (memukul landasan, berjaga, bertongkat, menggunting, membaca, menari, anak melompat, kuda-kuda)
+- [x] `render/town.js` mengirim data NPC (`look.npc`); potret dialog menemukan tipenya lewat larik `outfit`
+- [ ] NPC di `render/hideout.js` (milik sesi lain, belum di-commit) tampil sebagai warga biasa sampai file itu ikut mengirim `npc`
+- [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 6 — Ikon gear & sentuhan akhir (font/UI bila perlu)

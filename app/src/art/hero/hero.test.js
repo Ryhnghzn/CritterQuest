@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { drawHero, hasHero } from './index.js';
 import { rig, keyframes, hasMove, moveDuration } from './rig.js';
+import { archetypeOf, ARCHETYPES } from './npc.js';
+import { TOWN, INTERIORS } from '../../data/town.js';
+import { TOWN_DEFS } from '../../data/towns.js';
 import { drawDoll } from '../doll.js';
 import { HAIR_STYLES, HAIR_COLORS } from '../../data/balance.js';
 import { RARITIES } from '../../data/items.js';
@@ -92,9 +95,9 @@ describe('gaya D — gerakan skill', () => {
 });
 
 describe('gaya D — keempat kelas', () => {
-  it('drawDoll memakai gaya D untuk keempat kelas; NPC tetap boneka lama', () => {
+  it('drawDoll memakai gaya D untuk keempat kelas dan NPC', () => {
     for (const c of CLASS_IDS) expect(hasHero(c)).toBe(true);
-    expect(drawHero(fakeCtx(), null, { hair: 0, hairColor: 0, outfit: ['#555555', '#333333'] }, {})).toBe(null);
+    expect(drawHero(fakeCtx(), null, { hair: 0, hairColor: 0, outfit: ['#555555', '#333333'] }, {}).head.r).toBeGreaterThan(0);
   });
 
   it('semua rambut × warna × pose bisa digambar dan mengembalikan titik jangkar', () => {
@@ -121,6 +124,39 @@ describe('gaya D — keempat kelas', () => {
           for (const c of CLASS_IDS) expect(() => drawDoll(fakeCtx(), c, { hair: 1, hairColor: 2, gear }, pose)).not.toThrow();
         }
       }
+    }
+  });
+});
+
+describe('gaya D — NPC rakitan', () => {
+  it('tipe NPC dari peran & julukan', () => {
+    expect(archetypeOf({ role: 'gear', name: 'Pandai Brom' })).toBe('smith');
+    expect(archetypeOf({ role: 'gate' })).toBe('guard');
+    expect(archetypeOf({ role: 'talk', title: 'Penjaga Kota' })).toBe('guard');
+    expect(archetypeOf({ role: 'talk', title: 'Anak Kota', scale: 0.72 })).toBe('child');
+    expect(archetypeOf({ role: 'talk', name: 'Nenek Kunyit', title: 'Peramu' })).toBe('grandma');
+    expect(archetypeOf({ role: 'talk', title: 'Tetua Kota' })).toBe('elder');
+    expect(archetypeOf({ role: 'talk', title: 'Penyihir' })).toBe('mage');
+    expect(archetypeOf({ role: 'talk', title: 'Bebas' })).toBe('villager');
+    expect(archetypeOf(undefined)).toBe('villager');
+  });
+
+  it('semua NPC di semua kota bisa digambar (termasuk warna #rgb pendek)', () => {
+    const all = [...TOWN.npcs, ...Object.values(INTERIORS).flatMap((r) => r.npcs || [])];
+    for (const def of Object.values(TOWN_DEFS)) for (const f of def.folk || []) all.push({ role: 'talk', ...f });
+    expect(all.length).toBeGreaterThan(10);
+    for (const n of all) {
+      if (!n.outfit) continue;
+      for (const pose of [{ t: 0.3 }, { t: 2.1, moving: 1, walk: 1 }]) {
+        const a = drawDoll(fakeCtx(), null, { ...n.look, outfit: n.outfit, npc: n }, pose);
+        expect(Number.isFinite(a.hand.x)).toBe(true);
+      }
+    }
+  });
+
+  it('setiap tipe NPC punya gerakan diam yang bisa digambar', () => {
+    for (const arch of ARCHETYPES) {
+      expect(() => drawDoll(fakeCtx(), null, { hair: 1, hairColor: 1, outfit: ['#6a4a3a', '#222'], npc: { role: 'talk', title: arch } }, { t: 1.7 })).not.toThrow();
     }
   });
 });

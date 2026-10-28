@@ -249,7 +249,7 @@ export function drawNpc(g, p, t, town) {
   const n = p.n;
   if (n.object === 'stone') { runeStone(g, p.x, p.y, t); return; }
   const facing = p.moving ? p.facing : town && town.x < p.x ? -1 : 1;
-  actor(g, p.x, p.y, null, { ...n.look, outfit: n.outfit }, { t: t + n.x, moving: p.moving, walk: t * 5 * p.moving }, facing, n.scale || 1);
+  actor(g, p.x, p.y, null, { ...n.look, outfit: n.outfit, npc: n }, { t: t + n.x, moving: p.moving, walk: t * 5 * p.moving }, facing, n.scale || 1);
 }
 
 // brief black fade after walking through a door
