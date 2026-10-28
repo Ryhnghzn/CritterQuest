@@ -27,6 +27,12 @@ Prinsip:
 - [ ] Verifikasi: tes & build lulus; cek manual di game (PC & HP) oleh pemilik
 
 ## Bagian 2 — Archer, Mage, Assassin (badan, gear, serangan dasar)
+- [x] `art/hero/common.js`: wajah, rambut, kaki & lengan ramping, palet, jejak senjata bersama; `rig.js` per kelas (postur, serangan lambat/cepat)
+- [x] Archer: ramping, jubah panjang, tabung panah, tudung (tingkat helm), kulit → bertabur → sisik, busur tinggi; tarik tali → lepas
+- [x] Mage: jubah segitiga, tudung/topi lancip/tudung dalam bermata menyala/bertanduk, mantel, tongkat & kristal per tingkat; dorong tongkat + tangan menyala
+- [x] Assassin: kecil membungkuk, syal panjang, topeng, bandana/tudung, dua belati genggam terbalik; tusukan ganda
+- [x] Tes semua kelas × rambut × warna × gear × pose; build
+- [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 3 — Gerakan skill & ultimate (24 + 4), menghindar, mati
 ## Bagian 4 — Monster & bos (29 jenis)
 ## Bagian 5 — NPC rakitan (bentuk badan, pakaian, kepala, barang, gerakan profesi)

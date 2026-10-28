@@ -4,6 +4,9 @@ import { rig, keyframes } from './rig.js';
 import { drawDoll } from '../doll.js';
 import { HAIR_STYLES, HAIR_COLORS } from '../../data/balance.js';
 import { RARITIES } from '../../data/items.js';
+import { CLASSES } from '../../data/classes.js';
+
+const CLASS_IDS = Object.keys(CLASSES);
 
 // Canvas 2D stand-in: every method is a no-op, gradients accept colour stops.
 function fakeCtx() {
@@ -45,13 +48,24 @@ describe('gaya D — kerangka & keyframe', () => {
     }
     expect(rig('warrior', {}).trail).toBe(0);
   });
+
+  it('archer menarik tali lalu melepas; mage menyala saat merapal; assassin menusuk dua kali', () => {
+    const drawn = rig('archer', { attack: 0.6 }), loose = rig('archer', { attack: 0.75 });
+    expect(drawn.draw).toBeGreaterThan(0.9);
+    expect(drawn.nock).toBe(1);
+    expect(loose.draw).toBeLessThan(0.2);
+    expect(rig('mage', { attack: 0.5 }).cast).toBeGreaterThan(0.9);
+    expect(rig('mage', {}).cast).toBe(0);
+    const first = rig('assassin', { attack: 0.4 }), second = rig('assassin', { attack: 0.52 });
+    expect(first.phi).toBeGreaterThan(second.phi);   // front hand thrusts first
+    expect(second.phiB).toBeGreaterThan(first.phiB); // then the back hand
+  });
 });
 
-describe('gaya D — Warrior', () => {
-  it('drawDoll memakai gaya D untuk Warrior saja (kelas lain menyusul)', () => {
-    expect(hasHero('warrior')).toBe(true);
-    expect(hasHero('mage')).toBe(false);
-    expect(drawHero(fakeCtx(), 'mage', { hair: 0, hairColor: 0 }, {})).toBe(null);
+describe('gaya D — keempat kelas', () => {
+  it('drawDoll memakai gaya D untuk keempat kelas; NPC tetap boneka lama', () => {
+    for (const c of CLASS_IDS) expect(hasHero(c)).toBe(true);
+    expect(drawHero(fakeCtx(), null, { hair: 0, hairColor: 0, outfit: ['#555555', '#333333'] }, {})).toBe(null);
   });
 
   it('semua rambut × warna × pose bisa digambar dan mengembalikan titik jangkar', () => {
@@ -59,9 +73,11 @@ describe('gaya D — Warrior', () => {
     for (let hair = 0; hair < HAIR_STYLES; hair++) {
       for (let hairColor = 0; hairColor < HAIR_COLORS; hairColor++) {
         for (const pose of poses) {
-          const a = drawDoll(fakeCtx(), 'warrior', { hair, hairColor }, pose);
-          expect(a.head.r).toBeGreaterThan(0);
-          expect(Number.isFinite(a.hand.x) && Number.isFinite(a.body.y)).toBe(true);
+          for (const c of CLASS_IDS) {
+            const a = drawDoll(fakeCtx(), c, { hair, hairColor }, pose);
+            expect(a.head.r).toBeGreaterThan(0);
+            expect(Number.isFinite(a.hand.x) && Number.isFinite(a.body.y)).toBe(true);
+          }
         }
       }
     }
@@ -73,7 +89,7 @@ describe('gaya D — Warrior', () => {
         const piece = { tier, rarity };
         const gear = { weapon: piece, helm: piece, armor: piece, boots: piece };
         for (const pose of [{ t: 1 }, { attackPhase: 0.25, t: 2 }]) {
-          expect(() => drawDoll(fakeCtx(), 'warrior', { hair: 1, hairColor: 2, gear }, pose)).not.toThrow();
+          for (const c of CLASS_IDS) expect(() => drawDoll(fakeCtx(), c, { hair: 1, hairColor: 2, gear }, pose)).not.toThrow();
         }
       }
     }

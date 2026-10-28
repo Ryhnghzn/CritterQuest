@@ -25,50 +25,76 @@ export function ik(a, b, l1, l2, bend) {
 }
 const armTo = (s, phi, r) => ({ x: s.x + Math.sin(phi) * r, y: s.y + Math.cos(phi) * r });
 
-// Per-class build: shoulder offsets (wider = bulkier), how heavily the body bobs while
-// walking, and where the off hand rests (Warrior: shield up in front of the chest).
-const BUILD = {
-  warrior: { sF: [6.6, -20.4], sB: [-5.8, -21], bob: 1.45, guard: 1.2, guardSwing: 0.12 },
+// Per-class build and motion. A pose row is [phi, k, lean, crouch, step, phiB, x1, x2]:
+// front-arm angle, weapon angle (k = offset from the arm, or absolute when abs), body lean,
+// crouch, lunge step, off-arm angle, and two class values (archer: draw, nock; mage: cast;
+// assassin: off-dagger offset). Key rows are [phase, ...pose] or [phase, 'idle'].
+// SLOW = showcase timing (wind-up, held beat, fast hit, overshoot, slow settle);
+// SNAPPY = in game, where the hit lands the moment the attack fires.
+const CLASSES = {
+  warrior: { // big and heavy: one-handed sword, shield up in front of the chest
+    sF: [6.6, -20.4], sB: [-5.8, -21], bob: 1.45, reachB: 19,
+    idle: (s, m) => [0.2 - s * 0.45 * m, 0.9, 0.09 * m, 0, 0, 1.2 + s * 0.12 * m, 0, 0],
+    slow: [[0, 'idle'], [0.3, 3.7, -0.4, -0.14, 1.8, -1.2, 1.55], [0.38, 3.55, -0.6, -0.1, 2.2, -0.6, 1.6], [0.47, 0.7, 0.5, 0.32, 3.2, 8, 0.45], [0.52, 0.5, 0.6, 0.36, 3.5, 8.6, 0.5], [0.62, 0.4, 0.75, 0.32, 2.8, 8, 0.8], [1, 'idle']],
+    slowEase: ['inOut', 'out', 'in', 'out', 'inOut', 'inOut'],
+    snappy: [[0, 2.6, -0.2, -0.04, 1.4, 1.5, 1.4], [0.08, 3.5, -0.6, -0.1, 2.2, 0, 1.6], [0.24, 0.7, 0.5, 0.32, 3.2, 8, 0.45], [0.34, 0.5, 0.6, 0.36, 3.5, 8.6, 0.5], [0.5, 0.4, 0.75, 0.32, 2.8, 7, 0.8], [1, 'idle']],
+    snappyEase: ['out', 'in', 'out', 'inOut', 'inOut'],
+    strike: { slow: [0.38, 0.47, 0.64], snappy: [0.08, 0.24, 0.5] }, // trail: from, peak, gone
+  },
+  archer: { // slim and tall: bow in the front hand, the back hand draws the string
+    sF: [4.8, -21], sB: [-3.8, -21.4], bob: 0.9, reachB: 20, abs: true,
+    idle: (s, m) => [0.55 - s * 0.3 * m, 1.05, 0.09 * m, 0, 0, -0.2 + s * 0.4 * m, 0, 0],
+    slow: [[0, 'idle'], [0.25, 1.5, 1.57, 0.02, 1, 1, 1.4, 0.15, 1], [0.55, 1.57, 1.57, -0.05, 1.3, 1, 1.6, 1, 1], [0.66, 1.57, 1.57, -0.05, 1.3, 1, 1.6, 1, 1], [0.7, 1.55, 1.57, 0.1, 1.2, 1, -0.5, 0, 0], [0.82, 1.45, 1.6, 0.08, 0.8, 0.5, -0.35, 0, 0], [1, 'idle']],
+    slowEase: ['inOut', 'inOut', 'lin', 'out', 'out', 'inOut'],
+    snappy: [[0, 1.55, 1.57, 0.04, 1.2, 0, 1.6, 1, 1], [0.06, 1.55, 1.57, 0.1, 1.2, 0, -0.5, 0, 0], [0.3, 1.45, 1.6, 0.06, 0.8, 0, -0.35, 0, 0], [1, 'idle']],
+    snappyEase: ['out', 'inOut', 'inOut'],
+  },
+  mage: { // thin and tall: staff upright, thrust forward to cast, the free hand flares
+    sF: [4.6, -21], sB: [-3.8, -21.4], bob: 0.7, reachB: 20, abs: true,
+    idle: (s, m) => [0.45 - s * 0.2 * m, Math.PI - 0.08, 0.06 * m, 0, 0, -0.15 + s * 0.3 * m, 0, 0],
+    slow: [[0, 'idle'], [0.3, 1.35, 2.39, 0.14, 0.6, 2.5, 1.2, 0.2], [0.5, 1.35, 2.39, 0.16, 0.8, 2.5, 1.25, 1], [0.7, 1.3, 2.45, 0.12, 0.5, 2, 1.1, 0.3], [1, 'idle']],
+    slowEase: ['inOut', 'inOut', 'out', 'inOut'],
+    snappy: [[0, 1.3, 2.45, 0.14, 0.5, 2, 1.15, 1], [0.3, 1.25, 2.5, 0.12, 0.4, 1.5, 1, 0.25], [1, 'idle']],
+    snappyEase: ['out', 'inOut'],
+  },
+  assassin: { // small and crouched: two reverse-grip daggers, quick double stab
+    sF: [4.2, -20.6], sB: [-3.4, -21], bob: 0.8, reachB: 20,
+    idle: (s, m) => [0.95 - s * 0.3 * m, 2.84, 0.2 + 0.08 * m, 3.2, 0, 0.5 + s * 0.3 * m, 2.84, 0],
+    slow: [[0, 'idle'], [0.25, 0.6, 2.84, 0.1, 4.8, -1, 0.3, 2.84], [0.4, 1.8, 2.5, 0.4, 3.8, 8, 0.3, 2.84], [0.52, 0.8, 2.9, 0.32, 3.6, 7, 1.85, 2.4], [0.65, 0.9, 2.84, 0.28, 3.4, 5, 0.7, 2.84], [1, 'idle']],
+    slowEase: ['inOut', 'in', 'out', 'inOut', 'inOut'],
+    snappy: [[0, 1.75, 2.5, 0.38, 3.8, 7, 0.3, 2.84], [0.12, 0.8, 2.9, 0.3, 3.6, 6, 1.85, 2.4], [0.26, 0.9, 2.84, 0.26, 3.4, 3, 0.7, 2.84], [1, 'idle']],
+    snappyEase: ['inOut', 'out', 'inOut'],
+    strike: { slow: [0.3, 0.42, 0.66], snappy: [-0.01, 0.03, 0.3] },
+  },
 };
-const DEFAULT_BUILD = { sF: [5, -20.5], sB: [-4.2, -21], bob: 1, guard: null, guardSwing: 0.45 };
-
-// One-handed overhead slash with the shield arm counter-swinging:
-// [phase, arm φ, sword offset from the arm, lean, crouch, step, off-arm φ].
-// SLOW (showcase): wind-up, a held beat, a fast whip, overshoot, a slow settle.
-// SNAPPY (in game): the hit lands the moment the attack fires, so the whip comes almost at once.
-const SLASH = {
-  slow: [[0, 0, 0.9, 0, 0, 0, 0], [0.3, 3.7, -0.4, -0.14, 1.8, -1.2, 1.55], [0.38, 3.55, -0.6, -0.1, 2.2, -0.6, 1.6], [0.47, 0.7, 0.5, 0.32, 3.2, 8, 0.45], [0.52, 0.5, 0.6, 0.36, 3.5, 8.6, 0.5], [0.62, 0.4, 0.75, 0.32, 2.8, 8, 0.8], [1, 0, 0.9, 0, 0, 0, 0]],
-  snappy: [[0, 2.6, -0.2, -0.04, 1.4, 1.5, 1.4], [0.08, 3.5, -0.6, -0.1, 2.2, 0, 1.6], [0.24, 0.7, 0.5, 0.32, 3.2, 8, 0.45], [0.34, 0.5, 0.6, 0.36, 3.5, 8.6, 0.5], [0.5, 0.4, 0.75, 0.32, 2.8, 7, 0.8], [1, 0, 0.9, 0, 0, 0, 0]],
-};
-const SLASH_EASE = { slow: ['inOut', 'out', 'in', 'out', 'inOut', 'inOut'], snappy: ['out', 'in', 'out', 'inOut', 'inOut'] };
-const STRIKE = { slow: [0.38, 0.47, 0.64], snappy: [0.08, 0.24, 0.5] }; // trail: from, peak, gone
+const pad = (row) => { const r = row.slice(); while (r.length < 9) r.push(0); return r; };
 
 // pose: { t, moving 0..1, walk (rad), attack: phase 0..1 (or −1 / undefined), snappy, hurt }
 export function rig(classId, pose) {
   const { t = 0, moving = 0, walk = 0, hurt = false } = pose;
-  const B = BUILD[classId] || DEFAULT_BUILD;
+  const C = CLASSES[classId] || CLASSES.warrior;
   const a = pose.attack ?? -1, prof = pose.snappy ? 'snappy' : 'slow';
   const s = Math.sin(walk), c = Math.cos(walk);
-  const bob = moving ? -Math.abs(s) * 2 * moving * B.bob : Math.sin(t * 2) * 0.45 * B.bob;
-  let lean = 0.09 * moving;
+  const bob = moving ? -Math.abs(s) * 2 * moving * C.bob : Math.sin(t * 2) * 0.45 * C.bob;
   const stride = 10 * moving;
   const fF = { x: 4 + s * stride, y: -2.5 - Math.max(0, c) * 6 * moving };
   const fB = { x: -4 - s * stride, y: -2.5 - Math.max(0, -c) * 6 * moving };
 
-  let phi = 0.2 - s * 0.45 * moving, k = 0.9;
-  let phiB = B.guard != null ? B.guard + s * B.guardSwing * moving : -0.15 + s * 0.45 * moving;
-  let crouch = 0, step = 0, swing = 0, trail = 0;
+  const idle = C.idle(s, moving);
+  let [phi, k, lean, crouch, step, phiB, x1, x2] = idle;
+  let swing = 0, trail = 0;
   if (a >= 0 && a <= 1) {
-    const K = SLASH[prof], last = K.length - 1;
-    const keys = K.map((r, i) => (i === 0 || i === last ? [r[0], phi, r[2], lean, 0, 0, phiB] : r));
-    if (prof === 'snappy') keys[0] = K[0]; // the swing starts already raised
-    [phi, k, lean, crouch, step, phiB] = keyframes(keys, SLASH_EASE[prof], a);
-    const [from, peak, gone] = STRIKE[prof];
-    swing = clamp(1 - Math.abs(a - peak) / (gone - from), 0, 1);
-    trail = a > from && a < gone ? (a < peak + 0.05 ? 1 : 1 - (a - peak - 0.05) / (gone - peak - 0.05)) : 0;
+    const keys = C[prof].map((r) => (r[1] === 'idle' ? [r[0], ...idle] : pad(r)));
+    [phi, k, lean, crouch, step, phiB, x1, x2] = keyframes(keys, C[prof + 'Ease'], a);
+    const S = C.strike?.[prof];
+    if (S) {
+      const [from, peak, gone] = S;
+      swing = clamp(1 - Math.abs(a - peak) / (gone - from), 0, 1);
+      trail = a > from && a < gone ? (a < peak + 0.05 ? 1 : 1 - (a - peak - 0.05) / (gone - peak - 0.05)) : 0;
+    }
   }
   if (hurt) { lean -= 0.22; crouch += 1.5; phi += 0.5; phiB += 0.3; }
-  const psi = phi + k;
+  const psi = C.abs ? k : phi + k;
   // lunge: the front foot steps in, the back foot slides and lifts its heel, the hips drop and follow
   fF.x += step; fB.x -= step * 0.25; fB.y -= Math.max(0, step) * 0.18;
 
@@ -76,11 +102,17 @@ export function rig(classId, pose) {
   const cl = Math.cos(lean), sl = Math.sin(lean);
   const W = (lx, ly) => ({ x: hip.x + lx * cl - ly * sl, y: hip.y + lx * sl + ly * cl });
   const hipF = W(2.6, 0), hipB = W(-2.6, 0);
-  const sF = W(...B.sF), sB = W(...B.sB);
+  const sF = W(...C.sF), sB = W(...C.sB);
   const hF = armTo(sF, phi, 21);
-  const hB = armTo(sB, phiB, 19);
+  let hB = armTo(sB, phiB, C.reachB);
+  const draw = classId === 'archer' ? x1 : 0, nock = classId === 'archer' ? x2 : 0;
+  if (nock > 0) { // the string hand sits on the string, pulled back along the arrow
+    const sp = { x: hF.x - Math.sin(psi) * (3 + draw * 17), y: hF.y - Math.cos(psi) * (3 + draw * 17) };
+    hB = { x: lerp(hB.x, sp.x, nock), y: lerp(hB.y, sp.y, nock) };
+  }
   return {
     t, moving, lean, hip, W, fF, fB, hipF, hipB, sF, sB, hF, hB, phi, phiB, psi, swing, trail, attack: a, prof, hurt,
+    draw, nock, cast: classId === 'mage' ? x1 : 0, psiB: phiB + x1,
     kF: ik(hipF, fF, 19, 19, 1), kB: ik(hipB, fB, 19, 19, 1),
     eF: ik(sF, hF, 11.5, 11, -1), eB: ik(sB, hB, 10.5, 10, -1),
   };

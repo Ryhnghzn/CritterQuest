@@ -2,24 +2,13 @@
 // silhouette by tier (helm 0–6, armour 0–6, boots, weapon 0–6) and the glow by rarity
 // (trims, runes and gems in the rarity colour; Mitos burns with molten cracks).
 import { RARITIES, MYTHIC } from '../../data/items.js';
-import { cel, fillPoly, limbPts, glow, pal, dim, mix, INK, TAU } from './cel.js';
+import { fillPoly, limbPts, glow, pal, dim, INK, TAU } from './cel.js';
+import { SKIN, LEATHER, PANTS, GOLD, WOOD, METAL, rcol, face, hairBack, hairFront, trail } from './common.js';
 
-const RIM = 'rgba(255,92,60,.9)';
-const SKIN = pal('#b77656', { shade: '#3a1b1d', hi: '#f2b98e' });
+export const RIM = 'rgba(255,92,60,.9)';
 const CLOTH = pal('#77161f', { shade: '#22060d', hi: '#c43c36', hatch: true });
-const LEATHER = pal('#4a3428', { shade: '#170d0e', hi: '#7c5a40' });
-const PANTS = pal('#2e2630', { shade: '#110c12', hi: '#55485a' });
-const GOLD = pal('#b07a26', { shade: '#3a2008', hi: '#ffe08a' });
-const METAL = [ // by tier: dull iron → bright steel → dark steel
-  pal('#66656c'), pal('#6c6b73'), pal('#7b7e8a'), pal('#80848f'), pal('#8a90a0', { hi: '#f1e3c4' }), pal('#8d93a3', { hi: '#f1e3c4' }), pal('#5e5a6a', { hi: '#e8d7ff' }),
-];
 const BLADE = [pal('#77777c'), pal('#7d7f86'), pal('#868a94'), pal('#8a8f9c'), pal('#3a3442', { hi: '#e2d8e4' }), pal('#3a3442', { hi: '#e2d8e4' }), pal('#2e2836', { hi: '#f0e2f0' })];
 const rimmed = (P) => ({ ...P, rim: RIM });
-const rcol = (piece) => (piece && piece.rarity >= 1 ? RARITIES[piece.rarity].color : '#8a6a3a');
-
-export function hairPalette([main, shade]) {
-  return { base: main, shade: mix(shade, '#0b0710', 0.5), hi: mix(main, '#fff1d6', 0.35), rim: RIM };
-}
 
 // ——— legs ———
 function leg(g, R, hip, knee, foot, back, boots) {
@@ -112,40 +101,21 @@ function torso(g, R, armor) {
 }
 
 // ——— head (local: centre of the head) ———
-const HAIR = [
-  { front: [[5.4, -4.6], [4.6, -8.2], [0, -9.2], [-4.6, -7.8], [-6, -4], [-5.6, -0.4], [-4, 1.2], [-3.4, -2.6], [0.6, -5.4], [3.6, -5]] },
-  { front: [[5.6, -5.2], [4.4, -9], [1, -9.8], [-0.8, -12.4], [-2.4, -9.8], [-6.4, -11.6], [-5.6, -8.4], [-9.6, -8.4], [-6.6, -5.8], [-10, -3.4], [-5.8, -2.6], [-5.2, 1.8], [-3.6, -2], [0, -5.6], [3, -5.4]] },
-  { back: (sw) => [[3, -7], [-6.6, -7.6], [-7.4, 2], [-6.8 + sw, 13], [-2 + sw * 0.5, 11], [-1.6, 2]], front: [[5.6, -4.6], [3.6, -9], [-2, -9.4], [-6, -6.6], [-5.4, -2], [-3.2, -4], [1, -6], [3.6, -5.2]] },
-  { front: [[5.4, -4.6], [3.8, -9], [-1.6, -9.6], [-6.4, -6.4], [-7, 1], [-5.6, 5.6], [-2.6, 5.2], [-2.8, 0], [-1.6, -3], [2.4, -5], [4.2, -4]] },
-  { back: (sw) => [[-5, -7], [-9 + sw, -5], [-12 + sw, 2], [-10.4 + sw, 8], [-8.6 + sw, 3], [-6.4, -3.6]], front: [[5.4, -4.6], [4.4, -8.6], [-0.6, -9.6], [-5.4, -7], [-5.8, -2.6], [-4, -0.6], [-3.2, -3.4], [0.6, -5.6], [3.8, -5]], tie: [-6, -5.2] },
-];
-
 function helmKind(helm) {
   if (!helm) return null;
   return helm.tier <= 1 ? 'cap' : helm.tier <= 3 ? 'nasal' : helm.tier <= 5 ? 'great' : 'crown';
 }
 
 function head(g, R, look, helm, hairP) {
-  const t = R.t, kind = helmKind(helm), closed = kind === 'great' || kind === 'crown';
-  const hs = HAIR[look.hair] || HAIR[0], sw = Math.sin(t * 2) * 0.8 - R.moving * 2;
+  const kind = helmKind(helm), closed = kind === 'great' || kind === 'crown';
   g.save(); g.translate(R.hip.x, R.hip.y); g.rotate(R.lean * 0.45); g.translate(3.4, -30.2);
   fillPoly(g, [[-2.4, 4.6], [4.4, 4.2], [5.4, 8.4], [-3, 8.6]], SKIN, 2);
-  if (hs.back && !closed) fillPoly(g, hs.back(sw), hairP, 2.4);
   if (!closed) {
-    fillPoly(g, [[-4.6, -3], [-3, -7.4], [2, -8.2], [5.2, -5], [5.6, -2.6], [5, -1.8], [6.8, 1.2], [5.4, 1.8], [5.7, 3.2], [4.7, 5.6], [2.2, 6.6], [-1.2, 4.8], [-3.6, 2.4], [-4.8, 0]], rimmed(SKIN), 3.8);
-    fillPoly(g, [[-1.8, -0.6], [0, -1.2], [0.4, 1.8], [-1.4, 2.4]], SKIN, 1, 0.5, 0.8);
-    const blink = R.hurt || t % 3.9 < 0.12;
-    if (blink) { g.beginPath(); g.moveTo(3.4, -1.3); g.lineTo(5.1, -1.2); g.lineWidth = 0.8; g.strokeStyle = INK; g.stroke(); }
-    else {
-      g.beginPath(); g.moveTo(3.4, -1.7); g.lineTo(5.1, -1.9); g.lineTo(4.5, -0.8); g.closePath(); g.fillStyle = INK; g.fill();
-      g.beginPath(); g.arc(4.5, -1.4, 0.45, 0, TAU); g.fillStyle = '#ffcf8a'; g.fill();
-    }
-    g.beginPath(); g.moveTo(1.8, R.hurt ? -3.8 : -3.4); g.lineTo(5.8, -2.6); g.lineWidth = 1.3; g.strokeStyle = INK; g.stroke();
-    g.beginPath(); g.moveTo(4.2, 3.6); g.lineTo(5.6, R.hurt ? 3.9 : 3.3); g.lineWidth = 0.6; g.stroke();
-    fillPoly(g, hs.front, hairP, 2.4); // a cap / nasal helm is drawn over it
-    if (hs.tie) fillPoly(g, [[hs.tie[0] - 1, hs.tie[1] - 1.4], [hs.tie[0] + 1.2, hs.tie[1] - 1], [hs.tie[0] + 0.6, hs.tie[1] + 1.4], [hs.tie[0] - 1.4, hs.tie[1] + 1]], GOLD, 0.8, 0.4, 0.8);
+    hairBack(g, R, look, hairP);
+    face(g, R, RIM);
+    hairFront(g, look, hairP); // a cap / nasal helm is drawn over it
   }
-  if (kind) helmet(g, kind, helm, t);
+  if (kind) helmet(g, kind, helm, R.t);
   g.restore();
 }
 
@@ -182,7 +152,6 @@ function helmet(g, kind, helm, t) {
 const bladeLen = (tier) => 25 + tier * 1.6;
 
 // ——— shield on the off hand, turned towards the viewer; shape by weapon tier ———
-const WOOD = pal('#6a4a30', { hatch: true });
 function shield(g, R, weapon) {
   const tier = weapon ? weapon.tier : 0, rar = weapon ? weapon.rarity : 0, t = R.t;
   const c = RARITIES[rar].color, M = METAL[tier], tc = rar >= 1 ? c : '#8a6a3a';
@@ -243,34 +212,6 @@ function sword(g, R, weapon) {
   g.restore();
 }
 
-// sword trail that follows the real tip path: re-pose the rig a few moments back
-function trail(g, R, pose, rig, weapon) {
-  if (R.trail <= 0) return;
-  const tier = weapon ? weapon.tier : 0, L = bladeLen(tier), c = weapon && weapon.rarity >= 1 ? RARITIES[weapon.rarity].color : '#ffd9a8';
-  const tips = [], mids = [], step = R.prof === 'snappy' ? 0.016 : 0.011;
-  for (let j = 0; j < 12; j++) {
-    const b = R.attack - j * step;
-    if (b < 0) break;
-    const Q = j ? rig('warrior', { ...pose, attack: b }) : R, dx = Math.sin(Q.psi), dy = Math.cos(Q.psi);
-    tips.push([Q.hF.x + dx * L, Q.hF.y + dy * L]);
-    mids.push([Q.hF.x + dx * L * 0.5, Q.hF.y + dy * L * 0.5]);
-  }
-  if (tips.length < 2) return;
-  g.save(); g.globalCompositeOperation = 'lighter';
-  const ribbon = (inner, col, al) => {
-    g.beginPath();
-    tips.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-    for (let i = tips.length - 1; i >= 0; i--) {
-      const k = inner * (1 - i / tips.length) + i / tips.length;
-      g.lineTo(tips[i][0] + (mids[i][0] - tips[i][0]) * k, tips[i][1] + (mids[i][1] - tips[i][1]) * k);
-    }
-    g.closePath(); g.globalAlpha = al * R.trail; g.fillStyle = col; g.fill();
-  };
-  ribbon(1, c, 0.45);
-  ribbon(0.35, '#fff0d8', 0.8);
-  g.restore();
-}
-
 export function drawWarrior(g, R, look, gear, pose, rig, hairP) {
   const { helm, armor, boots, weapon } = gear;
   cape(g, R, armor);
@@ -284,5 +225,9 @@ export function drawWarrior(g, R, look, gear, pose, rig, hairP) {
   sword(g, R, weapon);
   arm(g, R, R.sF, R.eF, R.hF, false, armor);
   pauldron(g, R.sF, R.lean, false, armor);
-  trail(g, R, pose, rig, weapon);
+  const L = bladeLen(weapon ? weapon.tier : 0);
+  trail(g, R, pose, rig, 'warrior', (Q) => {
+    const dx = Math.sin(Q.psi), dy = Math.cos(Q.psi);
+    return [[Q.hF.x + dx * L, Q.hF.y + dy * L], [Q.hF.x + dx * L * 0.5, Q.hF.y + dy * L * 0.5]];
+  }, rcol(weapon, '#ffd9a8'));
 }
