@@ -14,6 +14,8 @@ import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { RARITIES, MYTHIC } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
 import { ATTACK_POSE } from '../run/skills.js';
+import { DODGE } from '../data/balance.js';
+import { moveDuration } from '../art/hero/rig.js';
 import { groundTile, drawField, fieldDecorLights, targetArrow } from './field.js';
 import { REGIONS } from '../data/world.js';
 import { skyAt } from '../meta/clock.js';
@@ -39,6 +41,7 @@ export class Renderer {
     this.facing = 1;
     this.walk = 0;
     this.atkStart = -9; this.lastAttackT = 0; // keyframed swing: starts when a new attack fires
+    this.lastCast = null; this.move = null;  // skill move being played: { id, t0, dur }
     this.trail = [];      // dodge afterimages: { x, y, life }
     this.shakeOn = true;  // off in the 'lite' effects setting (main.js)
     this.rect = { x0: 0, y0: 0, x1: 0, y1: 0 }; // visible world area, for culling effects
@@ -125,6 +128,19 @@ export class Renderer {
     if (fade > 0) { g.fillStyle = `rgba(5,4,12,${fade})`; g.fillRect(0, 0, v.c.width, v.c.height); }
   }
 
+  // the skill move to play: starts when the run reports a new cast (a new game.castPose object)
+  skillMove(game, t) {
+    const c = game.castPose;
+    if (c && c !== this.lastCast && this.avatar) {
+      this.lastCast = c;
+      this.move = { id: c.id, t0: t, dur: moveDuration(this.avatar.classId, c.id, c.dur) };
+    }
+    if (!this.move) return undefined;
+    const ph = (t - this.move.t0) / this.move.dur;
+    if (ph >= 1 || ph < 0) { this.move = null; return undefined; }
+    return { id: this.move.id, ph, dur: this.move.dur };
+  }
+
   drawRoom(g, game, t, visible) {
     drawRoom(g, game.room, game.dungeon.theme, this.grounds[game.dungeon.id], t, visible);
     runeCircle(g, t, game.floorClear);
@@ -196,7 +212,9 @@ export class Renderer {
       if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
       this.lastAttackT = game.attackT;
       const ph = (t - this.atkStart) / ATTACK_ANIM;
-      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, hurt: game.flash > 0 });
+      const move = this.skillMove(game, t);
+      const dodge = dodging ? 1 - game.dodgeT / DODGE.duration : undefined;
+      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
       g.restore();
     }
     playerStatus(g, game, t);

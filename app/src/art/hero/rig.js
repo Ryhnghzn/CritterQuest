@@ -67,9 +67,64 @@ const CLASSES = {
     strike: { slow: [0.3, 0.42, 0.66], snappy: [-0.01, 0.03, 0.3] },
   },
 };
-const pad = (row) => { const r = row.slice(); while (r.length < 9) r.push(0); return r; };
+const pad = (row) => { const r = row.slice(); while (r.length < 10) r.push(0); return r; };
+const PI = Math.PI;
 
-// pose: { t, moving 0..1, walk (rad), attack: phase 0..1 (or −1 / undefined), snappy, hurt }
+// Skill moves (plan "Gaya D" §3). Rows: [phase, phi, k, lean, crouch, step, phiB, x1, x2, lift]
+// (lift = jump height). dur: seconds, or 'skill' = the skill's own duration (spins);
+// spin: turns per second (the body flips facing to fake a whirl).
+const W_SPIN = { dur: 'skill', spin: 2.6, keys: [[0, 'idle'], [0.08, 1.55, 0.05, 0.12, 3, 2, 1.3], [0.92, 1.55, 0.05, 0.12, 3, 2, 1.3], [1, 'idle']], ease: ['out', 'lin', 'inOut'] };
+const A_SKY = { dur: 0.6, keys: [[0, 'idle'], [0.3, 2.5, 2.5, -0.15, 1, 0, 2.3, 1, 1], [0.42, 2.5, 2.5, -0.15, 1, 0, 2.3, 1, 1], [0.48, 2.5, 2.5, -0.1, 1, 0, -0.4], [1, 'idle']], ease: ['out', 'lin', 'out', 'inOut'] };
+const M_CALL = { dur: 0.75, keys: [[0, 'idle'], [0.3, 3, 3.1, -0.2, 0, 0, 2.6, 0.6, 0, 1.5], [0.5, 3, 3.1, -0.22, 0, 0, 2.6, 1, 0, 1.5], [0.65, 1.2, 2.4, 0.25, 2.5, 3, 1.2, 0.6], [1, 'idle']], ease: ['out', 'lin', 'in', 'inOut'] };
+const S_TOSS = { dur: 0.5, keys: [[0, 'idle'], [0.25, 0.9, 2.84, 0.25, 4, 0, -0.6, 2.84], [0.45, 0.9, 2.84, 0.2, 3.4, 2, 1.8, 2.84], [1, 'idle']], ease: ['out', 'in', 'inOut'] };
+const S_SPIN = { dur: 'skill', spin: 4, keys: [[0, 'idle'], [0.06, 1.7, 2.4, 0.3, 4.4, 3, 1.7, 2.4], [0.94, 1.7, 2.4, 0.3, 4.4, 3, 1.7, 2.4], [1, 'idle']], ease: ['out', 'lin', 'inOut'] };
+const MOVES = {
+  warrior: {
+    spin: W_SPIN,
+    bladestorm: { ...W_SPIN, spin: 3.4 },
+    shout: { dur: 0.7, keys: [[0, 'idle'], [0.2, 0.9, 0.6, -0.18, 1.6, -1, 1.5], [0.35, 1.25, 0.3, -0.3, 0.4, 0, 1, 0, 0, 1.2], [0.75, 1.2, 0.3, -0.28, 0.4, 0, 1, 0, 0, 0.6], [1, 'idle']], ease: ['out', 'out', 'lin', 'inOut'] },
+    quake: { dur: 0.65, keys: [[0, 'idle'], [0.18, 3.6, -0.5, -0.15, 3, 0, 1.5], [0.4, 3.8, -0.6, -0.05, 0, 3, 1.6, 0, 0, 10], [0.55, 0.9, 0.5, 0.45, 5, 8, 0.5], [0.75, 0.8, 0.6, 0.4, 4.5, 8, 0.6], [1, 'idle']], ease: ['inOut', 'out', 'in', 'lin', 'inOut'] },
+    charge: { dur: 0.45, keys: [[0, 1.3, 0.4, 0.5, 3, 6, 1.5], [0.6, 1.3, 0.4, 0.5, 3, 8, 1.5], [1, 'idle']], ease: ['lin', 'inOut'] },
+    warcry: { dur: 0.8, keys: [[0, 'idle'], [0.25, 3, 0.1, -0.25, 1, 0, 1.4, 0, 0, 0.8], [0.75, 3, 0.1, -0.25, 1, 0, 1.4, 0, 0, 0.6], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+    axe: { dur: 0.55, keys: [[0, 'idle'], [0.25, 3.9, -0.5, -0.2, 2, -1, 1.5], [0.4, 1.4, 0.4, 0.35, 3, 6, 0.6], [0.6, 1, 0.6, 0.3, 2.6, 6, 0.8], [1, 'idle']], ease: ['out', 'in', 'out', 'inOut'] },
+  },
+  archer: {
+    rain: A_SKY, starfall: { ...A_SKY, dur: 0.8 },
+    pierce: { dur: 0.7, keys: [[0, 'idle'], [0.35, 1.57, 1.57, -0.08, 2, 1, 1.6, 1, 1], [0.5, 1.57, 1.57, -0.08, 2, 1, 1.6, 1, 1], [0.56, 1.6, 1.6, -0.25, 1, -5, -0.6], [1, 'idle']], ease: ['out', 'lin', 'out', 'inOut'] },
+    volley: { dur: 0.45, keys: [[0, 1.55, 1.57, 0.04, 1.2, 0, 1.6, 1, 1], [0.1, 1.55, 1.57, 0.1, 1.2, 0, -0.5], [0.3, 1.45, 1.6, 0.06, 0.8, 0, -0.35], [1, 'idle']], ease: ['out', 'inOut', 'inOut'] },
+    leap: { dur: 0.6, keys: [[0, 'idle'], [0.15, 0.6, 1.2, -0.1, 3, 0, -0.5], [0.45, 1.2, 1.4, -0.4, 0, -6, -1.2, 0, 0, 9], [0.75, 1, 1.3, -0.2, 2.5, -8, -0.6], [1, 'idle']], ease: ['out', 'out', 'in', 'inOut'] },
+    trap: { dur: 0.55, keys: [[0, 'idle'], [0.3, 0.4, 1, 0.3, 4, 2, -0.8], [0.5, 0.4, 1, 0.25, 3.4, 3, 1.6], [1, 'idle']], ease: ['out', 'in', 'inOut'] },
+    hawk: { dur: 0.8, keys: [[0, 'idle'], [0.3, 1.9, 1.57, -0.05, 0, 0, 2.4, 0, 0, 0.5], [0.8, 1.9, 1.57, -0.05, 0, 0, 2.4, 0, 0, 0.5], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  },
+  mage: {
+    nova: { dur: 0.7, keys: [[0, 'idle'], [0.3, 2.8, 3, -0.1, 0, 0, 2.8, 0.4, 0, 2], [0.45, 0.6, 2.9, 0.2, 4, 0, 0.8, 1], [0.7, 0.6, 2.9, 0.18, 3.6, 0, 0.8, 0.5], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+    chain: { dur: 0.6, keys: [[0, 'idle'], [0.2, 1.3, 2.3, 0.12, 0.5, 2, 1.6, 1], [0.6, 1.3, 2.3, 0.12, 0.5, 2, 1.6, 0.8], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+    meteor: M_CALL, meteorstorm: { ...M_CALL, dur: 1 },
+    blink: { dur: 0.4, keys: [[0, 0.45, PI - 0.08, 0.2, 4, 0, 0.8, 1], [0.3, 0.45, PI - 0.08, 0, 0, 0, 0.8, 0.5], [1, 'idle']], ease: ['out', 'inOut'] },
+    inferno: { dur: 0.7, keys: [[0, 'idle'], [0.25, 2.2, 2.9, -0.1, 1, -1, 1.8, 0.5], [0.45, 1.4, 2.2, 0.25, 1.5, 4, 1.3, 1], [0.7, 1.3, 2.4, 0.15, 1, 3, 1.1, 0.4], [1, 'idle']], ease: ['out', 'in', 'out', 'inOut'] },
+    manashield: { dur: 0.8, keys: [[0, 'idle'], [0.3, 0.9, 3.1, 0, 1, 1, 2.8, 1], [0.8, 0.9, 3.1, 0, 1, 1, 2.8, 0.7], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  },
+  assassin: {
+    shadow: { dur: 0.4, keys: [[0, 1.6, 2.5, 0.6, 4.5, 8, 0, 2.84], [0.5, 1.6, 2.5, 0.6, 4.5, 10, 0, 2.84], [1, 'idle']], ease: ['lin', 'inOut'] },
+    fan: { dur: 0.55, keys: [[0, 'idle'], [0.25, 0.2, 2.8, 0.1, 4, -1, -0.4, 2.8], [0.4, 2, 1.6, 0.3, 3, 3, 2.2, 1.6], [0.6, 1.9, 1.7, 0.28, 3, 3, 2, 1.7], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+    poison: S_TOSS,
+    smoke: { dur: 0.55, keys: [[0, 'idle'], [0.2, 2.4, 2.8, 0.1, 2, 0, 2.4, 2.8, 0, 2], [0.45, 0.5, 2.8, 0.4, 6, 0, 0.5, 2.8], [1, 'idle']], ease: ['out', 'in', 'inOut'] },
+    shuriken: { dur: 0.5, keys: [[0, 'idle'], [0.25, -0.4, 2.8, 0.1, 3.6, -1, 0.6, 2.84], [0.4, 1.9, 2.6, 0.35, 3.6, 4, 0.6, 2.84], [1, 'idle']], ease: ['out', 'in', 'inOut'] },
+    assassinate: { dur: 0.8, keys: [[0, 'idle'], [0.3, 2.2, 2.4, 0, 2, 0, 2, 2.5], [0.8, 2.2, 2.4, 0, 2, 0, 2, 2.5], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+    thousandshadows: S_SPIN,
+  },
+};
+
+// how long the renderer plays a skill's move (seconds)
+export function moveDuration(classId, skillId, skillDur = 0) {
+  const M = MOVES[classId]?.[skillId];
+  if (!M) return 0.5;
+  return M.dur === 'skill' ? Math.max(0.4, skillDur) : M.dur;
+}
+export const hasMove = (classId, skillId) => !!MOVES[classId]?.[skillId];
+
+// pose: { t, moving 0..1, walk (rad), attack: phase 0..1 (or −1 / undefined), snappy, hurt,
+//         move: { id, ph 0..1 } (a skill move, wins over the attack), dodge: 0..1 }
 export function rig(classId, pose) {
   const { t = 0, moving = 0, walk = 0, hurt = false } = pose;
   const C = CLASSES[classId] || CLASSES.warrior;
@@ -80,12 +135,22 @@ export function rig(classId, pose) {
   const fF = { x: 4 + s * stride, y: -2.5 - Math.max(0, c) * 6 * moving };
   const fB = { x: -4 - s * stride, y: -2.5 - Math.max(0, -c) * 6 * moving };
 
-  const idle = C.idle(s, moving);
-  let [phi, k, lean, crouch, step, phiB, x1, x2] = idle;
-  let swing = 0, trail = 0;
-  if (a >= 0 && a <= 1) {
+  const idle = [...C.idle(s, moving), 0];
+  let [phi, k, lean, crouch, step, phiB, x1, x2, lift] = idle;
+  let swing = 0, trail = 0, flip = 1;
+  const M = pose.move && MOVES[classId]?.[pose.move.id];
+  if (M) {
+    const ph = clamp(pose.move.ph, 0, 1);
+    const keys = M.keys.map((r) => (r[1] === 'idle' ? [r[0], ...idle] : pad(r)));
+    [phi, k, lean, crouch, step, phiB, x1, x2, lift] = keyframes(keys, M.ease, ph);
+    if (M.spin) { // whirl: flip facing on every half turn, with a blur of swing
+      const turns = ph * M.spin * (pose.move.dur || 1);
+      flip = Math.cos(turns * PI * 2) >= 0 ? 1 : -1;
+      swing = 1;
+    }
+  } else if (a >= 0 && a <= 1) {
     const keys = C[prof].map((r) => (r[1] === 'idle' ? [r[0], ...idle] : pad(r)));
-    [phi, k, lean, crouch, step, phiB, x1, x2] = keyframes(keys, C[prof + 'Ease'], a);
+    [phi, k, lean, crouch, step, phiB, x1, x2, lift] = keyframes(keys, C[prof + 'Ease'], a);
     const S = C.strike?.[prof];
     if (S) {
       const [from, peak, gone] = S;
@@ -93,12 +158,17 @@ export function rig(classId, pose) {
       trail = a > from && a < gone ? (a < peak + 0.05 ? 1 : 1 - (a - peak - 0.05) / (gone - peak - 0.05)) : 0;
     }
   }
+  if (pose.dodge != null) { // tuck low and lean into the roll, arms swept back
+    const d = Math.sin(clamp(pose.dodge, 0, 1) * PI);
+    lean += 0.5 * d; crouch += 6 * d; phi -= 0.9 * d; phiB -= 0.9 * d; step += 2 * d;
+  }
   if (hurt) { lean -= 0.22; crouch += 1.5; phi += 0.5; phiB += 0.3; }
   const psi = C.abs ? k : phi + k;
   // lunge: the front foot steps in, the back foot slides and lifts its heel, the hips drop and follow
   fF.x += step; fB.x -= step * 0.25; fB.y -= Math.max(0, step) * 0.18;
+  if (lift > 0) { fF.y -= lift * 0.7; fB.y -= lift * 0.55; fF.x -= lift * 0.2; } // airborne: feet leave the ground, knees tuck
 
-  const hip = { x: step * 0.45, y: -38.5 + bob + crouch };
+  const hip = { x: step * 0.45, y: -38.5 + bob + crouch - lift };
   const cl = Math.cos(lean), sl = Math.sin(lean);
   const W = (lx, ly) => ({ x: hip.x + lx * cl - ly * sl, y: hip.y + lx * sl + ly * cl });
   const hipF = W(2.6, 0), hipB = W(-2.6, 0);
@@ -111,7 +181,7 @@ export function rig(classId, pose) {
     hB = { x: lerp(hB.x, sp.x, nock), y: lerp(hB.y, sp.y, nock) };
   }
   return {
-    t, moving, lean, hip, W, fF, fB, hipF, hipB, sF, sB, hF, hB, phi, phiB, psi, swing, trail, attack: a, prof, hurt,
+    t, moving, lean, hip, W, fF, fB, hipF, hipB, sF, sB, hF, hB, phi, phiB, psi, swing, trail, attack: a, prof, hurt, flip, lift,
     draw, nock, cast: classId === 'mage' ? x1 : 0, psiB: phiB + x1,
     kF: ik(hipF, fF, 19, 19, 1), kB: ik(hipB, fB, 19, 19, 1),
     eF: ik(sF, hF, 11.5, 11, -1), eB: ik(sB, hB, 10.5, 10, -1),

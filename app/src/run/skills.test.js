@@ -137,6 +137,19 @@ describe('energi', () => {
   });
 });
 
+describe('tanda pose skill (untuk gambar)', () => {
+  it('mencatat skill yang dipakai dan menghitung tiap pemakaian', () => {
+    const { g } = arena('warrior', { x: 40 });
+    g.energy = 100;
+    expect(g.castPose).toBeUndefined();
+    cast(g, 1);
+    expect(g.castPose).toEqual({ id: SK('warrior', 0).id, n: 1, dur: SK('warrior', 0).duration || 0 });
+    idle(g, SK('warrior', 0).cd + 0.1);
+    cast(g, 1);
+    expect(g.castPose.n).toBe(2);
+  });
+});
+
 describe('cooldown skill', () => {
   it('tidak bisa dipakai lagi sebelum cooldown habis', () => {
     const { g, e } = arena('warrior', { x: 40 });

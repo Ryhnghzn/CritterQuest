@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { drawHero, hasHero } from './index.js';
-import { rig, keyframes } from './rig.js';
+import { rig, keyframes, hasMove, moveDuration } from './rig.js';
 import { drawDoll } from '../doll.js';
 import { HAIR_STYLES, HAIR_COLORS } from '../../data/balance.js';
 import { RARITIES } from '../../data/items.js';
@@ -59,6 +59,35 @@ describe('gaya D — kerangka & keyframe', () => {
     const first = rig('assassin', { attack: 0.4 }), second = rig('assassin', { attack: 0.52 });
     expect(first.phi).toBeGreaterThan(second.phi);   // front hand thrusts first
     expect(second.phiB).toBeGreaterThan(first.phiB); // then the back hand
+  });
+});
+
+describe('gaya D — gerakan skill', () => {
+  it('setiap skill & ultimate punya gerakan, durasinya masuk akal', () => {
+    for (const [c, d] of Object.entries(CLASSES)) {
+      for (const s of [...d.skills, d.ult]) {
+        expect(hasMove(c, s.id)).toBe(true);
+        const dur = moveDuration(c, s.id, s.duration);
+        expect(dur).toBeGreaterThanOrEqual(0.4);
+        expect(dur).toBeLessThanOrEqual(Math.max(1, s.duration || 0));
+      }
+    }
+  });
+
+  it('putaran membalik arah hadap; hantaman melompat; menghindar merunduk', () => {
+    const flips = new Set();
+    for (let i = 0; i <= 20; i++) flips.add(rig('warrior', { move: { id: 'spin', ph: i / 20, dur: 1 } }).flip);
+    expect(flips).toEqual(new Set([1, -1]));
+    expect(rig('warrior', { move: { id: 'quake', ph: 0.4 } }).lift).toBeGreaterThan(5);
+    expect(rig('warrior', { dodge: 0.5 }).hip.y).toBeGreaterThan(rig('warrior', {}).hip.y + 4);
+  });
+
+  it('semua gerakan bisa digambar di semua fase', () => {
+    for (const [c, d] of Object.entries(CLASSES)) {
+      for (const s of [...d.skills, d.ult]) {
+        for (const ph of [0, 0.3, 0.5, 0.9]) expect(() => drawDoll(fakeCtx(), c, { hair: 0, hairColor: 0 }, { move: { id: s.id, ph, dur: 1 } })).not.toThrow();
+      }
+    }
   });
 });
 

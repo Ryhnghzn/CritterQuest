@@ -17,18 +17,19 @@ const HAIR = new Map();
 
 export const hasHero = (classId) => !!DRAW[classId];
 
-// pose: as drawDoll ({ t, moving, walk, attack, hurt }) plus optional attackPhase (0..1, keyframed swing)
+// pose: as drawDoll ({ t, moving, walk, attack, hurt }) plus optional attackPhase (0..1, keyframed swing),
+// move ({ id: skill id, ph: 0..1, dur: s }) and dodge (0..1)
 export function drawHero(g, classId, look, pose = {}) {
   const draw = DRAW[classId];
   if (!draw) return null;
   const hc = HAIR_PALETTE[look.hairColor] || HAIR_PALETTE[0], key = `${classId}:${look.hairColor}`;
   let hairP = HAIR.get(key);
   if (!hairP) { hairP = hairPalette(hc, RIM[classId]); HAIR.set(key, hairP); }
-  const p = { t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, hurt: !!pose.hurt, attack: pose.attackPhase ?? -1, snappy: pose.attackPhase != null && !pose.slow };
+  const p = { t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, hurt: !!pose.hurt, attack: pose.attackPhase ?? -1, snappy: pose.attackPhase != null && !pose.slow, move: pose.move, dodge: pose.dodge };
   const R = rig(classId, p);
   g.save();
   const S = HERO_SCALE * (SIZE[classId] || 1);
-  g.scale(S, S);
+  g.scale(S * R.flip, S);
   g.lineJoin = 'miter'; g.lineCap = 'round';
   draw(g, R, look, look.gear || {}, p, rig, hairP);
   g.restore();

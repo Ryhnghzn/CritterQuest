@@ -33,7 +33,13 @@ Prinsip:
 - [x] Assassin: kecil membungkuk, syal panjang, topeng, bandana/tudung, dua belati genggam terbalik; tusukan ganda
 - [x] Tes semua kelas × rambut × warna × gear × pose; build
 - [ ] Cek manual di game (PC & HP) oleh pemilik
-## Bagian 3 — Gerakan skill & ultimate (24 + 4), menghindar, mati
+## Bagian 3 — Gerakan skill & ultimate (24 + 4), menghindar
+- [x] `run/skills.js`: tanda `castPose` (hanya untuk gambar; objek baru tiap pemakaian) — tes
+- [x] `rig.js`: gerakan per skill (berputar, melompat-menghantam, menerjang, melempar, membidik ke langit, tarik penuh, lompat mundur, merapal ke atas, kubah, tusuk/lempar belati, putaran bayangan), lompat (lift), putaran (balik arah hadap), menghindar (merunduk)
+- [x] `render/world.js`: memutar gerakan saat skill dipakai, fase menghindar dari `dodgeT`
+- [x] Tes: semua skill punya gerakan, durasi wajar, semua fase bisa digambar
+- [ ] Animasi mati ditunda: saat HP habis game langsung ke `ST.OVER`; perlu jeda di alur hasil (`main.js`, sedang diubah sesi lain)
+- [ ] Cek manual di game (PC & HP) oleh pemilik
 ## Bagian 4 — Monster & bos (29 jenis)
 ## Bagian 5 — NPC rakitan (bentuk badan, pakaian, kepala, barang, gerakan profesi)
 ## Bagian 6 — Ikon gear & sentuhan akhir (font/UI bila perlu)

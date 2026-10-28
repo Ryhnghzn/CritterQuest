@@ -40,6 +40,11 @@ export function stepAttack(run, intent, dt) {
   sfx.attack(a.fx);
 }
 
+// For the renderer only: which skill was just cast (n counts casts, so a repeat is seen too).
+function markCast(run, skill) {
+  run.castPose = { id: skill.id, n: (run.castPose?.n || 0) + 1, dur: skill.duration || 0 };
+}
+
 export function stepSkills(run, intent, dt) {
   for (let i = 0; i < SKILL_SLOTS; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
@@ -59,6 +64,7 @@ export function stepSkills(run, intent, dt) {
     for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true; // skill damage bonus, no energy, pierces shields
     castFx(run, skills[i], before);
     run.attackT = ATTACK_POSE;
+    markCast(run, skills[i]);
     sfx.skill(skills[i].id);
   }
   // ultimate (key 5): its own charge bar, no energy, no cooldown (spec §22)
@@ -69,6 +75,7 @@ export function stepSkills(run, intent, dt) {
     castSkill(run, u);
     for (let k = before; k < run.hits.length; k++) { run.hits[k].skill = true; run.hits[k].ult = true; } // gold-edged numbers
     castFx(run, u, before);
+    markCast(run, u);
     if (u.dmgTaken) { run.buffT = u.duration; run.dmgTakenMul = u.dmgTaken; }
     if (u.invuln) run.dodgeInv = Math.max(run.dodgeInv, u.invuln);
     run.attackT = ATTACK_POSE;
