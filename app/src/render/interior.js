@@ -121,7 +121,7 @@ export class InteriorRenderer {
 
     v.begin(cx, cy);
     glow(g, r, t);
-    for (const p of npcs) tag(g, p.n, p.x, p.y, t, town.near === p.n);
+    for (const p of npcs) tag(g, p.n, p.x, p.y, t, town.near === p.n, town.marks?.[p.n.id]);
     if (town && avatar) auraFront(g, town.x, town.y + 10, avatar.fx, bestRarity(avatar.look.gear), t, { host: this, lite: avatar.lite, level: avatar.level, set: avatar.set, facing: town.facing, frenzyOn: false });
     plate(g, tr('Keluar'), r.w / 2, r.h - 6, '#2a2440');
     v.vignetteOverlay();

@@ -46,8 +46,11 @@ import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
 import { renderResults } from './ui/results.js';
 import { renderNpc, renderDungeonGate } from './ui/npc.js';
-import { renderCharPanel } from './ui/charpanel.js';
-import { updateHUD, updateActions, updateTownHUD, updateClock } from './ui/hud.js';
+import { renderCharPanel, setCharTab } from './ui/charpanel.js';
+import { stepText } from './ui/journal.js';
+import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards } from './meta/quests.js';
+import { SHARDS } from './data/quests.js';
+import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
 import { FpsWatch, activeQuality } from './run/vfx.js';
 import { setRarity } from './art/auratier.js';
@@ -173,6 +176,7 @@ function showMenu(id) {
   game.state = ST.TITLE;
   screen = showScreen(id);
   setUI('none', false);
+  updateQuestTracker(null, false);
 }
 
 // overlay during a run (pause / charpanel); null = playing
@@ -228,13 +232,15 @@ async function deleteSlot(slot) {
 
 // ——— town ———
 function enterTown(char, at) {
-  current = char;
+  current = syncQuests(structuredClone(char)); // older saves catch up with what was already done
+
   worldClock = char.clock;
   settings.lastSlot = char.slot;
   saveSettings();
   stopMusic();
   const s = finalStats(char);
   town = createTown({ id: char.location, moveSpd: s.moveSpd, hp: currentHp(char), maxHp: s.maxHp, at });
+  town.marks = npcMarks(current, town.id);
   scene = 'town';
   game.state = ST.TITLE;
   $('banner').style.opacity = 0; // a region / floor title may still be fading
@@ -256,6 +262,8 @@ function openNpc(npc, message = null) {
   renderNpc($('npc'), npc, {
     char: current, hp: town.hp, maxHp: town.maxHp, message,
     line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
+    quests: talkOffers(current, town.id, npc.id),
+    onQuest: (id) => serve((c, now) => questTalk(c, id, town.id, townNpc.id, now), questText),
     onInn: () => serve(innRest, tr('Kamu tidur nyenyak. HP pulih penuh!')),
     onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), t('{name}, segar dari kuali. Hehehe.', { name: POTIONS[id].name })),
     onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
@@ -333,6 +341,7 @@ async function serve(action, okText) {
     return;
   }
   current = r.char;
+  town.marks = npcMarks(current, town.id);
   const s = finalStats(current); // upgrades / respec change max HP and speed
   town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
   if (okText) sfx.heart(); else sfx.pickCard();
@@ -340,6 +349,25 @@ async function serve(action, okText) {
   const ok = typeof okText === 'function' ? okText(r) : okText;
   openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
   updateTownHUD(current, town);
+}
+
+// After a quest talk: the reward when it finished, else what to do next (spec §26.3).
+function questText(r) {
+  const next = activeQuests(r.char).find((a) => a.id === r.id);
+  if (!r.done) return { text: t('Quest: {step}', { step: next?.step ? stepText(next.step) : '' }), color: '#ffd24a' };
+  const g = r.got, bits = [t('+{g} koin, +{e} EXP', { g: g.gold, e: g.exp })];
+  if (g.shard) bits.push(t('Pecahan Segel {n}/{max}', { n: shards(r.char), max: SHARDS }));
+  for (const it of g.items) bits.push(`${itemName(it)} (${RARITIES[it.rarity].name})`);
+  for (const gm of g.gems) bits.push(gemName(gm.gem, gm.tier));
+  if (g.items.length) showChestOpen(g.items[0]);
+  return { text: `${tr('Quest selesai!')} ${bits.join(' · ')}${g.levelsGained ? ` ${tr('Naik level!')}` : ''}`, color: '#ffd24a' };
+}
+
+// A toast when the tracked quest moved on by itself (a gate found, a boss beaten, a town reached).
+function questNews(before) {
+  const a = activeQuests(current)[0], b = before.quests.main;
+  if (!a?.def.main || (current.quests.main.ch === b.ch && current.quests.main.step === b.step)) return;
+  toast(t('Quest: {step}', { step: stepText(a.step) }));
 }
 
 const boughtText = (r) => ({ text: t('Kau membeli {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color });
@@ -518,6 +546,8 @@ async function explore(regionId, at = 'west') {
   });
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
   if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
+  game.questTarget = questTarget(current, regionId);
+  game.liveQuest = liveQuestTarget;
   game.clock = worldClock;
   tripAttrs = {};
   fieldSaveT = 0;
@@ -548,11 +578,14 @@ async function openGate(g) {
 // Writes what was earned in the region so far (EXP, coins, loot, bestiary, bounties, fog).
 async function commitField() {
   const part = game.takeProgress();
+  const before = current;
   const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now());
   tripAttrs = {};
   current = r.char;
   fieldSaveT = 0;
+  game.questTarget = questTarget(current, game.region.id);
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
+  else if (current.quests.main.step !== before.quests.main.step || current.quests.main.ch !== before.quests.main.ch) questNews(before);
   else if (r.bountiesDone > 0) toast(t('{n} tugas selesai — klaim di Balai Petualang', { n: r.bountiesDone }));
   return saveCurrent();
 }
@@ -567,11 +600,13 @@ async function endField(died) {
   if (!died) {
     const to = game.exitTo === 'east' ? region.to : region.from;
     const first = !current.towns.includes(to);
+    const before = current;
     current = visitTown(current, to, Date.now());
     await saveCurrent();
     if (first) {
       enterTown(current, 'gate');
       toast(t('Selamat datang di {town}! Batu teleport di alun-alun kini bisa membawamu ke sini.', { town: TOWNS[to].name }));
+      setTimeout(() => questNews(before), 2000);
       return;
     }
   }
@@ -595,9 +630,17 @@ function openMap() {
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, treasures: game.treasures });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures });
   $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
   $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, game.region) * 100) });
+}
+
+// The quest target, with a gate found during this visit shown as found already.
+function liveQuestTarget() {
+  const q = game.questTarget;
+  if (q?.kind !== 'hint') return q;
+  const g = game.gates.find((x) => x.dungeon === q.dungeon && (x.found || game.gatesFound.includes(x.dungeon)));
+  return g ? { kind: 'gate', x: g.x, y: g.y } : q;
 }
 
 function drawMinimap() {
@@ -608,7 +651,7 @@ function drawMinimap() {
   if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, treasures: game.treasures });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures });
 }
 $('minimap').addEventListener('click', openMap);
 $('mapclose').addEventListener('click', () => resume());
@@ -626,8 +669,10 @@ async function endRun(died) {
     attrs: tripAttrs, items: r.items, mats: r.mats, gems: r.gems,
   };
   const newRecord = trip.floor > current.records.dungeons[r.dungeon].bestFloor;
+  const before = current;
   const applied = applyTrip(current, trip, Date.now());
   current = applied.char; // keep progress in memory even if the write fails
+  questNews(before);
   const saveError = await saveCurrent();
   // back out of a gate in a region (gold portal), or wake in town (spec §25.5)
   const back = !died && dungeonReturn;
@@ -804,6 +849,16 @@ if (CHEAT_ON) {
   $('cheatbtn').addEventListener('click', toggleCheat);
 }
 
+// ——— phones play in landscape only (spec §27) ———
+// Turning to portrait pauses a run (a card asks to turn back); Android can also lock it.
+const portrait = matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 900px)');
+portrait.addEventListener('change', () => { if (portrait.matches && scene === 'run' && game.state === ST.PLAY) pause(); });
+addEventListener('pointerdown', function lockLandscape() {
+  removeEventListener('pointerdown', lockLandscape);
+  if (!matchMedia('(pointer: coarse)').matches || !window.screen.orientation?.lock) return;
+  document.documentElement.requestFullscreen?.().then(() => window.screen.orientation.lock('landscape')).catch(() => { /* not supported: the card does the job */ });
+});
+
 // ——— keyboard shortcuts ———
 input.onAction.push((code) => {
   if (CHEAT_ON && code === 'Backquote') { toggleCheat(); return; }
@@ -817,12 +872,15 @@ input.onAction.push((code) => {
   if (scene === 'town') {
     if (code === 'Escape') { if (screen === null) townPause(); else closeTownOverlay(); return; }
     if (code === 'KeyI') { if (screen === null) openCharPanel(); else if (screen === 'charpanel') closeTownOverlay(); return; }
+    if (code === 'KeyJ') { if (screen === null) { setCharTab('quest'); openCharPanel(); } else if (screen === 'charpanel') closeTownOverlay(); return; }
     if (code === 'Enter' && screen === null && town.near) openNpc(town.near);
     return;
   }
   if (code === 'KeyF' && game.state === ST.PLAY) { toggleAuto(); return; }
   if (code === 'KeyI' && game.state === ST.PLAY) { openCharPanel(); return; }
   if (code === 'KeyI' && screen === 'charpanel') { resume(); return; }
+  if (code === 'KeyJ' && game.state === ST.PLAY) { setCharTab('quest'); openCharPanel(); return; }
+  if (code === 'KeyJ' && screen === 'charpanel') { resume(); return; }
   if ((screen === 'charpanel' || screen === 'fieldmap') && code === 'Escape') { resume(); return; }
   if (game.state === ST.PLAY && code === 'Escape') { pause(); return; }
   if (game.state === ST.PAUSE && code === 'Escape') { resume(); return; }
@@ -900,7 +958,7 @@ function frame(dt) {
   }
   if (scene === 'run') {
     R.draw(game, simT);
-    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); }
+    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); updateQuestTracker(current, game.state === ST.PLAY); }
     if (game.state === ST.PLAY) updateActions(game);
     if (game.field && game.state === ST.PLAY && (minimapT += dt) > 0.25) { minimapT = 0; drawMinimap(); }
     const gate = game.field && game.state === ST.PLAY ? game.nearGate : null;
@@ -909,7 +967,7 @@ function frame(dt) {
   } else {
     TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60, current?.location || 'home');
     if (scene === 'town') {
-      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); updateClock(worldClock); }
+      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); updateClock(worldClock); updateQuestTracker(current, screen === null); }
       const near = screen === null ? town.near : null;
       $('prompt').classList.toggle('hidden', !near);
       document.body.classList.toggle('near', !!near);

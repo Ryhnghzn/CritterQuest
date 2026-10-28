@@ -602,16 +602,23 @@ export function fieldDecorLights(game, t, out, rect) {
 
 // ——— expedition arrow (spec §25.5): a gold chevron around the player toward the target ———
 export function targetArrow(g, game, t) {
-  const tg = game.target;
+  arrow(g, game, game.target, t, '#e6c27a', 0);
+  // the quest goal (spec §26.3): gold "!" arrow; a hint circle stops pointing once inside it
+  const q = game.questTarget && (typeof game.liveQuest === 'function' ? game.liveQuest() : game.questTarget);
+  if (q && !(q.kind === 'hint' && Math.hypot(q.x - game.px, q.y - game.py) < q.r * 0.8)) arrow(g, game, q, t, '#ffd24a', 1);
+}
+
+function arrow(g, game, tg, t, color, lane) {
   if (!tg) return;
   const dx = tg.x - game.px, dy = tg.y - game.py, dist = Math.hypot(dx, dy);
   if (dist < 300) return;
-  const a = Math.atan2(dy, dx), R = 70 + Math.sin(t * 4) * 4;
+  const a = Math.atan2(dy, dx), R = 70 + lane * 22 + Math.sin(t * 4) * 4;
   const x = game.px + Math.cos(a) * R, y = game.py - 10 + Math.sin(a) * R;
   g.save();
   g.translate(x, y); g.rotate(a);
   g.beginPath(); g.moveTo(14, 0); g.lineTo(-8, -11); g.lineTo(-3, 0); g.lineTo(-8, 11); g.closePath();
-  g.fillStyle = '#e6c27a'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#2a1606'; g.stroke();
+  g.fillStyle = color; g.fill(); g.lineWidth = 2; g.strokeStyle = '#2a1606'; g.stroke();
+  if (lane) { g.rotate(-a); g.font = '900 11px Barlow, system-ui, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#2a1606'; g.fillText('!', 0, 4); }
   g.restore();
   const label = dist >= 1000 ? `${(dist / 1000).toFixed(1)}k` : String(Math.round(dist));
   g.font = '700 11px Barlow, system-ui, sans-serif'; g.textAlign = 'center';

@@ -5,7 +5,9 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshTalents, freshBounties, freshBestiary, worldSeed } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshTalents, freshBounties, freshBestiary, freshQuests, worldSeed } from './schema.js';
+import { countQuests } from './quests.js';
+import { regionOfDungeon } from '../data/world.js';
 import { collectionStats, addKills, discover } from './collection.js';
 import { advanceBounties, isDone } from './bounties.js';
 import { TALENTS } from '../data/talents.js';
@@ -35,7 +37,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot) }, found: [], expedition: null,
-    shops: {}, stash: [], treasures: {},
+    shops: {}, stash: [], treasures: {}, quests: freshQuests(),
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),
@@ -185,6 +187,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   c.bounties = advanceBounties(c.bounties, trip);
   const bountiesDone = c.bounties.filter(isDone).length - before;
   if (trip.dungeon && !c.found.includes(trip.dungeon)) c.found.push(trip.dungeon);
+  countQuests(c, { killsBy: trip.killsBy, elites: trip.elites, region: regionOfDungeon(trip.dungeon || 'shadow')?.id });
   const x = c.expedition; // expedition: floors cleared in its dungeon (spec §25.5)
   if (x && x.dungeon === trip.dungeon) x.have = Math.min(x.need, x.have + (trip.floorsCleared || 0));
   const itemsKept = [], itemsLost = [], itemsLeft = [];

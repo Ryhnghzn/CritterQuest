@@ -4,6 +4,8 @@ import { fieldHere } from '../run/field.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
 import { clockText } from '../meta/clock.js';
+import { activeQuests } from '../meta/quests.js';
+import { stepText } from './journal.js';
 import { tr, t } from '../i18n.js';
 
 const $ = (id) => document.getElementById(id);
@@ -107,4 +109,39 @@ export function updateClock(clock) {
     const el = $(id);
     if (el.textContent !== text) { el.textContent = text; el.dataset.phase = c.phase.icon; }
   }
+}
+
+// Quest tracker (spec §26.3): the main quest (or the tracked one) in the corner under the
+// HUD, with its current step; the head folds it down to the quest's name. The fold is a
+// per-device convenience (localStorage).
+let qtMin = false;
+let lastKey = '';
+try { qtMin = localStorage.getItem('cq.qtrack') === 'min'; } catch { /* storage off: start open */ }
+document.getElementById('qthead')?.addEventListener('click', () => {
+  qtMin = !qtMin;
+  try { localStorage.setItem('cq.qtrack', qtMin ? 'min' : 'open'); } catch { /* fine */ }
+  $('qtrack').classList.toggle('min', qtMin);
+  $('qttog').textContent = qtMin ? '+' : '−';
+});
+
+export function updateQuestTracker(char, show = true) {
+  const box = $('qtrack');
+  const list = char ? activeQuests(char) : [];
+  const a = list.find((q) => q.id === char?.quests.track) || list[0];
+  if (!show || !a?.step) { box.classList.add('hidden'); return; }
+  const hud = [$('hud'), $('townhud')].find((h) => !h.classList.contains('hidden'));
+  if (!hud) { box.classList.add('hidden'); return; }
+  const top = Math.round((hud.getBoundingClientRect().bottom + 8) / (parseFloat(getComputedStyle(box).zoom) || 1)); // landscape phones zoom it
+  const key = `${a.id}:${a.state.step}:${a.state.prog}:${top}`;
+  if (key === lastKey && !box.classList.contains('hidden')) return; // ~8×/s: only touch the DOM on change
+  lastKey = key;
+  box.style.top = `${top}px`;
+  $('qttitle').textContent = a.def.main ? `${t('Bab {n}', { n: a.def.ch + 1 })} · ${a.def.title}` : a.def.title;
+  $('qttitle').title = $('qttitle').textContent;
+  const s = a.step, counted = s.kind === 'kill' || s.kind === 'elite';
+  $('qtstep').textContent = stepText(s);
+  if (counted) { const p = document.createElement('span'); p.className = 'qprog'; p.textContent = ` ${a.state.prog}/${s.n}`; $('qtstep').append(p); }
+  $('qttog').textContent = qtMin ? '+' : '−';
+  box.classList.toggle('min', qtMin);
+  box.classList.remove('hidden');
 }

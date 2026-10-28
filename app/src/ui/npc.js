@@ -19,6 +19,8 @@ import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
 import { bountyList, markShop, expeditionPanel } from './board.js';
 import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
+import { questDef } from '../meta/quests.js';
+import { rewardText } from './journal.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -62,7 +64,10 @@ export function renderNpc(box, npc, ctx) {
   role.style.setProperty('--c', npc.outfit[0]);
   info.append(el('div', 'nm', npc.name), role);
   head.append(stage(npc.object ? iconCanvas('zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
-  panel.append(head, el('div', 'npcline', `“${npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
+  // a quest step said here (spec §26.3) speaks first; the shop stays below it
+  const offer = ctx.quests?.[0];
+  panel.append(head, el('div', 'npcline', `“${offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
+  if (offer) panel.append(questBox(offer, ctx.onQuest));
 
   if (npc.role !== 'talk') {
     const wallet = el('div', 'records');
@@ -139,6 +144,18 @@ export function renderNpc(box, npc, ctx) {
   close.id = 'npc-close';
   panel.append(msg, close);
   box.append(panel);
+}
+
+// The quest the NPC just spoke of, with the button that moves it on.
+function questBox(o, onQuest) {
+  const box = el('div', 'questbox');
+  const def = questDef(o.id);
+  box.append(el('span', 'pill', def.main ? t('Bab {n}: {title}', { n: def.ch + 1, title: o.title }) : o.title));
+  if (o.ends) box.append(el('div', 'qreward', `${tr('Hadiah')}: ${rewardText(o.reward)}`));
+  const b = button(o.start ? tr('Terima') : o.ends ? tr('Lapor & ambil hadiah') : tr('Lanjut'), 'btn small', () => onQuest(o.id));
+  b.id = 'quest-go';
+  box.append(b);
+  return box;
 }
 
 // Teleport stone (spec §25.2): every town already visited, priced by its tier.

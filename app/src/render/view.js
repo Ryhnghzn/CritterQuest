@@ -1,6 +1,7 @@
 // The game canvas shared by every scene: full device resolution, adaptive zoom
 // (the short screen side shows ~VIEW world units) and the world → device transform.
 const VIEW = 360;
+const VIEW_SHORT = 440; // short screens (phones in landscape, spec §27)
 
 export class View {
   constructor(canvas) {
@@ -16,7 +17,8 @@ export class View {
     const cssW = innerWidth, cssH = innerHeight;
     this.c.width = Math.round(cssW * dpr);
     this.c.height = Math.round(cssH * dpr);
-    this.zoom = Math.max(1, Math.min(cssW, cssH) / VIEW); // CSS px per world unit
+    const short = Math.min(cssW, cssH);                    // a phone held sideways sees a bit more
+    this.zoom = Math.max(0.8, short / (short < 500 ? VIEW_SHORT : VIEW)); // CSS px per world unit
     this.S = this.zoom * dpr;                              // device px per world unit
     this.viewW = cssW / this.zoom; this.viewH = cssH / this.zoom;
     const W = this.c.width, H = this.c.height;

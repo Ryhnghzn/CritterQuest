@@ -112,6 +112,17 @@ function gateIcon(g, x, y, gt, size) {
 //   window: world width of a window centred on the player (minimap), gates: [{ dungeon, x, y, found }],
 //   treasures: [{ x, y, state, lord }] — shown where the fog is gone;
 //   target: { x, y } | null — shown even under the fog; at the window edge as an arrow when outside.
+//   quest: { kind: 'hint' | 'gate' | 'town', x, y, r? } | null — the tracked quest's goal (spec §26.3).
+// a small arrow on the rect's edge pointing at (x, y) outside it
+function edgeArrow(g, ox, oy, w, h, x, y, color) {
+  const cx = ox + w / 2, cy = oy + h / 2, a = Math.atan2(y - cy, x - cx);
+  const s = Math.min((w / 2 - 8) / Math.abs(Math.cos(a) || 1e-6), (h / 2 - 8) / Math.abs(Math.sin(a) || 1e-6));
+  g.save(); g.translate(cx + Math.cos(a) * s, cy + Math.sin(a) * s); g.rotate(a);
+  g.beginPath(); g.moveTo(6, 0); g.lineTo(-5, -5); g.lineTo(-5, 5); g.closePath();
+  g.fillStyle = color; g.fill(); g.lineWidth = 1; g.strokeStyle = '#2a1606'; g.stroke();
+  g.restore();
+}
+
 export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
   const region = map.region;
   // world → rect transform: the whole region fitted, or a window around the player
@@ -160,6 +171,26 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
     g.lineWidth = 1.2; g.strokeStyle = '#2a1606'; g.stroke();
     g.beginPath(); g.moveTo(x - 6 * k, y); g.lineTo(x + 6 * k, y); g.stroke();
     g.globalAlpha = 1;
+  }
+  // quest target (spec §26.3): a hint circle around a gate not found yet, else a "!" pin
+  const q = opts.quest;
+  if (q) {
+    const x = sx(q.x), y = sy(q.y);
+    if (q.kind === 'hint') {
+      g.save();
+      g.beginPath(); g.arc(x, y, q.r * k, 0, TAU);
+      g.fillStyle = 'rgba(255,210,74,.08)'; g.fill();
+      g.setLineDash([5, 4]); g.lineWidth = 1.5; g.strokeStyle = `rgba(255,210,74,${(0.55 + pulse * 0.3).toFixed(2)})`; g.stroke();
+      g.restore();
+    }
+    const inside = x >= ox + 8 && x <= ox + w - 8 && y >= oy + 8 && y <= oy + h - 8;
+    if (q.kind !== 'hint' && inside) {
+      const r = opts.labels ? 9 : 6;
+      g.beginPath(); g.arc(x, y, r + pulse * 4, 0, TAU); g.fillStyle = 'rgba(255,210,74,.25)'; g.fill();
+      g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = '#ffd24a'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#2a1606'; g.stroke();
+      g.font = `900 ${opts.labels ? 12 : 9}px Barlow, system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = '#2a1606'; g.fillText('!', x, y + 0.5); g.textBaseline = 'alphabetic';
+    } else if (!inside && !(q.kind === 'hint' && Math.hypot(x - (ox + w / 2), y - (oy + h / 2)) < q.r * k)) edgeArrow(g, ox, oy, w, h, x, y, '#ffd24a');
   }
   // expedition target: always shown, even under the fog
   if (opts.target) {

@@ -16,8 +16,9 @@ import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.j
 import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
 import { isFogValid } from './world.js';
+import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -101,6 +102,8 @@ export const MIGRATIONS = {
     records: isObj(d.records) && isObj(d.records.dungeons) && isObj(d.records.bestiary)
       ? { ...d.records, dungeons: { ...freshDungeonRecords(), ...d.records.dungeons }, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records,
   }),
+  // v17 (spec §26): quests — the main quest starts at chapter 1 (synced to what was done when played).
+  16: (d) => ({ ...d, version: 17, quests: freshQuests() }),
   14: (d) => ({ ...d, version: 15, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
 };
 
@@ -111,6 +114,8 @@ export const freshBestiary = () => Object.fromEntries(BESTIARY_IDS.map((id) => [
 export const freshTalents = () => Object.fromEntries(TALENT_IDS.map((id) => [id, 0]));
 export const freshMats = () => Object.fromEntries(MAT_IDS.map((id) => [id, 0]));
 export const freshGems = () => Object.fromEntries(GEM_IDS.map((id) => [id, Array(GEM_TIERS).fill(0)]));
+
+export const freshQuests = () => ({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null });
 
 export const freshDungeonRecords = () => Object.fromEntries(DUNGEON_IDS.map((id) => [id, { bestFloor: 0, clears: 0 }]));
 
@@ -213,6 +218,12 @@ export function validateSlot(d) {
     need(spent <= POINTS_PER_LEVEL * (d.level - 1), 'attrs: poin melebihi level');
   }
 
+  const q = d.quests, sideDef = (id) => SIDE.find((x) => x.id === id);
+  need(isObj(q) && isObj(q.main) && isInt(q.main.ch, 0, MAIN.length) && isInt(q.main.prog, 0)
+    && (q.main.ch === MAIN.length ? q.main.step === 0 : isInt(q.main.step, 0, MAIN[q.main.ch].steps.length - 1))
+    && isObj(q.side) && Object.entries(q.side).every(([id, st]) => sideDef(id) && isObj(st) && isInt(st.step, 0, sideDef(id).steps.length - 1) && isInt(st.prog, 0))
+    && Array.isArray(q.done) && q.done.every((id) => QUEST_IDS.includes(id)) && new Set(q.done).size === q.done.length
+    && (q.track === null || QUEST_IDS.includes(q.track)), 'quests');
   need(isObj(d.treasures) && Object.entries(d.treasures).every(([id, list]) => REGION_IDS.includes(id) && Array.isArray(list)
     && list.every((i) => isInt(i, 0, TREASURE.count - 1)) && new Set(list).size === list.length), 'treasures');
   need(isObj(d.shops) && Object.entries(d.shops).every(([k, v]) => /^[a-z]+:[a-z]+$/.test(k) && TOWN_IDS.includes(k.split(':')[0])

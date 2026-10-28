@@ -18,6 +18,7 @@ import { TOWN_DEFS } from '../data/towns.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { MARK_SHOP } from '../data/bounties.js';
 import { REGIONS, TOWNS } from '../data/world.js';
+import { MAIN, SIDE } from '../data/quests.js';
 
 export const CLASS_EN = {
   'Tebal darah, tebasan jarak dekat.': 'Thick-blooded, cleaves up close.',
@@ -292,6 +293,27 @@ export const NPC_LINE_EN = {
   'Ramuan Amuk sebelum bos. Percayalah padaku.': 'Rage Potion before the boss. Trust me.',
 };
 
+// quests (spec §26): titles and what people say, keyed by the Indonesian text
+const QUEST_TITLE_EN = {
+  "Bayangan di Bawah Tanah": "Shadows Below",
+  "Kota di Akar Tua": "The Town on Old Roots",
+  "Busuk di Timur Hutan": "Rot in the Eastern Wood",
+  "Makam di Bawah Pasir": "The Tomb Beneath the Sand",
+  "Api yang Tak Padam": "The Undying Fire",
+};
+export const QUEST_LINE_EN = {
+  "Nak, dengarkan orang tua ini. Dahulu sebuah gerhana hendak menelan dunia. Para tetua menyegelnya, lalu memecah segelnya menjadi lima dan menyembunyikannya di tempat-tempat yang dalam. Kini makhluk-makhluk di sana terbangun dan memakan kekuatannya. Yang pertama ada di Ruang Bawah Tanah Bayangan, di Hutan Kelam. Temukan gerbangnya, kalahkan Raja Maw, dan bawa pulang pecahannya.": "Listen to this old man, child. Long ago an eclipse tried to swallow the world. The elders sealed it, broke the seal into five and hid the pieces in deep places. Now the creatures down there have woken and feed on that power. The first lies in the Shadow Crypt, in Gloomwood. Find its gate, defeat King Maw and bring the shard home.",
+  "Pecahan Segel! Rasakan dinginnya… Masih ada empat lagi. Pergilah ke timur, ke Rimbawana, kota di akar pohon tertua. Kapten Selasih di Balai Petualang tahu jalan selanjutnya.": "A Seal Shard! Feel how cold it is… Four more remain. Head east to Wildwood, the town on the roots of the oldest tree. Captain Selasih at the Adventurers' Hall knows the way on.",
+  "Kakek Odo mengirimmu? Kabar pecahan segel sampai juga ke sini. Pecahan kedua ada di Gua Kristal, di sisi barat Padang Es. Kalahkan penjaganya, lalu beri tahu Kapten Ingrid di Bekubara, kota benteng di ujung timur Padang Es.": "Old Odo sent you? Word of the seal shards reached us too. The second shard is in the Crystal Cave, on the west side of the Frost Plains. Defeat its keeper, then tell Captain Ingrid in Frosthold, the fortress town at the eastern end of the Frost Plains.",
+  "Pecahan kedua… berkilau seperti es yang tak mau mencair. Selasih menitip pesan: Nenek Akar di Rimbawana mencium bau busuk dari timur hutan. Kembalilah ke sana.": "The second shard… it gleams like ice that refuses to melt. Selasih left word: Granny Akar in Wildwood smells rot coming from the east of the forest. Go back there.",
+  "Hidungku tak pernah salah, Nak. Busuk ini datang dari Hutan Jamur Busuk di ujung timur Hutan Kelam. Pecahan ketiga membuat jamur di sana tumbuh liar. Hentikan sebelum seluruh hutan membusuk.": "My nose is never wrong, child. This rot comes from the Rotting Mushroom Forest at the far east of Gloomwood. The third shard makes the mushrooms there grow wild. Stop it before the whole forest rots.",
+  "Udara sudah bersih lagi. Terima kasih, Nak. Pecahan keempat? Konon tersimpan di makam kuno di bawah Gurun Merah. Penari Zahra di Pasirluas tahu banyak dongeng tentangnya.": "The air is clean again. Thank you, child. The fourth shard? They say it rests in an ancient tomb beneath the Red Desert. Zahra the dancer in Sandreach knows many tales about it.",
+  "Dongeng tentang Makam Pasir? Itu bukan dongeng. Raja Mumi tidur di sana bersama hartanya — dan sebuah pecahan yang membuat pasir bergerak sendiri. Gerbangnya tersembunyi di tengah Gurun Merah.": "Tales of the Sand Tomb? They are no tales. The Mummy King sleeps there with his treasure — and a shard that makes the sand move on its own. Its gate is hidden in the middle of the Red Desert.",
+  "Kau kembali hidup-hidup! Akan kutarikan kisahmu malam ini. Pecahan terakhir ada di Gunung Api. Carilah Ignis si penambang di Baraapi.": "You came back alive! I'll dance your story tonight. The last shard lies in Fire Mountain. Look for Ignis the miner in Emberfall.",
+  "Batu di gunung ini bergerak sejak pecahan itu terbangun. Benteng Lava, di sisi barat Gunung Api. Rajanya tidur di kolam api — dan dia tidak suka dibangunkan.": "The rocks on this mountain have moved ever since that shard woke. The Lava Fortress, on the west side of Fire Mountain. Its king sleeps in a pool of fire — and he hates being woken.",
+  "Lima pecahan… Gunung ini berhenti bergetar. Bawa semuanya ke Kakek Odo di Kota Awal. Tapi hati-hati: langit di timur Baraapi mulai menggelap.": "Five shards… The mountain has stopped shaking. Take them all to Old Odo in Hometown. But beware: the sky east of Emberfall is growing dark.",
+};
+
 // helpers: replace a field / array entries through a map (keyed by the Indonesian text)
 const swap = (obj, key, map) => { if (obj && obj[key] in map) obj[key] = map[obj[key]]; };
 const swapAll = (arr, map) => arr.forEach((v, i) => { if (v in map) arr[i] = map[v]; });
@@ -328,6 +350,10 @@ export function localizeData() {
   for (const def of Object.values(TOWN_DEFS)) {
     for (const b of def.buildings) swap(b, 'name', BUILDING_EN);
     for (const r of Object.values(def.interiors)) swap(r, 'name', BUILDING_EN);
+  }
+  for (const q of [...MAIN, ...SIDE]) {
+    swap(q, 'title', QUEST_TITLE_EN);
+    for (const st of q.steps) { swap(st, 'say', QUEST_LINE_EN); if (st.who) st.who = NPC_NAME_EN[st.who] || nameEn(st.who); }
   }
   const people = new Set(Object.values(TOWN_DEFS).flatMap((d) => [...d.npcs, ...Object.values(d.interiors).flatMap((r) => r.npcs || [])]));
   for (const n of people) {

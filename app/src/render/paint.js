@@ -28,9 +28,11 @@ export function actor(g, x, y, classId, look, pose, facing, scale = 1) {
 }
 
 // role icon above an NPC; name (and title) when the player is close
-export function tag(g, n, x, y0, t, near) {
+// mark: '!' (a quest starts here) | '?' (a quest step / report here) — drawn above the badge (spec §26.3)
+export function tag(g, n, x, y0, t, near, mark = null) {
   const bob = Math.sin(t * 3 + n.x) * 2;
   const y = y0 - 40 * (n.scale || 1) + bob;
+  if (mark) questMark(g, x, y - (near ? 34 : 22) + Math.sin(t * 5) * 2.5, mark, t);
   g.beginPath(); g.arc(x, y, 11, 0, TAU);
   g.fillStyle = near ? 'rgba(255,201,77,.95)' : 'rgba(30,24,60,.85)'; g.fill();
   g.lineWidth = 1.6; g.strokeStyle = near ? '#fff' : 'rgba(255,255,255,.35)'; g.stroke();
@@ -42,6 +44,23 @@ export function tag(g, n, x, y0, t, near) {
     g.strokeText(n.name, x, y - 16);
     g.fillStyle = '#fff'; g.fillText(n.name, x, y - 16);
   }
+}
+
+// gold "!" / "?" with a dark rim and a soft pulse
+export function questMark(g, x, y, mark, t) {
+  g.save();
+  g.translate(x, y);
+  const k = 1 + Math.sin(t * 6) * 0.06;
+  g.scale(k, k);
+  g.shadowColor = 'rgba(255,200,80,.9)'; g.shadowBlur = 10;
+  g.font = '900 22px Barlow, system-ui, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 4; g.strokeStyle = 'rgba(30,18,6,.95)';
+  g.strokeText(mark, 0, 0);
+  g.fillStyle = mark === '!' ? '#ffd24a' : '#ffe9a8';
+  g.fillText(mark, 0, 0);
+  g.restore();
+  g.textBaseline = 'alphabetic';
 }
 
 // small text plate (shop names over doors)

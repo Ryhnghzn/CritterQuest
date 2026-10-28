@@ -545,6 +545,53 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .shoprow.bounty.unfit{opacity:.62}
 .shoprow.bounty.active{box-shadow:inset 0 0 0 1.5px #7fd8ff}
 .exphint{color:#e6c27a}
+#qtrack{position:absolute;left:12px;top:150px;z-index:4;pointer-events:auto;max-width:300px;border-radius:6px;background:linear-gradient(180deg,rgba(24,19,26,.82),rgba(12,9,14,.82));border:1px solid rgba(255,210,74,.35);box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#qthead{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;background:none;border:0;color:#ffe9a8;font:600 13px Barlow,system-ui,sans-serif;text-align:left;cursor:pointer}
+#qthead b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qtmark{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#ffd24a;color:#2a1606;font-weight:900;font-size:12px;flex:none}
+#qttog{color:#cdbf9f;font-size:15px;line-height:1;flex:none}
+#qtstep{padding:0 10px 8px 35px;font:500 13px/1.35 Barlow,system-ui,sans-serif;color:#f3e2b8}
+#qtstep .qprog{font-weight:700}
+#qtrack.min #qtstep{display:none}
+@media (max-width:560px){#qtrack{max-width:62vw}#qthead,#qtstep{font-size:12px}}
+/* phones: landscape only (spec §27) — portrait gets a "turn your phone" card */
+#rotate{display:none;position:fixed;inset:0;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;
+  background:radial-gradient(120% 90% at 50% 40%,#1a1220,#060408);color:#f0dca8;pointer-events:auto}
+#rotate svg{width:84px;height:84px;fill:none;stroke:#e6c27a;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;animation:turn 2.4s ease-in-out infinite}
+#rotate b{font:700 20px Cinzel,serif}
+#rotate span{font-size:14px;color:#cdbf9f;max-width:300px}
+@keyframes turn{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait) and (pointer:coarse) and (max-width:900px){#rotate{display:flex}}
+/* phones in landscape: a short screen — everything over the game is drawn smaller */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){
+  #hud,#townhud{zoom:.6;width:auto}
+  #qtrack{zoom:.64}
+  #mute,#pausebtn,#charbtn,#autobtn,#cheatbtn{zoom:.72}
+  #minimap{top:46px;width:150px;height:88px}
+  #actions,#belt{zoom:.7}
+  #joy{zoom:.8}
+  #prompt{zoom:.75}
+  #toast{top:52px;font-size:13px}
+  #banner{top:20%;font-size:26px}
+  .screen{padding:20px 12px 20px}
+  .screen>*{zoom:.72}
+}
+/* quests (spec §26.3) */
+.questbox{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;border:1px solid rgba(255,210,74,.45);border-radius:10px;background:rgba(255,210,74,.07)}
+.questbox .pill{--c:#b8860b}
+.questbox .qreward{flex-basis:100%;font-size:13px;color:#f3e2b8}
+.journal h3{margin:0;font-size:16px}
+.journal .shards{color:#ffd24a}
+.quest{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03)}
+.quest.main{border-color:rgba(255,210,74,.45)}
+.qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.qhead .pill{--c:#8a6a1a}
+.qsteps{margin:8px 0 6px;padding-left:22px;font-size:14px;line-height:1.5}
+.qsteps li.done{color:var(--muted,#9a8f80);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.25)}
+.qsteps li.now{color:#ffe9a8;font-weight:600}
+.qprog{color:#ffd24a}
+.qreward{font-size:13px;color:#cdbf9f}
+.qdone{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .gatepanel{border-color:var(--c)}
 .shoprow.bounty.done{box-shadow:inset 0 0 0 1.5px #e6c27a}
 .shoplist .shoprow:not(:has(.sic)){grid-template-columns:minmax(0,1fr) auto}
@@ -593,6 +640,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 </svg>
 <canvas id="game"></canvas>
 <div id="dmg"></div>
+<div id="rotate"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="8" width="24" height="44" rx="4"/><path d="M10 40a24 24 0 0 0 20 16M10 40l-2 8M10 40l8 1"/></svg><b data-tr="Putar HP-mu ke posisi mendatar">Putar HP-mu ke posisi mendatar</b><span data-tr="Critter Quest hanya bisa dimainkan dalam posisi landscape.">Critter Quest hanya bisa dimainkan dalam posisi landscape.</span></div>
 <div id="ui">
   <div id="townhud" class="hidden">
     <div class="trow"><b id="tname"></b><span class="lv" id="tlv">LV 1</span></div>
@@ -600,6 +648,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
     <div id="tmeta"><span class="hchip gold"><span class="coin"></span><b id="tgold">0</b></span><span class="hchip"><svg class="i"><use href="#i-flask"/></svg><b id="tpot">0</b></span></div>
     <div class="clock" id="tclock"></div>
   </div>
+  <div id="qtrack" class="hidden"><button id="qthead"><span class="qtmark">!</span><b id="qttitle"></b><span id="qttog"></span></button><div id="qtstep"></div></div>
   <button id="prompt" class="hidden"><kbd>E</kbd><span id="prompttext"></span></button>
   <div id="toast"></div>
   <button id="cheatbtn" class="hidden" data-tr-title="Panel cheat (`)" title="Panel cheat (`)">CHEAT</button>

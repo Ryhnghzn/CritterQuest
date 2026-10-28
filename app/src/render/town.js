@@ -4,7 +4,7 @@
 import { townDef } from '../data/towns.js';
 import { drawIcon, OUT } from '../art/sprites.js';
 import { npcAt } from '../town/town.js';
-import { TAU, ink, lin, shadow, shade, actor, tag, plate } from './paint.js';
+import { TAU, ink, lin, shadow, shade, actor, tag, plate, questMark } from './paint.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { InteriorRenderer } from './interior.js';
 import { skyAt } from '../meta/clock.js';
@@ -231,7 +231,13 @@ export class TownRenderer {
     for (const p of npcs) if (p.n.object === 'stone') stoneGlow(g, p.x, p.y, t);
     for (const n of L.trees) if (L.theme.tree === 'charred' && n.v < 0.3 && seen(n.x - 40, n.y - 40, 80, 60)) emberRock(g, n, t);
     motes(g, t, L.theme.motes, cx, cy, v.viewW, v.viewH);
-    for (const p of npcs) tag(g, p.n, p.x, p.y - (p.n.object === 'stone' ? 30 : 0), t, town?.near === p.n);
+    for (const p of npcs) tag(g, p.n, p.x, p.y - (p.n.object === 'stone' ? 30 : 0), t, town?.near === p.n, town?.marks?.[p.n.id]);
+    // a quest NPC inside a building: its mark floats over the door (spec §26.3)
+    if (town?.marks) for (const b of L.houses) {
+      const inside = L.def.interiors?.[b.id]?.npcs || [];
+      const m = inside.map((n) => town.marks[n.id]).find(Boolean);
+      if (m && seen(b.x, b.y, b.w, b.h + 40)) questMark(g, b.x + b.w / 2, b.y + b.h - 92 + Math.sin(t * 4) * 3, m, t);
+    }
     if (town && avatar) auraFront(g, town.x, town.y + 10, avatar.fx, bestRarity(avatar.look.gear), t, { host: this, lite: avatar.lite, level: avatar.level, set: avatar.set, facing: town.facing, frenzyOn: false });
     v.vignetteOverlay();
     doorFade(v, town);

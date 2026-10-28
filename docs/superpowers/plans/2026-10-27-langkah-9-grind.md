@@ -93,9 +93,11 @@ Keputusan pemilik (2026-10-28):
 - Rancangan rinci (spesifikasi) ditulis & disetujui sebelum mulai.
 - Rincian disetujui 2026-10-28: spesifikasi §26 (wilayah baru kecil menuju dungeon akhir; 32 side quest).
 #### 9F-1 — Mesin quest & quest utama
-- [ ] `data/quests.js` (bab 1–5) + `meta/quests.js` (mulai, progres dari trip/field, lapor, hadiah, batal) + save v17 — tes
-- [ ] Dialog quest di panel NPC, tanda `!`/`?` di atas NPC, jurnal (J), pengumuman langkah
-- [ ] Penanda tujuan di peta & peta mini, lingkaran petunjuk gerbang, panah tepi layar; kamus EN
+- [x] `data/quests.js` (bab 1–5) + `meta/quests.js` (mulai, progres dari trip/field, lapor, hadiah, batal) + save v17 — tes
+- [x] Dialog quest di panel NPC, tanda `!`/`?` di atas NPC, jurnal (J), pengumuman langkah
+- [x] Penanda tujuan di peta & peta mini, lingkaran petunjuk gerbang, panah tepi layar; kamus EN
+- [x] Pelacak quest di pojok (bisa dikecilkan); HP hanya landscape + HUD ringkas (§27)
+- [ ] (ditunda, permintaan 2026-10-28) Petunjuk rute: baris rute di pelacak, panah di kota, panah ke pintu keluar di wilayah yang salah, tanda `!` di daftar gerbang & batu teleport
 - [ ] Verifikasi: tes, build, screenshot PC & HP
 #### 9F-2 — Rumah tersembunyi & side quest wilayah
 - [ ] 16 tempat tetap + 16 quest (4 rantai, 4 unik quest), barang quest jatuh, titik `reach` — tes

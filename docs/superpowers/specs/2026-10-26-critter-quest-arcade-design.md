@@ -846,10 +846,12 @@ Dahulu sebuah gerhana hendak menelan dunia. Para tetua menyegelnya dan memecah s
 - Side quest aktif maksimal **6**; quest utama tidak dihitung. Side quest bisa dibatalkan di jurnal (progres hilang).
 - **Hadiah** (`reward`): koin, EXP, Lencana, bahan, permata `{gem?, tier}`, ramuan, gear `{rarity, slot?}` (LV = level pemain), atau unik quest. Hadiah gear masuk Gudang bila tas penuh.
 - **Unik quest:** 4 item unik baru (`quest: true`) yang hanya didapat dari rantai cerita, dan 1 dari bab akhir. Tercatat di Kodeks dan memakai jenis efek unik yang sudah ada.
-- **Save versi 17:** `quests { main: { ch, step, prog }, side: { id: { step, prog } }, done: [id] }`. `migrate()` v16 → v17 memulai bab 1 lalu memajukannya sesuai progres yang sudah ada.
+- **Save versi 17:** `quests { main: { ch, step, prog }, side: { id: { step, prog } }, done: [id], track }`. `migrate()` v16 → v17 memulai bab 1 lalu memajukannya sesuai progres yang sudah ada.
 
 ### 26.3 Antarmuka
-- **Jurnal** (tombol J / tombol HUD, juga tab di panel Karakter): quest utama di atas, lalu side quest aktif dengan langkah, progres, pemberi, dan hadiah. Satu quest bisa **dilacak**; quest utama dilacak bila tidak ada pilihan lain.
+- **Jurnal:** tab **Quest** di panel Karakter (tombol J, atau tombol Karakter di HP). Isinya quest utama di atas, lalu side quest aktif dengan langkah, progres, dan hadiah. Satu quest bisa **dilacak**; quest utama dilacak bila tidak ada pilihan lain.
+- **Pelacak quest** (permintaan pemilik 2026-10-28) di pojok kiri, di bawah HUD: judul quest yang dilacak dan langkahnya sekarang (dengan progres). Ketuk judulnya untuk mengecilkan menjadi nama quest saja; pilihan ini diingat per perangkat. Disembunyikan saat dialog/panel terbuka.
+- Bangunan yang di dalamnya ada NPC bertanda juga mendapat tanda di atas pintunya.
 - **Tanda di atas kepala NPC:** `!` emas = quest bisa diambil, `?` emas = siap dilapor, `…` abu = sedang berjalan.
 - **Dialog NPC** menampilkan cerita quest dengan tombol Terima / Lapor / Serahkan, di atas menu tokonya.
 - **Penanda tujuan** di peta penuh dan peta mini untuk quest yang dilacak: titik untuk `reach`/penghuni/kota, **lingkaran petunjuk** (radius 1500, pusat digeser acak tetap) untuk gerbang yang belum ditemukan. Di wilayah, panah tepi layar menunjuk ke tujuan, seperti panah ekspedisi.
@@ -929,3 +931,8 @@ Hadiah side quest disesuaikan tingkat wilayah/kota: koin & EXP (rumus seperti Pa
 - **9F-2:** 16 rumah/orang tersembunyi, side quest-nya, 4 rantai & unik quest, barang quest yang jatuh.
 - **9F-3:** 16 side quest kota.
 - **9F-4:** Tanah Gerhana, Menara Gerhana, Sang Gerhana, bab 6, epilog.
+
+## 27. HP Hanya Landscape (permintaan pemilik 2026-10-28)
+- Di HP (layar sentuh, lebar ≤ 900 px) game **hanya bisa dimainkan mendatar**. Dalam posisi tegak muncul kartu "Putar HP-mu ke posisi mendatar". Perjalanan yang sedang berlangsung dijeda saat HP diputar tegak. Di Android, sentuhan pertama mencoba layar penuh + kunci landscape.
+- Layar pendek (HP mendatar, tinggi ≤ 540 px): HUD, pelacak quest, tombol atas, tombol aksi, sabuk ramuan, joystick, dan isi panel diperkecil (CSS `zoom`). Peta mini lebih kecil.
+- Tampilan dunia di layar pendek memperlihatkan ±440 satuan pada sisi pendek (bukan 360), jadi musuh terlihat lebih awal.

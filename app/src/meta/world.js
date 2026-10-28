@@ -8,6 +8,7 @@ import { DEATH } from '../data/dungeon.js';
 import { addExp, allocate, finalStats } from './character.js';
 import { addKills, discover } from './collection.js';
 import { advanceBounties, isDone } from './bounties.js';
+import { countQuests, syncQuests } from './quests.js';
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -104,6 +105,7 @@ export function applyField(char, part, now) {
     const had = c.treasures[part.region] || [];
     c.treasures = { ...c.treasures, [part.region]: [...new Set([...had, ...part.opened])].sort((a, b) => a - b) };
   }
+  countQuests(c, { killsBy: part.killsBy, elites: part.elites, region: part.region });
   if (part.region && regionById(part.region)) c.regions = { ...c.regions, [part.region]: { fog: part.fog ?? c.regions[part.region]?.fog ?? '' } };
   c.updatedAt = now;
   return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone };
@@ -124,6 +126,7 @@ export function visitTown(char, townId, now) {
   const c = structuredClone(char);
   c.location = townId;
   if (!c.towns.includes(townId)) c.towns.push(townId);
+  syncQuests(c);
   c.updatedAt = now;
   return c;
 }

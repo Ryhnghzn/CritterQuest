@@ -222,6 +222,17 @@ describe('save versi 2', () => {
     expect(r.data.records.bestiary.tombboss).toBe(0);
   });
 
+  it('migrasi v16 → v17: quest utama mulai di bab 1; quest yang rusak ditolak', () => {
+    const v16 = structuredClone({ ...fresh(), version: 16 });
+    delete v16.quests;
+    const r = readSlot(v16);
+    expect(r.status).toBe('ok');
+    expect(r.data.quests).toEqual({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null });
+    expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, main: { ch: 0, step: 99, prog: 0 } } })).toContain('quests');
+    expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, done: ['mars'] } })).toContain('quests');
+    expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, side: { mars: { step: 0, prog: 0 } } } })).toContain('quests');
+  });
+
   it('menolak catatan toko & Gudang yang rusak', () => {
     expect(validateSlot({ ...fresh(), shops: { 'mars:weapons': { day: 1, sold: {} } } })).toContain('shops');
     expect(validateSlot({ ...fresh(), shops: { 'rimba:weapons': { day: 1, sold: { 0: 0 } } } })).toContain('shops');

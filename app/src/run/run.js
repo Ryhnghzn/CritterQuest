@@ -119,7 +119,7 @@ export class Game {
     this.floorT = 0; this.floorClear = false; this.clearT = 0;
     this.portals = []; this.exit = null;
     this.field = false; this.region = null; this.fmap = null; this.fog = null; this.exitTo = null; this.night = false; // open world (run/field.js)
-    this.gates = []; this.gatesFound = []; this.nearGate = null; this.target = null;
+    this.gates = []; this.gatesFound = []; this.nearGate = null; this.target = null; this.questTarget = null;
     this.baseStats = { ...stats }; // final stats before potion buffs
     this.stats = { ...stats, hp };
     this.potions = { ...potions }; this.belt = belt.slice(); this.potionCd = 0;
