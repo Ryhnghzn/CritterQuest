@@ -817,3 +817,115 @@ Keputusan pemilik (2026-10-28): **keempat kota besar dibuat sekaligus**, Gudang 
   - `found` (dungeon yang gerbangnya ditemukan);
   - `expedition` (`null` atau `{ dungeon, need, have }`).
   - `migrate()` v11 → v12 membuat seed dari `createdAt`, menganggap dungeon yang pernah dimasuki sudah ditemukan, dan mengosongkan kabut lama karena petanya berubah.
+
+## 26. Petualangan: Quest Utama & Side Quest (langkah 9F, 2026-10-28)
+
+Keputusan pemilik (2026-10-28):
+- **Quest utama** menuntun ke semua kota dan kelima dungeon. Setelah 5 bos dikalahkan, **wilayah baru kecil** terbuka menuju **dungeon akhir** dengan bos akhir 3 fase dan epilog.
+- **Rumah/orang tersembunyi** di wilayah, **letak tetap untuk semua karakter**: 4 per wilayah (16).
+- **Side quest** dari penghuni tersembunyi, warga kota, dan penjaga toko: **32 quest** (16 tersembunyi + 16 di kota). Jenis: buru, antar/kumpul, cari tempat/orang, rantai cerita.
+
+### 26.1 Cerita
+Dahulu sebuah gerhana hendak menelan dunia. Para tetua menyegelnya dan memecah segelnya menjadi **5 Pecahan Segel**, lalu menitipkan tiap pecahan di tempat yang dalam. Kini makhluk-makhluk di sana (kelima bos dungeon) terbangun dan memakan kekuatan pecahan itu. Bila kelimanya terkumpul, retakan di timur Baraapi terbuka ke **Tanah Gerhana**, tempat **Menara Gerhana** berdiri.
+
+### 26.2 Mesin quest
+- Data di `data/quests.js`, logika murni di `meta/quests.js` (tes Vitest).
+- **Langkah** (`step.kind`):
+  - `talk` (bicara dengan NPC: `{ town, npc }` atau penghuni tersembunyi `{ hidden }`);
+  - `town` (masuk kota);
+  - `gate` (menemukan gerbang dungeon);
+  - `boss` (bos dungeon dikalahkan; dihitung dari rekor `clears`);
+  - `kill` (`{ enemy, n, region? }`; varian dihitung ke musuh asal lewat `kin`);
+  - `elite` (`{ n, region?, enemy? }`);
+  - `guard` (`{ region, lord? }`, mini bos penjaga harta atau Penguasa);
+  - `reach` (`{ region, at: [fx, fy] }`, titik tetap; tercapai dalam radius 160);
+  - `give` (serahkan bahan, permata, ramuan, atau gear dengan syarat slot/rarity minimum; gear dipilih sendiri dari tas, gear yang dipakai tidak bisa);
+  - `drop` (`{ item, n, enemy, region, chance }`, barang quest yang hanya jatuh selama quest aktif; disimpan sebagai angka progres, bukan di tas).
+- Progres dihitung dari hasil perjalanan dungeon (`applyTrip`) dan bagian wilayah (`applyField`). Wilayah juga melaporkan titik `reach` yang tercapai dan barang `drop` yang jatuh.
+- Langkah yang sudah terpenuhi saat dimulai langsung selesai (kota sudah dikunjungi, gerbang sudah ditemukan, bos sudah pernah dikalahkan). Save lama otomatis maju sejauh progresnya.
+- Side quest aktif maksimal **6**; quest utama tidak dihitung. Side quest bisa dibatalkan di jurnal (progres hilang).
+- **Hadiah** (`reward`): koin, EXP, Lencana, bahan, permata `{gem?, tier}`, ramuan, gear `{rarity, slot?}` (LV = level pemain), atau unik quest. Hadiah gear masuk Gudang bila tas penuh.
+- **Unik quest:** 4 item unik baru (`quest: true`) yang hanya didapat dari rantai cerita, dan 1 dari bab akhir. Tercatat di Kodeks dan memakai jenis efek unik yang sudah ada.
+- **Save versi 17:** `quests { main: { ch, step, prog }, side: { id: { step, prog } }, done: [id] }`. `migrate()` v16 → v17 memulai bab 1 lalu memajukannya sesuai progres yang sudah ada.
+
+### 26.3 Antarmuka
+- **Jurnal** (tombol J / tombol HUD, juga tab di panel Karakter): quest utama di atas, lalu side quest aktif dengan langkah, progres, pemberi, dan hadiah. Satu quest bisa **dilacak**; quest utama dilacak bila tidak ada pilihan lain.
+- **Tanda di atas kepala NPC:** `!` emas = quest bisa diambil, `?` emas = siap dilapor, `…` abu = sedang berjalan.
+- **Dialog NPC** menampilkan cerita quest dengan tombol Terima / Lapor / Serahkan, di atas menu tokonya.
+- **Penanda tujuan** di peta penuh dan peta mini untuk quest yang dilacak: titik untuk `reach`/penghuni/kota, **lingkaran petunjuk** (radius 1500, pusat digeser acak tetap) untuk gerbang yang belum ditemukan. Di wilayah, panah tepi layar menunjuk ke tujuan, seperti panah ekspedisi.
+- Tulisan pengumuman singkat saat langkah selesai ("Pecahan Segel 2/5").
+
+### 26.4 Quest utama (9F-1)
+
+| Bab | Judul | Langkah | Hadiah |
+|---|---|---|---|
+| 1 | Bayangan di Bawah Tanah | bicara Kakek Odo → temukan gerbang Bayangan (Hutan Kelam) → kalahkan Raja Maw → lapor Kakek Odo | Pecahan 1, gear Langka |
+| 2 | Kota di Akar Tua | capai Rimbawana → bicara Kapten Selasih → temukan Gua Kristal (Padang Es) → kalahkan bosnya → capai Bekubara → lapor Kapten Ingrid | Pecahan 2, gear Epik |
+| 3 | Busuk di Timur Hutan | bicara Nenek Akar (Rimbawana) → temukan Hutan Jamur → kalahkan bosnya → lapor Nenek Akar | Pecahan 3, gear Epik, permata tk 2 |
+| 4 | Makam di Bawah Pasir | capai Pasirluas → bicara Zahra → temukan Makam Pasir → kalahkan Raja Mumi → lapor Zahra | Pecahan 4, gear Epik, permata tk 3 |
+| 5 | Api yang Tak Padam | capai Baraapi → bicara Ignis → temukan Benteng Lava → kalahkan bosnya → lapor Ignis | Pecahan 5, gear Legendaris |
+| 6 | Gerhana | bicara Kakek Odo → masuk Tanah Gerhana (gerbang Baraapi) → temukan Menara Gerhana → kalahkan Sang Gerhana → epilog | unik quest "Mahkota Fajar" (kalung, semua kelas) |
+
+Urutan dungeon sama dengan urutan buka dungeon (§18.3). Rentang level wilayah tetap jadi panduan; tidak ada kunci level.
+
+### 26.5 Rumah & orang tersembunyi (9F-2)
+- 4 per wilayah, letak tetap `[fx, fy]` di `data/quests.js`, dirancang manual di luar jalan dan tidak di atas benda padat (dites). Pondok bergaya biome dengan penghuninya di depan pintu; satu tempat per wilayah berupa orang tanpa rumah (tersesat, terjebak).
+- Tertutup kabut; tampil di peta (ikon rumah, `!`/`?`) setelah tempatnya terbuka. Dekati dan tekan E untuk bicara. Musuh tidak muncul dalam radius 400 dari rumah.
+
+| Wilayah | Penghuni | Quest | Jenis |
+|---|---|---|---|
+| Hutan Kelam | Pak Gaharu, pemburu tua | kalahkan 30 Serigala Bayang | buru |
+| Hutan Kelam | Nenek Kunyit, peramu | kumpulkan 5 Jamur Bercahaya (jatuh dari Jamur Bom di Hutan Kelam) | kumpul |
+| Hutan Kelam | Resi Sunyi, pertapa reruntuhan | **rantai:** baca 3 batu tulis → kalahkan Penguasa Hutan Kelam → serahkan 1 Inti Kegelapan + 1 gear Epik → unik "Kalung Akar Tua" | rantai |
+| Hutan Kelam | Lio, anak tersesat di tepi sungai | antar Lio pulang: bicara dengan Melati di Rimbawana | cari orang |
+| Padang Es | Bjorn, pemburu yeti | kalahkan 6 Yeti | buru |
+| Padang Es | Frida, penyihir menara es | serahkan 10 Kristal Arkana + 2 Safir tk 1 | antar |
+| Padang Es | Nenek Salju, pengamat bintang | **rantai:** temukan 3 bintang jatuh → kalahkan 4 Roh Es elite → kalahkan Penguasa Padang Es → unik "Cincin Bintang Beku" | rantai |
+| Padang Es | Gustav, kurir terjebak salju | antar surat ke Astrid di Bekubara | cari orang |
+| Gurun Merah | Hasan, pengembara | kalahkan 40 Kalajengking | buru |
+| Gurun Merah | Layla, penjaga oase | kumpulkan 8 Sisik Cacing (dari Cacing Pasir) | kumpul |
+| Gurun Merah | Amun, penjaga makam tua | **rantai:** temukan 3 tugu → kalahkan 2 mini bos penjaga Gurun Merah → serahkan 3 permata tk 2 → unik "Topeng Pasir Abadi" (helm) | rantai |
+| Gurun Merah | Zaid, kurir kehausan | serahkan 3 ramuan HP | antar |
+| Gunung Api | Grom, pandai buangan | serahkan 2 gear Epik | antar |
+| Gunung Api | Agni, pendeta api | kalahkan 50 Imp Api | buru |
+| Gunung Api | Penjaga Kawah | **rantai:** padamkan 3 api abadi → kalahkan 4 Salamander elite → kalahkan Penguasa Gunung Api → unik "Zirah Sisik Kawah" (armor) | rantai |
+| Gunung Api | Bara, penambang terjebak | sampaikan kabar ke Ignis di Baraapi | cari orang |
+
+### 26.6 Side quest kota (9F-3)
+
+| Kota | Pemberi | Quest | Jenis |
+|---|---|---|---|
+| Kota Awal | Bu Marta (Penginapan) | antar sup ke Nenek Kunyit di Hutan Kelam | cari orang |
+| Kota Awal | Nenek Mira (Ramuan) | kumpulkan 6 Lendir Kental (dari Lendir di Hutan Kelam) | kumpul |
+| Kota Awal | Pandai Brom | serahkan 1 gear Langka + 40 Debu Rune | antar |
+| Kota Awal | Pip | temukan Kerang Bercahaya di tepi danau Hutan Kelam | cari tempat |
+| Rimbawana | Tole | kalahkan 15 Jamur Bom di Hutan Kelam | buru |
+| Rimbawana | Nenek Akar (Ramuan) | kumpulkan 5 Bunga Kunang (jatuh dari musuh Hutan Kelam pada malam hari) | kumpul |
+| Rimbawana | Pandai Kayan (Senjata) | kalahkan 10 elite di Hutan Kelam | buru |
+| Bekubara | Arne | kalahkan 25 Katak Salju | buru |
+| Bekubara | Bu Hangat (Penginapan) | antar sup ke Bjorn di Padang Es | cari orang |
+| Bekubara | Ibu Bulu (Zirah) | serahkan 2 zirah (helm/armor/sepatu) Langka | antar |
+| Pasirluas | Omar | temukan unta Omar di Gurun Merah | cari tempat |
+| Pasirluas | Nona Mirage (Perhiasan) | serahkan 3 permata tk 2 | antar |
+| Pasirluas | Yusuf (Bahan) | kalahkan 30 Cacing Pasir | buru |
+| Baraapi | Puntung | kumpulkan 10 Bara Abadi (dari Lendir Magma) | kumpul |
+| Baraapi | Pandai Gora (Senjata) | kalahkan Penguasa Gunung Api | buru |
+| Baraapi | Sela Api (Bahan) | serahkan 5 Inti Kegelapan | antar |
+
+Hadiah side quest disesuaikan tingkat wilayah/kota: koin & EXP (rumus seperti Papan Tugas, ×3), Lencana 2–6, dan satu hadiah khas (gear Langka–Epik, permata, bahan, atau ramuan). Angka di `data/quests.js`.
+
+### 26.7 Tanah Gerhana & Menara Gerhana (9F-4)
+- **Tanah Gerhana:** wilayah kelima yang kecil (8000 × 5000), LV 45–50, terbuka setelah bab 6 dimulai. Masuk dari gerbang Baraapi; tepi barat kembali ke Baraapi, tepi timur tertutup. Tampilan: tanah ungu gelap, kristal hitam, batu melayang, langit gerhana. Musuh: varian gerhana dari musuh lama (lebih kuat, berkilau ungu) dan 1 musuh khas. Peti: 2 + Penguasa.
+- **Menara Gerhana:** dungeon keenam, gerbang di titik tetap ujung timur. 5 lantai, kesulitan di atas Benteng Lava; ekspedisi LV 45–50.
+- **Sang Gerhana**, bos akhir 3 fase:
+  1. **Matahari Hitam:** cincin & spiral cahaya, sinar berputar.
+  2. **Gerhana** (HP ≤ 66%): arena menggelap (cahaya hanya di sekitar pemain), bergantian memakai satu serangan khas tiap bos dungeon.
+  3. **Kehampaan** (HP ≤ 33%): lebih cepat, lubang hitam yang menarik pemain, memanggil bayangan.
+- **Epilog:** layar cerita singkat dan rangkuman (waktu bermain, kill, bos), lalu kembali ke Kota Awal. Game tetap berlanjut; Menara bisa diulang. Rekor `records.ending` (waktu tamat pertama).
+- Save naik (v18) untuk rekor dungeon baru, bestiari musuh baru, dan `records.ending`.
+
+### 26.8 Pembagian kerja
+- **9F-1:** mesin quest, save v17, jurnal, tanda NPC, penanda peta/panah, quest utama bab 1–5 (bab 6 menunggu 9F-4).
+- **9F-2:** 16 rumah/orang tersembunyi, side quest-nya, 4 rantai & unik quest, barang quest yang jatuh.
+- **9F-3:** 16 side quest kota.
+- **9F-4:** Tanah Gerhana, Menara Gerhana, Sang Gerhana, bab 6, epilog.

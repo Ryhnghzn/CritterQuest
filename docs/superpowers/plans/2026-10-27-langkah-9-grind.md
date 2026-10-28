@@ -91,4 +91,21 @@ Keputusan pemilik (2026-10-28):
 - **Rumah/orang tersembunyi** di wilayah: **letak tetap untuk semua karakter**, dirancang manual, di luar jalan & tertutup kabut.
 - **Side quest** dari orang tersembunyi, warga kota, dan penjaga toko — jenis: buru (musuh/elite/mini bos), antar/kumpul barang (gear, bahan, permata), cari tempat/orang, rantai cerita bertahap dengan hadiah item unik khusus quest.
 - Rancangan rinci (spesifikasi) ditulis & disetujui sebelum mulai.
+- Rincian disetujui 2026-10-28: spesifikasi §26 (wilayah baru kecil menuju dungeon akhir; 32 side quest).
+#### 9F-1 — Mesin quest & quest utama
+- [ ] `data/quests.js` (bab 1–5) + `meta/quests.js` (mulai, progres dari trip/field, lapor, hadiah, batal) + save v17 — tes
+- [ ] Dialog quest di panel NPC, tanda `!`/`?` di atas NPC, jurnal (J), pengumuman langkah
+- [ ] Penanda tujuan di peta & peta mini, lingkaran petunjuk gerbang, panah tepi layar; kamus EN
+- [ ] Verifikasi: tes, build, screenshot PC & HP
+#### 9F-2 — Rumah tersembunyi & side quest wilayah
+- [ ] 16 tempat tetap + 16 quest (4 rantai, 4 unik quest), barang quest jatuh, titik `reach` — tes
+- [ ] Gambar pondok per biome & penghuni, ikon peta; kamus EN
+- [ ] Verifikasi
+#### 9F-3 — Side quest kota
+- [ ] 16 quest warga & penjaga toko — tes; kamus EN
+- [ ] Verifikasi
+#### 9F-4 — Tanah Gerhana & bos akhir
+- [ ] Wilayah Tanah Gerhana, musuh gerhana, dungeon Menara Gerhana, save v18 — tes
+- [ ] Sang Gerhana 3 fase, bab 6, epilog
+- [ ] Gambar & kamus EN; verifikasi
 ## 9E — Tingkat kesulitan & Celah tanpa batas
