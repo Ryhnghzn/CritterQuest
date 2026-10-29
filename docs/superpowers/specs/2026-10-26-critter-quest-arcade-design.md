@@ -990,3 +990,45 @@ Supaya pemain tahu ada quest dan toko apa saja di kota. Detail diserahkan ke Cla
 - **Peta penuh** (layar `fieldmap` yang sama dengan wilayah): tombol **M** di kota (sebelumnya M = bisukan; tombol suara tetap ada), Esc / M / Tutup menutup. Isi: tembok, rumah toko dengan ikon & nama, rumah warga polos, fitur kota (kolam, lava, jembatan, pohon besar, dll.), gerbang, orang di luar rumah (layanan berikon + nama, warga sebagai titik), pedagang malam hanya saat malam, tanda **!** / **?** di atas rumah (tanda terkuat penghuninya, `?` mengalahkan `!`) dan orang, posisi pemain (di dalam rumah: di depan pintunya, "Kamu (di dalam)").
 - **Daftar di bawah peta:** "Quest di kota ini" (tanda, judul quest, pemberi · tempat; `?` dulu) lalu "Toko & layanan" (ikon, tempat, layanan · penjaga). Ketuk satu baris → tempatnya dilingkari di peta dan peta digulir ke layar.
 - Kode: `town/townmap.js` (logika murni + tes: `townMapInfo`, `playerSpot`, `townLegend`), `data/townmap.js` (teks layanan & ikon, warna fitur), `render/townmap.js` (gambar), `ui/townmap.js` (daftar), `main.js` (`openTownMap`, `drawTownMinimap`). Save tidak berubah.
+
+## 31. Kelas Lebih Hidup: Mekanik Khas & Pengaturan Skill (permintaan pemilik 2026-10-29)
+
+Masalah: Warrior terasa datar, lambat membunuh, susah mengejar, dan cepat mati dibanding Mage. Semua musuh memberi damage sentuhan, jadi kelas jarak jauh bisa menghindarinya sepenuhnya, sedangkan Warrior harus menerimanya tanpa imbalan. Jawabannya: tiap kelas mendapat **satu mekanik khas** yang mengubah cara bermain, ditambah penyetelan angka. Mengatur skill juga dipermudah. Job lanjutan (konsep §5) dirancang terpisah nanti, di atas mekanik khas ini.
+
+### 31.1 Aturan umum mekanik khas
+- Satu bar/penghitung per kelas, hidup selama satu ekspedisi atau dungeon (mulai 0, tidak disimpan). **Save tidak berubah.**
+- Tampil di HUD di bawah bar energi, warna per kelas: Murka merah, Panas jingga, Bidik hijau, Kombo ungu (5 belati kecil).
+- Angka di `data/classes.js` (blok `trait` per kelas). Logika di `run/traits.js` (murni, tes Vitest), dipanggil dari `damageEnemy()`, `hurtPlayer()`, pemakaian skill, dan pembaruan per frame.
+- Teks baru lewat `tr()`/`t()` + kamus EN.
+
+### 31.2 Warrior: Murka (Rage), 0–100
+- **Mengisi:** +3 per musuh yang kena serangan dasar; saat terkena damage +1,5 per 1% HP maks yang hilang (10% HP → +15).
+- **Menyusut:** −12/detik setelah 3 detik tanpa memberi/menerima damage.
+- **Naik bertahap 0 → 100:** jangkauan tebas 46 → 72 px, sudut 100° → 160°; serangan dasar menyedot HP 0 → 4% damage; damage diterima −0 → −20%.
+- **Mengamuk:** otomatis saat Murka 100, 6 detik: kecepatan serang +40%, kebal efek lambat, tiap tebasan memancarkan gelombang kejut kecil yang mendorong; aura merah, getar layar kecil, teks "MENGAMUK!". Setelahnya Murka 0. Selama Mengamuk, Murka tidak mengisi.
+- **Penyetelan:** kecepatan lari dasar 105 → 112; Terjang terbuka di LV 1 (sebelumnya LV 10); Terjang yang membunuh musuh memulihkan jedanya seketika.
+
+### 31.3 Mage: Panas (Heat), 0–100
+- **Mengisi:** tiap skill menambah biaya energinya × 0,6 (Meteor 55 → +33). Serangan dasar dan ultimate tidak.
+- **Menyusut:** −15/detik.
+- **Bonus:** damage skill +0 → +30% saat Panas naik ke 80 (tetap +30% di 80–99).
+- **Kepanasan:** Panas mencapai 100 → semua skill terkunci 2,5 detik, Mage melambat 30%, Panas lalu 0. Ditandai asap & teks "Kepanasan!".
+- **Penyetelan:** beku Nova Es 2,2 → 1,5 detik.
+
+### 31.4 Archer: Bidik (Focus), 0–100
+- **Mengisi:** +60/detik selama tidak bergerak (tidak ada input gerak) sambil menyerang.
+- **Kosong:** bergerak atau menghindar → 0.
+- **Bidik penuh:** panah dasar berikutnya pasti kritis, menembus 3 musuh, ukuran ×2; lalu Bidik 0. Ditandai lingkaran bidik yang mengecil di depan Archer.
+- **Lompatan Mundur** langsung mengisi Bidik penuh.
+
+### 31.5 Assassin: Kombo (Combo), 0–5 titik
+- **Mengisi:** +1 titik tiap 3 tusukan dasar yang kena.
+- **Hilang:** semua titik hilang setelah 4 detik tanpa menyerang.
+- **Dipakai:** skill apa pun (bukan ultimate) menghabiskan semua titik; damage skill itu +25% per titik.
+- **Eksekusi:** dengan 5 titik, musuh biasa (bukan bos/elite) yang terkena skill itu dan HP-nya di bawah 30% langsung mati.
+
+### 31.6 Mengatur skill
+- **Tab Skill baru:** baris atas 4 kartu slot (ikon, nama, nomor tombol; slot kosong menampilkan `+`) dan kartu Ultimate (5, hanya tampilan). Di bawahnya daftar pool skill; yang terpasang diberi lencana nomornya, yang terkunci menampilkan LV-nya.
+- **Dua ketukan:** pilih slot lalu skill, atau skill lalu slot. Skill yang sudah ada di slot lain bertukar (`equipSkill()` yang ada). Pilihan disorot; ketuk lagi untuk batal. Kartu slot yang terisi punya tombol × untuk melepas (minimal satu skill tetap terpasang).
+- **Kapan saja:** di kota, wilayah, dan dungeon (game berhenti selama panel terbuka). Skill yang baru dimasukkan ke slot mulai dengan jeda penuh. Simulasi yang sedang berjalan langsung memakai susunan baru. **Bakat tetap hanya di kota.**
+- **Pasang otomatis:** saat naik level membuka skill baru dan masih ada slot kosong, skill itu masuk ke slot kosong pertama, dengan pesan "Skill baru: {nama} (tombol {n})".
