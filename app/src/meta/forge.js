@@ -21,7 +21,7 @@ function keepHp(before, c) {
 }
 
 // +p → +p+1: pay, then roll the chance; from +10 a failure drops one level.
-// Also returns { success, plus }.
+// Also returns { success, dropped, plus }.
 export function enhance(char, id, now, rng = Math.random) {
   const it = find(char, id);
   if (!it) return { ok: false, reason: 'missing' };
@@ -33,10 +33,11 @@ export function enhance(char, id, now, rng = Math.random) {
   pay(c, cost);
   const item = find(c, id);
   const success = rng() < ENHANCE.chance[p];
+  const dropped = !success && p >= ENHANCE.dropFrom;
   if (success) item.plus += 1;
-  else if (p >= ENHANCE.dropFrom) item.plus -= 1;
+  else if (dropped) item.plus -= 1;
   c.updatedAt = now;
-  return { ok: true, char: keepHp(char, c), success, plus: item.plus };
+  return { ok: true, char: keepHp(char, c), success, dropped, plus: item.plus };
 }
 
 export const rerollCost = (item) => ({ gold: REROLL.goldPerLevel * item.itemLevel, crystal: REROLL.crystal });

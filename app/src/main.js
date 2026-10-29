@@ -357,7 +357,7 @@ function openNpc(npc, message = null) {
     onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => t('Terjual! +{n} koin.', { n: r.gold })),
     onEnhance: (id) => serve((c, now) => enhance(c, id, now), (r) => (r.success
       ? { text: t('Berhasil! Sekarang +{n}.', { n: r.plus }), color: '#e6c27a' }
-      : { text: r.plus >= 10 || r.plus === 9 ? t('Gagal… turun ke +{n}.', { n: r.plus }) : tr('Gagal… tingkatnya tetap.'), color: '#e0526a' })),
+      : { text: r.dropped ? t('Gagal… turun ke +{n}.', { n: r.plus }) : tr('Gagal… tingkatnya tetap.'), color: '#e0526a', bad: true })),
     onReroll: (id, line) => serve((c, now) => reroll(c, id, line, now), (r) => t('Bonus baru: {stat}', { stat: statText(r.bonus.stat, r.bonus.value) })),
     onSalvage: (ids) => serve((c, now) => salvage(c, ids, now), (r) => t('Diurai! {mats}', { mats: Object.entries(r.mats).filter(([, n]) => n).map(([m, n]) => `+${n} ${MATS[m].name}`).join(', ') }) + (r.gems.length ? t(' + {n} permata', { n: r.gems.length }) : '')),
     onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), tr('Permata terpasang. Berkilau, bukan?')),
@@ -430,10 +430,10 @@ async function serve(action, okText) {
   town.marks = npcMarks(current, town.id);
   const s = finalStats(current); // upgrades / respec change max HP and speed
   town.maxHp = s.maxHp; town.moveSpd = s.moveSpd; town.hp = currentHp(current);
-  if (okText) sfx.heart(); else sfx.pickCard();
+  const ok = typeof okText === 'function' ? okText(r) : okText; // { bad: true } = it went through but went wrong (a failed forge roll)
+  if (ok?.bad) sfx.fail(); else if (okText) sfx.heart(); else sfx.pickCard();
   const err = await saveCurrent();
-  const ok = typeof okText === 'function' ? okText(r) : okText;
-  openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: true }));
+  openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: !ok.bad }));
   updateTownHUD(current, town);
 }
 

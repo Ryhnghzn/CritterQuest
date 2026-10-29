@@ -75,6 +75,7 @@ export const sfx = {
     else if (id === 'fan') { for (let i = 0; i < 3; i++) tone(1100, 0.04, 'square', 0.03, -400, i * 0.03); }
   },
   dodge() { noise(0.12, 0.06); tone(300, 0.12, 'sine', 0.05, 500); },
+  fail() { tone(330, 0.12, 'triangle', 0.1, -80); tone(247, 0.22, 'triangle', 0.1, -60, 0.1); }, // a forge roll that missed
   hurt() { tone(220, 0.2, 'sawtooth', 0.16, -140); noise(0.12, 0.1); },
   fanfare() { // a reward claimed: rising arpeggio, a held chord and a sparkle on top
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 'triangle', 0.11, 0, i * 0.09));

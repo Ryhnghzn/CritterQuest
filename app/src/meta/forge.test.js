@@ -34,6 +34,14 @@ describe('tempa', () => {
     expect(enhance(make({ inventory: [helm({ plus: 3 })] }), 'h1', NOW, never).char.inventory[0].plus).toBe(4); // +3→+4 selalu berhasil
   });
 
+  it('dropped hanya saat level benar-benar turun (gagal di +9 tidak turun)', () => {
+    const at9 = enhance(make({ inventory: [helm({ plus: 9 })] }), 'h1', NOW, never);
+    expect(at9).toMatchObject({ success: false, dropped: false, plus: 9 });
+    const at10 = enhance(make({ inventory: [helm({ plus: 10 })] }), 'h1', NOW, never);
+    expect(at10).toMatchObject({ success: false, dropped: true, plus: 9 });
+    expect(enhance(make(), 'h1', NOW, always).dropped).toBe(false);
+  });
+
   it('ditolak: maks +15, uang atau material kurang', () => {
     expect(enhance(make({ inventory: [helm({ plus: ENHANCE.max })] }), 'h1', NOW).reason).toBe('max');
     expect(enhance(make({ gold: 0 }), 'h1', NOW).reason).toBe('gold');
