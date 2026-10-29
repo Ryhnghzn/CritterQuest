@@ -56,7 +56,7 @@ export const REGIONS = [
     id: 'eclipse', name: 'Tanah Gerhana', biome: 'eclipse', levels: [45, 50], from: 'bara', to: null, w: 8000, h: 5000, seed: 57,
     branches: 3, rivers: 1, lakes: 6, ruins: 10, density: { tree: 30, rock: 16 }, unlock: { shards: 5 },
     enemies: { voidslink: 3, voidspitter: 3, wraith: 3, voiddart: 2, voidtank: 2, shielder: 1, summoner: 1, healer: 1 },
-    dungeons: [],
+    dungeons: [{ id: 'spire', at: [0.84, 0.94] }],
     theme: { ground: ['#1c1426', '#160f1f'], path: '#33284a', water: '#2a1640', ambient: 'rgba(8,4,16,.82)' },
   },
 ];
@@ -106,5 +106,6 @@ export const EXPEDITIONS = {
   fungus: { levels: [14, 26], floors: 3 },
   tomb: { levels: [20, 32], floors: 3 },
   lava: { levels: [24, 45], floors: 3 },
+  spire: { levels: [45, 50], floors: 3 },
 };
 export const EXPEDITION_REWARD = { gold: { base: 80, perLevel: 25 }, exp: { base: 60, perLevel: 20 }, marks: 4 };

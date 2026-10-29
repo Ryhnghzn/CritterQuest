@@ -43,7 +43,8 @@ export class Renderer {
     this.atkStart = -9; this.lastAttackT = 0; // keyframed swing: starts when a new attack fires
     this.lastCast = null; this.move = null;  // skill move being played: { id, t0, dur }
     this.trail = [];      // dodge afterimages: { x, y, life }
-    this.shakeOn = true;  // off in the 'lite' effects setting (main.js)
+    this.shakeOn = true;  // off in the 'lite' effects setting and with Settings → screen shake off (main.js)
+    this.numbersOn = true; // Settings → damage numbers (main.js)
     this.rect = { x0: 0, y0: 0, x1: 0, y1: 0 }; // visible world area, for culling effects
     view.onResize.push(() => this.rebake());
     this.rebake();
@@ -118,7 +119,7 @@ export class Renderer {
     } else {
       this.drawRoom(g, game, t, visible);
       if (playing) this.drawRun(g, game, t, visible);
-      this.lighting.draw(cx, cy, roomLights(game, t, playing), game.dungeon.theme.ambient);
+      this.lighting.draw(cx, cy, roomLights(game, t, playing), game.dark ? 'rgba(3,0,10,.94)' : game.dungeon.theme.ambient);
       v.begin(cx, cy);
       roomGlow(g, game, t);
       if (playing) this.drawFx(g, game, t);
@@ -238,7 +239,7 @@ export class Renderer {
     drawVfx(g, game.vfx, this.rect);
     // enemy telegraphs stay readable over the player's effects
     for (const h of game.hazards) hazardEdge(g, h, t);
-    drawFloaters(g, game.floaters);
+    drawFloaters(g, this.numbersOn ? game.floaters : game.floaters.filter((f) => !f.dmg));
   }
 }
 
@@ -416,6 +417,13 @@ function hazard(g, h, t) {
     g.fillRect(0, -h.w / 2, len * k, h.w);
     g.strokeStyle = 'rgba(255,120,130,.8)'; g.lineWidth = 1.5; g.setLineDash([6, 5]);
     g.strokeRect(0, -h.w / 2, len, h.w);
+  } else if (h.kind === 'hole') { // a black hole: dark core, purple swirl closing in
+    const grd = g.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.r);
+    grd.addColorStop(0, 'rgba(0,0,0,.95)'); grd.addColorStop(0.45, `rgba(40,10,70,${0.6 + 0.3 * k})`); grd.addColorStop(1, 'rgba(120,60,220,0)');
+    g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU); g.fillStyle = grd; g.fill();
+    g.translate(h.x, h.y); g.rotate(t * 3);
+    g.strokeStyle = 'rgba(199,155,255,.7)'; g.lineWidth = 2;
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(0, 0, h.r * (0.9 - k * 0.5), (i / 4) * TAU, (i / 4) * TAU + 1); g.stroke(); }
   } else {
     g.beginPath(); g.arc(h.x, h.y, h.r, 0, TAU);
     g.fillStyle = `rgba(255,50,70,${0.1 + 0.15 * k})`; g.fill();

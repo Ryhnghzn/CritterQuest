@@ -189,8 +189,20 @@ export function onDeath(run, e) {
 }
 
 // Raja Maw: one pattern at a time, standing still while it fires.
+// Bosses with phases (Sang Gerhana) switch pattern lists as their HP drops.
 function boss(run, e, b, dt) {
   const enraged = e.hp < e.maxHp * b.enrageAt;
+  if (b.phases) {
+    const ph = b.phases.reduce((n, p, i) => (e.hp <= e.maxHp * p.at ? i : n), 0);
+    if (ph !== (e.phase || 0)) {
+      e.phase = ph; e.pat = null; e.mode = 'walk'; e.actT = 1.2;
+      run.dark = !!b.phases[ph].dark;
+      run.showBanner?.(b.phases[ph].name);
+      run.addShake?.('big');
+      run.pulses.push({ x: e.x, y: e.y, r: 260, t: 0.8, max: 0.8, color: '199,155,255' });
+      return { vx: 0, vy: 0 };
+    }
+  }
   if (e.mode === 'wind' || e.mode === 'dash' || e.mode === 'rest') {
     const v = charge(run, e, b);
     if (e.mode === 'walk') e.actT = enraged ? b.enragedEvery : b.every;
@@ -198,7 +210,8 @@ function boss(run, e, b, dt) {
   }
   if (e.pat) { stepPattern(run, e, b, dt, enraged); return { vx: 0, vy: 0 }; }
   if (e.actT <= 0) {
-    const id = b.patterns[Math.floor(rand() * b.patterns.length)];
+    const list = b.phases ? b.phases[e.phase || 0].patterns : b.patterns;
+    const id = list[Math.floor(rand() * list.length)];
     if (id === 'charge') {
       e.actT = 0;
       e.mode = 'walk';
@@ -211,16 +224,22 @@ function boss(run, e, b, dt) {
     }
     if (id === 'summon') { summon(run, e, b.summon); e.actT = enraged ? b.enragedEvery : b.every; return { vx: 0, vy: 0 }; }
     e.pat = { id, t: 0, n: 0, fireT: 0, a0: rand() * TAU };
+    if (id === 'echo') { // one attack of a dungeon boss, with its own numbers and colours
+      const from = b.echo[Math.floor(rand() * b.echo.length)], cfg = ENEMIES[from];
+      e.pat.id = ['ring', 'spiral', 'slam'][Math.floor(rand() * 3)];
+      e.pat.cfg = cfg; e.pat.echo = from;
+      run.addFloater?.(e.x, e.y - e.r - 30, cfg.name, cfg.ring.color);
+    }
     sfx.boss();
     return { vx: 0, vy: 0 };
   }
   return toward(e, run.px, run.py, e.speed);
 }
 
-function stepPattern(run, e, b, dt, enraged) {
-  const p = e.pat;
+function stepPattern(run, e, b0, dt, enraged) {
+  const p = e.pat, b = p.cfg || b0;
   p.t += dt; p.fireT -= dt;
-  const done = () => { e.pat = null; e.actT = enraged ? b.enragedEvery : b.every; };
+  const done = () => { e.pat = null; e.actT = enraged ? b0.enragedEvery : b0.every; };
   if (p.id === 'ring') {
     const r = b.ring, waves = r.waves + (enraged ? 1 : 0), count = r.count + (enraged ? 6 : 0);
     if (p.fireT <= 0 && p.n < waves) {
@@ -241,6 +260,22 @@ function stepPattern(run, e, b, dt, enraged) {
       run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.radius, t: s.fuse, max: s.fuse, dmg: s.dmg });
       p.n++; p.fireT = s.gap * (enraged ? 0.75 : 1);
     } else if (p.n >= count && p.fireT <= 0) done();
+  } else if (p.id === 'beam') { // beams from the boss outward, each sweep turned a little further
+    const s = b.beam;
+    if (p.fireT <= 0 && p.n < s.sweeps) {
+      for (let i = 0; i < s.count; i++) {
+        const a = p.a0 + p.n * s.turn + (i / s.count) * TAU;
+        run.hazards.push({ kind: 'line', x: e.x, y: e.y, x2: e.x + Math.cos(a) * s.len, y2: e.y + Math.sin(a) * s.len, w: s.w, t: s.fuse, max: s.fuse, dmg: s.dmg });
+      }
+      p.n++; p.fireT = s.gap;
+    } else if (p.n >= s.sweeps && p.fireT <= 0) done();
+  } else if (p.id === 'hole') { // black holes near the player that pull, then collapse
+    const s = b.hole;
+    for (let i = 0; i < s.count; i++) {
+      const a = rand() * TAU, d = 90 + rand() * 120;
+      run.hazards.push({ kind: 'hole', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, pull: s.pull });
+    }
+    done();
   } else done();
 }
 
@@ -264,7 +299,21 @@ export function stepHazards(run, dt) {
     const h = H[i];
     h.t -= dt;
     if (h.bomber) { h.x = h.bomber.x; h.y = h.bomber.y; }
+    if (h.kind === 'hole' && h.t > 0) { // drags the player in
+      const dx = h.x - run.px, dy = h.y - run.py, d = Math.hypot(dx, dy) || 1;
+      if (d < h.r * 3) { run.px += (dx / d) * h.pull * dt; run.py += (dy / d) * h.pull * dt; }
+    }
     if (h.t > 0) continue;
+    if (h.kind === 'line' && h.dmg > 0) {
+      const lx = h.x2 - h.x, ly = h.y2 - h.y, k = Math.max(0, Math.min(1, ((run.px - h.x) * lx + (run.py - h.y) * ly) / (lx * lx + ly * ly)));
+      if (Math.hypot(h.x + lx * k - run.px, h.y + ly * k - run.py) < h.w / 2 + 8) run.hurtPlayer(h.dmg, h.onHit);
+      run.pulses.push({ x: h.x2, y: h.y2, r: 30, t: 0.25, max: 0.25, color: '199,155,255' });
+    }
+    if (h.kind === 'hole' && h.dmg > 0) {
+      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r * 0.6) ** 2) run.hurtPlayer(h.dmg, h.onHit);
+      run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.4, max: 0.4, color: '150,90,255' });
+      run.addShake?.('medium');
+    }
     if (h.kind === 'circle' && h.dmg > 0) {
       if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg, h.onHit);
       run.spawnBurst(h.x, h.y, '#ff7a3c', h.small ? 6 : 18);

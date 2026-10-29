@@ -105,8 +105,8 @@ export function applyField(char, part, now) {
     const had = c.treasures[part.region] || [];
     c.treasures = { ...c.treasures, [part.region]: [...new Set([...had, ...part.opened])].sort((a, b) => a - b) };
   }
-  countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, region: part.region });
   if (part.region && regionById(part.region)) c.regions = { ...c.regions, [part.region]: { fog: part.fog ?? c.regions[part.region]?.fog ?? '' } };
+  countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, region: part.region });
   c.updatedAt = now;
   return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone };
 }

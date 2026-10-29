@@ -1,6 +1,6 @@
 // Panel Karakter (C, in town and in the dungeon): portrait, level, attribute
 // points (spec §14.1), stats and records.
-import { el, button, svgIcon, stage } from './screens.js';
+import { el, button, svgIcon, stage, keepView } from './screens.js';
 import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { CHAR_LEVEL_MAX, ATTRS } from '../data/balance.js';
@@ -44,7 +44,11 @@ export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skil
   draw();
 }
 
-function drawPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, quest, redraw }) {
+function drawPanel(box, char, hp, pending, opts) {
+  keepView(box, `char:${tab}`, () => buildPanel(box, char, hp, pending, opts));
+}
+
+function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, quest, redraw }) {
   box.replaceChildren();
   const marked = Object.values(pending).reduce((a, b) => a + b, 0);
   const preview = (marked && allocate(char, pending, char.updatedAt)) || char;

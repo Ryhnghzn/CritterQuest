@@ -31,26 +31,30 @@ function bountyIcon(b) {
   return iconCanvas({ elite: 'pow', floors: 'arm', gold: 'mag' }[b.kind], 30);
 }
 
-export function bountyList(char, { onBountyClaim, onBountyReroll }) {
+export function bountyList(char, { onBountyClaim, onBountyReroll, onBountyTake, onBountyDrop }) {
   const list = el('div', 'shoplist bounties');
   char.bounties.forEach((b, i) => {
     const done = isDone(b);
-    const row = el('div', `shoprow bounty${done ? ' done' : ''}`);
+    const row = el('div', `shoprow bounty${b.taken ? ' active' : ''}${done ? ' done' : ''}`);
     row.dataset.bounty = i;
     const ic = el('span', 'sic'); ic.append(bountyIcon(b));
     const txt = el('div', 'stx');
     const rw = bountyReward(char, b);
-    const bar = el('div', 'bbar'); const fill = el('i'); fill.style.width = `${(b.have / b.need) * 100}%`; bar.append(fill);
-    txt.append(el('b', null, bountyText(b)), bar,
-      el('span', null, `${b.have} / ${b.need} · ${t('+{g} koin · +{e} EXP · +{d} {dust} · +{m} Lencana', { g: rw.gold, e: rw.exp, d: rw.dust, dust: MATS.dust.name, m: rw.marks })}`));
-    const act = done
-      ? button(tr('Klaim'), 'btn small claim', () => onBountyClaim(i))
-      : button(tr('Ganti'), 'btn ghost small reroll', () => onBountyReroll(i));
-    if (!done) { act.append(el('small', null, t('{n} koin', { n: rerollPrice(char) }))); act.disabled = char.gold < rerollPrice(char); }
-    row.append(ic, txt, act);
+    txt.append(el('b', null, bountyText(b)));
+    if (b.taken) { const bar = el('div', 'bbar'); const fill = el('i'); fill.style.width = `${(b.have / b.need) * 100}%`; bar.append(fill); txt.append(bar); }
+    txt.append(el('span', null, `${b.taken ? `${b.have} / ${b.need}` : tr('Belum diambil')} · ${t('+{g} koin · +{e} EXP · +{d} {dust} · +{m} Lencana', { g: rw.gold, e: rw.exp, d: rw.dust, dust: MATS.dust.name, m: rw.marks })}`));
+    const acts = el('div', 'bacts');
+    if (done) acts.append(button(tr('Klaim'), 'btn small claim', () => onBountyClaim(i)));
+    else if (b.taken) acts.append(button(tr('Batal'), 'btn ghost small drop', () => onBountyDrop(i)));
+    else {
+      const re = button(tr('Ganti'), 'btn ghost small reroll', () => onBountyReroll(i));
+      re.append(el('small', null, t('{n} koin', { n: rerollPrice(char) }))); re.disabled = char.gold < rerollPrice(char);
+      acts.append(button(tr('Ambil'), 'btn small take', () => onBountyTake(i)), re);
+    }
+    row.append(ic, txt, acts);
     list.append(row);
   });
-  list.append(el('div', 'note', tr('Progres dihitung dari setiap perjalanan ke dungeon, termasuk yang berakhir mati.')));
+  list.append(el('div', 'note', tr('Ambil tugas dulu. Progres dihitung dari setiap perjalanan setelah tugas diambil, termasuk yang berakhir mati.')));
   return list;
 }
 
@@ -87,7 +91,7 @@ export function expeditionPanel(char, { onExpTake, onExpClaim, onExpDrop }) {
     txt.append(el('span', null, `${t('Bersihkan {n} lantai', { n: e.floors })} · ${t('gerbang di {r}', { r: regionById(e.region).name })}${e.found ? ` · ${tr('sudah ditemukan')}` : ''}${x ? ` · ${x.have}/${x.need}` : ''}`),
       el('span', null, t('+{g} koin · +{e} EXP · +{m} Lencana', { g: rw.gold, e: rw.exp, m: rw.marks })));
     let act;
-    if (done) act = button(tr('Klaim'), 'btn small claim', onExpClaim);
+    if (done) act = button(tr('Klaim'), 'btn small claim', () => onExpClaim());
     else if (e.active) act = button(tr('Batal'), 'btn ghost small', onExpDrop);
     else act = button(tr('Ambil'), 'btn small', () => onExpTake(e.dungeon));
     row.append(ic, txt, act);

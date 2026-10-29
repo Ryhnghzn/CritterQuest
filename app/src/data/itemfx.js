@@ -45,3 +45,7 @@ export const CHEST_FX = {
   beams: [3, 4, 6, 8, 11, 16],   // light beams out of the chest by rarity
   sparks: [6, 8, 12, 18, 26, 40],
 };
+
+// Reward pop-up (ui/reveal.js showRewardPop): seconds between cards popping in, confetti
+// pieces and their life, coins/EXP count-up time, and how long a tap is ignored at first.
+export const REWARD_POP = { stagger: 0.12, confetti: 120, life: 2.6, count: 0.9, guard: 0.45 };

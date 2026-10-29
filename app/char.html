@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perbandingan Karakter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#120e1c;--panel:rgba(32,25,52,.7);--line:rgba(255,255,255,.1);--ink:#f4f0ff;--dim:#a9a2c4;--acc:#ffc94d}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(120% 80% at 50% 0%,#231a38,#0c0914 70%);background-attachment:fixed;color:var(--ink);font-family:'Fredoka',system-ui,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:22px 16px 56px}
+h1{font-size:clamp(24px,4vw,36px);margin:0 0 4px}
+.lead{color:var(--dim);font-size:15px;line-height:1.5;margin:0 0 14px;max-width:820px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.tabs button{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:7px 15px;cursor:pointer}
+.tabs button.on{background:rgba(255,201,77,.18);border-color:var(--acc);color:var(--acc)}
+h2{font-size:21px;margin:22px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:10px 10px 12px;display:flex;flex-direction:column;gap:6px}
+.card h3{margin:0;font-size:15px;display:flex;justify-content:space-between;gap:6px}
+.card h3 span{font-size:12px;color:var(--dim);font-weight:500}
+.card p{margin:0;font-size:13px;color:var(--dim);line-height:1.45}
+canvas{display:block;width:100%;height:auto;border-radius:12px;background:#0b0912}
+canvas.wide{aspect-ratio:auto}
+.note{color:var(--dim);font-size:14px;margin:0 0 10px}
+ul{color:var(--dim);font-size:15px;line-height:1.7;margin:6px 0 0;padding-left:20px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Perbandingan Karakter</h1>
+  <p class="lead">Karakter sekarang (kiri) dibandingkan tiga arah baru dengan proporsi heroik — kepala ±⅙ tinggi badan. Semua bergear Mitos dan digambar lewat kode vektor. Pilih gerakan di bawah.</p>
+  <div class="tabs" id="poses"></div>
+
+  <h2>Warrior</h2>
+  <div class="grid" id="g-warrior"></div>
+
+  <h2>Mage</h2>
+  <div class="grid" id="g-mage"></div>
+
+  <h2>Ukuran di dalam game</h2>
+  <p class="note">Seberapa terbaca saat kecil. Atas: kira-kira ukuran di PC. Bawah: kira-kira ukuran di HP. Urutan: Sekarang · A · B · C · D (Warrior lalu Mage).</p>
+  <canvas id="small" class="wide"></canvas>
+
+  <h2>Di game (sudah terpasang)</h2>
+  <p class="note">Digambar lewat <code>drawDoll</code> asli game. Baris: Warrior, Archer, Mage, Assassin. Kiri ke kanan: tanpa gear, lalu gear tingkat 0–6 dengan rarity naik (Biasa → Mitos). Rambut berganti tiap karakter.</p>
+  <canvas id="ingame" class="wide"></canvas>
+
+  <h2>Catatan</h2>
+  <ul>
+    <li><b>A — Heroik ramping:</b> wajah terlihat, rambut, warna kelas jelas. Paling dekat dengan karakter sekarang, hanya lebih dewasa.</li>
+    <li><b>B — Siluet gelap:</b> badan hampir hitam dengan garis cahaya, mata & rune menyala, jubah compang-camping. Paling misterius; gear kurang terlihat karena semuanya gelap.</li>
+    <li><b>C — Ksatria berpelindung:</b> helm tertutup dengan celah mata menyala / tudung dalam, bahu besar berlapis, permata inti Mitos. Gear paling menonjol.</li>
+    <li><b>D — Gaya Hades:</b> bentuk bersudut, bayangan hitam besar yang tegas, sorot cahaya hangat di sisi terang, cahaya tepi berwarna (merah / toska) di sisi gelap, arsiran komik. Desain sendiri, bukan tokoh Hades.</li>
+    <li>Gerakan (ancang-ancang tebasan, jubah berkibar, condong saat lari) sama untuk A–C; bisa dipakai gaya mana pun.</li>
+    <li>Halaman ini hanya contoh; game belum diubah.</li>
+  </ul>
+</main>
+<script type="module" src="./char/main.js"></script>
+</body>
+</html>

@@ -37,10 +37,10 @@ export function rollBounty(char, rng, others = []) {
     if (kind === 'kill') { target = pick(openEnemies(char), rng); need = Math.max(5, Math.round(need / KILL_WEIGHT[target])); }
     if (kind === 'boss' || kind === 'floors') target = pick(openDungeons(char), rng).id;
     if (kind === 'gold') need = Math.round(need * (1 + 0.05 * (char.level - 1)) / 10) * 10;
-    const b = { kind, target, need, have: 0 };
+    const b = { kind, target, need, have: 0, taken: false };
     if (!others.some((o) => same(o, b))) return b;
   }
-  return { kind: 'elite', target: null, need: between(BOUNTY_KINDS.elite.need, rng), have: 0 };
+  return { kind: 'elite', target: null, need: between(BOUNTY_KINDS.elite.need, rng), have: 0, taken: false };
 }
 
 export function bountyReward(char, b) {
@@ -67,8 +67,31 @@ export function progressOf(b, trip) {
 
 export const isDone = (b) => b.have >= b.need;
 
+// only tasks taken from the board move on
 export function advanceBounties(bounties, trip) {
-  return bounties.map((b) => ({ ...b, have: Math.min(b.need, b.have + progressOf(b, trip)) }));
+  return bounties.map((b) => (b.taken ? { ...b, have: Math.min(b.need, b.have + progressOf(b, trip)) } : b));
+}
+
+// Take a task from the board → { ok, char } | { ok: false, reason: 'none' | 'taken' }
+export function takeBounty(char, i, now) {
+  const b = char.bounties[i];
+  if (!b) return { ok: false, reason: 'none' };
+  if (b.taken) return { ok: false, reason: 'taken' };
+  const c = structuredClone(char);
+  c.bounties[i].taken = true;
+  c.updatedAt = now;
+  return { ok: true, char: c };
+}
+
+// Put a task back (its progress is lost) → { ok, char } | { ok: false, reason: 'none' | 'nottaken' }
+export function dropBounty(char, i, now) {
+  const b = char.bounties[i];
+  if (!b) return { ok: false, reason: 'none' };
+  if (!b.taken) return { ok: false, reason: 'nottaken' };
+  const c = structuredClone(char);
+  c.bounties[i] = { ...b, taken: false, have: 0 };
+  c.updatedAt = now;
+  return { ok: true, char: c };
 }
 
 // Claim a finished bounty: rewards in, a fresh bounty in its place.
@@ -90,6 +113,7 @@ export const rerollPrice = (char) => BOUNTY_REROLL.perLevel * char.level;
 
 export function rerollBounty(char, i, rng, now) {
   if (!char.bounties[i]) return { ok: false, reason: 'none' };
+  if (char.bounties[i].taken) return { ok: false, reason: 'taken' };
   const price = rerollPrice(char);
   if (char.gold < price) return { ok: false, reason: 'gold' };
   const c = structuredClone(char);

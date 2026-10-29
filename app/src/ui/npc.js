@@ -1,7 +1,7 @@
 // NPC dialogs in town (spec §13.2, §15): Inn, potion shop (5 potions + belt),
 // Pandai Besi (chests, selling gear), the dungeon gate (pick a floor) and
 // townsfolk who just talk.
-import { el, button, stage } from './screens.js';
+import { el, button, stage, keepView } from './screens.js';
 import { portrait, HAIR_NAMES, HAIR_PALETTE, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { iconCanvas } from '../art/sprites.js';
 import { gearCanvas } from '../art/gear.js';
@@ -20,7 +20,7 @@ import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js'
 import { bountyList, markShop, expeditionPanel } from './board.js';
 import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
 import { questDef, shards } from '../meta/quests.js';
-import { rewardText, giveLines } from './journal.js';
+import { rewardChips, giveLines } from './journal.js';
 import { SIDE_MAX } from '../data/quests.js';
 import { tr, t, num } from '../i18n.js';
 
@@ -53,11 +53,20 @@ const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
 //        onHaircut(look), onEnter(dungeonId, floor), onClose }
+// The dialog sits docked at the bottom: who speaks on the left (portrait, line, quest,
+// messages), the shop on the right (scrolls on its own). Redraws keep the scroll.
 export function renderNpc(box, npc, ctx) {
+  const tab = { gear: smithTab, jeweler: gemTab, board: boardTab }[npc.role] || '';
+  box.classList.add('dock');
+  keepView(box, `npc:${npc.id}:${tab}`, () => buildNpc(box, npc, ctx));
+}
+
+function buildNpc(box, npc, ctx) {
   if (npc.role !== 'barber') newLook = null;
   const { char, hp, maxHp } = ctx;
   box.replaceChildren();
   const panel = el('div', 'panel npcpanel');
+  const side = el('div', 'npcside'), body = el('div', 'npcbody');
 
   const head = el('div', 'npchead');
   const info = el('div', 'info');
@@ -67,15 +76,15 @@ export function renderNpc(box, npc, ctx) {
   head.append(stage(npc.object ? iconCanvas('zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
   // a quest step said here (spec §26.3) speaks first; the shop stays below it
   const offer = ctx.quests?.[0];
-  panel.append(head, el('div', 'npcline', `“${offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
-  if (offer) panel.append(questBox(offer, ctx.onQuest, char));
+  side.append(head, el('div', 'npcline', `“${offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
+  if (offer) side.append(questBox(offer, ctx.onQuest, char));
 
   if (npc.role !== 'talk') {
     const wallet = el('div', 'records');
     const chips = [t('{n} koin', { n: char.gold }), `HP ${Math.ceil(hp)} / ${Math.round(maxHp)}`];
     if (npc.role === 'board') chips.push(t('{n} Lencana', { n: char.marks }));
     for (const text of chips) wallet.append(el('span', 'hchip', text));
-    panel.append(wallet);
+    side.append(wallet);
   }
 
   const actions = el('div', 'row');
@@ -84,32 +93,32 @@ export function renderNpc(box, npc, ctx) {
     b.id = 'npc-inn';
     actions.append(b);
   } else if (npc.role === 'potion') {
-    panel.append(potionList(char, ctx.onBuyPotion), beltEditor(char, ctx.onBelt));
+    body.append(potionList(char, ctx.onBuyPotion), beltEditor(char, ctx.onBelt));
   } else if (npc.role === 'trainer') {
-    panel.append(trainerList(char, ctx.onUpgrade, ctx.onRespec, ctx.onTalentRespec));
+    body.append(trainerList(char, ctx.onUpgrade, ctx.onRespec, ctx.onTalentRespec));
   } else if (npc.role === 'barber') {
-    panel.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
+    body.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gear') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    panel.append(tabBar([['peti', 'Peti'], ['jual', 'Jual'], ['tempa', 'Tempa'], ['urai', 'Urai']], smithTab, (tab) => { smithTab = tab; redraw(); }));
-    if (smithTab === 'peti') panel.append(chestCards(char, ctx.onBuyChest));
-    else if (smithTab === 'jual') panel.append(sellPanel(char, ctx.onSell, redraw));
-    else if (smithTab === 'tempa') panel.append(forgePanel(char, ctx, redraw));
-    else panel.append(salvagePanel(char, ctx.onSalvage, redraw));
+    body.append(tabBar([['peti', 'Peti'], ['jual', 'Jual'], ['tempa', 'Tempa'], ['urai', 'Urai']], smithTab, (tab) => { smithTab = tab; redraw(); }));
+    if (smithTab === 'peti') body.append(chestCards(char, ctx.onBuyChest));
+    else if (smithTab === 'jual') body.append(sellPanel(char, ctx.onSell, redraw));
+    else if (smithTab === 'tempa') body.append(forgePanel(char, ctx, redraw));
+    else body.append(salvagePanel(char, ctx.onSalvage, redraw));
   } else if (npc.role === 'jeweler') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    panel.append(tabBar([['pasang', 'Soket'], ['gabung', 'Gabung']], gemTab, (tab) => { gemTab = tab; redraw(); }));
-    panel.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
+    body.append(tabBar([['pasang', 'Soket'], ['gabung', 'Gabung']], gemTab, (tab) => { gemTab = tab; redraw(); }));
+    body.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
   } else if (npc.role === 'board') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    panel.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
-    panel.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx) : markShop(char, ctx.onMarkBuy));
+    body.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
+    body.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx) : markShop(char, ctx.onMarkBuy));
   } else if (npc.role === 'gate') {
     // open world (spec §25.5): the town gate only leads out; dungeon gates are found out there
     const x = char.expedition;
     if (x) {
       const where = regionOfDungeon(x.dungeon);
-      panel.append(el('div', 'note exphint', t('Ekspedisi: {d} — gerbangnya di {r} ({a}/{b} lantai)', { d: dungeonById(x.dungeon).name, r: where.name, a: x.have, b: x.need })));
+      body.append(el('div', 'note exphint', t('Ekspedisi: {d} — gerbangnya di {r} ({a}/{b} lantai)', { d: dungeonById(x.dungeon).name, r: where.name, a: x.have, b: x.need })));
     }
     const regs = el('div', 'regions');
     regs.append(el('span', 'note', tr('Keluar ke wilayah:')));
@@ -120,19 +129,19 @@ export function renderNpc(box, npc, ctx) {
       b.dataset.region = r.id;
       regs.append(b);
     }
-    panel.append(regs);
+    body.append(regs);
   } else if (npc.role === 'weapons' || npc.role === 'armor' || npc.role === 'jewelry') {
-    panel.append(displayPanel(char, char.location, npc.role, ctx.onBuyDisplay, () => renderNpc(box, npc, { ...ctx, message: null })));
+    body.append(displayPanel(char, char.location, npc.role, ctx.onBuyDisplay, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'night') {
-    panel.append(nightPanel(char, char.location, ctx, () => renderNpc(box, npc, { ...ctx, message: null })));
+    body.append(nightPanel(char, char.location, ctx, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'storage') {
-    panel.append(storagePanel(char, ctx));
+    body.append(storagePanel(char, ctx));
   } else if (npc.role === 'mats') {
-    panel.append(matsPanel(char, char.location, ctx));
+    body.append(matsPanel(char, char.location, ctx));
   } else if (npc.role === 'teleport') {
-    panel.append(teleportList(char, ctx.onTeleport));
+    body.append(teleportList(char, ctx.onTeleport));
   }
-  if (actions.childElementCount && !actions.parentNode) panel.append(actions);
+  if (actions.childElementCount && !actions.parentNode) (body.childElementCount ? body : side).append(actions);
 
   const msg = el('div', 'npcmsg');
   if (ctx.message) {
@@ -143,7 +152,9 @@ export function renderNpc(box, npc, ctx) {
 
   const close = button(tr('Tutup'), 'btn ghost', ctx.onClose);
   close.id = 'npc-close';
-  panel.append(msg, close);
+  side.append(msg, close);
+  panel.append(side);
+  if (body.childElementCount) panel.append(body); else panel.classList.add('solo');
   box.append(panel);
 }
 
@@ -153,7 +164,7 @@ function questBox(o, onQuest, char) {
   const def = questDef(o.id);
   box.append(el('span', 'pill', def.main ? t('Bab {n}: {title}', { n: def.ch + 1, title: o.title }) : o.title));
   if (o.give) box.append(giveList(o.give, o.can, char));
-  if (o.ends || o.start) box.append(el('div', 'qreward', `${tr('Hadiah')}: ${rewardText(o.reward)}`));
+  if (o.ends || o.start) { const rw = el('div', 'qreward'); rw.append(el('span', 'qrlabel', tr('Hadiah')), rewardChips(char, o.reward)); box.append(rw); }
   const label = o.give ? tr('Serahkan') : o.start ? tr('Terima') : o.ends ? tr('Lapor & ambil hadiah') : tr('Lanjut');
   const b = button(o.give && o.ends ? tr('Serahkan & ambil hadiah') : label, 'btn small', () => onQuest(o.id));
   b.id = 'quest-go';
@@ -366,6 +377,8 @@ function tabBar(tabs, current, onPick) {
 export function renderDungeonGate(box, dungeonId, ctx) {
   const d = dungeonById(dungeonId);
   const rec = ctx.char.records.dungeons[d.id];
+  box.classList.remove('dock', 'still');
+  delete box.dataset.view;
   box.replaceChildren();
   const panel = el('div', 'panel npcpanel gatepanel');
   panel.style.setProperty('--c', `rgb(${d.theme.light})`);

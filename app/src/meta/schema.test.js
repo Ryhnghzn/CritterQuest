@@ -241,6 +241,33 @@ describe('save versi 2', () => {
     expect(r.data.records.bestiary.wraith).toBe(0);
   });
 
+  it('migrasi v18 → v19: rekor Menara Gerhana, Sang Gerhana, belum tamat', () => {
+    const v18 = structuredClone({ ...fresh(), version: 18 });
+    delete v18.records.dungeons.spire; delete v18.records.bestiary.eclipseboss; delete v18.records.ending;
+    const r = readSlot(v18);
+    expect(r.status).toBe('ok');
+    expect(r.data.records.dungeons.spire).toEqual({ bestFloor: 0, clears: 0 });
+    expect(r.data.records.bestiary.eclipseboss).toBe(0);
+    expect(r.data.records.ending).toBe(null);
+  });
+
+  it('migrasi v19 → v20: tugas yang sudah berprogres dianggap sudah diambil', () => {
+    const v19 = structuredClone({ ...fresh(), version: 19 });
+    v19.bounties = v19.bounties.map(({ taken, ...b }, i) => ({ ...b, have: i === 0 ? 4 : 0 }));
+    const r = readSlot(v19);
+    expect(r.status).toBe('ok');
+    expect(r.data.bounties.map((b) => b.taken)).toEqual([true, false, false]);
+    expect(r.data.bounties[0].have).toBe(4);
+  });
+
+  it('menolak tugas belum diambil yang punya progres', () => {
+    const c = fresh();
+    c.bounties[0].have = 2;
+    expect(validateSlot(c)).toContain('bounties');
+    c.bounties[0].taken = true;
+    expect(validateSlot(c)).toEqual([]);
+  });
+
   it('menolak catatan toko & Gudang yang rusak', () => {
     expect(validateSlot({ ...fresh(), shops: { 'mars:weapons': { day: 1, sold: {} } } })).toContain('shops');
     expect(validateSlot({ ...fresh(), shops: { 'rimba:weapons': { day: 1, sold: { 0: 0 } } } })).toContain('shops');
@@ -302,17 +329,24 @@ describe('readSlot', () => {
 });
 
 describe('readSettings', () => {
+  const V5 = { musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far' };
   it('menerima pengaturan versi terkini', () => {
-    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite' };
+    const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite',
+      musicVol: 30, sfxVol: 100, view: '2d', sharp: 'sharp', showFps: true, shake: false, dmgNumbers: false, zoom: 'near' };
     expect(readSettings(s)).toEqual(s);
   });
-  it('memigrasi versi 1 → 4 (autoAttack mati, bahasa Inggris, efek penuh)', () => {
+  it('memigrasi versi 1 → 5 (autoAttack mati, bahasa Inggris, efek otomatis)', () => {
     expect(readSettings({ version: 1, muted: true, lastSlot: 1 }))
-      .toEqual({ version: 4, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'full' });
+      .toEqual({ version: 5, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', ...V5 });
   });
-  it('memigrasi versi 3 → 4 tanpa mengubah bahasa', () => {
+  it('memigrasi versi 3 → 5 tanpa mengubah bahasa', () => {
     expect(readSettings({ version: 3, muted: false, lastSlot: 0, autoAttack: true, lang: 'id' }))
-      .toEqual({ version: 4, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'full' });
+      .toEqual({ version: 5, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'auto', ...V5 });
+  });
+  it('memigrasi versi 4 → 5: Penuh jadi Otomatis, Ringan tetap Ringan', () => {
+    const v4 = { version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' };
+    expect(readSettings({ ...v4, effects: 'full' })).toEqual({ ...v4, version: 5, effects: 'auto', ...V5 });
+    expect(readSettings({ ...v4, effects: 'lite' }).effects).toBe('lite');
   });
   it.each([
     [null],
@@ -324,5 +358,9 @@ describe('readSettings', () => {
     [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' }],
     [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'ultra' }],
     [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full' }],
+    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, musicVol: 120 }],
+    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, view: '3d' }],
+    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, shake: 1 }],
+    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5 }],
   ])('menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); });
 });

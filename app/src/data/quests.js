@@ -4,6 +4,7 @@
 //   town  { town }                  — walk into a town
 //   gate  { dungeon }               — find the dungeon's gate in its region
 //   boss  { dungeon }               — beat the dungeon's boss (its floor 5)
+//   region { region }               — set foot in a region
 //   kill  { enemy, n, region?, show? } — kills of a type (variants count to their kin; show: the
 //         variant named in the text, e.g. the region's own kind of spitter)
 //   elite { n, region?, enemy? }    — elite kills (of a type, when given)
@@ -22,13 +23,13 @@ export const QUEST_REWARD = {
   gold: { base: 40, perLevel: 12 },  // × reward.gold
   exp: { base: 30, perLevel: 10 },   // × reward.exp
 };
-export const SHARDS = 5;              // Pecahan Segel: one from each dungeon boss
+export const SHARDS = 5;              // Pecahan Segel: one from each dungeon boss (chapters 1–5)
 export const SIDE_MAX = 6;            // side quests active at once (the main quest does not count)
 export const GATE_HINT = { r: 1500, jitter: 900 }; // map circle around a gate not yet found
 
 const odo = { town: 'home', npc: 'odo', who: 'Kakek Odo' };
 
-// The main quest, chapter by chapter (spec §26.4). Chapter 6 comes with 9F-4.
+// The main quest, chapter by chapter (spec §26.4).
 export const MAIN = [
   {
     id: 'ch1', title: 'Bayangan di Bawah Tanah',
@@ -83,6 +84,17 @@ export const MAIN = [
       { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Lima pecahan… Gunung ini berhenti bergetar. Bawa semuanya ke Kakek Odo di Kota Awal. Tapi hati-hati: langit di timur Baraapi mulai menggelap.' },
     ],
     reward: { shard: true, gold: 10, exp: 10, gear: { rarity: 4 } },
+  },
+  {
+    id: 'ch6', title: 'Gerhana',
+    steps: [
+      { kind: 'talk', ...odo, say: 'Lima pecahan… Hangatnya terasa sampai ke tulangku. Tapi lihat langit di timur, Nak. Gerhana itu tidak menunggu. Retakan sudah terbuka di balik Baraapi: Tanah Gerhana. Di ujungnya berdiri menaranya. Pergilah, dan akhiri ini.' },
+      { kind: 'region', region: 'eclipse' },
+      { kind: 'gate', dungeon: 'spire' },
+      { kind: 'boss', dungeon: 'spire' },
+      { kind: 'talk', ...odo, say: 'Langitnya… cerah lagi. Kau melakukannya, Nak. Dunia ini berutang padamu, walau sebagian besar tak akan pernah tahu. Terimalah mahkota ini: dulu milik para tetua yang pertama menyegel gerhana. Kini milikmu.' },
+    ],
+    reward: { gold: 15, exp: 15, marks: 10, unique: 'mahkotafajar' },
   },
 ];
 

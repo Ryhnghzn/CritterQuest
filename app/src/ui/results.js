@@ -7,7 +7,11 @@ import { dungeonById } from '../data/dungeons.js';
 import { MATS, MAT_IDS } from '../data/forge.js';
 import { bountyText } from './board.js';
 import { isDone } from '../meta/bounties.js';
+import { ENEMIES } from '../data/enemies.js';
 import { tr, t } from '../i18n.js';
+
+// the boss waiting on a dungeon's last floor
+const bossOf = (id) => ENEMIES[Object.keys(dungeonById(id).floors.at(-1).waves.at(-1).mix).find((k) => ENEMIES[k].boss)]?.name ?? '';
 
 // info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
 // continueLabel: text of the button (default "Kembali ke Kota")
@@ -25,7 +29,7 @@ export function renderResults(box, info, { onContinue, continueLabel = null }) {
     tiles.append(tile);
   }
   const badges = el('div', 'badges');
-  if (trip.cleared) badges.append(el('span', 'badge', tr('Raja Maw tumbang!')));
+  if (trip.cleared) badges.append(el('span', 'badge', t('{name} tumbang!', { name: bossOf(trip.dungeon) })));
   if (newRecord) badges.append(el('span', 'badge', t('Rekor baru: Lantai {n}', { n: trip.floor })));
   if (levelsGained > 0) badges.append(el('span', 'badge mint', t('Naik level! LV {n}', { n: char.level })));
   if (bountiesDone > 0) badges.append(el('span', 'badge mint', t('{n} tugas selesai — klaim di Balai Petualang', { n: bountiesDone })));
@@ -34,7 +38,7 @@ export function renderResults(box, info, { onContinue, continueLabel = null }) {
   const board = el('div', 'rbounties');
   const x = char.expedition; // expedition progress (spec §25.5)
   if (x && x.dungeon === trip.dungeon) board.append(el('div', `rb${x.have >= x.need ? ' done' : ''}`, `${t('Ekspedisi {d}', { d: dungeonById(x.dungeon).name })} — ${x.have}/${x.need}`));
-  for (const b of char.bounties) board.append(el('div', `rb${isDone(b) ? ' done' : ''}`, `${bountyText(b)} — ${b.have}/${b.need}`));
+  for (const b of char.bounties.filter((x) => x.taken)) board.append(el('div', `rb${isDone(b) ? ' done' : ''}`, `${bountyText(b)} — ${b.have}/${b.need}`));
   const notes = el('div', 'sub');
   if (trip.died) notes.textContent = `${tr('Kamu terbangun di kota dengan sisa tenaga.')}${goldLost > 0 ? ` ${t('{n} koin hilang.', { n: goldLost })}` : ''}`;
   const loot = el('div', 'loot');

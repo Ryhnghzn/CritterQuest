@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Uji Three.js</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{--ink:#f4f0ff;--dim:#a9a2c4;--acc:#ffc94d;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#07050c;color:var(--ink);font-family:'Fredoka',system-ui,sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;touch-action:none;-webkit-user-select:none;user-select:none}
+canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;left:12px;top:10px;font-size:13px;line-height:1.5;color:var(--dim);pointer-events:none;text-shadow:0 1px 2px #000}
+#hud b{color:var(--ink)}
+#hp{width:180px;height:9px;background:rgba(0,0,0,.6);margin-top:4px}
+#hp i{display:block;height:100%;width:100%;background:#e0303e}
+.top{position:fixed;top:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:70vw}
+.tb{font:inherit;font-size:12px;font-weight:700;color:var(--ink);background:rgba(15,10,22,.7);border:1.5px solid var(--line);border-radius:6px;padding:7px 11px;cursor:pointer}
+.tb.on{border-color:var(--acc);color:var(--acc)}
+#help{position:fixed;left:12px;bottom:10px;font-size:12px;color:var(--dim);max-width:60vw;pointer-events:none}
+#pad{display:none}
+.touch #pad{display:block}
+.touch #help{display:none}
+#rstick{position:fixed;right:22px;bottom:22px;width:130px;height:130px;border-radius:50%;border:2px solid rgba(255,201,77,.5);background:rgba(20,14,32,.35)}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(255,201,77,.35);border:2px solid rgba(255,201,77,.8);pointer-events:none}
+#skill{position:fixed;right:168px;bottom:40px;width:62px;height:62px;border-radius:50%;font:inherit;font-weight:700;font-size:12px;color:var(--acc);background:rgba(40,28,10,.55);border:2px solid rgba(255,201,77,.7)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;font-size:18px;color:var(--acc);background:#07050c;z-index:9}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="loading">Memuat Three.js…</div>
+  <div id="hud"></div>
+  <div class="top">
+    <button class="tb on" id="bCam">KAMERA: BELAKANG</button>
+    <button class="tb on" id="bQual">KUALITAS: TINGGI</button>
+    <button class="tb" id="bFull">LAYAR PENUH</button>
+  </div>
+  <div id="help"><b>PC</b> — klik layar untuk mengunci mouse (gerakkan = putar kamera), <b>WASD</b> jalan, <b>klik kiri</b> serang, <b>Spasi</b> skill gelombang kejut, <b>C</b> ganti kamera, <b>Q</b> kualitas, <b>Esc</b> lepas mouse.</div>
+  <div id="pad"><div id="rstick"><div id="knob"></div></div><button id="skill">SKILL</button></div>
+</div>
+<script type="module" src="./pov3d/main.js"></script>
+</body>
+</html>

@@ -640,7 +640,7 @@ Atas permintaan pemilik: skill maksimal 4 terpasang + 1 ultimate; teks game teta
 
 Tujuan: target jangka pendek di setiap perjalanan dan bonus permanen kecil untuk grinding jangka panjang. Angka ada di `data/bounties.js` dan `data/collection.js`.
 
-- **Papan Tugas** (Kapten Vera di Balai Petualang): selalu ada **3 tugas**. Progres dihitung dari setiap perjalanan, termasuk perjalanan yang berakhir mati atau menyerah. Jenis tugas:
+- **Papan Tugas** (Kapten Vera di Balai Petualang): selalu ada **3 tugas**. Tugas harus **diambil** dulu (tombol Ambil, gratis); progres hanya dihitung untuk tugas yang sudah diambil, dari setiap perjalanan sesudahnya, termasuk yang berakhir mati atau menyerah. Tugas yang sudah diambil bisa dibatalkan (progresnya hilang) tetapi tidak bisa diganti (perubahan 2026-10-29, save v20). Jenis tugas:
   - **Buru**: kalahkan N musuh jenis tertentu yang muncul di dungeon yang sudah terbuka.
   - **Elite**: kalahkan N musuh elite.
   - **Bos**: kalahkan bos dungeon tertentu.
@@ -866,7 +866,7 @@ Dahulu sebuah gerhana hendak menelan dunia. Para tetua menyegelnya dan memecah s
 | 3 | Busuk di Timur Hutan | bicara Nenek Akar (Rimbawana) → temukan Hutan Jamur → kalahkan bosnya → lapor Nenek Akar | Pecahan 3, gear Epik, permata tk 2 |
 | 4 | Makam di Bawah Pasir | capai Pasirluas → bicara Zahra → temukan Makam Pasir → kalahkan Raja Mumi → lapor Zahra | Pecahan 4, gear Epik, permata tk 3 |
 | 5 | Api yang Tak Padam | capai Baraapi → bicara Ignis → temukan Benteng Lava → kalahkan bosnya → lapor Ignis | Pecahan 5, gear Legendaris |
-| 6 | Gerhana | bicara Kakek Odo → masuk Tanah Gerhana (gerbang Baraapi) → temukan Menara Gerhana → kalahkan Sang Gerhana → epilog | unik quest "Mahkota Fajar" (kalung, semua kelas) |
+| 6 | Gerhana | bicara Kakek Odo → masuk Tanah Gerhana (gerbang Baraapi) → temukan Menara Gerhana → kalahkan Sang Gerhana (epilog) → lapor Kakek Odo | unik quest "Mahkota Fajar" (helm Mitos, semua kelas, damage +70% ke bos & elite), 10 Lencana |
 
 Urutan dungeon sama dengan urutan buka dungeon (§18.3). Rentang level wilayah tetap jadi panduan; tidak ada kunci level.
 
@@ -939,12 +939,13 @@ Hadiah side quest disesuaikan tingkat wilayah/kota: koin & EXP (rumus seperti Pa
   - Musuh khas **Hantu Gerhana**: menghilang (tak bisa dipukul), muncul 130–190 dari pemain, lalu menembak cincin 10 peluru.
   - Peti harta: 4, termasuk Penguasa, seperti wilayah lain.
   - **Save versi 18:** `migrate()` v17 → v18 menambah Hantu Gerhana ke bestiari.
-- **Menara Gerhana:** dungeon keenam, gerbang di titik tetap ujung timur. 5 lantai, kesulitan di atas Benteng Lava; ekspedisi LV 45–50.
+- **Menara Gerhana** (9F-4b): dungeon keenam, terbuka setelah Benteng Lava tamat. Gerbangnya di pita 84–94% lebar Tanah Gerhana (diacak per karakter seperti gerbang lain). 5 lantai berisi musuh gerhana; HP ×8,5, damage ×3,4, hadiah ×6, LV item +32. Ekspedisi LV 45–50.
 - **Sang Gerhana**, bos akhir 3 fase:
-  1. **Matahari Hitam:** cincin & spiral cahaya, sinar berputar.
-  2. **Gerhana** (HP ≤ 66%): arena menggelap (cahaya hanya di sekitar pemain), bergantian memakai satu serangan khas tiap bos dungeon.
-  3. **Kehampaan** (HP ≤ 33%): lebih cepat, lubang hitam yang menarik pemain, memanggil bayangan.
-- **Epilog:** layar cerita singkat dan rangkuman (waktu bermain, kill, bos), lalu kembali ke Kota Awal. Game tetap berlanjut; Menara bisa diulang. Rekor `records.ending` (waktu tamat pertama).
+  1. **Matahari Hitam:** cincin & spiral cahaya, sinar (4 garis dari bos, 3 sapuan yang bergeser), terjangan.
+  2. **Gerhana** (HP ≤ 66%): arena menggelap (cahaya hanya di sekitar pemain). "Gema": memakai cincin/spiral/hantaman salah satu dari lima bos dungeon dengan angka & warnanya, nama bos itu muncul di atas kepalanya.
+  3. **Kehampaan** (HP ≤ 33%): lebih cepat (mengamuk), 2 lubang hitam yang menarik pemain lalu meledak, memanggil Hantu Gerhana.
+  - HP 1500 (dasar). Pergantian fase: jeda sebentar, pengumuman nama fase, guncangan.
+- **Epilog:** muncul sekali setelah Sang Gerhana pertama kali tumbang (setelah layar Hasil Perjalanan): tiga paragraf cerita dan rangkuman (pahlawan, level, hari, perjalanan, kill, bos), lalu kembali. Game tetap berlanjut; Menara bisa diulang. Rekor `records.ending` (waktu tamat pertama).
 - **Save versi 19** (9F-4b): rekor dungeon Menara Gerhana, bos baru di bestiari, `records.ending`.
 
 ### 26.8 Pembagian kerja
@@ -952,6 +953,30 @@ Hadiah side quest disesuaikan tingkat wilayah/kota: koin & EXP (rumus seperti Pa
 - **9F-2:** 16 rumah/orang tersembunyi, side quest-nya, 4 rantai & unik quest, barang quest yang jatuh.
 - **9F-3:** 16 side quest kota.
 - **9F-4:** Tanah Gerhana, Menara Gerhana, Sang Gerhana, bab 6, epilog.
+
+## 28. Perbaikan Pengalaman Pemain (permintaan pemilik 2026-10-29)
+- **Tugas papan wajib diambil** (§24): `bounties[i].taken`; hanya tugas yang diambil yang maju. **Save v20**: `migrate()` v19 → v20 menandai tugas yang sudah berprogres sebagai diambil, sisanya belum. Quest utama tetap otomatis aktif. Langkah quest yang memeriksa riwayat (gerbang, bos, kota, penjaga peti) tetap dihitung dari riwayat, karena penjaga peti hanya bisa dikalahkan sekali.
+- **Pop-up hadiah meriah** saat quest, tugas papan, atau ekspedisi diklaim: judul emas, sinar berputar, konfeti, satu kartu per hadiah (gear dengan ikonnya, permata, Lencana, bahan, ramuan), koin & EXP menghitung naik, "Naik level!", fanfare. Ketuk / Enter / Esc menutup. Angka di `data/itemfx.js` (`REWARD_POP`).
+- **Rincian hadiah quest** di jurnal dan dialog NPC: satu chip per hadiah dengan ikon dan angka pasti (koin & EXP sesuai level sekarang, rarity gear, nama permata, jumlah bahan). Dihitung oleh `rewardPreview()` di `meta/quests.js`, yang juga dipakai saat membayar.
+- **Poin belum dibagi**: angka berdenyut di tombol Karakter (poin atribut + bakat) dan toast setiap kali jumlahnya naik (juga sekali saat karakter dimuat).
+- **UI tidak "ter-reset"**: panel NPC dan panel Karakter digambar ulang di tempat; posisi scroll dipertahankan dan animasi masuk tidak diputar lagi (`keepView` di `ui/screens.js`). Ganti tab tetap mulai dari atas.
+- **Dialog NPC besar menempel di bawah**: kiri potret besar, nama, ucapan, quest, pesan, Tutup; kanan isi toko/papan yang bisa di-scroll sendiri. Warga yang hanya bicara memakai satu kolom lebar. Di layar sempit (≤ 700 px) kedua kolom bertumpuk.
+- **Tampilan 2.5D lebih tajam**: kamera mulai dari jauh (zoom 1.35, rentang 0.85–1.6), resolusi render sampai 2× (Ringan 1×), tekstur tanah, lantai dungeon, karakter, dan NPC beresolusi lebih tinggi + anisotropic filtering. Angka di `SHARP` (`render3d/stage.js`).
+
+## 29. Halaman Masuk, Loading & Pengaturan (permintaan pemilik 2026-10-29)
+Konsep dipilih pemilik dari `app/masuk.html`: **A. Api Unggun** + menu Pengaturan seperti di konsep.
+
+- **Masalah:** saat game dibuka di HP, layar hitam dan tidak bisa disentuh beberapa detik. Penyebab: (1) bundel JS ±1,4 MB diunduh tanpa tampilan apa pun; (2) halaman judul menggambar kota 3D di belakang menu, jadi WebGL, kota, dan semua shader dibangun di frame pertama; (3) masuk kota/wilayah/dungeon membangun dunia 3D dalam satu frame.
+- **Loader awal** di `index.html` (CSS murni, tampil sebelum JS): gerhana kecil berputar + "Memuat…". Hilang saat halaman judul siap.
+- **Halaman judul tanpa 3D:** latar 2D sendiri (api unggun), jadi langsung bisa disentuh. Dunia 3D baru dibangun saat masuk game.
+- **Layar loading** (`ui/loading.js`) setiap kali dunia 3D dibangun (masuk kota dari judul/slot, teleport, keluar ke wilayah, masuk dungeon): gerhana yang menutup sebagai progres, pahlawan (karakter yang dimainkan) berlari, langkah yang sedang dikerjakan, tips bergantian. Pembangunan dipecah per langkah (WebGL → adegan → bangunan/tanah → shader `compileAsync` → frame pertama), dengan jeda frame di antaranya agar layar tetap hidup.
+- **Halaman judul A. Api Unggun:** malam di tepi hutan, empat kelas duduk mengelilingi api unggun (gambar asli game), bara naik, bulan, bintang. Logo "Critter Quest" + slogan. Menu kiri: kartu **Lanjutkan** (petualang terakhir: potret, nama, kelas, LV, lokasi; sekali ketuk langsung main), Pilih Petualang, Pengaturan, EN/ID. Enter = Lanjutkan. HP mendatar: menu tetap kiri, gambar diperkecil.
+- **Menu Pengaturan** (dari halaman judul dan menu Jeda), tersimpan langsung. Pengaturan **versi 5** + `migrate()`:
+  - Suara: `musicVol`, `sfxVol` (0–100), `muted`.
+  - Grafis: `view` ('25d' | '2d'), `effects` ('auto' | 'full' | 'lite'; 'auto' = Penuh lalu turun ke Ringan saat FPS rendah, seperti sekarang), `sharp` ('save' | 'normal' | 'sharp'; mengatur `SHARP`), `showFps`.
+  - Permainan: `autoAttack`, `shake` (guncangan layar), `dmgNumbers` (angka damage), `zoom` ('near' | 'mid' | 'far' = zoom awal kamera).
+  - Bahasa: `lang` (masih memuat ulang halaman).
+  - `migrate()` v4 → v5: `effects` 'full' → 'auto', volume 80/80, `view` '25d', `sharp` 'normal', `zoom` 'far', `shake`/`dmgNumbers` aktif, `showFps` mati.
 
 ## 27. HP Hanya Landscape (permintaan pemilik 2026-10-28)
 - Di HP (layar sentuh, lebar ≤ 900 px) game **hanya bisa dimainkan mendatar**. Dalam posisi tegak muncul kartu "Putar HP-mu ke posisi mendatar". Perjalanan yang sedang berlangsung dijeda saat HP diputar tegak. Di Android, sentuhan pertama mencoba layar penuh + kunci landscape.

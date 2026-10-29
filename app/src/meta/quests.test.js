@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { activeQuests, syncQuests, talkOffers, npcMarks, questTalk, questTarget, shards, mainDone } from './quests.js';
+import { activeQuests, syncQuests, talkOffers, npcMarks, questTalk, questTarget, shards, mainDone, rewardPreview, questDef } from './quests.js';
 import { createCharacter, applyTrip } from './character.js';
 import { applyField, visitTown, gateSpots } from './world.js';
 import { validateSlot } from './schema.js';
@@ -36,6 +36,11 @@ describe('quest utama', () => {
     expect(r.got.items).toHaveLength(1);
     expect(r.got.items[0].rarity).toBe(2);
     expect(r.char.gold).toBeGreaterThan(c.gold);
+    const pv = rewardPreview(c, questDef('ch1').reward); // what the journal promised is what was paid
+    expect(r.got.gold).toBe(pv.gold);
+    expect(r.got.exp).toBe(pv.exp);
+    expect(pv.gear).toEqual({ rarity: 2 });
+    expect(pv.shard).toBe(true);
     expect(r.char.inventory.at(-1)).toEqual(r.got.items[0]);
     expect(r.char.quests.done).toEqual(['ch1']);
     expect(r.char.quests.main).toEqual({ ch: 1, step: 0, prog: 0 }); // ch2: walk into Rimbawana
@@ -69,6 +74,8 @@ describe('quest utama', () => {
     c.level = 30;
     c.found = ['shadow', 'crystal', 'fungus', 'tomb', 'lava'];
     c.towns = ['home', 'rimba', 'beku', 'pasir', 'bara'];
+    c.found.push('spire');
+    c.regions.eclipse = { fog: '' };
     for (const id of Object.keys(c.records.dungeons)) c.records.dungeons[id].clears = 1;
     syncQuests(c);
     let guard = 0;
@@ -80,6 +87,7 @@ describe('quest utama', () => {
     expect(shards(c)).toBe(SHARDS);
     expect(c.quests.done).toEqual(MAIN.map((q) => q.id));
     expect(c.inventory.filter((it) => it.rarity === 4)).toHaveLength(1); // ch5: a Legendary
+    expect(c.inventory.find((it) => it.unique === 'mahkotafajar')).toBeTruthy(); // ch6: the crown
     expect(c.inventory.find((it) => it.rarity === 4).unique).toBeTruthy();
     expect(activeQuests(c)).toEqual([]);
     expect(validateSlot(c)).toEqual([]);
@@ -100,6 +108,19 @@ describe('quest utama', () => {
     let c = talk(make(), 'ch1', 'home', 'odo').char;
     c = applyField(c, { region: 'forest', found: ['shadow'], potions: c.potions, hp: 100 }, 8).char;
     expect(c.quests.main.step).toBe(2);
+  });
+});
+
+describe('pratinjau hadiah', () => {
+  it('koin & EXP mengikuti level, isi lain disalin apa adanya', () => {
+    const rw = { gold: 2, exp: 3, gems: [{ tier: 2 }, { gem: 'ruby', tier: 1 }], marks: 4, mats: { dust: 5 }, potions: { red: 2 }, unique: 'x' };
+    const p1 = rewardPreview(make(), rw), p5 = rewardPreview(make({ level: 5 }), rw);
+    expect(p1.gold).toBe(2 * (40 + 12));
+    expect(p1.exp).toBe(3 * (30 + 10));
+    expect(p5.gold).toBe(2 * (40 + 12 * 5));
+    expect(p1).toMatchObject({ gear: null, unique: 'x', marks: 4, mats: { dust: 5 }, potions: { red: 2 }, shard: false });
+    expect(p1.gems).toEqual([{ gem: null, tier: 2 }, { gem: 'ruby', tier: 1 }]);
+    expect(rewardPreview(make(), {})).toMatchObject({ gold: 0, exp: 0, gems: [], marks: 0 });
   });
 });
 
@@ -342,5 +363,23 @@ describe('side quest kota', () => {
     expect(c.quests.side.t_arne.prog).toBe(0);
     c = field(c, { region: 'ice', killsBy: { spitter: 25 } });
     expect(c.quests.side.t_arne.step).toBe(2);
+  });
+});
+
+describe('bab 6 & akhir cerita (spec §26.7)', () => {
+  it('masuk Tanah Gerhana, temukan menara, kalahkan Sang Gerhana: tamat dicatat sekali', () => {
+    let c = make({ level: 48 });
+    c.quests.main = { ch: 5, step: 1, prog: 0 };
+    c.quests.done = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5'];
+    c = field(c, { region: 'eclipse', found: ['spire'] });
+    expect(c.quests.main.step).toBe(3);                      // region & gate done, now the boss
+    const r = applyTrip(c, trip({ dungeon: 'spire', floor: 5, cleared: true }), 77);
+    expect(r.ending).toBe(true);
+    expect(r.char.records.ending).toBe(77);
+    expect(r.char.quests.main.step).toBe(4);
+    const again = applyTrip(r.char, trip({ dungeon: 'spire', floor: 5, cleared: true }), 99);
+    expect(again.ending).toBe(false);
+    expect(again.char.records.ending).toBe(77);
+    expect(validateSlot(again.char)).toEqual([]);
   });
 });

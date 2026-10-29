@@ -7,7 +7,10 @@ import { MAIN, SHARDS, SIDE_MAX, DROP_ITEMS, SPOTS, hiddenById } from '../data/q
 import { MATS, GEMS, GEM_TIER_NAMES, GEM_IDS } from '../data/forge.js';
 import { POTIONS } from '../data/potions.js';
 import { RARITIES, UNIQUES } from '../data/items.js';
-import { activeQuests, shards, mainDone, spotsDone } from '../meta/quests.js';
+import { activeQuests, shards, mainDone, spotsDone, rewardPreview } from '../meta/quests.js';
+import { gemName } from '../meta/itemgen.js';
+import { gearCanvas } from '../art/gear.js';
+import { iconCanvas } from '../art/sprites.js';
 import { el, button } from './screens.js';
 import { tr, t } from '../i18n.js';
 
@@ -20,6 +23,7 @@ export function stepText(s) {
   switch (s.kind) {
     case 'talk': return t('Bicara dengan {who} di {town}', { who: s.who, town: where(s) });
     case 'town': return t('Pergi ke {town}', { town: town(s.town) });
+    case 'region': return t('Masuki {r} (gerbang {town})', { r: regionById(s.region).name, town: town(regionById(s.region).from) });
     case 'gate': return t('Temukan gerbang {d} di {r}', { d: dungeonById(s.dungeon).name, r: regionOfDungeon(s.dungeon)?.name ?? '' });
     case 'boss': return t('Kalahkan bos {d} (lantai 5)', { d: dungeonById(s.dungeon).name });
     case 'kill': return s.region ? t('Kalahkan {n} {enemy} di {r}', { n: s.n, enemy: ENEMIES[s.show || s.enemy].name, r: regionById(s.region).name }) : t('Kalahkan {n} {enemy}', { n: s.n, enemy: ENEMIES[s.enemy].name });
@@ -52,18 +56,33 @@ export function giveLines(s, char) {
   return out;
 }
 
-// "Pecahan Segel · gear Epik · permata tk 2 · koin & EXP"
-export function rewardText(reward) {
-  const out = [];
-  if (reward.unique) out.push(UNIQUES.find((u) => u.id === reward.unique).name);
-  if (reward.shard) out.push(tr('Pecahan Segel'));
-  if (reward.gear) out.push(t('gear {r}', { r: RARITIES[reward.gear.rarity].name }));
-  for (const g of reward.gems || []) out.push(t('permata tk {n}', { n: g.tier }));
-  if (reward.marks) out.push(t('{n} Lencana', { n: reward.marks }));
-  for (const [m, n] of Object.entries(reward.mats || {})) out.push(`${n} ${MATS[m].name}`);
-  for (const [p, n] of Object.entries(reward.potions || {})) out.push(`${n} ${POTIONS[p].name}`);
-  if (reward.gold || reward.exp) out.push(tr('koin & EXP'));
-  return out.join(' · ');
+// A gear piece to draw in a reward chip (a unique as it is; random gear as an armour of that rarity)
+const pvItem = (char, slot, rarity, unique = null) => ({ id: 'pv', slot, classId: slot === 'weapon' ? char.classId : null, variant: 0, rarity, itemLevel: char.level, base: {}, bonuses: [], unique, plus: 0, sockets: [] });
+
+// The reward spelled out, one chip each with its icon: gear (with its rarity), gems,
+// Lencana, materials, potions, then the exact coins & EXP at the character's level.
+export function rewardChips(char, reward) {
+  const p = rewardPreview(char, reward), box = el('div', 'rwchips');
+  const chip = (icon, text, color = null) => {
+    const c = el('span', 'rwchip');
+    if (color) c.style.setProperty('--c', color);
+    if (icon) c.append(icon);
+    c.append(el('span', null, text));
+    box.append(c);
+  };
+  if (p.shard) chip(iconCanvas('zap', 20), tr('Pecahan Segel'), '#ffd24a');
+  if (p.unique) {
+    const u = UNIQUES.find((x) => x.id === p.unique);
+    chip(gearCanvas(pvItem(char, u.slot, u.rarity, u.id), 26), `${u.name} · ${RARITIES[u.rarity].name}`, RARITIES[u.rarity].color);
+  }
+  if (p.gear) chip(gearCanvas(pvItem(char, 'armor', p.gear.rarity), 26), t('Gear {r} acak · LV {n}', { r: RARITIES[p.gear.rarity].name, n: char.level }), RARITIES[p.gear.rarity].color);
+  for (const g of p.gems) chip(iconCanvas('gem', 20), g.gem ? gemName(g.gem, g.tier) : t('Permata {tier} acak', { tier: GEM_TIER_NAMES[g.tier - 1] }), g.gem ? GEMS[g.gem].color : '#b9a7e8');
+  if (p.marks) chip(el('span', 'markic'), t('{n} Lencana', { n: p.marks }), '#9fe0ff');
+  for (const [m, n] of Object.entries(p.mats)) { const d = el('i', 'matdot'); d.style.background = MATS[m].color; chip(d, `${n} ${MATS[m].name}`, MATS[m].color); }
+  for (const [id, n] of Object.entries(p.potions)) chip(iconCanvas(`pot_${id}`, 20), `${n} ${POTIONS[id].name}`);
+  if (p.gold) chip(el('span', 'coin'), t('+{n} koin', { n: p.gold }), '#e6c27a');
+  if (p.exp) chip(null, t('+{n} EXP', { n: p.exp }), '#8ff5c8');
+  return box;
 }
 
 function questCard(a, main, char, opts) {
@@ -80,7 +99,9 @@ function questCard(a, main, char, opts) {
     if (i === a.state.step && s.kind === 'reach') li.append(el('span', 'qprog', ` ${spotsDone(s, a.state.prog)}/${s.spots.length}`));
     steps.append(li);
   });
-  card.append(steps, el('div', 'qreward', `${tr('Hadiah')}: ${rewardText(a.def.reward)}`));
+  const rw = el('div', 'qreward');
+  rw.append(el('span', 'qrlabel', tr('Hadiah')), rewardChips(char, a.def.reward));
+  card.append(steps, rw);
   const tracked = (char.quests.track || activeQuests(char)[0]?.id) === a.id;
   if (opts?.onTrack || opts?.onAbandon) {
     const row = el('div', 'row qbtns');
@@ -102,7 +123,7 @@ export function renderQuestTab(char, opts = null) {
   const list = activeQuests(char);
   const m = list.find((a) => a.def.main);
   if (m) main.append(questCard(m, true, char, opts));
-  else if (mainDone(char)) main.append(el('div', 'note', tr('Kelima Pecahan Segel sudah terkumpul. Kisahnya berlanjut… (segera)')));
+  else if (mainDone(char)) main.append(el('div', 'note', tr('Kisah utama tamat. Gerhana sudah dikalahkan; Menara Gerhana bisa didaki lagi kapan saja.')));
   const done = MAIN.filter((q) => char.quests.done.includes(q.id));
   if (done.length) {
     const past = el('div', 'qdone');

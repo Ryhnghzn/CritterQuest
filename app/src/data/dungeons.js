@@ -89,7 +89,20 @@ export const DUNGEONS = [
       { waves: [W({ charger: 4, tank: 3, spitter: 4 }, 0.35), W({ lavaboss: 1, charger: 2, spitter: 3 }, 0.5)] },
     ],
   },
+  // Menara Gerhana (spec §26.7): the last dungeon, at the dead end of Tanah Gerhana.
+  {
+    id: 'spire', name: 'Menara Gerhana', short: 'Menara',
+    hpMul: 8.5, dmgMul: 3.4, rewardMul: 6, itemLevel: 32,
+    theme: { floor: ['#1f1530', '#120b1e'], wall: '#3a2a5a', light: '199,155,255', ambient: 'rgba(6,2,14,.82)', decor: 'spire', glow: ['170,110,255', '255,220,140'] },
+    floors: [
+      { waves: [W({ voidslink: 8, voiddart: 6 }, 0.4), W({ voidspitter: 5, wraith: 2 }, 0.4), W({ voidtank: 2, voidslink: 6, shielder: 2 }, 0.35)] },
+      { waves: [W({ wraith: 3, voidspitter: 4 }, 0.4), W({ voidtank: 3, voiddart: 8 }, 0.35), W({ summoner: 2, wraith: 3, healer: 1 }, 0.35)] },
+      { waves: [W({ voidtank: 4, wraith: 3 }, 0.35), W({ voidspitter: 7, voiddart: 6 }, 0.3), W({ shielder: 4, wraith: 4 }, 0.35), W({ summoner: 2, voidtank: 3, voidspitter: 4 }, 0.3)] },
+      { waves: [W({ wraith: 6, voidslink: 10 }, 0.3), W({ voidtank: 5, healer: 2, voidspitter: 6 }, 0.3), W({ shielder: 5, summoner: 2, wraith: 3 }, 0.3), W({ wraith: 6, voidspitter: 8, voiddart: 8 }, 0.25)] },
+      { waves: [W({ wraith: 4, voidtank: 3, voidspitter: 4 }, 0.35), W({ eclipseboss: 1, wraith: 2, voidspitter: 2 }, 0.5)] },
+    ],
+  },
 ];
 export const DUNGEON_IDS = DUNGEONS.map((d) => d.id);
 export const dungeonById = (id) => DUNGEONS.find((d) => d.id === id) || DUNGEONS[0];
-export const BOSS_TYPES = ['boss', 'crystalboss', 'sporeboss', 'tombboss', 'lavaboss'];
+export const BOSS_TYPES = ['boss', 'crystalboss', 'sporeboss', 'tombboss', 'lavaboss', 'eclipseboss'];

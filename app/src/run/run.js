@@ -85,6 +85,7 @@ export class Game {
     this.classId = classId;
     this.enemies.length = 0; this.hits.length = 0;
     this.shots.length = 0; this.hazards.length = 0; this.pulses.length = 0;
+    this.dark = false; // Sang Gerhana's eclipse phases darken the room (spec §26.7)
     this.gems.length = 0;
     this.vfx.clear(); this.floaters.length = 0;
     this.px = 0; this.py = 0;
@@ -343,7 +344,7 @@ export class Game {
     const el = elementOf(h.fx);
     const kind = h.ult ? 'ult' : crit ? 'crit' : 'normal';
     const color = kind === 'normal' ? '#ffffff' : el === 'steel' ? '#ffd166' : PALETTES[el][1];
-    this.addFloater(e.x + rrange(-4, 4), e.y - e.r, String(Math.round(dmg)), color, kind);
+    this.addFloater(e.x + rrange(-4, 4), e.y - e.r, String(Math.round(dmg)), color, kind, true);
     impactFx(this, h, e, crit);
     if (crit) this.addHitStop('crit');
     sfx.hit();
@@ -557,9 +558,10 @@ export class Game {
   }
 
   // kind: 'normal' | 'crit' | 'ult' (data/fx.js FLOATER); plain text uses normal with a longer life
-  addFloater(x, y, text, color, kind = null) {
+  // dmg: a damage number (Settings can hide those, spec §29)
+  addFloater(x, y, text, color, kind = null, dmg = false) {
     const life = kind ? FLOATER[kind].life : 0.8;
-    this.floaters.push({ x, y, text, color, kind: kind || 'normal', life, max: life });
+    this.floaters.push({ x, y, text, color, kind: kind || 'normal', life, max: life, dmg });
   }
   updateFloaters(dt) {
     const F = this.floaters;

@@ -1,4 +1,4 @@
-// Bounty board (spec §24): three tasks at a time, progress from every trip.
+// Bounty board (spec §24): three tasks at a time; a task counts only once it is taken (Ambil).
 //   need: [min, max] rolled count (kill: scaled by the enemy's weight);
 //   weight: how often a kind is rolled. Rewards scale with character level.
 export const BOUNTY_COUNT = 3;
@@ -32,7 +32,7 @@ export const MARK_SHOP = [
 
 // the board of a new (or migrated) character
 export const STARTER_BOUNTIES = [
-  { kind: 'kill', target: 'slink', need: 25, have: 0 },
-  { kind: 'elite', target: null, need: 3, have: 0 },
-  { kind: 'floors', target: 'shadow', need: 3, have: 0 },
+  { kind: 'kill', target: 'slink', need: 25, have: 0, taken: false },
+  { kind: 'elite', target: null, need: 3, have: 0, taken: false },
+  { kind: 'floors', target: 'shadow', need: 3, have: 0, taken: false },
 ];

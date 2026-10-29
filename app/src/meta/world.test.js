@@ -37,6 +37,7 @@ describe('kabut', () => {
 describe('simpan dari wilayah', () => {
   it('EXP, koin, gear, bahan, bestiari, tugas & kabut masuk save', () => {
     const c = make();
+    c.bounties[0].taken = true;
     const item = { id: 'a', slot: 'helm', classId: null, variant: 0, rarity: 1, itemLevel: 3, base: { maxHp: 9 }, bonuses: [], unique: null, plus: 0, sockets: [] };
     const fog = encodeFog(new Uint8Array(fogSize(forest).bytes).fill(1));
     const r = applyField(c, { region: 'forest', fog, exp: 60, gold: 25, kills: 30, killsBy: { slink: 30 }, elites: 1, items: [item], mats: { dust: 2 }, gems: [{ gem: 'ruby', tier: 1 }], hp: 50, potions: pots }, 9);

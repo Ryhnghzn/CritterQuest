@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Kota 2.5D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{--ink:#f4f0ff;--dim:#a9a2c4;--acc:#ffc94d;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#07050c;color:var(--ink);font-family:'Fredoka',system-ui,sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;touch-action:none;-webkit-user-select:none;user-select:none}
+canvas{display:block}
+.bar{position:fixed;top:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:72vw}
+.tb{font:inherit;font-size:12px;font-weight:700;color:var(--ink);background:rgba(15,10,22,.75);border:1.5px solid var(--line);border-radius:6px;padding:7px 11px;cursor:pointer}
+.tb.on{border-color:var(--acc);color:var(--acc)}
+#info{position:fixed;left:12px;top:10px;font-size:12px;color:var(--dim);pointer-events:none;line-height:1.5;text-shadow:0 1px 2px #000}
+#help{position:fixed;left:12px;bottom:10px;font-size:12px;color:var(--dim);pointer-events:none}
+#atk{display:none;position:fixed;right:24px;bottom:24px;width:84px;height:84px;border-radius:50%;font:inherit;font-weight:700;color:var(--acc);background:rgba(40,28,10,.55);border:2px solid rgba(255,201,77,.7)}
+.touch #atk{display:block}.touch #help{display:none}
+#loading{position:fixed;inset:0;display:grid;place-items:center;font-size:18px;color:var(--acc);background:#07050c;z-index:9}
+</style>
+</head>
+<body>
+<div id="stage"><div id="loading">Memuat…</div></div>
+<div id="info"></div>
+<div class="bar" id="bar"></div>
+<div id="help"><b>WASD</b> jalan · <b>klik</b> serang · <b>Q / E</b> putar kamera · tombol di kanan atas: kelas, gear, waktu, kamera</div>
+<button id="atk">SERANG</button>
+<script type="module" src="./kota3d/main.js"></script>
+</body>
+</html>

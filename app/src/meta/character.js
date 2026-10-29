@@ -45,7 +45,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
     inventory: [],
     equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
-    records: { trips: 0, kills: 0, bossKills: 0, dungeons: freshDungeonRecords(), bestiary: freshBestiary(), uniques: [] },
+    records: { trips: 0, kills: 0, bossKills: 0, dungeons: freshDungeonRecords(), bestiary: freshBestiary(), uniques: [], ending: null },
   };
   const err = validateSlot(c);
   if (err.length) throw new Error(t('karakter tidak sah: {list}', { list: err.join(', ') }));
@@ -178,6 +178,8 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   const dr = r.dungeons[trip.dungeon || 'shadow'];
   dr.bestFloor = Math.max(dr.bestFloor, trip.floor);
   dr.clears += trip.cleared ? 1 : 0;
+  const ending = trip.dungeon === 'spire' && trip.cleared && !trip.died && r.ending === null; // the story's end (spec §26.7)
+  if (ending) r.ending = now;
   r.trips += 1;
   r.kills += trip.kills;
   r.bossKills += trip.bossKills;
@@ -213,7 +215,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
     c.gems[gm.gem][gm.tier - 1] += 1;
   }
   c.updatedAt = now;
-  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound };
+  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound, ending };
 }
 
 // Dungeons open one after another: the next once the previous has been cleared (spec §18.3).

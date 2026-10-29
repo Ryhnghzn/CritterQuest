@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Uji Sudut Kamera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#120e1c;--panel:rgba(32,25,52,.7);--line:rgba(255,255,255,.1);--ink:#f4f0ff;--dim:#a9a2c4;--acc:#ffc94d}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(120% 80% at 50% 0%,#231a38,#0c0914 70%);background-attachment:fixed;color:var(--ink);font-family:'Fredoka',system-ui,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:clamp(24px,4vw,36px);margin:0 0 4px}
+.lead{color:var(--dim);font-size:15px;line-height:1.5;margin:0 0 16px;max-width:820px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.tabs button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer}
+.tabs button.on{background:rgba(255,201,77,.18);border-color:var(--acc);color:var(--acc)}
+.stage{position:relative}
+canvas{display:block;width:100%;aspect-ratio:16/10;max-height:72vh;border-radius:16px;background:#07050c;touch-action:none;cursor:crosshair}
+.stage{touch-action:none;-webkit-user-select:none;user-select:none}
+.stage:fullscreen{background:#000}
+.stage:fullscreen canvas{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;border-radius:0}
+@media (pointer:coarse) and (orientation:landscape){canvas{max-height:none;height:94vh;aspect-ratio:auto}}
+#pad{display:none}
+.touch #pad{display:block}
+.tb{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.28);background:rgba(20,14,32,.55);color:#f4f0ff;font:inherit;font-weight:700;font-size:13px;display:grid;place-items:center;overflow:hidden;padding:0;-webkit-tap-highlight-color:transparent}
+.tb.on{border-color:var(--acc);color:var(--acc);background:rgba(60,40,10,.6)}
+.tb:active,.tb.down{transform:scale(.94);background:rgba(255,201,77,.25)}
+.tb i{position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.62) calc(var(--p,0)*1turn),transparent 0);pointer-events:none}
+.tb b{position:relative;font-size:11px;line-height:1.1;text-align:center}
+.sk{width:56px;height:56px}
+#rstick{position:absolute;width:128px;height:128px;right:18px;bottom:18px;border-radius:50%;border:2px solid rgba(255,201,77,.55);background:radial-gradient(circle,rgba(255,201,77,.12),rgba(20,14,32,.5) 70%);touch-action:none}
+#rstick.down{border-color:var(--acc)}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(255,201,77,.35);border:2px solid rgba(255,201,77,.8);display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;pointer-events:none}
+#s1{right:164px;bottom:54px}#s2{right:144px;bottom:117px}#s3{right:92px;bottom:157px}#s4{right:26px;bottom:160px}
+#s5{width:64px;height:64px;right:204px;bottom:172px;border-color:rgba(255,77,109,.7)}
+.top{position:absolute;top:10px;right:10px;display:flex;gap:8px}
+.top .tb{position:static;width:auto;height:34px;border-radius:999px;padding:0 12px;font-size:12px}
+#rotate{display:none;position:absolute;inset:0;place-items:center;text-align:center;background:rgba(8,5,14,.9);border-radius:16px;font-size:18px;color:var(--acc);padding:20px}
+@media (pointer:coarse) and (orientation:portrait){.touch #rotate{display:grid}}
+.ctl{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:12px 0 0;color:var(--dim);font-size:14px}
+.ctl label{display:flex;gap:8px;align-items:center}
+.ctl input{width:160px}
+.help{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:10px 14px;margin:12px 0 0;font-size:14px;color:var(--dim);line-height:1.6}
+.help b{color:var(--ink)}
+kbd{font-family:inherit;font-size:12px;padding:1px 6px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink)}
+h2{font-size:20px;margin:26px 0 8px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:820px){.cards{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
+.card h3{margin:0 0 6px;font-size:16px}
+.card ul{margin:0;padding-left:18px;color:var(--dim);font-size:14px;line-height:1.6}
+.plus{color:#7ee0b4}.min{color:#ff8a8a}
+</style>
+</head>
+<body>
+<main>
+  <h1>Uji Sudut Kamera</h1>
+  <p class="lead">Satu ruangan dungeon yang sama dilihat dari tiga kamera. Karakter dan monster memakai seni asli game. Coba jalan, tembak, pakai skill, dan hindari lingkaran merah bos di tiap mode.</p>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="stage" id="stage">
+    <canvas id="view"></canvas>
+    <div id="pad">
+      <div class="top">
+        <button class="tb" id="bCam">KAMERA</button>
+        <button class="tb" id="bLock">KUNCI</button>
+        <button class="tb" id="bAuto">AUTO</button>
+        <button class="tb" id="bFull">LAYAR PENUH</button>
+      </div>
+      <div id="rstick"><div id="knob">TEMBAK</div></div>
+      <button class="tb sk" id="s1" data-k="1"><i></i><b>1<br>Hujan</b></button>
+      <button class="tb sk" id="s2" data-k="2"><i></i><b>2<br>Tembus</b></button>
+      <button class="tb sk" id="s3" data-k="3"><i></i><b>3<br>Lompat</b></button>
+      <button class="tb sk" id="s4" data-k="4"><i></i><b>4<br>Beruntun</b></button>
+      <button class="tb sk" id="s5" data-k="5"><i></i><b>5<br>ULTI</b></button>
+    </div>
+    <div id="rotate">Putar HP ke posisi mendatar,<br>lalu ketuk LAYAR PENUH</div>
+  </div>
+  <div class="ctl">
+    <label>Sudut kamera <input type="range" id="pitch" min="10" max="89" step="1"> <span id="pitchV"></span></label>
+    <label>Jarak <input type="range" id="dist" min="60" max="2400" step="10"> <span id="distV"></span></label>
+    <label>Sensitivitas putar <input type="range" id="sens" min="0.3" max="2.5" step="0.1" value="1"> <span id="sensV">1.0×</span></label>
+    <label><input type="checkbox" id="follow" style="width:auto"> Kamera ikut otomatis</label>
+  </div>
+  <div class="help" id="help"></div>
+
+  <h2>Catatan</h2>
+  <div class="cards">
+    <div class="card"><h3>Atas (sekarang)</h3><ul>
+      <li class="plus">Musuh dari segala arah terlihat sama jelas</li>
+      <li class="plus">Lingkaran serangan bos paling mudah dibaca</li>
+      <li class="min">Terasa datar, kurang "masuk" ke dunia</li>
+    </ul></div>
+    <div class="card"><h3>Opsi 1 — miring dari belakang</h3><ul>
+      <li class="plus">Ada kedalaman: yang jauh mengecil, lantai & dinding berperspektif</li>
+      <li class="plus">Logika game tidak berubah, kontrol tetap sama</li>
+      <li class="min">Area di belakang (bawah layar) lebih sempit</li>
+    </ul></div>
+    <div class="card"><h3>Opsi 2 — kamera ikut berputar</h3><ul>
+      <li class="plus">Paling terasa "third person"</li>
+      <li class="min">Musuh di belakang tidak terlihat; kontrol harus diubah</li>
+      <li class="min">Seni karakter & monster belum punya tampak belakang (di sini masih tampak samping)</li>
+    </ul></div>
+  </div>
+</main>
+<script type="module" src="./pov/main.js"></script>
+</body>
+</html>

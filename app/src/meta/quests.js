@@ -51,6 +51,7 @@ export function stepMet(char, step) {
     case 'town': return char.towns.includes(step.town);
     case 'gate': return char.found.includes(step.dungeon);
     case 'boss': return (char.records.dungeons[step.dungeon]?.clears || 0) > 0;
+    case 'region': return !!char.regions[step.region];
     case 'guard': { // a chest opens only after its guardian falls; the last one is the overlord's
       const opened = char.treasures[step.region] || [];
       return step.lord ? opened.includes(TREASURE.count - 1) : opened.filter((i) => i < TREASURE.count - 1).length >= (step.n || 1);
@@ -175,12 +176,27 @@ function rewardItem(char, rarity, rng) {
   return makeItem({ slot, classId: char.classId, rarity: Math.max(rarity, SLOTS[slot].minRarity || 0), itemLevel: char.level }, rng);
 }
 
+// What a reward will pay at the character's level, for the journal and the NPC dialog:
+// { gold, exp, gear: { rarity } | null, unique: id | null, gems: [{ gem | null, tier }], marks, mats, potions, shard }
+export function rewardPreview(char, reward) {
+  const lv = char.level, R = QUEST_REWARD;
+  return {
+    gold: Math.round((R.gold.base + R.gold.perLevel * lv) * (reward.gold || 0)),
+    exp: Math.round((R.exp.base + R.exp.perLevel * lv) * (reward.exp || 0)),
+    gear: reward.gear ? { rarity: reward.gear.rarity } : null,
+    unique: reward.unique || null,
+    gems: (reward.gems || []).map((g) => ({ gem: g.gem || null, tier: g.tier })),
+    marks: reward.marks || 0,
+    mats: { ...reward.mats },
+    potions: { ...reward.potions },
+    shard: !!reward.shard,
+  };
+}
+
 // Pays a quest's reward into c (already cloned).
 // → { char, got: { gold, exp, levelsGained, items, gems, shard, marks, mats, potions } }
 function pay(c, reward, rng) {
-  const lv = c.level, R = QUEST_REWARD;
-  const gold = Math.round((R.gold.base + R.gold.perLevel * lv) * (reward.gold || 0));
-  const exp = Math.round((R.exp.base + R.exp.perLevel * lv) * (reward.exp || 0));
+  const { gold, exp } = rewardPreview(c, reward);
   const items = [], gems = [], potions = {};
   if (reward.gear) items.push(rewardItem(c, reward.gear.rarity, rng));
   if (reward.unique) {

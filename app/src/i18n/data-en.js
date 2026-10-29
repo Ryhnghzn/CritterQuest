@@ -136,7 +136,7 @@ const UNIQUE_EN = {
   'Sepatu Kabut': 'Mistwalkers', 'Kalung Mata Naga': "Dragon's Eye Amulet", 'Liontin Keserakahan': 'Pendant of Greed', 'Cincin Sang Bijak': "Sage's Ring", 'Cincin Amarah': 'Ring of Wrath',
   'Taring Raja Maw': "King Maw's Fang", 'Busur Bintang Jatuh': 'Fallen Star Bow', 'Tongkat Kiamat': 'Staff of Ruin', 'Belati Ketiadaan': 'Voidpiercer',
   'Cincin Phoenix': 'Phoenix Ring', 'Zirah Raja Maw': "King Maw's Carapace", 'Mahkota Bayangan': 'Crown of Shadows',
-  'Kalung Akar Tua': 'Old Root Necklace', 'Cincin Bintang Beku': 'Frozen Star Ring', 'Topeng Pasir Abadi': 'Mask of Endless Sand', 'Zirah Sisik Kawah': 'Crater Scale Armor',
+  'Mahkota Fajar': 'Crown of Dawn', 'Kalung Akar Tua': 'Old Root Necklace', 'Cincin Bintang Beku': 'Frozen Star Ring', 'Topeng Pasir Abadi': 'Mask of Endless Sand', 'Zirah Sisik Kawah': 'Crater Scale Armor',
 };
 const CHEST_EN = { 'Peti Gear': 'Gear Chest', 'Peti Agung': 'Grand Chest' };
 
@@ -152,7 +152,7 @@ const MARK_EN = {
 };
 
 const ENEMY_EN = {
-  'Lendir Hampa': 'Void Slime', 'Kelelawar Gerhana': 'Eclipse Bat', 'Katak Hampa': 'Void Frog', 'Golem Gerhana': 'Eclipse Golem', 'Hantu Gerhana': 'Eclipse Wraith',
+  'Sang Gerhana': 'The Eclipse', 'Lendir Hampa': 'Void Slime', 'Kelelawar Gerhana': 'Eclipse Bat', 'Katak Hampa': 'Void Frog', 'Golem Gerhana': 'Eclipse Golem', 'Hantu Gerhana': 'Eclipse Wraith',
   Lendir: 'Ooze', Kelelawar: 'Bat', Golem: 'Golem', 'Lendir Kecil': 'Oozeling', 'Katak Ludah': 'Spitting Toad', 'Babi Batu': 'Stone Boar',
   'Dukun Tengkorak': 'Skull Shaman', 'Peri Lumut': 'Moss Wisp', 'Jamur Bom': 'Bomb Shroom', 'Kura Baja': 'Iron Tortoise',
   'Raja Maw': 'King Maw', 'Golem Kristal': 'Crystal Golem', 'Ratu Spora': 'Spore Queen', 'Raja Lava': 'Lava King',
@@ -160,8 +160,9 @@ const ENEMY_EN = {
   'Lendir Pasir': 'Sand Ooze', 'Burung Nasar': 'Vulture', Kalajengking: 'Scorpion', 'Cacing Pasir': 'Sandworm',
   'Lendir Magma': 'Magma Ooze', 'Jamur Bara': 'Ember Shroom', 'Imp Api': 'Fire Imp', 'Raja Mumi': 'Mummy King',
 };
+const PHASE_NAME_EN = { 'Matahari Hitam': 'Black Sun', 'GERHANA!': 'ECLIPSE!', 'KEHAMPAAN!': 'THE VOID!' };
 const DUNGEON_EN = {
-  'Ruang Bawah Tanah Bayangan': ['Shadow Crypt', 'Shadow'], 'Gua Kristal': ['Crystal Cave', 'Crystal'],
+  'Menara Gerhana': ['Eclipse Spire', 'Spire'], 'Ruang Bawah Tanah Bayangan': ['Shadow Crypt', 'Shadow'], 'Gua Kristal': ['Crystal Cave', 'Crystal'],
   'Hutan Jamur Busuk': ['Rotting Mushroom Forest', 'Fungus'], 'Benteng Lava': ['Lava Fortress', 'Lava'], 'Makam Pasir': ['Sand Tomb', 'Tomb'],
 };
 const POTION_EN = {
@@ -298,12 +299,15 @@ export const NPC_LINE_EN = {
 // quests (spec §26): titles and what people say, keyed by the Indonesian text
 const QUEST_TITLE_EN = {
   "Bayangan di Bawah Tanah": "Shadows Below",
+  "Gerhana": "Eclipse",
   "Kota di Akar Tua": "The Town on Old Roots",
   "Busuk di Timur Hutan": "Rot in the Eastern Wood",
   "Makam di Bawah Pasir": "The Tomb Beneath the Sand",
   "Api yang Tak Padam": "The Undying Fire",
 };
 export const QUEST_LINE_EN = {
+  "Lima pecahan… Hangatnya terasa sampai ke tulangku. Tapi lihat langit di timur, Nak. Gerhana itu tidak menunggu. Retakan sudah terbuka di balik Baraapi: Tanah Gerhana. Di ujungnya berdiri menaranya. Pergilah, dan akhiri ini.": "Five shards… I can feel their warmth in my bones. But look at the eastern sky, child. The eclipse will not wait. A rift has opened beyond Emberfall: the Eclipse Lands. Its spire stands at the far end. Go, and end this.",
+  "Langitnya… cerah lagi. Kau melakukannya, Nak. Dunia ini berutang padamu, walau sebagian besar tak akan pernah tahu. Terimalah mahkota ini: dulu milik para tetua yang pertama menyegel gerhana. Kini milikmu.": "The sky… it's clear again. You did it, child. This world owes you, even if most will never know. Take this crown: it belonged to the elders who first sealed the eclipse. Now it is yours.",
   "Nak, dengarkan orang tua ini. Dahulu sebuah gerhana hendak menelan dunia. Para tetua menyegelnya, lalu memecah segelnya menjadi lima dan menyembunyikannya di tempat-tempat yang dalam. Kini makhluk-makhluk di sana terbangun dan memakan kekuatannya. Yang pertama ada di Ruang Bawah Tanah Bayangan, di Hutan Kelam. Temukan gerbangnya, kalahkan Raja Maw, dan bawa pulang pecahannya.": "Listen to this old man, child. Long ago an eclipse tried to swallow the world. The elders sealed it, broke the seal into five and hid the pieces in deep places. Now the creatures down there have woken and feed on that power. The first lies in the Shadow Crypt, in Gloomwood. Find its gate, defeat King Maw and bring the shard home.",
   "Pecahan Segel! Rasakan dinginnya… Masih ada empat lagi. Pergilah ke timur, ke Rimbawana, kota di akar pohon tertua. Kapten Selasih di Balai Petualang tahu jalan selanjutnya.": "A Seal Shard! Feel how cold it is… Four more remain. Head east to Wildwood, the town on the roots of the oldest tree. Captain Selasih at the Adventurers' Hall knows the way on.",
   "Kakek Odo mengirimmu? Kabar pecahan segel sampai juga ke sini. Pecahan kedua ada di Gua Kristal, di sisi barat Padang Es. Kalahkan penjaganya, lalu beri tahu Kapten Ingrid di Bekubara, kota benteng di ujung timur Padang Es.": "Old Odo sent you? Word of the seal shards reached us too. The second shard is in the Crystal Cave, on the west side of the Frost Plains. Defeat its keeper, then tell Captain Ingrid in Frosthold, the fortress town at the eastern end of the Frost Plains.",
@@ -478,7 +482,7 @@ export function localizeData() {
   for (const r of REGIONS) swap(r, 'name', REGION_EN);
   for (const tw of Object.values(TOWNS)) swap(tw, 'name', TOWN_EN);
   for (const o of MARK_SHOP) { const en = MARK_EN[o.name]; if (en) [o.name, o.desc] = en; }
-  for (const e of Object.values(ENEMIES)) swap(e, 'name', ENEMY_EN);
+  for (const e of Object.values(ENEMIES)) { swap(e, 'name', ENEMY_EN); for (const ph of e.phases || []) swap(ph, 'name', PHASE_NAME_EN); }
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }
   for (const p of Object.values(POTIONS)) { const en = POTION_EN[p.name]; if (en) [p.name, p.desc] = en; }
   for (const m of Object.values(MATS)) swap(m, 'name', MAT_EN);

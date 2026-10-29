@@ -104,6 +104,51 @@ const ECLIPSE = {
     eye(g, r, 0.12, -0.64, 0.09, VOID, 0); eye(g, r, 0.38, -0.66, 0.08, VOID, 0);
     glow(g, 0.0, 0.0, 0.9 * r, '#7a4acc', 0.35);
   },
+  eclipseboss(g, r) { // Sang Gerhana: a floating giant in pitch-black robes, an eclipsed sun behind the head
+    // corona: a black disc ringed by gold-white fire, rays fanning out
+    const cy = -0.72;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * TAU, l = i % 2 ? 1.38 : 1.55;
+      g.beginPath(); g.moveTo(Math.cos(a - 0.08) * 0.62 * r, (cy + Math.sin(a - 0.08) * 0.62) * r);
+      g.lineTo(Math.cos(a) * l * r * 0.95, (cy + Math.sin(a) * l * 0.62) * r);
+      g.lineTo(Math.cos(a + 0.08) * 0.62 * r, (cy + Math.sin(a + 0.08) * 0.62) * r); g.closePath();
+      g.fillStyle = i % 2 ? 'rgba(255,200,110,.45)' : 'rgba(255,236,170,.6)'; g.fill();
+    }
+    glow(g, 0, cy * r, 1.0 * r, '#ffd27a', 0.55);
+    g.restore();
+    g.beginPath(); g.arc(0, cy * r, 0.66 * r, 0, TAU); g.fillStyle = '#fff2c8'; g.fill();
+    g.beginPath(); g.arc(0.04 * r, cy * r, 0.6 * r, 0, TAU); g.fillStyle = '#05030a'; g.fill();
+    // shadow arms behind the body (two each side), clawed hands
+    const shade = P('#1c1430', { hatch: true });
+    for (const [sx, sy, ex, ey] of [[-0.55, -0.1, -1.45, -0.55], [-0.6, 0.25, -1.5, 0.45], [0.55, -0.1, 1.45, -0.6], [0.6, 0.25, 1.5, 0.4]]) {
+      const len = Math.hypot(ex - sx, ey - sy), nx = ((ey - sy) / len) * 0.13, ny = ((sx - ex) / len) * 0.13;
+      part(g, r, [[sx - nx, sy - ny], [(sx + ex) / 2 - nx * 0.9, (sy + ey) / 2 - ny * 0.9 - 0.08], [ex - nx * 0.6, ey - ny * 0.6], [ex + nx * 0.6, ey + ny * 0.6], [(sx + ex) / 2 + nx * 0.9, (sy + ey) / 2 + ny * 0.9 - 0.08], [sx + nx, sy + ny]], shade, 0.1, 0.03);
+      g.strokeStyle = '#d8c4ff'; g.lineWidth = r * 0.045; g.lineCap = 'round';
+      for (const k of [-1, 0, 1]) { g.beginPath(); g.moveTo(ex * r, ey * r); g.lineTo((ex + Math.sign(ex) * 0.14) * r, (ey + k * 0.1 - 0.04) * r); g.stroke(); }
+      g.lineCap = 'butt';
+    }
+    // robe: wide shoulders tapering to a ragged hem (it floats, no feet)
+    const robe = P('#120c1e', { hatch: true });
+    g.save(); g.globalAlpha = 0.6;
+    part(g, r, [[-0.62, 0.9], [-0.42, 1.5], [-0.15, 1.15], [0.05, 1.55], [0.22, 1.12], [0.48, 1.45], [0.62, 0.9]], P('#1a1028'), 0.15);
+    g.restore();
+    part(g, r, [[-0.82, -0.25], [-0.6, -0.55], [0.6, -0.55], [0.82, -0.25], [0.7, 0.55], [0.5, 1.05], [0.2, 0.92], [0.0, 1.12], [-0.22, 0.92], [-0.52, 1.05], [-0.7, 0.55]], robe, 0.5);
+    cracks(g, r, [[[-0.35, -0.4], [-0.2, 0.0], [-0.35, 0.45]], [[0.3, -0.35], [0.2, 0.1], [0.36, 0.6]], [[0.0, 0.2], [0.05, 0.75]]], VOID, 0.04);
+    // hood & the cracked golden mask
+    part(g, r, [[-0.42, -0.5], [-0.46, -0.95], [-0.2, -1.22], [0.2, -1.22], [0.46, -0.95], [0.42, -0.5]], P('#1a1228'), 0.18);
+    part(g, r, [[-0.3, -0.58], [-0.32, -0.92], [0.0, -1.1], [0.32, -0.92], [0.3, -0.58], [0.0, -0.45]], pal('#d0a23a', { hi: '#ffe8a0', rim: 'rgba(255,230,160,.9)' }), 0.1, 0.04);
+    g.beginPath(); g.moveTo(0.06 * r, -1.08 * r); g.lineTo(0.0, -0.86 * r); g.lineTo(0.1 * r, -0.72 * r); g.lineTo(0.02 * r, -0.5 * r);
+    g.lineWidth = r * 0.03; g.strokeStyle = '#3a2410'; g.stroke();
+    eye(g, r, -0.14, -0.8, 0.08, VOID, 0.15); eye(g, r, 0.14, -0.8, 0.08, VOID, -0.15);
+    // floating violet crystal shards
+    const shard = P('#3a2a5a', { hi: '#e2d0ff' });
+    for (const [x, y, s2] of [[-1.15, 0.95, 0.16], [1.2, 0.9, 0.14], [-1.3, -1.15, 0.12], [1.25, -1.2, 0.13], [0.95, 1.35, 0.1]]) {
+      part(g, r, [[x, y - s2 * 1.6], [x + s2 * 0.6, y], [x, y + s2 * 1.2], [x - s2 * 0.6, y]], shard, 0.05, 0.02);
+      glow(g, x * r, y * r, s2 * 2.2 * r, VOID, 0.45);
+    }
+    stars(g, r, [[-0.3, 0.3, 0.05], [0.25, 0.55, 0.04], [0.05, -0.15, 0.04]]);
+  },
 };
 
 export const ECLIPSE_ART = ECLIPSE;

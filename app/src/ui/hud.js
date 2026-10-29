@@ -145,3 +145,16 @@ export function updateQuestTracker(char, show = true) {
   box.classList.toggle('min', qtMin);
   box.classList.remove('hidden');
 }
+
+// Points not yet spent (attributes + talents): a number on the Karakter button that pulses.
+export function updatePointsBadge({ attr, talent }) {
+  const btn = $('charbtn'), n = Math.max(0, attr) + Math.max(0, talent);
+  let b = $('ptsbadge'); // a sibling: the button itself is clipped to its chamfered frame
+  if (!b) { b = document.createElement('span'); b.id = 'ptsbadge'; btn.after(b); }
+  b.classList.toggle('hidden', btn.classList.contains('hidden'));
+  const text = n ? String(n) : '';
+  if (b.textContent === text) return;
+  b.textContent = text;
+  btn.classList.toggle('alert', n > 0);
+  btn.title = n ? `${tr('Karakter (I)')} — ${t('{a} poin atribut · {b} poin bakat', { a: Math.max(0, attr), b: Math.max(0, talent) })}` : tr('Karakter (I)');
+}

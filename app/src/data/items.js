@@ -106,6 +106,7 @@ export const UNIQUES = [
   { id: 'bintangbeku', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Bintang Beku', effect: 'shield', v: 0.12, quest: true },
   { id: 'topengpasir', rarity: 4, slot: 'helm', classId: null, name: 'Topeng Pasir Abadi', effect: 'lifesteal', v: 0.025, quest: true },
   { id: 'sisikkawah', rarity: 4, slot: 'armor', classId: null, name: 'Zirah Sisik Kawah', effect: 'thorns', v: 0.7, quest: true },
+  { id: 'mahkotafajar', rarity: 5, slot: 'helm', classId: null, name: 'Mahkota Fajar', effect: 'bossdmg', v: 0.7, quest: true },
 ];
 
 // Rarity weights per drop source (Biasa … Mitos). LUK multiplies the weights of

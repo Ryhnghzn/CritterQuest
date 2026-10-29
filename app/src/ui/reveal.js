@@ -1,12 +1,17 @@
 // Item reveals (plan "Efek Lebay" §E): opening a chest bought at the smith (the
-// lid flies off, beams in the rarity colour, the item rises out) and the big
-// card shown when a Mitos item is picked up mid-fight. DOM + canvas overlays.
+// lid flies off, beams in the rarity colour, the item rises out), the big
+// card shown when a Mitos item is picked up mid-fight, and the reward pop-up when a
+// quest, bounty or expedition is claimed. DOM + canvas overlays.
 import { el } from './screens.js';
-import { tr } from '../i18n.js';
+import { tr, t } from '../i18n.js';
+import { MATS, GEMS } from '../data/forge.js';
+import { POTIONS } from '../data/potions.js';
+import { REWARD_POP } from '../data/itemfx.js';
+import { iconCanvas } from '../art/sprites.js';
 import { RARITIES, SLOTS, MYTHIC } from '../data/items.js';
 import { CHEST_FX, MYTHIC_PICK } from '../data/itemfx.js';
 import { drawGearIcon, gearCanvas } from '../art/gear.js';
-import { itemName } from '../meta/itemgen.js';
+import { itemName, gemName } from '../meta/itemgen.js';
 import { INK } from '../art/gear.js';
 
 const TAU = Math.PI * 2;
@@ -165,4 +170,86 @@ export function showMythicCard(item) {
   document.body.append(card);
   clearTimeout(cardTimer);
   cardTimer = setTimeout(() => { card.classList.add('out'); setTimeout(() => card.remove(), 400); }, MYTHIC_PICK.card * 1000);
+}
+
+// ——— reward pop-up ———
+// r: { title, sub?, gold, exp, items: [item], gems: [{ gem, tier }], marks, mats: { id: n },
+//      potions: { id: n }, shard, levelsGained } — every part optional.
+// Rays and confetti behind, one card per reward popping in turn, coins & EXP counting up.
+// A tap / Enter / Esc closes it (after a short guard so the claiming tap does not).
+export function showRewardPop(r) {
+  if (typeof document === 'undefined') return;
+  closeReveal();
+  const top = topRarity(r.items || []);
+  const color = r.items?.length ? RARITIES[top].color : '#ffd24a';
+  const box = el('div', 'rwpop');
+  box.style.setProperty('--c', color);
+  const fx = document.createElement('canvas');
+  fx.className = 'rwfx';
+  const rays = el('div', 'rwrays');
+  const title = el('div', 'rwtitle', r.title);
+  const cards = el('div', 'rwcards');
+  const counters = [];
+  const card = (icon, label, c = null, count = 0) => {
+    const k = el('div', 'rwcard');
+    if (c) k.style.setProperty('--c', c);
+    k.style.animationDelay = `${0.35 + cards.childElementCount * REWARD_POP.stagger}s`;
+    const ic = el('div', 'rwic'); if (icon) ic.append(icon);
+    const b = el('b', null, count ? '+0' : label);
+    if (count) counters.push({ el: b, n: count, fmt: label, at: 0.35 + cards.childElementCount * REWARD_POP.stagger });
+    k.append(ic, b);
+    cards.append(k);
+  };
+  if (r.shard) card(iconCanvas('zap', 40), tr('Pecahan Segel'), '#ffd24a');
+  for (const it of r.items || []) card(gearCanvas(it, 52), itemName(it), RARITIES[it.rarity].color);
+  for (const g of r.gems || []) card(iconCanvas('gem', 38), gemName(g.gem, g.tier), GEMS[g.gem].color);
+  if (r.marks) { const m = el('span', 'markic big'); card(m, t('+{n} Lencana', { n: r.marks }), '#9fe0ff'); }
+  for (const [m, n] of Object.entries(r.mats || {})) { if (!n) continue; const d = el('i', 'matdot big'); d.style.background = MATS[m].color; card(d, `+${n} ${MATS[m].name}`, MATS[m].color); }
+  for (const [p, n] of Object.entries(r.potions || {})) if (n) card(iconCanvas(`pot_${p}`, 38), `+${n} ${POTIONS[p].name}`);
+  if (r.gold) card(el('span', 'coin big'), '{n} koin', '#e6c27a', r.gold);
+  if (r.exp) card(el('span', 'rwexp', 'EXP'), '{n} EXP', '#8ff5c8', r.exp);
+  box.append(fx, rays, title);
+  if (r.sub) box.append(el('div', 'rwsub', r.sub));
+  box.append(cards);
+  if (r.levelsGained) box.append(el('div', 'rwlevel', r.levelsGained > 1 ? t('Naik {n} level!', { n: r.levelsGained }) : tr('Naik level!')));
+  box.append(el('div', 'rvhint', tr('Ketuk untuk lanjut')));
+  document.body.append(box);
+
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const W = innerWidth, H = innerHeight;
+  fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr);
+  const g = fx.getContext('2d');
+  const palette = ['#ffd24a', '#ff6b6b', '#7fd8ff', '#8ff5c8', '#ffffff', color];
+  const bits = Array.from({ length: REWARD_POP.confetti }, (_, i) => ({
+    x: W / 2, y: H * 0.36, a: Math.random() * TAU, v: 260 + Math.random() * 520, spin: (Math.random() - 0.5) * 14,
+    w: 4 + Math.random() * 6, h: 3 + Math.random() * 4, c: palette[i % palette.length], delay: (i % 3) * 0.12,
+  }));
+  const t0 = performance.now();
+  let raf = 0;
+  const frame = (now) => {
+    const s = (now - t0) / 1000;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    for (const b of bits) {
+      const k = s - b.delay;
+      if (k <= 0 || k > REWARD_POP.life) continue;
+      const drag = (1 - Math.exp(-k * 2.2)) / 2.2; // fast burst slowing down, then falling
+      const x = b.x + Math.cos(b.a) * b.v * drag, y = b.y + Math.sin(b.a) * b.v * drag + 260 * k * k * 0.5;
+      g.save(); g.translate(x, y); g.rotate(b.spin * k);
+      g.globalAlpha = Math.min(1, (REWARD_POP.life - k) / 0.6);
+      g.fillStyle = b.c; g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h * Math.abs(Math.cos(b.spin * k * 0.7)) + 0.6);
+      g.restore();
+    }
+    for (const c of counters) {
+      const k = clamp01((s - c.at) / REWARD_POP.count);
+      c.el.textContent = `+${t(c.fmt, { n: Math.round(c.n * ease(k)) })}`;
+    }
+    raf = requestAnimationFrame(frame);
+  };
+  raf = requestAnimationFrame(frame);
+  const close = () => { if (performance.now() - t0 > REWARD_POP.guard * 1000) closeReveal(); };
+  const key = (e) => { if (['Enter', 'Escape', ' '].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+  box.addEventListener('click', close);
+  addEventListener('keydown', key, true);
+  active = () => { cancelAnimationFrame(raf); removeEventListener('keydown', key, true); box.remove(); };
 }

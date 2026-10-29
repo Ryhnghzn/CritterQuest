@@ -132,6 +132,28 @@ export const ENEMIES = {
     windup: 0.8, dash: { speed: 440, time: 0.55 }, rest: 0.6,
     summon: { type: 'scorpion', count: 2, max: 4 },
   },
+  // Sang Gerhana (Menara Gerhana, spec §26.7): three phases by HP —
+  //   1 Matahari Hitam: rings, spirals, sweeping beams;
+  //   2 Gerhana (≤ 66%): the arena goes dark; echoes one attack of each dungeon boss;
+  //   3 Kehampaan (≤ 33%): faster, black holes that pull, calls shadows.
+  eclipseboss: {
+    name: 'Sang Gerhana', boss: true, hp: 1500, speed: 36, dmg: 34, r: 36, xp: 0, sprite: 'eclipseboss', score: 200,
+    ai: 'boss', every: 2.2, enrageAt: 0.33, enragedEvery: 1.3,
+    patterns: ['ring', 'spiral', 'beam'],
+    phases: [
+      { at: 1, name: 'Matahari Hitam', patterns: ['ring', 'spiral', 'beam', 'charge'] },
+      { at: 0.66, name: 'GERHANA!', patterns: ['echo', 'echo', 'beam'], dark: true },
+      { at: 0.33, name: 'KEHAMPAAN!', patterns: ['hole', 'spiral', 'echo', 'beam', 'summon'], dark: true },
+    ],
+    echo: ['boss', 'crystalboss', 'sporeboss', 'tombboss', 'lavaboss'],
+    ring: { count: 20, speed: 150, dmg: 15, waves: 3, gap: 0.4, r: 8, color: '#c79bff' },
+    spiral: { arms: 4, time: 2.6, every: 0.1, speed: 160, dmg: 13, turn: 2.6, r: 7, color: '#ffe08a' },
+    slam: { count: 5, gap: 0.35, fuse: 0.8, radius: 85, dmg: 34 },
+    beam: { count: 4, sweeps: 3, gap: 0.55, fuse: 0.75, len: 520, w: 34, turn: 0.4, dmg: 32 },
+    hole: { count: 2, r: 110, fuse: 2.4, pull: 120, dmg: 36 },
+    windup: 0.75, dash: { speed: 500, time: 0.5 }, rest: 0.5,
+    summon: { type: 'wraith', count: 2, max: 4 },
+  },
   // Raja Lava (Benteng Lava): heavy fire slams and fire rings.
   lavaboss: {
     name: 'Raja Lava', boss: true, hp: 900, speed: 34, dmg: 30, r: 34, xp: 0, sprite: 'lavaboss', score: 100,

@@ -28,6 +28,7 @@ export const BESTIARY = {
   sporeboss: { stat: 'maxHp', v: 20 },
   tombboss: { stat: 'crit', v: 1 },
   lavaboss: { stat: 'critDmg', v: 0.05 },
+  eclipseboss: { stat: 'atk', v: 3 },
 };
 export const BESTIARY_IDS = Object.keys(BESTIARY);
 

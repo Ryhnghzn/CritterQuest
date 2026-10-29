@@ -205,3 +205,36 @@ describe('Hantu Gerhana (spec §26.7)', () => {
     expect(e.mode).toBe('walk');
   });
 });
+
+describe('Sang Gerhana (spec §26.7)', () => {
+  it('berganti fase saat HP turun: gelap di fase 2 & 3, pola sesuai fase', () => {
+    const g = start();
+    const e = place(g, 'eclipseboss', 300, 0);
+    step(g, 2);
+    expect(e.phase || 0).toBe(0);
+    expect(g.dark).toBe(false);
+    e.hp = e.maxHp * 0.6;
+    step(g, 2);
+    expect(e.phase).toBe(1);
+    expect(g.dark).toBe(true);
+    e.hp = e.maxHp * 0.3;
+    step(g, 2);
+    expect(e.phase).toBe(2);
+  });
+
+  it('sinar melukai pemain yang berdiri di jalurnya saat meledak', () => {
+    const g = start();
+    g.hazards.push({ kind: 'line', x: g.px - 200, y: g.py, x2: g.px + 200, y2: g.py, w: 34, t: 0.05, max: 0.5, dmg: 50 });
+    const hp = g.stats.hp;
+    step(g, 6);
+    expect(g.stats.hp).toBeLessThan(hp);
+  });
+
+  it('lubang hitam menarik pemain lalu meledak', () => {
+    const g = start();
+    const x0 = g.px;
+    g.hazards.push({ kind: 'hole', x: g.px + 150, y: g.py, r: 110, t: 1, max: 1, dmg: 40, pull: 120 });
+    step(g, 30);
+    expect(g.px).toBeGreaterThan(x0 + 20);
+  });
+});

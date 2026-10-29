@@ -9,27 +9,38 @@ import { View } from './render/view.js';
 import { Lighting } from './render/light.js';
 import { Renderer } from './render/world.js';
 import { TownRenderer } from './render/town.js';
+import './ui/theme-dark.css'; // dark UI theme (plan "Tampilan 2.5D" §5)
+import { Dungeon25 } from './render3d/dungeon.js';
+import { Field25 } from './render3d/field.js';
+import { Town25 } from './render3d/town.js';
+import { Stage, setSharpScale } from './render3d/stage.js';
+import { SHARP_SCALE, ZOOM_START } from './data/settings.js';
+import { renderSettings } from './ui/settings.js';
+import { freshSettings } from './meta/schema.js';
 import { CLASSES, CLASS_BASE } from './data/classes.js';
 import { iconCanvas } from './art/sprites.js';
 import { input, pollMove, consumePressed } from './core/input.js';
-import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, sfx } from './core/audio.js';
+import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, setVolumes, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
-import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate } from './meta/character.js';
+import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate, spentPoints } from './meta/character.js';
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
 import { codexFx } from './meta/collection.js';
-import { claimBounty, rerollBounty, buyWithMarks } from './meta/bounties.js';
-import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf } from './meta/talents.js';
+import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
+import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
 import { itemName, makeItem, statText, gemName } from './meta/itemgen.js';
 import { renderCheat, CHEAT_ON } from './ui/cheat.js';
-import { showChestOpen, showMythicCard } from './ui/reveal.js';
+import { showChestOpen, showMythicCard, showRewardPop } from './ui/reveal.js';
+import { showLoading, loadingStep, hideLoading } from './ui/loading.js';
+import { renderTitle } from './ui/title.js';
+import { drawCampfire } from './art/titlebg.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
-import { CHAR_LEVEL_MAX, INVENTORY_MAX } from './data/balance.js';
+import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
@@ -45,12 +56,14 @@ import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
 import { renderResults } from './ui/results.js';
+import { renderEnding } from './ui/ending.js';
 import { renderNpc, renderDungeonGate } from './ui/npc.js';
 import { renderCharPanel, setCharTab } from './ui/charpanel.js';
 import { stepText } from './ui/journal.js';
-import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest } from './meta/quests.js';
+import { bountyText } from './ui/board.js';
+import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest, questDef } from './meta/quests.js';
 import { SHARDS, DROP_ITEMS } from './data/quests.js';
-import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker } from './ui/hud.js';
+import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker, updatePointsBadge } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
 import { FpsWatch, activeQuality } from './run/vfx.js';
 import { setRarity } from './art/auratier.js';
@@ -61,6 +74,15 @@ const view = new View($('game'));
 const lighting = new Lighting(view);
 const R = new Renderer(view, lighting);
 const TR = new TownRenderer(view, lighting);
+// 2.5D view (plan "Tampilan 2.5D"): dungeons for now; ?2d keeps the flat view
+const STAGE = new Stage(view.c); // one WebGL canvas shared by the 2.5D scenes
+const R3 = new Dungeon25(view, R, STAGE);
+const R4 = new Field25(view, R, STAGE);
+const T3 = new Town25(view, TR, STAGE);
+const URL_2D = new URLSearchParams(location.search).has('2d');
+let FLAT = URL_2D; // the flat 2D view: ?2d or Settings → Tampilan 2D (applySettings)
+const runView = () => (FLAT ? R : game.field ? R4 : game.room ? R3 : R);
+function drawRunView(t) { T3.hide(); const r = runView(); if (r !== R3) R3.hide(); if (r !== R4) R4.hide(); r.draw(game, t); }
 const game = new Game();
 setupTouch();
 
@@ -78,6 +100,7 @@ let fieldSaveT = 0;    // seconds since the last save in a region (spec §25.1)
 let minimapT = 0;
 let dungeonReturn = null; // { region, x, y }: a dungeon entered from a gate in a region (spec §25.5)
 let worldClock = 0;    // in-game minutes since day 1 (spec §18.4); written to the save on every save
+let worldLoading = false; // a 3D place is being built behind the loading screen: no drawing, no simulation
 
 // ——— save + settings ———
 const store = await openStore();
@@ -86,29 +109,22 @@ if (!store.persistent) $('nosave').classList.remove('hidden');
 function legacyMuted() {
   try { return localStorage.getItem('cs-muted') === '1'; } catch (_) { return false; }
 }
-const settings = (await store.loadSettings()) ?? { version: 4, muted: legacyMuted(), lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full' };
+const settings = (await store.loadSettings()) ?? freshSettings(legacyMuted());
 // language first: everything below renders in it (spec §23)
 setLang(settings.lang);
 localizeData();
 applyDom();
 document.documentElement.lang = settings.lang;
 // switching language saves the setting and reloads, so every screen is rebuilt in it
-function switchLang() {
-  settings.lang = getLang() === 'en' ? 'id' : 'en';
+function switchLang(lang = getLang() === 'en' ? 'id' : 'en') {
+  settings.lang = lang;
   store.saveSettings(settings).finally(() => location.reload());
 }
-for (const id of ['langbtn', 'langbtn2']) {
-  $(id).textContent = getLang() === 'en' ? 'EN · ID' : 'ID · EN';
-  $(id).addEventListener('click', switchLang);
-}
-setMuted(settings.muted);
-$('mute').classList.toggle('muted', settings.muted);
 
 function renderAuto() {
   $('autobtn').classList.toggle('on', settings.autoAttack);
   $('autobtn').setAttribute('aria-pressed', String(settings.autoAttack));
 }
-renderAuto();
 
 function toggleAuto() {
   settings.autoAttack = !settings.autoAttack;
@@ -116,25 +132,51 @@ function toggleAuto() {
   saveSettings();
 }
 
-// Effects level (pause menu, plan "Efek Lebay" §A): full / lite. Full drops to lite for
-// the session when FPS stays low in a fight; choosing again clears that.
+// Effects level (Settings → Grafis, plan "Efek Lebay" §A): auto / full / lite. Auto drops to
+// lite for the session when FPS stays low in a fight; choosing again clears that.
 const TOUCH = matchMedia('(pointer: coarse)').matches;
 const fpsWatch = new FpsWatch();
-const fpsMeter = new FpsWatch({ fps: 0, seconds: Infinity }); // cheat panel readout only
+const fpsMeter = new FpsWatch({ fps: 0, seconds: Infinity }); // FPS readout only
 let fxForcedLite = false, fpsShown = false;
 function applyEffects() {
   const id = activeQuality(settings.effects, fxForcedLite), q = QUALITY[id];
   game.vfx.setQuality(q, TOUCH ? q.touchCap : q.cap);
-  R.shakeOn = q.shake;
-  $('fxbtn').textContent = id === 'full' ? tr('Efek: Penuh') : fxForcedLite ? tr('Efek: Ringan (otomatis)') : tr('Efek: Ringan');
+  R.shakeOn = q.shake && settings.shake;
 }
-applyEffects();
-$('fxbtn').addEventListener('click', () => {
-  settings.effects = activeQuality(settings.effects, fxForcedLite) === 'full' ? 'lite' : 'full';
-  fxForcedLite = false; fpsWatch.reset();
+
+// Everything the Settings menu controls (spec §29), applied at start and after each change.
+function applySettings() {
+  setMuted(settings.muted);
+  setVolumes(settings.musicVol, settings.sfxVol);
+  $('mute').classList.toggle('muted', settings.muted);
+  renderAuto();
   applyEffects();
+  R.numbersOn = settings.dmgNumbers;
+  fpsShown = settings.showFps; fpsMeter.reset();
+  $('fps').classList.toggle('hidden', !fpsShown);
+  setSharpScale(SHARP_SCALE[settings.sharp]);
+  STAGE.resize();
+  const flat = URL_2D || settings.view === '2d';
+  if (flat !== FLAT) { FLAT = flat; T3.hide(); R3.hide(); R4.hide(); }
+}
+applySettings();
+STAGE.setZoom(ZOOM_START[settings.zoom]);
+
+function changeSetting(key, value) {
+  if (key === 'lang') { switchLang(value); return; }
+  settings[key] = value;
+  if (key === 'effects') { fxForcedLite = false; fpsWatch.reset(); }
+  if (key === 'zoom') STAGE.setZoom(ZOOM_START[value]);
+  applySettings();
+  if (key === 'sfxVol') { ensureAudio(); sfx.gem(); } // a sample at the new volume
   saveSettings();
-});
+}
+function openSettings() {
+  const box = $('settings');
+  const close = () => { box.classList.add('hidden'); if (screen === 'title') showTitle(); };
+  renderSettings(box, settings, { onChange: changeSetting, onClose: close });
+  box.classList.remove('hidden');
+}
 
 function saveSettings() {
   store.saveSettings(settings).catch(() => { /* settings are a convenience; ignore */ });
@@ -203,7 +245,29 @@ async function toSlots() {
 
 function openSlot(slot) {
   const e = slots[slot];
+  ptsSeen = 0; // a character just loaded: say so once if points wait to be spent
   if (e.status === 'ok') enterTown(e.data, 'spawn');
+}
+
+// Points waiting to be spent — mid-trip the level is the trip's and the points spent in it count.
+let ptsSeen = 0;
+function pointsLeft() {
+  const run = scene === 'run', lv = run ? game.level : current.level;
+  const tripSpent = run ? Object.values(tripAttrs).reduce((a, b) => a + b, 0) : 0;
+  return { attr: POINTS_PER_LEVEL * (lv - 1) - spentPoints(current) - tripSpent, talent: talentPoints(lv) - spentTalents(current) };
+}
+// The badge on the Karakter button, and a toast whenever the count goes up.
+function checkPoints() {
+  if (!current) return;
+  const p = pointsLeft(), n = p.attr + p.talent;
+  updatePointsBadge(p);
+  if (n > ptsSeen) {
+    const bits = [];
+    if (p.attr > 0) bits.push(t('{n} poin atribut', { n: p.attr }));
+    if (p.talent > 0) bits.push(t('{n} poin bakat', { n: p.talent }));
+    toast(t('{what} belum dibagi — buka Karakter (I)', { what: bits.join(' & ') }));
+  }
+  ptsSeen = n;
 }
 
 function toCreate(slot) {
@@ -246,6 +310,19 @@ function enterTown(char, at) {
   $('banner').style.opacity = 0; // a region / floor title may still be fading
   showTownOverlay(null);
   updateTownHUD(current, town);
+  loadWorld(T3.needsWarm(town), (step) => T3.warm(town, avatarOf(current), current.location, step));
+}
+
+// Builds a 3D place behind the loading screen (spec §29) when it is not built yet.
+async function loadWorld(needed, warm, last = 'people') {
+  if (FLAT || !needed || worldLoading) return;
+  worldLoading = true;
+  showLoading(current && avatarOf(current));
+  try { await warm(loadingStep); } catch (e) { console.error(e); } // the first frame builds whatever is left
+  await loadingStep(0.92, last);
+  worldLoading = false; // the first (heaviest) frames draw under the loading screen
+  await loadingStep(0.96);
+  await hideLoading();
 }
 
 // Copies the live town HP into the character (whole number, null when full).
@@ -291,18 +368,20 @@ function openNpc(npc, message = null) {
       } else openNpc(townNpc);
     },
     onHaircut: (look) => serve((c, now) => changeLook(c, look, now), tr('Nah, rapi sekali! Cocok untukmu.')),
-    onBountyClaim: (i) => serve((c, now) => claimBounty(c, i, Math.random, now), (r) => ({
+    onBountyClaim: (i, sub = bountyText(current.bounties[i])) => serve((c, now) => claimBounty(c, i, Math.random, now), (r) => (rewardPop(tr('Tugas selesai!'), sub, { ...r.reward, mats: { dust: r.reward.dust } }, r.levelsGained), {
       text: t('Tugas selesai! +{g} koin, +{e} EXP, +{d} {dust}, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, d: r.reward.dust, dust: MATS.dust.name, m: r.reward.marks })
         + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a',
     })),
     onBountyReroll: (i) => serve((c, now) => rerollBounty(c, i, Math.random, now), tr('Tugas baru ditempel di papan.')),
+    onBountyTake: (i) => serve((c, now) => takeBounty(c, i, now), tr('Tugas diambil. Progresnya mulai dihitung dari perjalanan berikutnya.')),
+    onBountyDrop: (i) => serve((c, now) => dropBounty(c, i, now), tr('Tugas dikembalikan ke papan.')),
     onMarkBuy: (id) => serve((c, now) => buyWithMarks(c, id, Math.random, now), (r) => (r.item
       ? { text: t('Kau mendapat {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color }
       : r.gem ? t('Kau mendapat {gem}!', { gem: gemName(r.gem.gem, r.gem.tier) }) : tr('Bahan masuk ke tasmu.'))),
     onEnter: enterDungeon,
     onExpTake: (id) => serve((c, now) => takeExpedition(c, id, now), (r) => t('Ekspedisi diterima: {d}. Gerbangnya kutandai di petamu.', { d: dungeonById(r.char.expedition.dungeon).name })),
     onExpDrop: () => serve(dropExpedition, tr('Ekspedisi dibatalkan.')),
-    onExpClaim: () => serve(claimExpedition, (r) => ({ text: t('Ekspedisi tuntas! +{g} koin, +{e} EXP, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, m: r.reward.marks }) + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a' })),
+    onExpClaim: (sub = current.expedition && dungeonById(current.expedition.dungeon).name) => serve(claimExpedition, (r) => (rewardPop(tr('Ekspedisi tuntas!'), sub, r.reward, r.levelsGained), { text: t('Ekspedisi tuntas! +{g} koin, +{e} EXP, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, m: r.reward.marks }) + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a' })),
     onExplore: (id) => explore(id, regionById(id).from === current.location ? 'west' : 'east'),
     onTeleport: travel,
     onDeposit: (ids) => serve((c, now) => deposit(c, ids, now), null),
@@ -321,7 +400,7 @@ const REFUSE = {
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
-  marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh — selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.',
+  marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh — selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.', taken: 'Tugas itu sudah kau ambil.', nottaken: 'Tugas itu belum kau ambil.',
   mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', stashfull: 'Gudang sudah penuh.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
@@ -362,8 +441,16 @@ function questText(r) {
   if (g.marks) bits.push(t('+{n} Lencana', { n: g.marks }));
   for (const [m, n] of Object.entries(g.mats)) bits.push(`+${n} ${MATS[m].name}`);
   for (const [p, n] of Object.entries(g.potions)) bits.push(`+${n} ${POTIONS[p].name}`);
-  if (g.items.length) showChestOpen(g.items[0]);
+  rewardPop(tr('Quest selesai!'), questDef(r.id)?.title, g, g.levelsGained);
   return { text: `${tr('Quest selesai!')} ${bits.join(' · ')}${g.levelsGained ? ` ${tr('Naik level!')}` : ''}`, color: '#ffd24a' };
+}
+
+// The festive pop-up over whatever is open when a reward is claimed.
+function rewardPop(title, sub, reward, levelsGained = 0) {
+  ensureAudio();
+  sfx.fanfare();
+  if (levelsGained) sfx.levelup();
+  showRewardPop({ title, sub, ...reward, levelsGained });
 }
 
 // A toast when the tracked quest moved on by itself (a gate found, a boss beaten, a town reached).
@@ -519,6 +606,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   });
   tripAttrs = {};
   setupRunUI();
+  await loadWorld(R3.needsWarm(game), (step) => R3.warm(game, step), 'foes');
 }
 
 // Skill / ultimate buttons, the avatar and the pause menu for a dungeon trip or a region.
@@ -549,6 +637,11 @@ async function explore(regionId, at = 'west') {
   scene = 'run';
   ensureAudio(); startMusic();
   const region = regionById(regionId);
+  if (!current.regions[regionId]) { // first steps in a region count at once (a quest may wait for it)
+    const before = current;
+    current = syncQuests({ ...structuredClone(current), regions: { ...current.regions, [regionId]: { fog: '' } } });
+    questNews(before);
+  }
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
@@ -563,6 +656,7 @@ async function explore(regionId, at = 'west') {
   tripAttrs = {};
   fieldSaveT = 0;
   setupRunUI();
+  await loadWorld(R4.needsWarm(game), (step) => R4.warm(game, step), 'foes');
 }
 
 // This character's dungeon gates in a region and where the expedition arrow points.
@@ -724,8 +818,9 @@ async function endRun(died) {
   // back out of a gate in a region (gold portal), or wake in town (spec §25.5)
   const back = !died && dungeonReturn;
   dungeonReturn = null;
+  const go = () => (back ? explore(back.region, { x: back.x, y: back.y }) : enterTown(current, 'gate'));
   renderResults($('results'), { ...applied, trip, newRecord, saveError },
-    { onContinue: () => (back ? explore(back.region, { x: back.x, y: back.y }) : enterTown(current, 'gate')),
+    { onContinue: applied.ending ? () => { renderEnding($('ending'), current, go); showMenu('ending'); } : go,
       continueLabel: back ? t('Kembali ke {r}', { r: regionById(back.region).name }) : null });
   showMenu('results');
 }
@@ -738,11 +833,11 @@ function resume() {
 }
 
 // ——— buttons ———
-$('play').addEventListener('click', () => { ensureAudio(); toSlots(); });
-$('slotsback').addEventListener('click', () => showMenu('title'));
+$('slotsback').addEventListener('click', showTitle);
 $('resume').addEventListener('click', resume);
 $('surrender').addEventListener('click', () => { game.surrender(); endRun(true); });
 $('toslots').addEventListener('click', toSlots);
+$('pausesettings').addEventListener('click', openSettings);
 $('pausebtn').addEventListener('click', () => {
   if (scene === 'run' && game.state === ST.PLAY) pause();
   else if (scene === 'town' && screen === null) townPause();
@@ -824,7 +919,7 @@ const cheatActions = {
   mats: () => cheatChar((c) => { c.mats.dust += 500; c.mats.crystal += 100; c.mats.core += 20; }, 'Material bertambah'),
   gems: () => cheatChar((c) => { for (const g in c.gems) c.gems[g][0] += 6; }, 'Permata bertambah'),
   marks: () => cheatChar((c) => { c.marks += 10; }, 'Lencana bertambah'),
-  bounties: () => cheatChar((c) => { for (const bt of c.bounties) bt.have = bt.need; }, 'Semua tugas selesai'),
+  bounties: () => cheatChar((c) => { for (const bt of c.bounties) { bt.taken = true; bt.have = bt.need; } }, 'Semua tugas selesai'),
   unlockFloors: () => cheatChar((c) => {
     for (const d of DUNGEONS) { const r = c.records.dungeons[d.id]; r.bestFloor = 5; r.clears = Math.max(1, r.clears); }
     c.found = DUNGEONS.map((d) => d.id);
@@ -910,12 +1005,13 @@ addEventListener('pointerdown', function lockLandscape() {
 // ——— keyboard shortcuts ———
 input.onAction.push((code) => {
   if (CHEAT_ON && code === 'Backquote') { toggleCheat(); return; }
+  if (!$('settings').classList.contains('hidden')) { if (code === 'Escape') $('settings-close').click(); return; } // Settings open: keys stay there
   if (code === 'KeyM') { // the map in a region, mute elsewhere
     if (scene === 'run' && game.field && (game.state === ST.PLAY || screen === 'fieldmap')) { if (screen === 'fieldmap') resume(); else openMap(); } else $('mute').click();
     return;
   }
   const go = code === 'Space' || code === 'Enter';
-  if (screen === 'title' && go) { $('play').click(); return; }
+  if (screen === 'title' && go) { ($('continue') || $('play')).click(); return; }
   if (screen === 'results' && go) { $('tocamp').click(); return; }
   if (scene === 'town') {
     if (code === 'Escape') { if (screen === null) townPause(); else closeTownOverlay(); return; }
@@ -940,7 +1036,7 @@ let hudT = 0;
 function tickTown(pressed) {
   if (screen !== null) return;
   town.night = isNight(worldClock); // the night merchant (spec §25.2)
-  stepTown(town, { move: { x: input.x, y: input.y } }, STEP);
+  stepTown(town, { move: FLAT ? { x: input.x, y: input.y } : STAGE.toWorld(input.x, input.y) }, STEP);
   if (town.entered) sfx.dodge();
   if (pressed.has('talk') && town.near) { openNpc(town.near); return; }
   const slot = potionSlot(pressed);
@@ -958,10 +1054,10 @@ function potionSlot(pressed) {
 
 function tickRun(pressed) {
   const auto = settings.autoAttack; // auto mode: attack + aim on their own (spec §5.1)
-  const aimAt = !auto && !input.touch && input.mouse.active ? R.screenToWorld(input.mouse.x, input.mouse.y) : null;
+  const aimAt = !auto && !input.touch && input.mouse.active ? runView().screenToWorld(input.mouse.x, input.mouse.y) : null;
   const attack = input.touch ? input.attackHeld : input.mouse.down;
   game.intent = {
-    move: { x: input.x, y: input.y }, aimAt, attack, auto,
+    move: runView() !== R ? STAGE.toWorld(input.x, input.y) : { x: input.x, y: input.y }, aimAt, attack, auto,
     dodge: pressed.has('dodge'), potion: potionSlot(pressed), ult: pressed.has('ult'),
     skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'),
   };
@@ -981,6 +1077,7 @@ function tickRun(pressed) {
 }
 
 function tick() {
+  if (worldLoading) return false;
   // hit-stop (crits, ultimates, bosses): hold the world for a few frames; key presses
   // stay queued for the first step after it
   if (scene === 'run' && game.state === ST.PLAY && game.hitStop > 0) { game.hitStop -= STEP; return false; }
@@ -1000,14 +1097,15 @@ function frame(dt) {
   if (fpsShown && (fpsMeter.push(dt), fpsMeter.t === 0)) { // a half-second window just closed
     $('fps').textContent = `${Math.round(fpsMeter.last)} FPS · ${game.vfx.particles.size} fx${activeQuality(settings.effects, fxForcedLite) === 'lite' ? ' · lite' : ''}`;
   }
-  if (scene === 'run' && game.state === ST.PLAY && settings.effects === 'full' && !fxForcedLite && fpsWatch.push(dt)) {
+  if (scene === 'run' && game.state === ST.PLAY && settings.effects === 'auto' && !fxForcedLite && fpsWatch.push(dt)) {
     fxForcedLite = true;
     applyEffects();
     toast(tr('FPS rendah — efek diubah ke Ringan'));
   }
+  if (worldLoading) return;
   if (scene === 'run') {
-    R.draw(game, simT);
-    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); updateQuestTracker(current, game.state === ST.PLAY); }
+    drawRunView(simT);
+    if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); updateQuestTracker(current, game.state === ST.PLAY); checkPoints(); }
     if (game.state === ST.PLAY) updateActions(game);
     if (game.field && game.state === ST.PLAY && (minimapT += dt) > 0.25) { minimapT = 0; drawMinimap(); }
     const gate = game.field && game.state === ST.PLAY ? game.nearGate : null;
@@ -1015,10 +1113,14 @@ function frame(dt) {
     $('prompt').classList.toggle('hidden', !gate && !who);
     if (gate) $('prompttext').textContent = t('Masuk {name}', { name: dungeonById(gate.dungeon).name });
     else if (who) $('prompttext').textContent = t('Bicara dengan {name}', { name: who.name });
+  } else if (scene === 'menu') {
+    R3.hide(); R4.hide(); T3.hide();
+    drawMenuBackdrop();
   } else {
-    TR.draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60, current?.location || 'home');
+    R3.hide(); R4.hide();
+    (FLAT ? TR : T3).draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60, current?.location || 'home');
     if (scene === 'town') {
-      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); updateClock(worldClock); updateQuestTracker(current, screen === null); }
+      if (hudT > 0.12) { hudT = 0; updateTownHUD(current, town); updateClock(worldClock); updateQuestTracker(current, screen === null); checkPoints(); }
       const near = screen === null ? town.near : null;
       $('prompt').classList.toggle('hidden', !near);
       document.body.classList.toggle('near', !!near);
@@ -1029,16 +1131,45 @@ function frame(dt) {
   window.__SCENE_READY__ = true;
 }
 
-showMenu('title');
+// Behind the title and slot screens: the campfire night (2D) — no 3D world is built until a game starts.
+function drawMenuBackdrop() {
+  const g = view.ctx, k = view.c.width / innerWidth;
+  g.setTransform(k, 0, 0, k, 0, 0);
+  drawCampfire(g, innerWidth, innerHeight, simT);
+}
+
+// The title (spec §29): Lanjutkan opens the hero played last (or the first one there is).
+function showTitle() {
+  const ok = slots.filter((e) => e.status === 'ok');
+  const last = (slots[settings.lastSlot]?.status === 'ok' ? slots[settings.lastSlot] : ok[0])?.data ?? null;
+  renderTitle($('title'), {
+    last, lang: getLang(),
+    onContinue: () => { ensureAudio(); openSlot(last.slot); },
+    onSlots: () => { ensureAudio(); toSlots(); },
+    onSettings: () => openSettings(),
+    onLang: switchLang,
+  });
+  showMenu('title');
+}
+
+slots = await store.loadSlots();
+showTitle();
 const loop = startLoop(tick, frame);
+$('boot')?.classList.add('gone'); // the page loader (index.html) gives way to the title
+setTimeout(() => $('boot')?.remove(), 500);
 
 // ——— screenshot / debug hooks ———
 window.__seek = (t) => {
   const v = Number(t) || 0;
   if (game.state === ST.TITLE) {
     scene = 'run';
-    game.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats } });
+    const cls = CLASSES[new URLSearchParams(location.search).get('class')] ? new URLSearchParams(location.search).get('class') : 'warrior';
+    const region = new URLSearchParams(location.search).get('region'); // ?region=forest|ice|… tests a region
+    if (region) game.explore({ classId: cls, stats: { ...CLASS_BASE, ...CLASSES[cls].stats }, region, at: 'west', gates: [], opened: [] });
+    else game.start({ classId: cls, stats: { ...CLASS_BASE, ...CLASSES[cls].stats } });
     showOverlay(null);
+    screen = showScreen(null);
+    if (!R.avatar) R.avatar = { classId: cls, look: { hair: 1, hairColor: 2, gear: {} } }; // so the test view shows a hero
   }
   game.intent = { move: { x: 0.6, y: 0.35 }, aimAt: null, dodge: false, attack: true };
   const n = Math.floor(v / STEP);
@@ -1046,7 +1177,7 @@ window.__seek = (t) => {
     simT += STEP;
     game.step(STEP);
   }
-  R.draw(game, simT);
+  drawRunView(simT);
 };
 window.__play = () => { loop.resetClock(); };
 const T_PARAM = new URLSearchParams(location.search).get('t');
@@ -1055,4 +1186,6 @@ window.__game = game;
 window.__input = input; // debug/test hook: lets scripts drive the joystick
 window.__town = () => town; // debug/test hook: live town state
 window.__char = () => current;
+window.__explore = (id) => explore(id); // debug/test hooks: walk out to a region / into a dungeon (loading screen)
+window.__dungeon = (id) => enterDungeon(id);
 window.__avatar = (a) => { R.avatar = a; }; // debug/test hook: dress the run's player (effects screenshots)
