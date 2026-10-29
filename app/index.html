@@ -24,7 +24,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%}
 .hidden{display:none!important}
 svg.i{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
-/* ——— screens ——— */
+/* screens */
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;
   gap:18px;padding:72px 16px 40px;text-align:center;pointer-events:auto;overflow-y:auto;touch-action:pan-y;
   background:radial-gradient(120% 90% at 50% 40%,rgba(28,20,64,.55),rgba(14,10,36,.88));
@@ -49,7 +49,7 @@ h1.logo{margin:0;font-size:clamp(48px,11vw,104px);line-height:.9;font-weight:700
 kbd{font-family:inherit;font-size:12px;font-weight:600;padding:2px 8px;border-radius:7px;background:var(--faint);
   border:1px solid var(--line);border-bottom-width:3px;color:var(--ink)}
 
-/* ——— buttons ——— */
+/* buttons */
 .btn{pointer-events:auto;font-family:inherit;font-size:18px;font-weight:700;letter-spacing:.3px;color:#4a2600;border:0;
   padding:14px 34px;border-radius:999px;cursor:pointer;background:linear-gradient(180deg,#ffe07a,#ffb21f);
   box-shadow:0 5px 0 var(--acc-d),0 12px 24px rgba(255,170,30,.3);transition:transform .12s,box-shadow .12s,filter .12s}
@@ -62,7 +62,7 @@ kbd{font-family:inherit;font-size:12px;font-weight:600;padding:2px 8px;border-ra
 .btn.danger{color:#ffb3c1}
 .btn:disabled{opacity:.5;cursor:default;transform:none}
 
-/* ——— cards ——— */
+/* cards */
 .card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.035));
   border:1.5px solid var(--line);border-radius:var(--r);padding:16px 14px;width:172px;cursor:pointer;
   display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:var(--shadow);
@@ -299,7 +299,7 @@ h2.h.bad{color:var(--coral)}
   background:var(--faint);border:1px solid var(--line)}
 .tagline{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--acc)}
 
-/* ——— HUD ——— */
+/* HUD */
 #hud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:18px;
   background:rgba(22,17,46,.55);border:1.5px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   width:min(340px,calc(100vw - 236px))}
@@ -421,7 +421,7 @@ body.touch #prompt kbd{display:none}
 #nosave{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;font-size:13px;font-weight:600;
   color:#fff;background:rgba(255,107,139,.9);padding:8px 16px;border-radius:999px;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow)}
 
-/* ——— langkah 8D: dark fantasy UI — charcoal, bronze & gold, square-ish edges ——— */
+/* langkah 8D: dark fantasy UI — charcoal, bronze & gold, square-ish edges */
 :root{
   --bg:#0f0c12; --ink:#ece4d6; --dim:#a99d8c; --faint:rgba(255,236,200,.06); --line:rgba(201,162,74,.3);
   --glass:rgba(20,16,22,.92); --glass2:rgba(255,236,200,.045);
@@ -489,7 +489,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .attr .plus{border-radius:4px}
 .attr .plus::before,.attr .plus::after{background:#f3dca0}
 
-/* ——— langkah 9A: forge, materials, gems ——— */
+/* langkah 9A: forge, materials, gems */
 .matsbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .hchip.mat{display:inline-flex;align-items:center;gap:6px}
 .hchip.mat i{width:9px;height:9px;transform:rotate(45deg);background:var(--c);box-shadow:0 0 6px var(--c)}
@@ -517,7 +517,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .gemcell .btn{padding:3px 6px;font-size:10px;letter-spacing:0}
 .gdlines .gem{color:#e6c27a}.gdlines .gem.empty{color:var(--dim)}
 
-/* ——— langkah 9B: skill tab ——— */
+/* langkah 9B: skill tab */
 .skills{display:flex;flex-direction:column;gap:6px;text-align:left;width:min(440px,100%)}
 .skill{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 8px;border-radius:4px;background:rgba(0,0,0,.3);border:1px solid transparent}
 .skill.worn{border-color:rgba(217,178,94,.55);background:rgba(217,178,94,.08)}
@@ -740,6 +740,7 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
       <h2 class="h" id="maptitle"></h2>
       <canvas id="mapcanvas"></canvas>
       <div class="note" id="mapnote"></div>
+      <div class="tmlegend" id="maplegend"></div>
       <button class="btn ghost" id="mapclose" data-tr="Tutup">Tutup</button>
     </div>
   </div>

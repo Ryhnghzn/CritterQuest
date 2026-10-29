@@ -139,7 +139,7 @@ export function propGeometry(kind, biome) {
 // lift of a kind above the ground (radius units): floating eclipse rocks
 export const LIFT = { floatrock: 0.7 };
 
-// ——— canvas textures ———
+// canvas textures
 function canvasTex(w, h, paint) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   paint(c.getContext('2d'), w, h);
@@ -173,7 +173,7 @@ export function groundGlow(x, y, r, color, opacity) {
   return m;
 }
 
-// ——— dungeon gate (spec §25.5): weathered arch round a swirling portal, facing the camera ———
+// dungeon gate (spec §25.5): weathered arch round a swirling portal, facing the camera
 export function gateMesh(c0, c1) {
   const G = new THREE.Group(), u = S; // game units → metres
   const stone = [];
@@ -201,7 +201,7 @@ export function gateMesh(c0, c1) {
   return G;
 }
 
-// ——— treasure chest on its dais (spec §25.3): chained while guarded, lid thrown back once open ———
+// treasure chest on its dais (spec §25.3): chained while guarded, lid thrown back once open
 export function chestMesh(lord) {
   const G = new THREE.Group(), u = S * (lord ? 1.35 : 1);
   const body = [part(Box(60 * u, 34 * u, 38 * u), '#6b3f1f', { y: 17 * u })];
@@ -224,7 +224,7 @@ export function chestMesh(lord) {
   return G;
 }
 
-// ——— hidden homes (spec §26.5): cabin / tent / stone hut, or a camp with a small fire ———
+// hidden homes (spec §26.5): cabin / tent / stone hut, or a camp with a small fire
 const HOME = {
   forest: { wall: '#6b4a2e', roof: '#2f4a2a', trim: '#8a6a3a' },
   ice: { wall: '#5a4a3e', roof: '#e8f2ff', trim: '#7a8aa0' },
@@ -269,7 +269,7 @@ export function homeMesh(h, biome) {
   return G;
 }
 
-// ——— bridges: planks over water, stone slabs over lava (one merged mesh per region) ———
+// bridges: planks over water, stone slabs over lava (one merged mesh per region)
 export function bridgesMesh(spots, lava) {
   if (!spots.length) return null;
   const P = [], len = 200, wid = 117, deck = lava ? '#3d3836' : '#5a3d25', rail = lava ? '#2a2624' : '#3e2816', post = lava ? '#35302d' : '#4a311c';
@@ -287,7 +287,7 @@ export function bridgesMesh(spots, lava) {
   return new THREE.Mesh(merge(P), vtoon(0x6a4a2a));
 }
 
-// ——— a flat ribbon along each river (water sheen / glowing lava), game units → metres ———
+// a flat ribbon along each river (water sheen / glowing lava), game units → metres
 export function riverRibbon(rivers, width, y = 0.03) {
   const pos = [], idx = [];
   for (const river of rivers) {
@@ -307,7 +307,7 @@ export function riverRibbon(rivers, width, y = 0.03) {
   return g;
 }
 
-// ——— signpost at an exit: a post and a board with the town's name ———
+// signpost at an exit: a post and a board with the town's name
 export function signMesh(text, dir) {
   const G = new THREE.Group();
   const post = new THREE.Mesh(merge([part(Cyl(3 * S, 3.5 * S, 56 * S, 5), '#4a311c', { y: 28 * S })]), vtoon(0));

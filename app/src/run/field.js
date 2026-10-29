@@ -147,7 +147,7 @@ export const confineFieldEnemy = (run, e) => pushOut(run.fmap, e, e.r);
 // floater text for the region the player is in, e.g. "Hutan Kelam · LV 7"
 export const fieldHere = (run) => `${run.region.name} · LV ${fieldLevel(run.region, run.px)}`;
 
-// ——— hidden treasure (spec §25.3) ———
+// hidden treasure (spec §25.3)
 const GUARD_SKIP = ['healer', 'summoner', 'bomber']; // too soft to guard a chest
 
 // The guardian (a crowned, giant version of a regional enemy) and its escort.
@@ -208,7 +208,7 @@ export function stepTreasure(run) {
   }
 }
 
-// ——— quests in the wild (spec §26.5) ———
+// quests in the wild (spec §26.5)
 // run.hidden: people living out here [{ id, x, y, hut, mark, … }]; run.questSpots: places a quest
 // sends you to [{ spot, x, y }]; run.questDrops: quest items that may fall [{ item, enemy, chance }].
 export function stepQuestPlaces(run) {

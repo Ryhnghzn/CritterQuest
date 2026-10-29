@@ -13,7 +13,7 @@ import { drawIcon } from '../art/sprites.js';
 const TAU = Math.PI * 2;
 const WARM = 0xffa050;
 
-// ——— per style ———
+// per style
 const STYLE = {
   home: { wallH: 70, wall: 0x4a4256, cap: 0x352e40, cell: 40, top: 'merlon', outside: 0x1a1620, tree: 'pine', sky: 0x0a0812, day: 0x56607a, mist: 0x0e0b18 },
   forest: { wallH: 58, wall: 0x6a4a2c, cap: 0x7a5a38, cell: 14, top: 'stake', outside: 0x121a10, tree: 'oak', sky: 0x08100c, day: 0x4e6a5a, mist: 0x0c1610 },
@@ -30,7 +30,7 @@ const P = (B, geo, mat, cx, cy, y0, w, h, d, ry = 0, rx = 0, rz = 0) => B.add(ge
 const PB = (B, geo, mat, cx, cy, y0, w, h, d, ry = 0) => B.add(geo, mat, cx * S, y0 * S, cy * S, w * S, (geo === GEO.dome ? h * 2 : h) * S, d * S, 0, ry, 0);
 const light = (out, x, y, h, color, int, dist, night = false) => out.push({ x, y, h, color: typeof color === 'string' ? rgbCol(color) : col(color), int, dist, night, ph: (x * 0.37 + y * 0.11) % 9 });
 
-// ——— ground tiles ———
+// ground tiles
 function groundTile(key, def) {
   const theme = def.theme || {};
   if (key === 'forest') return tileTexture(160, 256, (g, T) => {
@@ -112,7 +112,7 @@ function pathsTexture(key, def, heart, gate, houses) {
   return t;
 }
 
-// ——— the town ———
+// the town
 // mats: shared materials driven per frame by Town25 { nightMats, emberMat, runeMat, lavaMat, lampMat }
 export function buildTown(def, mats) {
   const key = keyOf(def), st = STYLE[key];
@@ -231,7 +231,7 @@ function trees(root, def, key, out) {
   }
 }
 
-// ——— houses ———
+// houses
 const PLASTER = { inn: 0xb89a7a, potion: 0x9a90b0, smith: 0x8a7a6a, guild: 0xa0a88a };
 function house(root, b, key, out) {
   const B = new Batch(), grp = new THREE.Group(); root.add(grp);
@@ -348,7 +348,7 @@ function signMat(id) {
   return m;
 }
 
-// ——— the gate: two towers, an arch, a glowing way out ———
+// the gate: two towers, an arch, a glowing way out
 function gateOf(root, b, key, st, out) {
   const B = new Batch(), grp = new THREE.Group(); root.add(grp);
   const cx = b.x + b.w / 2, gz = b.y + b.h * 0.72, D = 56, TW = 50, H = st.wallH + 60;
@@ -465,7 +465,7 @@ function nightCart(root, n, out) {
   light(out.lights, x, y - 40, 44, '255,190,110', 5, 5, 'cart');
 }
 
-// ——— landmarks of the big towns ———
+// landmarks of the big towns
 const TREE_LANTERNS = [[-120, -170], [-60, -150], [10, -140], [80, -150], [140, -175], [-170, -200], [170, -210]];
 function feature(B, root, f, key, out) {
   const { x, y, w, h } = f, cx = x + w / 2, cz = y + h / 2, base = y + h;

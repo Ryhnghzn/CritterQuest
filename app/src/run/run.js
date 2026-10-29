@@ -213,7 +213,7 @@ export class Game {
     }
   }
 
-  // ——————————————— fixed step ———————————————
+  // fixed step
   step(dt) {
     if (this.state !== ST.PLAY) return;
     this.time += dt;
@@ -263,7 +263,7 @@ export class Game {
     else { this.returned = true; this.state = ST.OVER; }
   }
 
-  // ——————————————— spawning ———————————————
+  // spawning
   // Placed at the player; run/dungeon.js spawnFromLane moves it into a lane.
   spawnEnemy(typeId) {
     const base = ENEMIES[typeId];
@@ -321,7 +321,7 @@ export class Game {
     return true;
   }
 
-  // ——————————————— combat ———————————————
+  // combat
   // Damage rules (spec §5.2): atk × skill multiplier × (crit ? critDmg : 1).
   damageEnemy(h, e) {
     if (e.hidden) return; // a sand worm under the sand
@@ -533,7 +533,7 @@ export class Game {
     this.spawnBurst(this.px, this.py, '#ff5a6e', 30);
   }
 
-  // ——————————————— fx ———————————————
+  // fx
   spawnBurst(x, y, color, n) {
     this.vfx.burst('kill', x, y, color, { n });
   }

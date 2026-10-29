@@ -67,7 +67,7 @@ export const TOWN = {
   ],
 };
 
-// ——— interiors ———
+// interiors
 // back: depth of the back wall (solid); furniture with solid: true blocks walking.
 // Door gap in the bottom wall, centred. lights: warm/cool glows (x, y, r, rgb).
 const room = (id, w, h, extra) => ({ id, w, h, wall: 24, back: 76, doorW: 50, talkRadius: 70, ...extra });

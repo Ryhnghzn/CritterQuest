@@ -43,7 +43,7 @@ function spikes(g, r, list, Pal) { // [x, y, height, lean] in r
   for (const [x, y, h, l = 0] of list) part(g, r, [[x - 0.11, y + 0.1], [x + l, y - h], [x + 0.11, y + 0.1]], Pal, 0.08, 0.03);
 }
 
-// ——— families ———
+// families
 const OOZE_BODY = [[-1, 0.55], [-1.12, -0.15], [-0.78, -0.78], [-0.22, -1.04], [0.42, -0.96], [0.92, -0.55], [1.12, 0.08], [1.02, 0.56], [0.82, 0.92], [0.62, 0.6], [0.3, 0.74], [0.06, 1.02], [-0.18, 0.66], [-0.5, 0.8], [-0.72, 1.04], [-0.86, 0.62]];
 function ooze(g, r, body, eyeC, mouth = '#1a0610') {
   part(g, r, OOZE_BODY, body, 0.42);
@@ -80,7 +80,7 @@ function shroom(g, r, cap, spots, stem, fuseC) {
   glow(g, 0.12 * r, -1.5 * r, 0.32 * r, fuseC, 1);
 }
 
-// ——— the bestiary ———
+// the bestiary
 const MONSTERS = {
   slink(g, r) { ooze(g, r, P('#6a2c88', 'toxic', { hatch: true }), '#b8ff6a'); },
   mini(g, r) { ooze(g, r, P('#7a3a98', 'toxic'), '#b8ff6a'); },
@@ -223,7 +223,7 @@ const MONSTERS = {
     eye(g, r, 1.05, -0.12, 0.08, '#ffe08a');
   },
 
-  // ——— bosses ———
+  // bosses
   boss(g, r) { // Raja Maw: horned maw beast with a tarnished crown
     const hide = P('#4a2858', 'royal', { hatch: true });
     part(g, r, [[-0.6, -0.7], [-1.35, -1.3], [-1.0, -0.62]], pal('#e8dcc8', { rim: RIM.royal }), 0.1); part(g, r, [[0.6, -0.7], [1.35, -1.3], [1.0, -0.62]], pal('#e8dcc8', { rim: RIM.royal }), 0.1);

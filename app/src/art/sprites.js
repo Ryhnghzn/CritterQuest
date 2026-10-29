@@ -42,7 +42,7 @@ function flask(g, p, big) {
   g.restore();
 }
 
-// ——— enemies: drawn facing right at radius r (dark fantasy, langkah 8C) ———
+// enemies: drawn facing right at radius r (dark fantasy, langkah 8C)
 // glowing slit eye
 function glowEye(g, x, y, r, color, tilt = -0.25) {
   g.save();
@@ -283,7 +283,7 @@ export const ENEMY_ART = {
     glowEye(g, r * 0.35, -r * 0.35, r * 0.17, '#ff3a3a', -0.3);
   },
 
-  // ——— biome enemies (spec §25.4) ———
+  // biome enemies (spec §25.4)
   wolf(g, r) { // shadow wolf: violet-black, spiky ruff, burning red eyes
     for (const x of [-0.6, -0.25, 0.3, 0.6]) { g.beginPath(); g.roundRect(x * r - r * 0.1, r * 0.3, r * 0.2, r * 0.55, r * 0.08); ink(g, '#1a1224', r * 0.07); }
     g.beginPath(); g.moveTo(-r * 0.9, r * 0.05); g.lineTo(-r * 1.45, -r * 0.45); g.lineTo(-r * 1.1, r * 0.25); g.closePath(); ink(g, '#2a1a3a', r * 0.07); // tail
@@ -438,7 +438,7 @@ export const ENEMY_ART = {
 
 };
 
-// ——— pickups (centered, world units) ———
+// pickups (centered, world units)
 // style D (plan "Gaya D" §4): every enemy is redrawn in art/monsters.js
 Object.assign(ENEMY_ART, MONSTER_ART);
 Object.assign(ENEMY_ART, ECLIPSE_ART);
@@ -471,7 +471,7 @@ function diamond(g, k, c0, c1) {
   shine(g, -1.6 * k, -2.6 * k, 1.1 * k, 0.6 * k, -0.8, 0.8);
 }
 
-// ——— ground decor ———
+// ground decor
 const FLOWER = { flowerW: '#ffffff', flowerP: '#ff9ccf', flowerY: '#ffe169' };
 export const DECOR_ART = {
   tuft(g) {
@@ -505,7 +505,7 @@ for (const [id, col] of Object.entries(FLOWER)) {
   };
 }
 
-// ——— icons: drawn inside a box of `size` centred on the origin ———
+// icons: drawn inside a box of `size` centred on the origin
 const ICONS = {
   ember(g) {
     g.beginPath(); g.moveTo(0, -10);
@@ -589,7 +589,7 @@ const ICONS = {
     g.beginPath(); g.moveTo(0, -6); g.lineTo(0, 7); g.moveTo(-5.5, -2); g.lineTo(5.5, -2);
     g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,.75)'; g.stroke();
   },
-  // ——— gear (inventory, ground drops) ———
+  // gear (inventory, ground drops)
   gearSword(g) { ICONS.pow(g); },
   gearBow(g) {
     g.save(); g.rotate(Math.PI / 4);
@@ -645,7 +645,7 @@ const ICONS = {
     g.beginPath(); g.moveTo(0, -10); g.lineTo(4, -5); g.lineTo(0, -2); g.lineTo(-4, -5); g.closePath();
     ink(g, grad(g, -10, -2, '#c9f0ff', '#4fa8e8'), 1.2);
   },
-  // ——— town ———
+  // town
   trainer(g) { // dumbbell
     g.beginPath(); g.roundRect(-7, -1.6, 14, 3.2, 1.5); ink(g, '#b9c1d0', 1.2);
     for (const x of [-10, 7]) { g.beginPath(); g.roundRect(x, -6, 3.4, 12, 1.5); ink(g, '#4a4866', 1.3); }
@@ -684,7 +684,7 @@ const ICONS = {
     ink(g, grad(g, -4, 12, '#ff8aa3', '#d0234f'), 1.5);
     shine(g, -3, 1, 2, 3.2, 0.3, 0.6);
   },
-  // ——— class skills ———
+  // class skills
   spin(g) {
     g.lineCap = 'round';
     for (const s of [0, Math.PI]) {
@@ -828,7 +828,7 @@ export function enemyCanvas(type, r, cssSize) {
   return c;
 }
 
-// ——— baking ———
+// baking
 // Each baked sprite: { img, ext } — img covers [-ext, ext] world units around the origin.
 export const SPRITES = {};
 

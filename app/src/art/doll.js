@@ -68,7 +68,7 @@ function limb(g, x1, y1, x2, y2, w, color) {
   g.lineWidth = w; g.strokeStyle = color; g.stroke();
 }
 
-// ——— hair: back layers (behind the head) and front caps ———
+// hair: back layers (behind the head) and front caps
 function cap(g, hx, hy, r, spikes) {
   g.beginPath();
   g.moveTo(hx - r * 1.02, hy + r * 0.35);
@@ -109,7 +109,7 @@ const HAIR_FRONT = [
   (g, hx, hy, r, c) => { cap(g, hx, hy, r, false); ink(g, c); g.beginPath(); g.arc(hx - r * 0.95, hy - r * 0.35, r * 0.22, 0, TAU); ink(g, '#6e2a3a', 0.6); },
 ];
 
-// ——— class flavour ———
+// class flavour
 const CLASS_BACK = {
   warrior(g, bob, t, moving, c) { // long cape
     const flap = Math.sin(t * 3) * 0.8 + moving * 2.2;

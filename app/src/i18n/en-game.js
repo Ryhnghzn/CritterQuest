@@ -2,7 +2,7 @@
 // floaters (run/), canvas labels (render/), save errors (meta/).
 // Indonesian source text → English; {name} placeholders must match.
 export default {
-  // ——— dungeon banners & floaters (run/) ———
+  // dungeon banners & floaters (run/)
   'Lantai {n}': 'Floor {n}',
   '{name} DATANG!': '{name} APPROACHES!',
   '{name} TUMBANG!': '{name} HAS FALLEN!',
@@ -15,12 +15,12 @@ export default {
   '+{n} poin': '+{n} points',
   'Bangkit dari abu!': 'Risen from the ashes!',
 
-  // ——— canvas labels (render/) ———
+  // canvas labels (render/)
   Turun: 'Descend',
   Pulang: 'Return',
   Keluar: 'Exit',
 
-  // ——— save & data errors (meta/) ———
+  // save & data errors (meta/)
   'versi tidak dikenal': 'unknown version',
   'versi {v} lebih baru dari game ({max})': 'version {v} is newer than the game ({max})',
   'tidak ada migrasi dari versi {v}': 'no migration from version {v}',
@@ -30,7 +30,7 @@ export default {
   'slot {n} rusak; hapus dulu sebelum menyimpan': 'slot {n} is corrupt; delete it before saving',
   'karakter tidak sah: {list}': 'invalid character: {list}',
 
-  // ——— main.js: saving, slots, prompts ———
+  // main.js: saving, slots, prompts
   'Gagal menyimpan: {err}': 'Save failed: {err}',
   'data rusak di slot {n}': 'corrupt data in slot {n}',
   'Hapus {what}? Tidak bisa dibatalkan.': 'Delete {what}? This cannot be undone.',
@@ -38,7 +38,7 @@ export default {
   'Bicara dengan {name}': 'Talk to {name}',
   'Slot {n} kosong': 'Slot {n} empty',
 
-  // ——— NPC services ———
+  // NPC services
   'Kamu tidur nyenyak. HP pulih penuh!': 'You slept soundly. HP fully restored!',
   '{name}, segar dari kuali. Hehehe.': '{name}, fresh from the cauldron. Heh heh heh.',
   'Kau mendapat {item} ({rarity})!': 'You got {item} ({rarity})!',
@@ -62,7 +62,7 @@ export default {
   'Buang {item}? Tidak bisa dikembalikan.': 'Discard {item}? It cannot be recovered.',
   Buang: 'Discard',
 
-  // ——— refusals ———
+  // refusals
   'HP-mu sudah penuh.': 'Your HP is already full.',
   'Tasmu sudah penuh ramuan itu.': 'You can\'t carry any more of that potion.',
   'Koinmu belum cukup.': 'Not enough coins.',
@@ -77,13 +77,13 @@ export default {
   'Permatamu belum cukup.': 'Not enough gems.',
   'Barang itu tidak ada.': 'That item doesn\'t exist.',
 
-  // ——— potions in town ———
+  // potions in town
   'Slot sabuk kosong.': 'That belt slot is empty.',
   'Tidak punya ramuan itu.': 'You don\'t have that potion.',
   'Ramuan ini hanya berguna di dungeon.': 'This potion only works in the dungeon.',
   'HP sudah penuh.': 'HP is already full.',
 
-  // ——— cheat panel toasts ———
+  // cheat panel toasts
   'Level naik': 'Level up',
   'Ramuan penuh': 'Potions refilled',
   'HP penuh': 'HP full',

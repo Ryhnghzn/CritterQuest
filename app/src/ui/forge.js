@@ -53,7 +53,7 @@ function costRow(char, cost) {
   return row;
 }
 
-// ——— Pandai Brom: Tempa ———
+// Pandai Brom: Tempa
 export function forgePanel(char, { onEnhance, onReroll }, redraw) {
   const wrap = el('div', 'forge');
   wrap.append(matsBar(char), picker(char, () => true, redraw));
@@ -98,7 +98,7 @@ export function forgePanel(char, { onEnhance, onReroll }, redraw) {
   return wrap;
 }
 
-// ——— Pandai Brom: Urai ———
+// Pandai Brom: Urai
 export function salvagePanel(char, onSalvage, redraw) {
   for (const id of toSalvage) if (!char.inventory.some((x) => x.id === id)) toSalvage.delete(id);
   const wrap = el('div', 'sellbox');
@@ -132,7 +132,7 @@ export function salvagePanel(char, onSalvage, redraw) {
   return wrap;
 }
 
-// ——— Tukang Permata: Pasang ———
+// Tukang Permata: Pasang
 const gemLabel = gemName;
 const gemText = (gem, tier) => statText(GEMS[gem].stat, GEMS[gem].values[tier - 1]);
 
@@ -172,7 +172,7 @@ export function socketPanel(char, { onSocket, onUnsocket }, redraw) {
   return wrap;
 }
 
-// ——— Tukang Permata: Gabung ———
+// Tukang Permata: Gabung
 export function combinePanel(char, onCombine) {
   const wrap = el('div', 'gemtable');
   const head = el('div', 'gemrow head');

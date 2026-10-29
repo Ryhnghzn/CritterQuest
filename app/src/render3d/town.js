@@ -79,7 +79,7 @@ export class Town25 {
     pts.frustumCulled = false; sc.add(pts);
   }
 
-  // ——— building ahead (the loading screen, ui/loading.js) ———
+  // building ahead (the loading screen, ui/loading.js)
   // Does the town / room still have to be built before it can be shown?
   needsWarm(town, backdropId = 'home') {
     if (!this.scene) return true;
@@ -99,7 +99,7 @@ export class Town25 {
     await this.stage.compile(this.scene);
   }
 
-  // ——— places (built once, cached) ———
+  // places (built once, cached)
   placeOf(def, room) {
     const key = room ? `room:${room.id}` : `town:${def.id}`;
     let p = this.places.get(key);
@@ -139,7 +139,7 @@ export class Town25 {
     return g;
   }
 
-  // ——— per frame ———
+  // per frame
   draw(town, t, avatar, clock, backdropId = 'home') {
     if (!this.scene) this.setup();
     const st = this.stage, v = this.view;

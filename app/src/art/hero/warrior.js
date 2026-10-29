@@ -10,7 +10,7 @@ const CLOTH = pal('#77161f', { shade: '#22060d', hi: '#c43c36', hatch: true });
 const BLADE = [pal('#77777c'), pal('#7d7f86'), pal('#868a94'), pal('#8a8f9c'), pal('#3a3442', { hi: '#e2d8e4' }), pal('#3a3442', { hi: '#e2d8e4' }), pal('#2e2836', { hi: '#f0e2f0' })];
 const rimmed = (P) => ({ ...P, rim: RIM });
 
-// ——— legs ———
+// legs
 function leg(g, R, hip, knee, foot, back, boots) {
   const d = (P) => (back ? dim(P) : rimmed(P));
   fillPoly(g, limbPts(hip, knee, 12.4, 13, 9), back ? dim(PANTS) : PANTS, 3.4);
@@ -27,7 +27,7 @@ function leg(g, R, hip, knee, foot, back, boots) {
   fillPoly(g, [[x - 4.8, y - 5.2], [x + 3, y - 5.8], [x + 6.2, y - 2.2], [x + 10.6, y + 0.2], [x + 10.6, y + 2.6], [x - 5.2, y + 2.6]], back ? dim(B) : B, 2.2);
 }
 
-// ——— arms ———
+// arms
 function arm(g, R, sh, el, hand, back, armor) {
   const t = armor ? armor.tier : -1, M = armor ? METAL[armor.tier] : null;
   const d = (P) => (back ? dim(P) : rimmed(P));
@@ -67,7 +67,7 @@ function cape(g, R, armor) {
   }
 }
 
-// ——— torso (spine frame: origin = hip, up = −y, front = +x) ———
+// torso (spine frame: origin = hip, up = −y, front = +x)
 function torso(g, R, armor) {
   const t = R.t, tier = armor ? armor.tier : -1;
   g.save(); g.translate(R.hip.x, R.hip.y); g.rotate(R.lean); g.scale(1.22, 1);
@@ -100,7 +100,7 @@ function torso(g, R, armor) {
   g.restore();
 }
 
-// ——— head (local: centre of the head) ———
+// head (local: centre of the head)
 function helmKind(helm) {
   if (!helm) return null;
   return helm.tier <= 1 ? 'cap' : helm.tier <= 3 ? 'nasal' : helm.tier <= 5 ? 'great' : 'crown';
@@ -151,7 +151,7 @@ function helmet(g, kind, helm, t) {
 
 const bladeLen = (tier) => 25 + tier * 1.6;
 
-// ——— shield on the off hand, turned towards the viewer; shape by weapon tier ———
+// shield on the off hand, turned towards the viewer; shape by weapon tier
 function shield(g, R, weapon) {
   const tier = weapon ? weapon.tier : 0, rar = weapon ? weapon.rarity : 0, t = R.t;
   const c = RARITIES[rar].color, M = METAL[tier], tc = rar >= 1 ? c : '#8a6a3a';
@@ -186,7 +186,7 @@ function shield(g, R, weapon) {
   g.restore();
 }
 
-// ——— sword (weapon frame: grip at origin, blade along +x) ———
+// sword (weapon frame: grip at origin, blade along +x)
 function sword(g, R, weapon) {
   const tier = weapon ? weapon.tier : 0, rar = weapon ? weapon.rarity : 0, t = R.t;
   const L = bladeLen(tier), w = 2.5 + tier * 0.22, c = RARITIES[rar].color;

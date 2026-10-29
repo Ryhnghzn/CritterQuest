@@ -9,6 +9,20 @@ export function showScreen(id) {
   return id;
 }
 
+// A card that is clicked as a whole: reachable with Tab and pressed with Enter/Space (not when a button inside has focus).
+export function pressable(node, onPress) {
+  node.tabIndex = 0;
+  node.setAttribute('role', 'button');
+  node.addEventListener('click', onPress);
+  node.addEventListener('keydown', (e) => {
+    if (e.target !== node || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onPress(e);
+  });
+  return node;
+}
+
 export function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;

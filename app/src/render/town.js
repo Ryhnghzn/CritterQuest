@@ -721,7 +721,7 @@ function motes(g, t, kind, cx, cy, vw, vh) {
   g.restore();
 }
 
-// ——— the four big towns, each its own look (owner's request 2026-10-28) ———
+// the four big towns, each its own look (owner's request 2026-10-28)
 // style = theme.biome: forest (Rimbawana), ice (Bekubara), desert (Pasirluas), volcano (Baraapi)
 
 const rnd = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
@@ -908,7 +908,7 @@ function wallsStyled(g, L) {
   }
 }
 
-// ——— houses ———
+// houses
 function houseStyled(g, b, t, L) {
   const { x, y, w, h } = b, dx = x + w / 2, base = y + h;
   shadow(g, dx, base + 2, w / 2 + 6, 8);
@@ -1095,7 +1095,7 @@ function houseGlow(g, b, t, L) {
   g.restore();
 }
 
-// ——— gates ———
+// gates
 function gateStyled(g, b, L) {
   const { x, y, w, h } = b, cx = x + w / 2, style = L.style;
   g.beginPath(); g.moveTo(x + 30, y + h); g.lineTo(x + 30, y + 50); g.arc(cx, y + 50, w / 2 - 30, Math.PI, 0); g.lineTo(x + w - 30, y + h); g.closePath();
@@ -1135,7 +1135,7 @@ function gateStyled(g, b, L) {
   if (style === 'volcano') { g.beginPath(); g.arc(cx, y + 50, w / 2 - 18, Math.PI * 1.05, Math.PI * 1.95); g.lineWidth = 2; g.strokeStyle = 'rgba(255,110,40,.7)'; g.stroke(); }
 }
 
-// ——— landmark features ———
+// landmark features
 function lavaBand(g, f, t) {
   const { x, y, w, h } = f;
   g.save();

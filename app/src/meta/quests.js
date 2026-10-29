@@ -98,7 +98,7 @@ export function countQuests(c, trip) {
   return syncQuests(c);
 }
 
-// ——— handing things over (give steps) ———
+// handing things over (give steps)
 // The gear a give step would take: the plainest pieces in the bag that qualify, never worn ones.
 function gearFor(char, want) {
   return char.inventory
@@ -291,7 +291,7 @@ export const trackedQuest = (char) => {
   return list.find((q) => q.id === char.quests.track) || list[0] || null;
 };
 
-// ——— the wild (spec §26.5) ———
+// the wild (spec §26.5)
 const spotXY = (id) => { const s = SPOTS[id], r = regionById(s.region); return { x: Math.round(s.at[0] * r.w), y: Math.round(s.at[1] * r.h) }; };
 export const hiddenXY = (h) => { const r = regionById(h.region); return { x: Math.round(h.at[0] * r.w), y: Math.round(h.at[1] * r.h) }; };
 
@@ -315,7 +315,7 @@ export function fieldQuests(char, regionId) {
   return { spots, drops };
 }
 
-// ——— where to go (spec §26.3) ———
+// where to go (spec §26.3)
 // The tracked quest's target in a region: { kind, x, y, r? } in world units, or null.
 //   gate not yet found → a hint circle (r) that holds the gate somewhere inside;
 //   a hidden person / a place to stand → that point (the nearest unvisited place);

@@ -1,5 +1,5 @@
 // Buat Karakter: name, hair style × colour, class, with a live paper-doll preview.
-import { el, button, stage } from './screens.js';
+import { el, button, stage, pressable } from './screens.js';
 import { portrait, OUTFIT, HAIR_NAMES, HAIR_COLOR_NAMES, HAIR_PALETTE } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { NAME_MAX } from '../data/balance.js';
@@ -42,7 +42,7 @@ export function renderCreate(box, { onCreate, onBack }) {
     const top = el('div', 'top');
     top.append(el('span', 'dotc'), el('span', 'nm', c.name));
     card.append(top, el('div', 'ds', c.desc), el('div', 'st', t('HP {hp} · ATK {atk} · Kritis {crit}%', { hp: c.stats.maxHp, atk: c.stats.atk, crit: c.stats.crit })));
-    card.addEventListener('click', () => set('classId', c.id));
+    pressable(card, () => set('classId', c.id));
     return card;
   });
   classGrid.append(...classCards);

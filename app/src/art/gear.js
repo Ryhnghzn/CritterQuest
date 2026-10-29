@@ -47,7 +47,7 @@ export function halo(g, x, y, r, color, alpha = 1) {
   g.restore();
 }
 
-// ——— weapons ———
+// weapons
 const SWORDS = [
   // 0 Pedang Kayu: blunt wooden blade with a cord grip
   (g, m) => { g.beginPath(); g.moveTo(-1.6, -2); g.lineTo(-1.8, -14); g.quadraticCurveTo(0, -17, 1.8, -14); g.lineTo(1.6, -2); g.closePath(); ink(g, lin(g, -2, 0, 2, 0, m.a, m.b)); },
@@ -157,7 +157,7 @@ export function drawWeapon(g, classId, tier, t = 0, rarity = 0) {
   else { grip(g, m, 3.5); g.beginPath(); g.roundRect(-3, -2, 6, 1.4, 0.6); ink(g, m.trim); DAGGERS[tier](g, m, t); }
 }
 
-// ——— helmets: drawn over a head (hx, hy, r) facing right ———
+// helmets: drawn over a head (hx, hy, r) facing right
 function domePath(g, hx, hy, r, top = 1.12, low = 0.15) {
   g.beginPath(); g.moveTo(hx - r * 1.08, hy + r * low);
   g.quadraticCurveTo(hx - r * 1.15, hy - r * top * 1.15, hx + r * 0.1, hy - r * top * 1.1);
@@ -208,7 +208,7 @@ export function drawHelm(g, tier, hx, hy, r, t = 0, rarity = 0) {
 // circlets leave the hair visible
 export const helmHidesHair = (tier, rarity = 0) => rarity === MYTHIC || tier !== 4;
 
-// ——— armour: over a torso box (top y0 … bottom y1, half width w) ———
+// armour: over a torso box (top y0 … bottom y1, half width w)
 export function drawArmor(g, tier, y0, y1, w, t = 0, rarity = 0) {
   if (rarity === MYTHIC) { mythArmor(g, y0, y1, w, t); return; }
   const m = material(tier);
@@ -250,7 +250,7 @@ export function drawArmor(g, tier, y0, y1, w, t = 0, rarity = 0) {
   }
 }
 
-// ——— boots: one foot standing at (x, y), toe to the right ———
+// boots: one foot standing at (x, y), toe to the right
 export function drawBoot(g, tier, x, y, t = 0, rarity = 0) {
   if (rarity === MYTHIC) { mythBoot(g, x, y, t); return; }
   const m = material(tier);
@@ -264,7 +264,7 @@ export function drawBoot(g, tier, x, y, t = 0, rarity = 0) {
   if (tier === 6) { g.beginPath(); g.moveTo(x - 2.2, y - shaftH + 0.5); g.quadraticCurveTo(x - 6, y - shaftH - 2, x - 5, y - shaftH + 3); g.lineTo(x - 2.2, y - shaftH + 2.5); ink(g, '#e8f4ff', 0.6); }
 }
 
-// ——— amulets & rings (icons only) ———
+// amulets & rings (icons only)
 const GEM = ['#b07a50', '#c9d1e0', '#ff6b8b', '#ffd36b', '#7fe0ff', '#b06bff', '#ff4d5e'];
 function drawAmulet(g, tier, t) {
   const m = material(tier);
@@ -296,7 +296,7 @@ function drawRing(g, tier) {
 }
 
 
-// ——— Mitos: one grand shape per slot (plan "Efek Lebay" §E) ———
+// Mitos: one grand shape per slot (plan "Efek Lebay" §E)
 const MY = { a: '#fff2ea', b: '#8e1530', dark: '#3a0812', red: '#c2324a', gold: '#ffcf5a', gold2: '#a8741c', glow: '#ff4d6d', fire: '#ffb347' };
 
 // teardrop flame rising from (x, y), size s, flickering
@@ -503,7 +503,7 @@ function mythRing(g, t) {
   }
 }
 
-// ——— bag / ground icons ———
+// bag / ground icons
 // Draws an item centred at the origin inside size × size. t animates Legendaris+.
 export function drawGearIcon(g, item, size, t = 0) {
   const k = size / 26, r = item.rarity, c = RARITIES[r]?.color || '#fff';

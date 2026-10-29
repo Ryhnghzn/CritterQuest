@@ -131,7 +131,7 @@ export function visitTown(char, townId, now) {
   return c;
 }
 
-// ——— hidden treasure (spec §25.3) ———
+// hidden treasure (spec §25.3)
 // The region's treasure spots: fixed for everyone (from the region seed), off the paths,
 // clear of solids, spread west → east; the last one is the overlord's. Cached per region.
 const treasureCache = new Map();
@@ -159,7 +159,7 @@ export function treasureSpots(region) {
   return out;
 }
 
-// ——— teleport stone (spec §25.2) ———
+// teleport stone (spec §25.2)
 export const teleportPrice = (townId) => TELEPORT.base + TELEPORT.perTier * TOWNS[townId].tier;
 
 // Travel to a town already visited, for coins. { ok, char } | { ok: false, reason }.
@@ -175,7 +175,7 @@ export function teleport(char, townId, now) {
   return { ok: true, char: c, price };
 }
 
-// ——— dungeon gates & expeditions (spec §25.5) ———
+// dungeon gates & expeditions (spec §25.5)
 const hash = (s) => [...s].reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7);
 
 // This character's dungeon gates in a region: off a path, in the dungeon's band,

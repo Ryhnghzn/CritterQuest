@@ -172,7 +172,7 @@ export function showMythicCard(item) {
   cardTimer = setTimeout(() => { card.classList.add('out'); setTimeout(() => card.remove(), 400); }, MYTHIC_PICK.card * 1000);
 }
 
-// ——— reward pop-up ———
+// reward pop-up
 // r: { title, sub?, gold, exp, items: [item], gems: [{ gem, tier }], marks, mats: { id: n },
 //      potions: { id: n }, shard, levelsGained } — every part optional.
 // Rays and confetti behind, one card per reward popping in turn, coins & EXP counting up.

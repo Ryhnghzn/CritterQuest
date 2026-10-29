@@ -81,7 +81,7 @@ export class Field25 {
     this.actors = new Actors(this.view, this.flat, this.stage, sc);
   }
 
-  // ——— a region: built once ———
+  // a region: built once
   buildRegion(game) {
     const sc = this.scene, map = game.fmap, region = map.region, biome = region.biome || 'forest';
     if (this.regionGroup) { sc.remove(this.regionGroup); dispose(this.regionGroup); for (const k of this.kinds.values()) k.mesh.geometry.dispose(); }
@@ -210,7 +210,7 @@ export class Field25 {
     cd.mesh.rotation.y = this.stage.yaw;
   }
 
-  // ——— ground tiles ———
+  // ground tiles
   paintTile(tl, game, t) {
     const k = this.tileK, x0 = tl.ix * TS, y0 = tl.iy * TS, g = tl.c.getContext('2d');
     g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
@@ -239,7 +239,7 @@ export class Field25 {
     }
   }
 
-  // ——— props near the hero ———
+  // props near the hero
   refill(x, y) {
     this.fillAt = this.fillAt || { x: 0, y: 0 };
     this.fillAt.x = x; this.fillAt.y = y;
@@ -282,8 +282,8 @@ export class Field25 {
     }
   }
 
-  // ——— per frame ———
-  // ——— building ahead (the loading screen, ui/loading.js) ———
+  // per frame
+  // building ahead (the loading screen, ui/loading.js)
   needsWarm(game) { return !!game.field && !!game.fmap && (!this.hemi || game.fmap !== this.mapRef); }
   async warm(game, step) {
     await step(0.1, 'torch');

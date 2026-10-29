@@ -20,7 +20,7 @@ function seeded(seed) {
   return () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
 }
 
-// ——— floor tile per biome ———
+// floor tile per biome
 export function groundTile(scale, [c0, c1], biome = 'forest') {
   const T = 160;
   const c = document.createElement('canvas');
@@ -89,7 +89,7 @@ export function groundTile(scale, [c0, c1], biome = 'forest') {
   return { canvas: c, T };
 }
 
-// ——— static dressing, built once per region ———
+// static dressing, built once per region
 function bucketKey(x, y) { return `${Math.floor(x / DCELL)},${Math.floor(y / DCELL)}`; }
 
 function dressOf(map) {
@@ -140,7 +140,7 @@ function* buckets(m, rect, pad) {
   }
 }
 
-// ——— lines (paths, rivers): only the visible stretch ———
+// lines (paths, rivers): only the visible stretch
 function visibleRange(pts, rect, pad) {
   let i0 = -1, i1 = -1;
   for (let i = 1; i < pts.length; i++) {
@@ -301,7 +301,7 @@ function lake(g, l, theme, biome, t) {
   g.restore();
 }
 
-// ——— solids ———
+// solids
 function forestTree(g, s, t) {
   const r = s.r, v = s.v || 0;
   shadow(g, s.x + 4, s.y + r * 0.35, r * 1.15, r * 0.45);
@@ -524,7 +524,7 @@ function signpost(g, x, y, text, dir) {
   g.textBaseline = 'alphabetic';
 }
 
-// ——— dungeon gates (spec §25.5): a ruined stone arch around a swirling portal ———
+// dungeon gates (spec §25.5): a ruined stone arch around a swirling portal
 export const gateGlow = (g) => dungeonById(g.dungeon).theme.glow || ['200,130,255', '120,200,255'];
 
 function gate(g, gt, t, near) {
@@ -571,7 +571,7 @@ function gate(g, gt, t, near) {
   }
 }
 
-// ——— the frame ———
+// the frame
 // Draws the region below the actors. rect: visible world rect { x0, y0, x1, y1 }.
 export function drawField(g, game, ground, t, rect) {
   const map = game.fmap, region = map.region, theme = region.theme, biome = region.biome || 'forest';
@@ -712,7 +712,7 @@ export function fieldDecorLights(game, t, out, rect) {
   }
 }
 
-// ——— expedition arrow (spec §25.5): a gold chevron around the player toward the target ———
+// expedition arrow (spec §25.5): a gold chevron around the player toward the target
 export function targetArrow(g, game, t) {
   arrow(g, game, game.target, t, '#e6c27a', 0);
   // the quest goal (spec §26.3): gold "!" arrow; a hint circle stops pointing once inside it
@@ -739,7 +739,7 @@ function arrow(g, game, tg, t, color, lane) {
   g.fillStyle = '#f3e2b8'; g.fillText(label, lx, ly);
 }
 
-// ——— hidden treasure (spec §25.3): a chest on a rune-ring dais; chained and
+// hidden treasure (spec §25.3): a chest on a rune-ring dais; chained and
 // locked while its guardian lives, glowing once free, lid thrown back when opened ———
 function treasureChest(g, tr, t) {
   const { x, y } = tr, open = tr.state === 'open', locked = tr.state === 'idle' || tr.state === 'guarded';

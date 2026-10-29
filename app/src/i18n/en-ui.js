@@ -2,7 +2,7 @@
 // Indonesian source exactly as written there (spec §23). Data names (items,
 // skills, NPC lines in data/…) live in en-data.js.
 export default {
-  // ——— index.html (data-tr: innerHTML; data-tr-title / data-tr-label) ———
+  // index.html (data-tr: innerHTML; data-tr-title / data-tr-label)
   Main: 'Play',
   '<kbd>WASD</kbd> gerak &nbsp; <kbd>E</kbd> bicara &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> ramuan &nbsp; <kbd>I</kbd> karakter &nbsp; <kbd>Esc</kbd> menu<br>Bertarung: <kbd>Klik</kbd> serang &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skill &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Spasi</kbd> dodge &nbsp; <kbd>F</kbd> auto &nbsp; <kbd>M</kbd> peta':
     '<kbd>WASD</kbd> move &nbsp; <kbd>E</kbd> talk &nbsp; <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd> potions &nbsp; <kbd>I</kbd> character &nbsp; <kbd>Esc</kbd> menu<br>In combat: <kbd>Click</kbd> attack &nbsp; <kbd>1</kbd>–<kbd>4</kbd> skills &nbsp; <kbd>5</kbd> ultimate &nbsp; <kbd>Space</kbd> dodge &nbsp; <kbd>F</kbd> auto &nbsp; <kbd>M</kbd> map',
@@ -33,7 +33,7 @@ export default {
   'Serang otomatis (F)': 'Auto attack (F)',
   'Panel cheat (`)': 'Cheat panel (`)',
 
-  // ——— shared ———
+  // shared
   YA: 'YES',
   Batal: 'Cancel',
   Simpan: 'Save',
@@ -50,7 +50,7 @@ export default {
   'Pilih semua Biasa': 'Select all Common',
   'Pilih ≤ Bagus': 'Select ≤ Uncommon',
 
-  // ——— slots.js / create.js ———
+  // slots.js / create.js
   '{d} · Lantai {n}': '{d} · Floor {n}',
   'Belum ke dungeon': 'No dungeon yet',
   'Slot {n}': 'Slot {n}',
@@ -65,7 +65,7 @@ export default {
   'Buat Petualang': 'Create Adventurer',
   'Nama harus 1–{n} karakter.': 'Name must be 1–{n} characters.',
 
-  // ——— charpanel.js ———
+  // charpanel.js
   'HP maks': 'Max HP',
   'Kec. serang': 'Atk speed',
   Kritis: 'Crit',
@@ -83,7 +83,7 @@ export default {
   Skill: 'Skills',
   'Gear ({n})': 'Gear ({n})',
 
-  // ——— gear.js ———
+  // gear.js
   'Tas kosong. Gear didapat di dungeon.': 'Bag is empty. Gear drops in dungeons.',
   Terpasang: 'Equipped',
   'Tas {n}/{m}': 'Bag {n}/{m}',
@@ -100,7 +100,7 @@ export default {
   Soket: 'Socket',
   Buang: 'Discard',
 
-  // ——— forge.js ———
+  // forge.js
   'Tidak ada gear yang cocok di tas.': 'No matching gear in your bag.',
   'Pilih gear untuk ditempa.': 'Select gear to forge.',
   'tempa +{p}/{m}': 'forge +{p}/{m}',
@@ -121,7 +121,7 @@ export default {
   Permata: 'Gem',
   'Gabungkan {n} permata menjadi 1 tingkat lebih tinggi. Efek: {fx}.': 'Combine {n} gems into 1 of a higher tier. Effects: {fx}.',
 
-  // ——— skilltab.js ———
+  // skilltab.js
   'Tombol 5 · bar terisi dari kill & damage diterima': 'Key 5 · bar fills from kills & damage taken',
   'Skill (pasang maksimal 4, tombol 1–4)': 'Skills (equip up to 4, keys 1–4)',
   'Energi {e} · jeda {cd} dtk': 'Energy {e} · cooldown {cd}s',
@@ -130,7 +130,7 @@ export default {
   '1 poin bakat tiap 2 level. Atur ulang di Pelatih.': '1 talent point every 2 levels. Reset at the Trainer.',
   'Ganti skill & bakat di kota.': 'Change skills & talents in town.',
 
-  // ——— results.js ———
+  // results.js
   'Tumbang!': 'Defeated!',
   'Dungeon Tamat!': 'Dungeon Cleared!',
   'Pulang dengan Selamat': 'Returned Safely',
@@ -147,14 +147,14 @@ export default {
   'Tas penuh: {n} gear ditinggal.': 'Bag full: {n} gear left behind.',
   'Kembali ke Kota': 'Back to Town',
 
-  // ——— hud.js ———
+  // hud.js
   bersih: 'clear',
   'Energi {n}': 'Energy {n}',
   'Perisai {n}': 'Shield {n}',
   'Slot {k} kosong': 'Slot {k} empty',
   'Hari {d}': 'Day {d}',
 
-  // ——— cheat.js ———
+  // cheat.js
   'Panel Cheat': 'Cheat Panel',
   'Muat karakter dulu.': 'Load a character first.',
   '+1.000 koin': '+1,000 coins',
@@ -181,7 +181,7 @@ export default {
   'Jatuhkan 1': 'Drop 1',
   'Jatuhkan 5': 'Drop 5',
 
-  // ——— reveal.js (chest opening, Mitos card) ———
+  // reveal.js (chest opening, Mitos card)
   'Ketuk untuk lanjut': 'Tap to continue',
   'ITEM MITOS!': 'MYTHIC ITEM!',
   Efek: 'Effects',
@@ -194,7 +194,7 @@ export default {
   'FPS: tampilkan': 'FPS: show',
   'FPS: sembunyikan': 'FPS: hide',
 
-  // ——— npc.js ———
+  // npc.js
   'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.': 'Good evening, adventurer. A warm bed and hot soup await you.',
   'Hehehe… ramuan segar dari kuali. Mau yang mana?': 'Hehehe… fresh potions from the cauldron. Which one will it be?',
   'Tungku sudah panas! Beli peti, jual rongsokan, tempa gear-mu, atau urai jadi bahan.': 'The furnace is hot! Buy chests, sell junk, forge your gear, or salvage it for materials.',
@@ -293,7 +293,7 @@ export default {
   'Belum ditemukan': 'Not found yet',
   '{n} tugas selesai. Klaim di Balai Petualang': "{n} bounties done. Claim at the Adventurers' Hall",
   'Kodeks: +{n} item unik': 'Codex: +{n} unique items',
-  // ——— 9D-2: big towns & teleport ———
+  // 9D-2: big towns & teleport
   "Batu rune ini berdengung pelan. Sentuh, dan sebut kota yang pernah kau datangi.": "The rune stone hums softly. Touch it, and name a town you have been to.",
   "Etalase senjataku sedang ditata. Kembalilah sebentar lagi!": "My weapon displays are still being arranged. Come back soon!",
   "Zirah-zirah baru masih kujahit. Sebentar lagi siap dipajang.": "I'm still stitching the new armor. It'll be on display soon.",
@@ -314,7 +314,7 @@ export default {
   "Kamu belum pernah ke sana.": "You haven't been there yet.",
   "Kunjungi semua kota": "Visit all towns",
   "Semua kota dikunjungi": "All towns visited",
-  // ——— 9D-2b: merchants ———
+  // 9D-2b: merchants
   "+{n} {what}": "+{n} {what}",
   "Kau membeli {item} ({rarity})!": "You bought {item} ({rarity})!",
   "Terjual": "Sold",
@@ -335,12 +335,12 @@ export default {
   "Tokonya sedang tutup.": "The shop is closed right now.",
   "Sudah habis untuk hari ini.": "Sold out for today.",
   "Pedagang Malam": "Night Merchant",
-  // ——— 9D-2c: Gudang ———
+  // 9D-2c: Gudang
   "Kosong.": "Empty.",
   "Ketuk barang di tas untuk menitip, ketuk barang di Gudang untuk mengambil. Gudang ini bisa dibuka di kota besar mana pun.": "Tap something in your bag to store it, tap something in the storehouse to take it back. You can open this storehouse in any big town.",
   "Titip apa saja di sini. Barangmu aman, dan bisa kau ambil di kota besar mana pun.": "Leave anything here. Your things are safe, and you can collect them in any big town.",
   "Gudang sudah penuh.": "The storehouse is full.",
-  // ——— 9D-3: treasure ———
+  // 9D-3: treasure
   "Semua harta di wilayah ini sudah dibuka": "Every treasure in this region is already open",
   "Harta Penguasa {region} terbuka!": "The {region} Overlord's hoard is open!",
   "Harta karun ditemukan!": "Treasure found!",
@@ -441,4 +441,29 @@ export default {
     'Auto: full effects, dropping to Lite when the FPS runs low. Higher sharpness is heavier on phones; it fully applies to the next place loaded.',
   'Game dimuat ulang setelah bahasa diganti.': 'The game reloads after the language changes.',
   'Tersimpan otomatis': 'Saved automatically',
+
+  // town map (spec §30): render/townmap.js, ui/townmap.js, data/townmap.js
+  Gerbang: 'Gate',
+  'Kamu (di dalam)': 'You (inside)',
+  'Quest di kota ini': 'Quests in this town',
+  'Toko & layanan': 'Shops & services',
+  'Tidak ada quest di kota ini sekarang.': 'No quests in this town right now.',
+  '{who} · {where}': '{who} · {where}',
+  'Ketuk baris di bawah untuk menandai tempatnya di peta.': 'Tap a row below to mark its place on the map.',
+  'Klik baris di bawah untuk menandai tempatnya · tekan M untuk menutup': 'Click a row below to mark its place · press M to close',
+  'Menginap & pulihkan HP': 'Rest & restore HP',
+  'Ramuan & sabuk ramuan': 'Potions & potion belt',
+  'Peti gear, jual, tempa, urai': 'Gear chests, selling, forging, salvage',
+  'Pasang & gabung permata': 'Socket & combine gems',
+  'Latihan atribut & bakat': 'Attribute & talent training',
+  'Tugas, ekspedisi & Lencana': 'Bounties, expeditions & Badges',
+  'Senjata pajangan': 'Weapons on display',
+  'Zirah pajangan': 'Armor on display',
+  'Perhiasan pajangan': 'Jewelry on display',
+  'Simpan & ambil gear': 'Store & retrieve gear',
+  'Bahan tempa & permata': 'Forging materials & gems',
+  'Ganti gaya rambut': 'Change hairstyle',
+  'Pindah ke kota lain': 'Travel to another town',
+  'Barang langka, 18:00–05:00': 'Rare goods, 18:00–05:00',
+  'Keluar ke wilayah': 'Head out to the regions',
 };

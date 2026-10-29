@@ -29,7 +29,7 @@ function molten(g, lines, t) {
   g.restore();
 }
 
-// ——— weapons (drawn upright; drawGearIcon tilts them) ———
+// weapons (drawn upright; drawGearIcon tilts them)
 function sword(g, it, t) {
   const tier = it.variant, w = 2.2 + tier * 0.22, top = -13 + (6 - tier) * 0.5;
   fillPoly(g, [[-w, 3], [-w - 0.3, top + 4], [0, top], [w + 0.3, top + 4], [w, 3]], rimmed(BLADE[tier]), 2.2, 0.6, 1);
@@ -74,7 +74,7 @@ function daggers(g, it, t) {
   gem(g, 0, 3, 1, it.rarity, t);
 }
 
-// ——— armour pieces ———
+// armour pieces
 function helm(g, it, t) {
   const tier = it.variant, M = rimmed(METAL[tier]);
   if (tier <= 1) { // leather cap

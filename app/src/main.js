@@ -52,6 +52,10 @@ import { phaseOf } from './meta/clock.js';
 import { drawRegionMap } from './render/regionmap.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
 import { createTown, stepTown } from './town/town.js';
+import { townMapInfo, playerSpot, townLegend } from './town/townmap.js';
+import { townDef } from './data/towns.js';
+import { drawTownMap } from './render/townmap.js';
+import { renderTownLegend } from './ui/townmap.js';
 import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
@@ -102,7 +106,7 @@ let dungeonReturn = null; // { region, x, y }: a dungeon entered from a gate in 
 let worldClock = 0;    // in-game minutes since day 1 (spec §18.4); written to the save on every save
 let worldLoading = false; // a 3D place is being built behind the loading screen: no drawing, no simulation
 
-// ——— save + settings ———
+// save + settings
 const store = await openStore();
 if (!store.persistent) $('nosave').classList.remove('hidden');
 
@@ -197,7 +201,7 @@ async function saveCurrent() {
   try { await store.saveSlot(current); return null; } catch (e) { toast(t('Gagal menyimpan: {err}', { err: e.message })); return e.message; }
 }
 
-// ——— scene + HUD visibility ———
+// scene + HUD visibility
 // hud: 'none' | 'town' | 'run'; controls: action buttons usable right now
 function setUI(hud, controls) {
   $('hud').classList.toggle('hidden', hud !== 'run');
@@ -207,7 +211,7 @@ function setUI(hud, controls) {
   $('charbtn').classList.toggle('hidden', !controls);
   $('actions').classList.toggle('hidden', !controls);
   $('belt').classList.toggle('hidden', !controls);
-  $('minimap').classList.toggle('hidden', !(controls && hud === 'run' && game.field));
+  $('minimap').classList.toggle('hidden', !(controls && ((hud === 'run' && game.field) || (hud === 'town' && town?.map === 'town'))));
   document.body.classList.toggle('playing', controls && hud === 'run');
   document.body.classList.toggle('intown', hud === 'town');
   if (!controls || hud !== 'town') $('prompt').classList.add('hidden');
@@ -234,7 +238,7 @@ function showTownOverlay(id) {
   setUI('town', id === null);
 }
 
-// ——— menus ———
+// menus
 async function toSlots() {
   stopMusic();
   if (scene === 'town') { syncHp(); await saveCurrent(); }
@@ -295,7 +299,7 @@ async function deleteSlot(slot) {
   await toSlots();
 }
 
-// ——— town ———
+// town
 function enterTown(char, at) {
   current = syncQuests(structuredClone(char)); // older saves catch up with what was already done
 
@@ -592,7 +596,7 @@ async function drinkInTown(slot) {
   await saveCurrent();
 }
 
-// ——— dungeon ———
+// dungeon
 // The character is saved at the gate; closing the browser mid-dungeon returns
 // to this state (spec §13.4).
 async function enterDungeon(dungeon = 'shadow', floor = 1) {
@@ -632,7 +636,7 @@ function setupRunUI() {
   showOverlay(null);
 }
 
-// ——— open world (spec §25.1) ———
+// open world (spec §25.1)
 async function explore(regionId, at = 'west') {
   if (scene === 'town') syncHp();
   await saveCurrent();
@@ -733,6 +737,7 @@ function openMap() {
   if (!game.field) return;
   game.state = ST.PAUSE;
   showOverlay('fieldmap');
+  $('maplegend').replaceChildren();
   const c = $('mapcanvas');
   const w = c.clientWidth, h = c.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2);
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
@@ -797,8 +802,39 @@ function drawMinimap() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden });
 }
-$('minimap').addEventListener('click', openMap);
-$('mapclose').addEventListener('click', () => resume());
+$('minimap').addEventListener('click', () => (scene === 'town' ? openTownMap() : openMap()));
+$('mapclose').addEventListener('click', () => (scene === 'town' ? closeTownOverlay() : resume()));
+
+// The town map (spec §30): shops, services and quests in this town; the minimap sits in the corner outdoors.
+function townMap(withQuests = false) {
+  return townMapInfo(town.id, { marks: town.marks, offers: withQuests ? (id) => talkOffers(current, town.id, id) : undefined, night: town.night });
+}
+function openTownMap(focus = null) {
+  if (screen !== 'fieldmap') showTownOverlay('fieldmap');
+  const info = townMap(true);
+  const c = $('mapcanvas');
+  const w = c.clientWidth, h = c.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2);
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawTownMap(g, info, { x: 0, y: 0, w, h }, playerSpot(info, town), { labels: true, t: 0, ground: townDef(town.id).theme.ground, focus });
+  $('maptitle').textContent = TOWNS[town.id].name;
+  $('mapnote').textContent = TOUCH ? tr('Ketuk baris di bawah untuk menandai tempatnya di peta.') : tr('Klik baris di bawah untuk menandai tempatnya · tekan M untuk menutup');
+  renderTownLegend($('maplegend'), townLegend(info), (id) => openTownMap(id));
+  if (focus) c.scrollIntoView({ block: 'center', behavior: CALM.matches ? 'auto' : 'smooth' }); // a row far down the list: bring the ring into view
+}
+function drawTownMinimap() {
+  const c = $('minimap');
+  c.classList.toggle('hidden', town.map !== 'town');
+  const w = c.clientWidth, h = c.clientHeight;
+  if (!w) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const info = townMap();
+  drawTownMap(g, info, { x: 0, y: 0, w, h }, playerSpot(info, town), { t: town.t, ground: townDef(town.id).theme.ground });
+}
 
 // End of a trip — gold portal (died = false), death or giving up (died = true):
 // apply rewards/penalty, auto-save, show Hasil Perjalanan (spec §13.4).
@@ -835,7 +871,7 @@ function resume() {
   game.state = ST.PLAY; showOverlay(null);
 }
 
-// ——— buttons ———
+// buttons
 $('slotsback').addEventListener('click', showTitle);
 $('resume').addEventListener('click', resume);
 $('surrender').addEventListener('click', () => { game.surrender(); endRun(true); });
@@ -861,7 +897,7 @@ $('mute').addEventListener('click', () => {
   saveSettings();
 });
 
-// ——— cheat panel (testing only, ui/cheat.js) ———
+// cheat panel (testing only, ui/cheat.js)
 let cheatOpen = false;
 const cheatScene = () => (scene === 'run' ? 'run' : scene === 'town' && current ? 'town' : 'menu');
 function drawCheat() { renderCheat($('cheat'), { scene: cheatScene(), god: !!game.god, field: scene === 'run' && game.field, fps: fpsShown }, cheatActions, drawCheat); }
@@ -995,7 +1031,7 @@ if (CHEAT_ON) {
   $('cheatbtn').addEventListener('click', toggleCheat);
 }
 
-// ——— phones play in landscape only (spec §27) ———
+// phones play in landscape only (spec §27)
 // Turning to portrait pauses a run (a card asks to turn back); Android can also lock it.
 const portrait = matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 900px)');
 portrait.addEventListener('change', () => { if (portrait.matches && scene === 'run' && game.state === ST.PLAY) pause(); });
@@ -1005,15 +1041,17 @@ addEventListener('pointerdown', function lockLandscape() {
   document.documentElement.requestFullscreen?.().then(() => window.screen.orientation.lock('landscape')).catch(() => { /* not supported: the card does the job */ });
 });
 
-// ——— keyboard shortcuts ———
+// keyboard shortcuts
 input.onAction.push((code) => {
   if (CHEAT_ON && code === 'Backquote') { toggleCheat(); return; }
   if (!$('settings').classList.contains('hidden')) { if (code === 'Escape') $('settings-close').click(); return; } // Settings open: keys stay there
-  if (code === 'KeyM') { // the map in a region, mute elsewhere
+  if (code === 'KeyM' && scene === 'town' && (screen === null || screen === 'fieldmap')) { if (screen === 'fieldmap') closeTownOverlay(); else openTownMap(); return; }
+  if (code === 'KeyM') { // the map in a region or town, mute elsewhere
     if (scene === 'run' && game.field && (game.state === ST.PLAY || screen === 'fieldmap')) { if (screen === 'fieldmap') resume(); else openMap(); } else $('mute').click();
     return;
   }
-  const go = code === 'Space' || code === 'Enter';
+  // Enter/Space on a focused control is that control's own press, not the screen's shortcut
+  const go = (code === 'Space' || code === 'Enter') && !document.activeElement?.closest?.('button,[role=button],input,select');
   if (screen === 'title' && go) { ($('continue') || $('play')).click(); return; }
   if (screen === 'results' && go) { $('tocamp').click(); return; }
   if (scene === 'town') {
@@ -1035,12 +1073,13 @@ input.onAction.push((code) => {
 
 let hudT = 0;
 
-// ——— main loop ———
+// main loop
 function tickTown(pressed) {
   if (screen !== null) return;
   town.night = isNight(worldClock); // the night merchant (spec §25.2)
   stepTown(town, { move: FLAT ? { x: input.x, y: input.y } : STAGE.toWorld(input.x, input.y) }, STEP);
   if (town.entered) sfx.dodge();
+  if ((minimapT += STEP) > 0.25) { minimapT = 0; drawTownMinimap(); }
   if (pressed.has('talk') && town.near) { openNpc(town.near); return; }
   const slot = potionSlot(pressed);
   if (slot >= 0) drinkInTown(slot);
@@ -1161,7 +1200,7 @@ const loop = startLoop(tick, frame);
 $('boot')?.classList.add('gone'); // the page loader (index.html) gives way to the title
 setTimeout(() => $('boot')?.remove(), 500);
 
-// ——— screenshot / debug hooks ———
+// screenshot / debug hooks
 window.__seek = (t) => {
   const v = Number(t) || 0;
   if (game.state === ST.TITLE) {

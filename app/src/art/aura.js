@@ -57,7 +57,7 @@ function tongue(g, x, y, w, h, color) {
   g.fillStyle = color; g.fill();
 }
 
-// ——————————————— level ring (ground, behind the body) ———————————————
+// level ring (ground, behind the body)
 // tier 1 ring · 2 runes turning · 3 double ring · 4 glow + pillar base · 5 big golden circle + rays
 export function levelRing(g, x, y, level, t, o = {}) {
   const tier = ringTier(level);
@@ -136,7 +136,7 @@ function levelFront(g, x, y, level, t, lite) {
   }
 }
 
-// ——————————————— behind the body ———————————————
+// behind the body
 // Floor glows, mists, wings, thorn crown, full-set pillar, regen flowers.
 // fx = { effect: value } from meta/gear.js gearEffects; best = best rarity worn (5th arg kept optional).
 export function auraBack(g, x, y, fx, t, o = {}) {
@@ -298,7 +298,7 @@ function thornCrown(g, x, y, t, lite, hurt) {
   g.restore();
 }
 
-// ——————————————— in front of the body (emissive) ———————————————
+// in front of the body (emissive)
 // best: highest rarity among the gear worn.
 export function auraFront(g, x, y, fx, best, t, o = {}) {
   fx = fx || {};

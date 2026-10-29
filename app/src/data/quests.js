@@ -100,7 +100,7 @@ export const MAIN = [
 
 export const MAIN_IDS = MAIN.map((q) => q.id);
 
-// ——— hidden places in the regions (spec §26.5): fixed for every character ———
+// hidden places in the regions (spec §26.5): fixed for every character
 export const HIDDEN_R = { talk: 90, solid: 58, calm: 400 }; // talk reach, hut collision radius, no packs within
 export const REACH_R = 160;                                  // standing this close to a spot counts
 export const DROP_ITEMS = {
@@ -245,7 +245,7 @@ export const SIDE = [
     { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Bara masih hidup? Aku segera menjemputnya! Ini, dari tabungan kami para penambang.' },
   ], reward: { gold: 6, exp: 5, marks: 2, mats: { core: 1, crystal: 5 } } },
 
-  // ——— towns: townsfolk and shopkeepers (spec §26.6) ———
+  // towns: townsfolk and shopkeepers (spec §26.6)
   { id: 't_marta', title: 'Sup untuk Nenek Kunyit', steps: [
     { kind: 'talk', town: 'home', npc: 'inn', who: 'Bu Marta', say: 'Nenek Kunyit, sahabat lamaku, tinggal di pondok tengah Hutan Kelam. Sudah lama ia tak turun gunung. Tolong antarkan sup hangat ini, ya?' },
     { ...wild('kunyit'), say: 'Sup Marta! Masih hangat pula. Bilang padanya aku sehat. Dan ini, untuk kakimu yang lelah.' },

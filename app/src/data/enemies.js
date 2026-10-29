@@ -30,7 +30,7 @@ export const ENEMIES = {
     name: 'Kura Baja', hp: 85, speed: 34, dmg: 12, r: 16, xp: 5, sprite: 'shielder', score: 5,
     ai: 'shield', turn: 1.4, guard: { arc: 140, reduce: 0.85 },
   },
-  // ——— biome enemies (spec §25.4) ———
+  // biome enemies (spec §25.4)
   // kin: the older enemy a biome variant is drawn from (bestiary counts it there);
   // onHit: what a landed hit does to the player — slow: [speed −k, seconds],
   // poison / burn: [k × the hit's damage per second, seconds].
@@ -73,7 +73,7 @@ export const ENEMIES = {
     ai: 'charge', range: 260, every: 2.4, windup: 0.6, dash: { speed: 400, time: 0.5 }, rest: 0.7,
     trail: { every: 0.08, r: 26, fuse: 0.45, dmg: 0.6 }, onHit: { burn: [0.3, 2] },
   },
-  // ——— Tanah Gerhana (spec §26.7): eclipse variants and the wraith ———
+  // Tanah Gerhana (spec §26.7): eclipse variants and the wraith
   voidslink: { kin: 'slink', name: 'Lendir Hampa', hp: 26, speed: 64, dmg: 10, r: 11, xp: 1, sprite: 'voidslink', score: 1, onHit: { slow: [0.3, 1.2] } },
   voiddart: { kin: 'dart', name: 'Kelelawar Gerhana', hp: 16, speed: 115, dmg: 8, r: 9, xp: 1, sprite: 'voiddart', score: 1 },
   voidspitter: {

@@ -45,7 +45,7 @@ export class Dungeon25 {
     this.actors = new Actors(this.view, this.flat, this.stage, sc);
   }
 
-  // ——— the room: built once per floor ———
+  // the room: built once per floor
   buildRoom(game) {
     const sc = this.scene, room = game.room, theme = game.dungeon.theme;
     if (this.roomGroup) { sc.remove(this.roomGroup); dispose(this.roomGroup); }
@@ -133,8 +133,8 @@ export class Dungeon25 {
     if (changed) { blocks.instanceMatrix.needsUpdate = true; caps.instanceMatrix.needsUpdate = true; }
   }
 
-  // ——— per frame ———
-  // ——— building ahead (the loading screen, ui/loading.js) ———
+  // per frame
+  // building ahead (the loading screen, ui/loading.js)
   needsWarm(game) { return !!game.room && !!game.dungeon && (!this.hemi || game.room !== this.roomRef); }
   async warm(game, step) {
     await step(0.15, 'torch');

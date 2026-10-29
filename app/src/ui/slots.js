@@ -1,5 +1,5 @@
 // Pilih Slot: three save slots — open, create, or delete (spec §3).
-import { el, button, svgIcon, stage } from './screens.js';
+import { el, button, svgIcon, stage, pressable } from './screens.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
@@ -28,7 +28,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
         st, el('div', 'nm', c.name), cls, rec,
         button(tr('Hapus'), 'btn ghost small danger', (ev) => { ev.stopPropagation(); onDelete(e.slot); }),
       );
-      card.addEventListener('click', () => onOpen(e.slot));
+      pressable(card, () => onOpen(e.slot));
     } else if (e.status === 'empty') {
       card.classList.add('empty');
       card.append(
@@ -37,7 +37,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
         el('div', 'ds', tr('Kosong. Buat petualang baru')),
         button(tr('Buat'), 'btn small', (ev) => { ev.stopPropagation(); onCreate(e.slot); }),
       );
-      card.addEventListener('click', () => onCreate(e.slot));
+      pressable(card, () => onCreate(e.slot));
     } else {
       // corrupt: never overwritten; the player decides (export arrives in langkah 6)
       card.classList.add('bad');

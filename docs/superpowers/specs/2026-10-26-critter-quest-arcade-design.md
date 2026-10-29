@@ -982,3 +982,11 @@ Konsep dipilih pemilik dari `app/masuk.html`: **A. Api Unggun** + menu Pengatura
 - Di HP (layar sentuh, lebar ≤ 900 px) game **hanya bisa dimainkan mendatar**. Dalam posisi tegak muncul kartu "Putar HP-mu ke posisi mendatar". Perjalanan yang sedang berlangsung dijeda saat HP diputar tegak. Di Android, sentuhan pertama mencoba layar penuh + kunci landscape.
 - Layar pendek (HP mendatar, tinggi ≤ 540 px): HUD, pelacak quest, tombol atas, tombol aksi, sabuk ramuan, joystick, dan isi panel diperkecil (CSS `zoom`). Peta mini lebih kecil.
 - Tampilan dunia di layar pendek memperlihatkan ±440 satuan pada sisi pendek (bukan 360), jadi musuh terlihat lebih awal.
+
+## 30. Peta Kota (permintaan pemilik 2026-10-29)
+Supaya pemain tahu ada quest dan toko apa saja di kota. Detail diserahkan ke Claude.
+
+- **Peta mini** di pojok kanan atas saat di luar rumah (kanvas `#minimap` yang sama dengan wilayah), disembunyikan di dalam rumah. Ketuk/klik → peta penuh.
+- **Peta penuh** (layar `fieldmap` yang sama dengan wilayah): tombol **M** di kota (sebelumnya M = bisukan; tombol suara tetap ada), Esc / M / Tutup menutup. Isi: tembok, rumah toko dengan ikon & nama, rumah warga polos, fitur kota (kolam, lava, jembatan, pohon besar, dll.), gerbang, orang di luar rumah (layanan berikon + nama, warga sebagai titik), pedagang malam hanya saat malam, tanda **!** / **?** di atas rumah (tanda terkuat penghuninya, `?` mengalahkan `!`) dan orang, posisi pemain (di dalam rumah: di depan pintunya, "Kamu (di dalam)").
+- **Daftar di bawah peta:** "Quest di kota ini" (tanda, judul quest, pemberi · tempat; `?` dulu) lalu "Toko & layanan" (ikon, tempat, layanan · penjaga). Ketuk satu baris → tempatnya dilingkari di peta dan peta digulir ke layar.
+- Kode: `town/townmap.js` (logika murni + tes: `townMapInfo`, `playerSpot`, `townLegend`), `data/townmap.js` (teks layanan & ikon, warna fitur), `render/townmap.js` (gambar), `ui/townmap.js` (daftar), `main.js` (`openTownMap`, `drawTownMinimap`). Save tidak berubah.

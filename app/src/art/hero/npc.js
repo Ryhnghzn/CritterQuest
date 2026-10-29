@@ -67,7 +67,7 @@ function outfitPal(outfit) {
   return p;
 }
 
-// ——— pieces ———
+// pieces
 function body(g, R, B, clothes, O) {
   const t = R.t;
   g.save(); g.translate(R.hip.x, R.hip.y); g.rotate(R.lean); g.scale(B.torso, 1);

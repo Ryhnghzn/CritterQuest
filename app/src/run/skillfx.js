@@ -44,7 +44,7 @@ export function castFx(run, s, from) {
   if (s.kind === 'dash') { run.dashSid = s.id; run.dashFromX = x; run.dashFromY = y; }
   if (s.kind === 'buff' || s.dmgTaken) run.buffSid = s.id;
   switch (s.id) {
-    // ——— warrior ———
+    // warrior
     case 'spin':
       v.ring(x, y, { r1: s.r, life: 0.35, color: P[2], width: 5 });
       v.burst('smoke', x, y + 8, DUST, { n: 6 });
@@ -83,7 +83,7 @@ export function castFx(run, s, from) {
       v.ring(x, y, { r1: s.r, life: 0.5, color: P[2], width: 7 });
       v.crack(x, y + 10, { rays: 10, len: 90, color: P[2] });
       break;
-    // ——— archer ———
+    // archer
     case 'rain':
     case 'starfall':
       v.ring(at.x, at.y, { r0: s.r * 0.3, r1: s.r, life: 0.4, color: P[2], width: 3 });
@@ -119,7 +119,7 @@ export function castFx(run, s, from) {
       v.ring(x, y - 20, { r1: 40, life: 0.4, color: P[2], width: 3 });
       v.burst('stars', x, y - 20, P, { n: 6 });
       break;
-    // ——— mage ———
+    // mage
     case 'nova':
       v.flash('#ffffff', 0.35, 0.12);
       v.ring(x, y, { r1: s.r, life: 0.4, color: P[2], width: 7 });
@@ -157,7 +157,7 @@ export function castFx(run, s, from) {
       v.flash('#ff6a3a', 0.3, 0.3);
       v.ring(at.x, at.y, { r1: s.r, life: 0.6, color: P[2], width: 6 });
       break;
-    // ——— assassin ———
+    // assassin
     case 'shadow':
       v.burst('smoke', x, y, '#5a3a7a', { n: 10, speed: 1.5 });
       break;

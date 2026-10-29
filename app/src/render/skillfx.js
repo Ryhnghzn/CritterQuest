@@ -38,7 +38,7 @@ export function drawHit(g, h, avatar, t) {
   g.restore();
 }
 
-// ——————————————— basic attacks (§B) ———————————————
+// basic attacks (§B)
 const BASIC = {
   slash(g, h, k, p, t, wr) {
     if (h.echo) { g.save(); g.globalAlpha = 0.35; slashArc(g, h, Math.max(0, p - 0.12), t, wr, 1.18); g.restore(); }
@@ -166,9 +166,9 @@ function fireOrb(g, x, y, r, a, t, tongues = 3) {
   g.restore();
 }
 
-// ——————————————— skills (§C) ———————————————
+// skills (§C)
 const SKILL = {
-  // ——— warrior ———
+  // warrior
   spin(g, h, k, p, t) {
     g.globalAlpha = Math.min(1, k * 4);
     floorGlow(g, h.x, h.y + 4, h.r, 'rgba(255,154,60,.14)');
@@ -220,7 +220,7 @@ const SKILL = {
       g.fillStyle = '#e6eef8'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = OUT; g.stroke();
     }
   },
-  // ——— archer ———
+  // archer
   rain(g, h, k, p, t) {
     const a = Math.min(1, k * 5);
     g.globalAlpha = a;
@@ -303,7 +303,7 @@ const SKILL = {
       g.globalCompositeOperation = 'source-over';
     });
   },
-  // ——— mage ———
+  // mage
   nova(g, h, k, p) { novaShape(g, h, k, p, 1); },
   meteor(g, h, k, p, t) {
     g.globalAlpha = k;
@@ -348,7 +348,7 @@ const SKILL = {
       fireOrb(g, sx, sy, r, Math.atan2(160, -70), t);
     });
   },
-  // ——— assassin ———
+  // assassin
   fan(g, h) {
     ribbon(g, h, 30, S[1], 1.8, false);
     dagger(g, h.x, h.y, h.angle);
@@ -406,7 +406,7 @@ const FALLBACK = {
   dagger(g, h) { ribbon(g, h, 30, S[1], 1.8, false); dagger(g, h.x, h.y, h.angle); },
 };
 
-// ——————————————— shapes ———————————————
+// shapes
 function floorGlow(g, x, y, r, color) {
   g.save();
   g.beginPath(); g.ellipse(x, y, r, r * 0.8, 0, 0, TAU);
@@ -584,7 +584,7 @@ function shadowClone(g, x, y, a) {
   g.restore();
 }
 
-// ——————————————— ultimate tint, buff auras, enemy marks ———————————————
+// ultimate tint, buff auras, enemy marks
 // rect: visible world area (render/world.js)
 export function drawUltTint(g, game, rect) {
   for (const h of game.hits) {

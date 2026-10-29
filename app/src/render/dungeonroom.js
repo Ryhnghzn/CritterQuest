@@ -296,7 +296,7 @@ function tombThing(g, s) {
   for (const c of s.caps) { g.beginPath(); g.arc(x + c.dx * 0.6, y + c.dy * 0.4 - 4, 1.6 * c.s, 0, TAU); g.fillStyle = '#fff2b0'; g.fill(); }
 }
 
-// ——— Menara Gerhana (spec §26.7) ———
+// Menara Gerhana (spec §26.7)
 // a great eclipse sigil in the middle of the floor (rings, a dark disc, rays), a faint
 // spiral stair, and small sigils under the rune stones
 function sigil(g, x, y, R, t, a) {

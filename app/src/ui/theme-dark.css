@@ -14,13 +14,13 @@
   --cq-red:#c8323e; --cq-red-d:#5a1620; --cq-blue:#3a78c8;
 }
 
-/* ——— defaults for every framed thing (zero specificity: per-class rules below win) ——— */
+/* defaults for every framed thing (zero specificity: per-class rules below win) */
 :where(#hud,#townhud,#qtrack,#prompt,#toast,#mute,#pausebtn,#charbtn,#autobtn,.panel,.card,.dcard,.btn,.chip,.tile,.chest,.stat,.attr,
   .skill,.shoprow,.lootrow,.beast,.quest,.questbox,.socket,.cdx,.stage,.iconbubble,.lvbadge,.badge,.lv,.hchip,.sic,.lic,.gdic,.beltslot,.act){
   --cq-cut:8px; --cq-edge:var(--cq-gold-d); --cq-fill:var(--cq-panel);
 }
 
-/* ——— the chamfer frame ——— */
+/* the chamfer frame */
 :is(#ui,#confirm) :is(#hud,#townhud,#qtrack,#prompt,#toast,#mute,#pausebtn,#charbtn,#autobtn,.panel,.card,.dcard,.btn,.chip,.tile,.chest,.stat,.attr,
   .skill,.shoprow,.lootrow,.beast,.quest,.questbox,.socket,.cdx,.stage,.iconbubble,.lvbadge,.badge,.lv,.hchip,.sic,.lic,.gdic,.beltslot),
 #ui .act::before{
@@ -427,5 +427,44 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 @media (max-width:640px){#settings .scols{grid-template-columns:1fr}#settings .stabs{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--cq-rowedge);padding:0 0 8px}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#settings .settings{zoom:.8;max-height:calc(125vh - 40px)}}
 
+/* town map legend (spec §30): quests, then shops & services; a row rings its place on the map */
+#ui .tmlegend{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;width:100%;align-items:start}
+#ui .tmlegend:empty{display:none}
+#ui .tmcol{display:flex;flex-direction:column;gap:4px;min-width:0}
+#ui .tmrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;background:var(--cq-row);border:1px solid var(--cq-rowedge);
+  color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+#ui .tmrow:hover{border-color:var(--cq-gold-d)}
+#ui .tmtxt{display:flex;flex-direction:column;min-width:0}
+#ui .tmtxt b{font-weight:600;color:var(--cq-gold-l)}
+#ui .tmtxt small{font-size:12px;color:#9a8f80}
+#ui .tmmark{flex:none;width:26px;text-align:center;font:900 20px Barlow,sans-serif;color:#ffd24a;text-shadow:0 0 8px rgba(255,200,80,.7)}
+#ui .tmmark.step{color:#ffe9a8}
+@media (max-width:700px){#ui .tmlegend{grid-template-columns:1fr}}
+
 /* keyboard focus: the chamfer clip-path hides an outside outline, so it is drawn inside the frame */
 :focus-visible{outline:2px solid var(--cq-gold-l);outline-offset:-4px}
+
+/* touch targets at least 44px on screen; on short screens the size is divided by that layer's zoom
+   (.screen .72, #settings .8, #qtrack .64, #prompt .75) so it still lands on 44px */
+@media (pointer:coarse){
+  #ui :is(.btn,.tab,.chip,.stab),#confirm .btn,#settings .seg button{min-height:44px}
+  #ui .btn.plus,#ui .chip{min-width:44px}
+  #ui input.name{min-height:44px}
+  #settings input[type=range]{height:44px}
+  #settings .tog::after{content:'';position:absolute;inset:-10px -4px}
+  #qthead{min-height:44px}
+  #prompt{min-height:44px}
+}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){
+  #ui .screen :is(.btn,.tab,.chip){min-height:61px}
+  #ui .screen .btn.plus{min-width:61px}
+  #ui .screen input.name{min-height:61px}
+  #ui .screen .tmrow{min-height:61px}
+  #settings .btn{min-height:55px}
+  #settings :is(.stab,.seg button){min-height:55px}
+  #settings input[type=range]{height:55px}
+  #settings .tog::after{inset:-16px -4px}
+  #qthead{min-height:69px}
+  #prompt{min-height:59px}
+  #belt{zoom:.96}
+}
