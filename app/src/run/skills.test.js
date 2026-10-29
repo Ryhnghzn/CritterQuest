@@ -240,7 +240,7 @@ describe('skill mage', () => {
     e.speed = 40;
     cast(g, 1);
     // the cast itself adds Panas (cost × 0.6), and that heat already boosts its own hits (spec §31.3)
-    expect(dealt(e)).toBeCloseTo(s.mult * 16 * (1 + 0.3 * (s.cost * 0.6) / 80), 0);
+    expect(dealt(e)).toBeCloseTo(s.mult * 16 * (1 + 0.3 * (s.cost * 0.6) / 80), 1);
     expect(far.hp).toBe(1e6);
     idle(g, 0.2);
     const x = e.x;

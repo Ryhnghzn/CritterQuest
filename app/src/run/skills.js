@@ -151,6 +151,7 @@ function castSkill(run, s) {
       if (s.blast) blast(run, s.blast);
       run.dodgeT = s.duration;
       run.dashSpeed = s.distance / s.duration;
+      run.skillDash = true; // skill dashes never clear Bidik
       run.dodgeX = run.aimX * dir; run.dodgeY = run.aimY * dir;
       run.dodgeInv = Math.max(run.dodgeInv, s.duration + 0.1);
       if (s.mult > 0) {

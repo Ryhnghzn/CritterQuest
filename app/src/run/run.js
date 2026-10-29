@@ -104,7 +104,7 @@ export class Game {
     this.ult = ult; this.ultCharge = 0;
     this.skillBuff = null; this.skillBuffT = 0; // atk / atkSpd / crit / critDmg from a buff skill
     this.buffT = 0; this.dmgTakenMul = 1;
-    this.dashSpeed = 0;
+    this.dashSpeed = 0; this.skillDash = false;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0;
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
@@ -256,7 +256,7 @@ export class Game {
     stepAttack(this, this.intent, dt);
     stepSkills(this, this.intent, dt);
     const mv = this.intent.move;
-    traitStep(this, dt, mv.x !== 0 || mv.y !== 0 || this.dodgeT > 0, !!(this.intent.attack || this.intent.auto));
+    traitStep(this, dt, mv.x !== 0 || mv.y !== 0 || (this.dodgeT > 0 && !this.skillDash), !!(this.intent.attack || this.intent.auto));
     this.stepPotion(dt);
     this.stepEffects(dt);
     for (const h of this.hits) stepHitFx(this, h, dt);

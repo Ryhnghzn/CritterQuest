@@ -392,18 +392,17 @@ describe('Mage Panas, Archer Bidik, Assassin Kombo (wiring)', () => {
     g.intent = { ...idle, skill2: true };
     g.step(1 / 60); // nova (45 × 0.6 = 27) tips it over
     expect(g.trait.lock).toBeGreaterThan(2);
-    const before = g.skillCd[0];
     g.energy = 100; g.skillCd[0] = 0;
     g.intent = { ...idle, skill1: true };
     g.step(1 / 60);
     expect(g.skillCd[0]).toBe(0); // not cast
+    expect(g.energy).toBeGreaterThan(95); // and no energy spent
     g.intent = { ...idle, move: { x: 1, y: 0 } };
     const x0 = g.px; g.step(1 / 60);
     const slowed = g.px - x0;
     g.trait.lock = 0; g.intent = { ...idle, move: { x: 1, y: 0 } };
     const x1 = g.px; g.step(1 / 60);
     expect(slowed).toBeLessThan((g.px - x1) * 0.8);
-    expect(before).toBeGreaterThanOrEqual(0);
   });
 
   it('bonus damage Panas dan pengali Kombo masuk ke hit skill', () => {
@@ -453,5 +452,29 @@ describe('Mage Panas, Archer Bidik, Assassin Kombo (wiring)', () => {
     const e = dummy(g);
     g.damageEnemy({ mult: 1, crit: true, fx: 'arrow' }, e); // crit stat is 0 here
     expect(1e6 - e.hp).toBeCloseTo(g.stats.atk * g.stats.critDmg, 0);
+  });
+
+  it('Lompatan Mundur mengisi Bidik dan lompatannya tidak menghapusnya; panah berikutnya fokus', () => {
+    const g = mk('archer', ['leap', null, null, null]);
+    g.energy = 100;
+    g.intent = { ...idle, skill1: true };
+    g.step(1 / 60);
+    expect(g.dodgeT).toBeGreaterThan(0);
+    for (let i = 0; i < 4; i++) { g.intent = { ...idle }; g.step(1 / 60); }
+    expect(g.trait.focus).toBe(true);
+    g.intent = { ...idle, attack: true };
+    g.step(1 / 60);
+    const p = g.hits.find((h) => h.kind === 'proj');
+    expect(p.crit).toBe(true);
+    expect(p.pierce).toBe(3);
+  });
+
+  it('menghindar sungguhan mengosongkan Bidik', () => {
+    const g = mk('archer', ['rain', null, null, null]);
+    g.trait.v = 100; g.trait.focus = true;
+    g.intent = { ...idle, dodge: true };
+    g.step(1 / 60);
+    expect(g.trait.focus).toBe(false);
+    expect(g.trait.v).toBe(0);
   });
 });

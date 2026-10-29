@@ -89,6 +89,7 @@ function stepProjectile(h, enemies, dt, ctx) {
       const blast = makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom' });
       blast.skill = h.skill; // a skill's explosion still counts as the skill
       blast.sid = h.sid;     // and looks like it (run/skillfx.js)
+      blast.execute = h.execute; blast.crit = h.crit; // Kombo execute / forced crit carry over
       ctx.add(blast);
       h.dead = true;
       return;
