@@ -313,6 +313,11 @@ h2.h.bad{color:var(--coral)}
 .enbar>i{position:absolute;inset:0;transform-origin:left;border-radius:999px;background:linear-gradient(90deg,#3f7ee0,#62d6ff);transition:transform .1s}
 .enbar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.7)}
 .enbar.empty{animation:shake .35s}
+.trbar{height:10px;border-radius:999px;background:rgba(0,0,0,.4);position:relative;overflow:hidden;margin-top:3px;--c:#e0526a}
+.trbar>i{position:absolute;inset:0;transform-origin:left;border-radius:999px;background:var(--c);transition:transform .1s}
+.trbar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.trbar.hot{animation:trpulse .5s ease-in-out infinite alternate}
+@keyframes trpulse{from{filter:brightness(1)}to{filter:brightness(1.7)}}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .act .cost{position:absolute;left:-4px;top:-4px;min-width:20px;height:18px;padding:0 4px;border-radius:999px;display:grid;place-items:center;
   font-size:11px;font-weight:700;background:#3f7ee0;color:#fff;box-shadow:0 2px 0 #24539e}
@@ -707,6 +712,7 @@ button.skill:disabled{cursor:default;color:inherit}
   <div id="hud" class="hidden">
     <div class="hpbar"><i id="hpfill"></i><span id="hptext"></span></div>
     <div class="enbar" id="enbar"><i id="enfill"></i><span id="entext"></span></div>
+    <div class="trbar hidden" id="trbar"><i id="trfill"></i><span id="trtext"></span></div>
     <div class="xprow"><span class="lv" id="lvltext">LV 1</span><div class="xpbar"><i id="xpfill"></i></div></div>
     <div id="meta">
       <span class="hchip"><svg class="i"><use href="#i-trophy"/></svg><b id="floor">Lantai 1</b></span>

@@ -7,6 +7,8 @@ import { clockText } from '../meta/clock.js';
 import { activeQuests } from '../meta/quests.js';
 import { stepText } from './journal.js';
 import { tr, t } from '../i18n.js';
+import { CLASSES } from '../data/classes.js';
+import { traitLevel } from '../run/traits.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,6 +29,15 @@ export function updateHUD(game) {
   $('enfill').style.transform = `scaleX(${game.energy / ENERGY.max})`;
   $('entext').textContent = t('Energi {n}', { n: Math.floor(game.energy) });
   $('enbar').classList.toggle('empty', game.noEnergyT > 0);
+  const tc = CLASSES[game.classId].trait, tb = $('trbar');
+  tb.classList.toggle('hidden', !tc);
+  if (tc) { // class signature bar (spec §31)
+    const on = game.trait.on > 0;
+    tb.style.setProperty('--c', tc.color);
+    $('trfill').style.transform = `scaleX(${traitLevel(game)})`;
+    $('trtext').textContent = on ? t('MENGAMUK {s}s', { s: Math.ceil(game.trait.on) }) : t('Murka {n}', { n: Math.floor(game.trait.v) });
+    tb.classList.toggle('hot', on);
+  }
   const chips = [];
   if (game.shield > 0) chips.push(['shield', t('Perisai {n}', { n: Math.ceil(game.shield) })]);
   for (const id of ['wind', 'rage']) if (game.buffs[id] > 0) chips.push([id, `${POTIONS[id].name.replace(/^Ramuan | Potion$/, '')} ${Math.ceil(game.buffs[id])}s`]);

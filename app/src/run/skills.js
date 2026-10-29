@@ -6,6 +6,7 @@ import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/b
 import { makeArea, makeSweep, makeProjectile } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx } from './skillfx.js';
+import { traitMods } from './traits.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -30,7 +31,14 @@ export function stepAttack(run, intent, dt) {
   run.attackT = ATTACK_POSE;
   const angle = Math.atan2(run.aimY, run.aimX);
   if (a.kind === 'arc') {
-    run.hits.push(makeArea({ x: run.px, y: run.py, r: a.r, angle, arc: a.arc, mult: a.mult, fx: a.fx }));
+    const m = traitMods(run); // Murka widens the slash (equals the class attack without a trait)
+    run.hits.push(makeArea({ x: run.px, y: run.py, r: m.arcR, angle, arc: m.arcDeg, mult: a.mult, fx: a.fx }));
+    const wave = run.trait?.on > 0 && CLASSES[run.classId].trait.frenzy.wave;
+    if (wave) { // Mengamuk: a small shockwave ahead of every swing; fx 'shout' is no basic fx, so it feeds no Murka / energy
+      const w = makeArea({ x: run.px + run.aimX * m.arcR * 0.6, y: run.py + run.aimY * m.arcR * 0.6, r: wave.r, mult: wave.mult, fx: 'shout' });
+      w.knock = wave.knock;
+      run.hits.push(w);
+    }
   } else {
     run.hits.push(makeProjectile({
       x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
@@ -134,7 +142,11 @@ function castSkill(run, s) {
       run.dashSpeed = s.distance / s.duration;
       run.dodgeX = run.aimX * dir; run.dodgeY = run.aimY * dir;
       run.dodgeInv = Math.max(run.dodgeInv, s.duration + 0.1);
-      if (s.mult > 0) run.hits.push(makeSweep({ x: run.px, y: run.py, r: s.r, mult: s.mult, duration: s.duration + 0.05, follow: true, fx: s.look || s.id }));
+      if (s.mult > 0) {
+        const sw = makeSweep({ x: run.px, y: run.py, r: s.r, mult: s.mult, duration: s.duration + 0.05, follow: true, fx: s.look || s.id });
+        if (s.resetOnKill) sw.resetSid = s.id; // a kill makes the skill ready again (Terjang)
+        run.hits.push(sw);
+      }
       break;
     }
     case 'buff':

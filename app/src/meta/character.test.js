@@ -91,7 +91,7 @@ describe('EXP & level', () => {
 describe('finalStats', () => {
   it('level 1 = dasar kelas + stat umum', () => {
     expect(finalStats(make())).toEqual({
-      maxHp: 140, atk: 14, def: 2, atkSpd: 1, crit: 5, critDmg: 1.5, moveSpd: 105, cdr: 0, magnet: 70,
+      maxHp: 140, atk: 14, def: 2, atkSpd: 1, crit: 5, critDmg: 1.5, moveSpd: 112, cdr: 0, magnet: 70,
     });
   });
   it('menambah pertumbuhan × (level − 1)', () => {

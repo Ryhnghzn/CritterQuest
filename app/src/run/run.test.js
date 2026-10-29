@@ -322,3 +322,42 @@ describe('efek item unik', () => {
     expect(g.skillDefs[2]).toBeNull(); // the run never re-equips on its own
   });
 });
+
+describe('Warrior: Murka & Terjang', () => {
+  const warrior = (extra = {}) => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['charge', 'spin', null, null], level: 5, ...extra });
+    return g;
+  };
+  const press = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: true, skill2: false, skill3: false, skill4: false, ult: false, potion: -1 };
+
+  it('Terjang yang membunuh musuh memulihkan jedanya seketika', () => {
+    const g = warrior();
+    const e = g.spawnEnemy('slink');
+    e.hp = 1; e.x = g.px + 40; e.y = g.py;
+    g.energy = 100;
+    g.intent = press;
+    g.step(1 / 60);
+    expect(e.hp).toBeLessThanOrEqual(0);
+    expect(g.skillCd[0]).toBe(0);
+  });
+
+  it('Terjang tanpa membunuh tetap memakai jeda', () => {
+    const g = warrior();
+    const e = g.spawnEnemy('slink');
+    e.hp = 1e9; e.maxHp = 1e9; e.x = g.px + 40; e.y = g.py;
+    g.energy = 100;
+    g.intent = press;
+    g.step(1 / 60);
+    expect(g.skillCd[0]).toBeGreaterThan(1);
+  });
+
+  it('serangan dasar yang kena mengisi Murka', () => {
+    const g = warrior();
+    const e = g.spawnEnemy('slink');
+    e.hp = 1e9; e.maxHp = 1e9; e.x = g.px + 20; e.y = g.py;
+    g.intent = { ...press, skill1: false, attack: true };
+    g.step(1 / 60);
+    expect(g.trait.v).toBeGreaterThanOrEqual(3);
+  });
+});

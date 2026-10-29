@@ -11,6 +11,7 @@ import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown, chargeUlt } from './skills.js';
 import { stepHits } from './hits.js';
+import { initTrait, traitStep, traitBasicHit, traitHurt, traitMods } from './traits.js';
 import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
@@ -129,6 +130,7 @@ export class Game {
     this.shield = 0; this.shieldT = 0; this.shieldMax = 0;
     this.dodgeCdMul = 1;
     this.fx = { ...effects }; this.fxShieldT = 0; this.frenzyOn = false; this.revived = false;
+    initTrait(this);
     this.applyBuffs();
     this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0;
     this.slowT = 0; this.slowK = 0; this.dotT = 0; this.dotDps = 0; this.dotKind = null; // biome status (spec §25.4)
@@ -206,6 +208,7 @@ export class Game {
       for (const k of keys) this.stats[k] *= 1 + POTIONS[id][k];
     }
     if (this.frenzyOn) this.stats.atkSpd *= 1 + this.fx.frenzy;
+    if (this.trait?.on > 0) this.stats.atkSpd *= 1 + CLASSES[this.classId].trait.frenzy.atkSpd; // Mengamuk (spec §31.2)
     const sb = this.skillBuffT > 0 && this.skillBuff;
     if (sb) {
       this.stats.atk *= 1 + (sb.atk || 0); this.stats.atkSpd *= 1 + (sb.atkSpd || 0);
@@ -252,6 +255,8 @@ export class Game {
 
     stepAttack(this, this.intent, dt);
     stepSkills(this, this.intent, dt);
+    const mv = this.intent.move;
+    traitStep(this, dt, mv.x !== 0 || mv.y !== 0, !!(this.intent.attack || this.intent.auto));
     this.stepPotion(dt);
     this.stepEffects(dt);
     for (const h of this.hits) stepHitFx(this, h, dt);
@@ -352,13 +357,20 @@ export class Game {
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
-    if (BASIC_FX.has(h.fx) && !h.skill) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy * (1 + (fx.energy || 0)));
+    const basic = BASIC_FX.has(h.fx) && !h.skill;
+    const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
+    if (basic) traitBasicHit(this);
+    if (basic) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy * (1 + (fx.energy || 0)));
     if (h.knock && !e.boss) { // push away from (or pull toward) the area's centre
       const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy) || 1;
       e.kx += (dx / d) * h.knock; e.ky += (dy / d) * h.knock;
     }
-    if (fx.lifesteal) { s.hp = Math.min(s.maxHp, s.hp + dmg * fx.lifesteal); bloodThread(this, e); }
+    if (steal) { s.hp = Math.min(s.maxHp, s.hp + dmg * steal); if (fx.lifesteal) bloodThread(this, e); }
     if (fx.chain && !h.chained && rand() < fx.chain) this.chainFrom(e);
+    if (h.resetSid && e.hp <= 0) { // Terjang: a kill resets the skill's cooldown
+      const slot = this.skillDefs.findIndex((d) => d?.id === h.resetSid);
+      if (slot >= 0) this.skillCd[slot] = 0;
+    }
     e.flash = 0.12;
     if (h.freeze) e.frozen = Math.max(e.frozen, h.freeze);
     const el = elementOf(h.fx);
@@ -435,12 +447,13 @@ export class Game {
   // onHit: { slow: [k, s] } | { poison | burn: [k × damage per second, s] } (biome enemies, spec §25.4)
   hurtPlayer(raw, onHit = null) {
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
-    let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul;
-    if (onHit?.slow) { this.slowK = onHit.slow[0]; this.slowT = Math.max(this.slowT, onHit.slow[1]); }
+    let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul * traitMods(this).dmgTaken;
+    if (onHit?.slow && !traitMods(this).slowImmune) { this.slowK = onHit.slow[0]; this.slowT = Math.max(this.slowT, onHit.slow[1]); }
     const dot = onHit?.poison ? 'poison' : onHit?.burn ? 'burn' : null;
     if (dot) { this.dotKind = dot; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }
     if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; shieldFlash(this); }
     this.stats.hp -= dmg;
+    traitHurt(this, dmg);
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
     this.invuln = 0.7; this.flash = 0.25; this.addShake('medium');
     sfx.hurt();

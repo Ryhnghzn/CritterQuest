@@ -182,6 +182,9 @@
 #ui .enbar{height:11px;border-radius:0;background:#09070b;box-shadow:inset 0 0 0 1px #24202c;clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)}
 #ui .enbar>i{border-radius:0;background:var(--cq-blue)}
 #ui .enbar span{font-size:9px;letter-spacing:.5px}
+#ui .trbar{height:9px;border-radius:0;background:#09070b;box-shadow:inset 0 0 0 1px #24202c;clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)}
+#ui .trbar>i{border-radius:0;background:var(--c)}
+#ui .trbar span{font-size:8px;letter-spacing:.5px}
 #ui .xprow{gap:10px}
 #ui .xpbar{height:3px;border-radius:0;background:#2a2230;box-shadow:none}
 #ui .xpbar>i{border-radius:0;background:var(--cq-gold)}

@@ -153,6 +153,9 @@ export default {
   // hud.js
   bersih: 'clear',
   'Energi {n}': 'Energy {n}',
+  'Murka {n}': 'Rage {n}',
+  'MENGAMUK {s}s': 'RAMPAGE {s}s',
+  'MENGAMUK!': 'RAMPAGE!',
   'Perisai {n}': 'Shield {n}',
   'Slot {k} kosong': 'Slot {k} empty',
   'Hari {d}': 'Day {d}',

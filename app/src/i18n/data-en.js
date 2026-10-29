@@ -35,7 +35,7 @@ export const SKILL_EN = {
   'Hantaman Bumi': 'Earthshatter',
   'Menghantam titik bidik: 450%, melempar & membekukan sesaat.': 'Smash the aimed spot: 450%, knocks back & briefly freezes.',
   'Terjang': 'Charge',
-  'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang.': 'Charge 220 px, 320% to everything passed, invulnerable while charging.',
+  'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang. Membunuh = siap lagi.': 'Charge 220 px, 320% to everything passed, invulnerable while charging. A kill makes it ready again.',
   'Lempar Kapak': 'Axe Throw',
   'Kapak menembus semua musuh di garis, 300%.': 'An axe that pierces every enemy in a line, 300%.',
   'Amarah Perang': 'War Fury',

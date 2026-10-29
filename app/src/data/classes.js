@@ -23,15 +23,24 @@ export const CLASS_BASE = { atkSpd: 1, critDmg: 1.5, cdr: 0, magnet: 70 };
 export const CLASSES = {
   warrior: {
     id: 'warrior', name: 'Warrior', desc: 'Tebal darah, tebasan jarak dekat.',
-    stats: { maxHp: 140, atk: 14, def: 2, crit: 5, moveSpd: 105 },
+    stats: { maxHp: 140, atk: 14, def: 2, crit: 5, moveSpd: 112 },
     growth: { maxHp: 12, atk: 1.4 },
     attack: { kind: 'arc', fx: 'slash', interval: 0.55, mult: 1, r: 46, arc: 100, energy: 7 },
+    // Signature mechanic (spec §31.2), logic in run/traits.js. Ranges [at 0, at max] scale with the bar.
+    trait: {
+      id: 'rage', max: 100, color: '#e0526a',
+      perHit: 3,            // per enemy hit by a basic attack
+      perHurtPct: 1.5,      // per 1% of max HP lost
+      idleAfter: 3, decay: 12,
+      arcR: [46, 72], arcDeg: [100, 160], lifesteal: 0.04, dmgTaken: 0.2, // scale 0 → max
+      frenzy: { duration: 6, atkSpd: 0.4, wave: { r: 60, mult: 0.5, knock: 140 } },
+    },
     ult: { id: 'bladestorm', name: 'Badai Pedang', unlock: 25, icon: 'spin', look: 'spin', desc: 'Berputar liar 2,5 detik: 10×300% di area besar, menarik musuh, damage diterima −50%.', kind: 'area', follow: true, r: 150, ticks: 10, duration: 2.5, mult: 3, knock: -200, dmgTaken: 0.5 },
     skills: [
       { id: 'spin', name: 'Putaran Pedang', unlock: 1, desc: 'Berputar menebas sekeliling 5×220%, menarik musuh.', kind: 'area', cost: 35, cd: 3, r: 95, ticks: 5, duration: 1, mult: 2.2, follow: true, knock: -140 },
       { id: 'shout', name: 'Teriakan Baja', unlock: 1, desc: 'Damage diterima −60% selama 5 detik + gelombang kejut 250%.', kind: 'buff', cost: 50, cd: 8, duration: 5, dmgTaken: 0.4, blast: { r: 115, mult: 2.5, knock: 320 } },
       { id: 'quake', name: 'Hantaman Bumi', unlock: 5, desc: 'Menghantam titik bidik: 450%, melempar & membekukan sesaat.', icon: 'pow', look: 'nova', kind: 'area', at: 'aim', maxDist: 160, cost: 45, cd: 5, r: 95, mult: 4.5, freeze: 0.8, knock: 220, duration: 0.3 },
-      { id: 'charge', name: 'Terjang', unlock: 10, desc: 'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang.', icon: 'spd', look: 'shadow', kind: 'dash', cost: 30, cd: 3, distance: 220, duration: 0.18, r: 30, mult: 3.2 },
+      { id: 'charge', name: 'Terjang', unlock: 1, desc: 'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang. Membunuh = siap lagi.', icon: 'spd', look: 'shadow', kind: 'dash', cost: 30, cd: 3, distance: 220, duration: 0.18, r: 30, mult: 3.2, resetOnKill: true },
       { id: 'axe', name: 'Lempar Kapak', unlock: 15, desc: 'Kapak menembus semua musuh di garis, 300%.', icon: 'pierce', look: 'pierce', kind: 'proj', cost: 30, cd: 2.5, speed: 420, range: 420, r: 12, mult: 3, pierce: Infinity },
       { id: 'warcry', name: 'Amarah Perang', unlock: 20, desc: 'ATK +35%, kecepatan serang +30% selama 6 detik.', icon: 'shout', kind: 'buff', cost: 55, cd: 12, duration: 6, dmgTaken: 1, atk: 0.35, atkSpd: 0.3 },
     ],
