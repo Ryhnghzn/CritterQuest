@@ -222,13 +222,13 @@ describe('skill archer', () => {
     const area = g.hits.find((h) => h.fx === 'rain');
     expect(Math.hypot(area.x, area.y)).toBeCloseTo(SK('archer', 0).maxDist);
   });
-  it('Tembakan Tembus: menembus semua musuh di garis', () => {
+  it('Panah Naga: menembus semua musuh di garis (jejak terbakar menambah damage)', () => {
     const s = SK('archer', 1);
     const { g, e } = arena('archer', { x: 100 });
     const more = dummies(g, [[150, 0], [220, 0]]);
     cast(g, 2, { aimAt: { x: 500, y: 0 } });
     idle(g, 1);
-    for (const x of [e, ...more]) expect(1e6 - x.hp).toBeCloseTo(s.mult * 11);
+    for (const x of [e, ...more]) expect(1e6 - x.hp).toBeGreaterThanOrEqual(s.mult * 11 - 1e-6);
   });
 });
 
@@ -372,5 +372,93 @@ describe('4 slot skill & ultimate', () => {
     const e = g.spawnEnemy('slink'); e.x = 300; e.hp = 0;
     hold(g, DT, { attack: false });
     expect(g.ultCharge).toBe(0);
+  });
+});
+
+describe('skill lebay: Warrior & Archer (§31.7)', () => {
+  const mk = (classId, skills) => {
+    const g = new Game();
+    g.start({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats, crit: 0 }, skills });
+    g.spawnT = 1e9;
+    g.energy = 100;
+    return g;
+  };
+  const cast = (g, slot, aim = { x: 100, y: 0 }) => hold(g, DT, { attack: false, [`skill${slot}`]: true, aimAt: aim });
+
+  it('Retakan Bumi: 5 pilar berurutan sepanjang bidikan, dihitung saat cast', () => {
+    const g = mk('warrior', ['quake', null, null, null]);
+    cast(g, 1);
+    const pillars = g.hits.filter((h) => h.sid === 'quake');
+    expect(pillars.length).toBe(5);
+    pillars.sort((a, b) => a.x - b.x);
+    pillars.forEach((h, i) => {
+      expect(h.kind).toBe('area');
+      expect(h.x).toBeCloseTo(52 * (i + 1) + (g.px - 0), 0);
+      expect(h.y).toBeCloseTo(g.py, 0);
+      expect(h.r).toBe(45);
+      expect(h.skill).toBe(true);
+      expect(h.knock).toBe(160);
+      expect(h.freeze).toBe(0.3);
+      expect(h.delay).toBeGreaterThan(0.08 * i - 0.05);
+      expect(h.delay).toBeLessThanOrEqual(0.08 * i + 1e-9);
+    });
+    // walking away afterwards does not drag the pillars along
+    const x0 = pillars[4].x;
+    hold(g, 0.2, { attack: false, move: { x: -1, y: 0 }, aimAt: { x: 100, y: 0 } });
+    expect(pillars[4].x).toBe(x0);
+  });
+
+  it('Retakan Bumi: musuh di ujung kena belakangan daripada yang dekat', () => {
+    const g = mk('warrior', ['quake', null, null, null]);
+    const near = g.spawnEnemy('tank'), far = g.spawnEnemy('tank');
+    Object.assign(near, { x: 52, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+    Object.assign(far, { x: 260, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+    cast(g, 1, { x: 300, y: 0 });
+    hold(g, 0.1, { attack: false, aimAt: { x: 300, y: 0 } });
+    expect(near.hp).toBeLessThan(1e6);
+    expect(far.hp).toBe(1e6);
+    hold(g, 0.4, { attack: false, aimAt: { x: 300, y: 0 } });
+    expect(far.hp).toBeLessThan(1e6);
+  });
+
+  it('Kapak Bumerang: pergi-pulang, kena dua kali dan menyeret musuh', () => {
+    const g = mk('warrior', ['axe', null, null, null]);
+    const e = g.spawnEnemy('tank');
+    Object.assign(e, { x: 150, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+    cast(g, 1, { x: 300, y: 0 });
+    const axe = g.hits.find((h) => h.sid === 'axe');
+    expect(axe.boomerang).toBe(true);
+    expect(axe.pull).toBeGreaterThan(0);
+    expect(axe.skill).toBe(true);
+    hold(g, 2.5, { attack: false, aimAt: { x: 300, y: 0 } });
+    expect(g.hits.some((h) => h.sid === 'axe')).toBe(false); // caught
+    const per = 14 * 2; // atk × mult
+    expect(1e6 - e.hp).toBeCloseTo(per * 2, 0);
+  });
+
+  it('Panah Naga: tertunda 0,3 dtk lalu menabur jejak area yang membawa flag skill', () => {
+    const g = mk('archer', ['pierce', null, null, null]);
+    cast(g, 1);
+    const p = g.hits.find((h) => h.sid === 'pierce');
+    expect(p.delay).toBeGreaterThan(0.25);
+    const x0 = p.x;
+    hold(g, 0.1, { attack: false, aimAt: { x: 100, y: 0 } });
+    expect(p.x).toBe(x0);
+    hold(g, 0.5, { attack: false, aimAt: { x: 100, y: 0 } });
+    const trail = g.hits.filter((h) => h.part === 'trail');
+    expect(trail.length).toBeGreaterThan(0);
+    expect(trail.every((h) => h.skill && h.sid === 'pierce' && h.kind === 'area')).toBe(true);
+  });
+
+  it('Panah Pecah: 3 panah pecah menjadi 9 yang masih berstatus skill', () => {
+    const g = mk('archer', ['volley', null, null, null]);
+    cast(g, 1);
+    const arrows = g.hits.filter((h) => h.sid === 'volley');
+    expect(arrows.length).toBe(3);
+    expect(arrows.every((h) => h.split && h.skill)).toBe(true);
+    hold(g, 0.4, { attack: false, aimAt: { x: 100, y: 0 } });
+    const kids = g.hits.filter((h) => h.sid === 'volley');
+    expect(kids.length).toBe(9);
+    expect(kids.every((h) => h.skill && !h.split)).toBe(true);
   });
 });

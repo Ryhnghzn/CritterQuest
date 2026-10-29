@@ -133,13 +133,24 @@ function castSkill(run, s) {
       run.hits.push(makeProjectile({
         x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
         speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, explode: s.explode || null, fx: s.look || s.id,
+        delay: s.delay || 0, boomerang: !!s.boomerang, pull: s.pull || 0, trail: s.trail || null, split: s.split || null,
       }));
+      break;
+    case 'line': // pillars fixed on the line at cast time; each erupts `gap` s after the one before
+      for (let i = 0; i < s.count; i++) {
+        const d = s.step * (i + 1);
+        const pillar = makeArea({ x: run.px + run.aimX * d, y: run.py + run.aimY * d, r: s.r, mult: s.mult, duration: s.life, freeze: s.freeze ?? 0, fx: s.look || s.id, delay: s.gap * i });
+        pillar.knock = s.knock || 0;
+        pillar.angle = angle;                       // direction of the fissure (visual only)
+        pillar.reach = i < s.count - 1 ? s.step : 0; // px to the next pillar: the crack leaps there when this one erupts
+        run.hits.push(pillar);
+      }
       break;
     case 'fan':
       for (let k = 0; k < s.count; k++) {
         const a = angle + (k / (s.count - 1) - 0.5) * s.spread * DEG;
         run.hits.push(makeProjectile({
-          x: run.px, y: run.py, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce || 0, fx: s.look || 'dagger',
+          x: run.px, y: run.py, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null,
         }));
       }
       break;

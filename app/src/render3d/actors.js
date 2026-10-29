@@ -19,7 +19,7 @@ const DOLL_SCALE = 0.82, ATTACK_ANIM = 0.45;
 // lifted into 3D (the rest of the effects stay on the ground decal)
 const AIR_KINDS = new Set(['dot', 'ember', 'spark', 'star']);
 const PROJ_COLOR = { arrow: '#ffe6a0', fireball: '#ff7a2a', pierce: '#7fd8ff', dagger: '#c9a0ff', axe: '#eef0ff' };
-const BLAST_COLOR = { boom: '#ff8a3a', nova: '#9fe8ff', shout: '#ffd27a', rain: '#ffe6a0', spin: '#ff9a5a', shadow: '#b48aff' };
+const BLAST_COLOR = { quake: '#ff9a3c', boom: '#ff8a3a', nova: '#9fe8ff', shout: '#ffd27a', rain: '#ffe6a0', spin: '#ff9a5a', shadow: '#b48aff' };
 const PROJ_H = 26, MAX_POINTS = 700, MAX_SPRITES = 180;
 let glowTex = null;
 function glowTexture() { // soft round glow, shared by projectile sprites and particles
@@ -101,9 +101,9 @@ export class Actors {
     };
     if (playing) {
       for (const h of game.hits) {
-        if (h.kind !== 'proj' || h.dead) continue;
+        if (h.kind !== 'proj' || h.dead || h.delay > 0) continue; // a delayed arrow is still being drawn back
         const col = PROJ_COLOR[h.fx] || '#fff1c0', sp = Math.hypot(h.vx, h.vy) || 1, dx = h.vx / sp, dy = h.vy / sp;
-        const size = (h.fx === 'fireball' ? 7 : h.fx === 'pierce' ? 6 : 3.4) * Math.max(1, h.r / 4) + 10;
+        const size = (h.fx === 'fireball' ? 7 : h.fx === 'pierce' || h.fx === 'axe' ? 6 : 3.4) * Math.max(1, h.r / 4) + 10;
         put(h.x, h.y, PROJ_H, size, col, 1);
         put(h.x, h.y, PROJ_H, size * 0.45, '#ffffff', 1);
         for (let k = 1; k <= 4; k++) put(h.x - dx * k * 9, h.y - dy * k * 9, PROJ_H, size * (1 - k * 0.18), col, 0.6 - k * 0.12);
@@ -133,7 +133,7 @@ export class Actors {
     geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true;
     // the biggest blast on screen lights its surroundings for a moment
     let best = null;
-    if (playing) for (const h of game.hits) if (h.kind !== 'proj' && BLAST_COLOR[h.fx] && h.life > 0 && (!best || (h.r || 0) > (best.r || 0))) best = h;
+    if (playing) for (const h of game.hits) if (h.kind !== 'proj' && BLAST_COLOR[h.fx] && h.life > 0 && !(h.delay > 0) && (!best || (h.r || 0) > (best.r || 0))) best = h;
     const L = this.fxLight;
     if (best) {
       const k = Math.min(1, best.life / (best.maxLife || 1));

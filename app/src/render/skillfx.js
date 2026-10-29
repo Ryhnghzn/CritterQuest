@@ -25,13 +25,14 @@ function weaponCol(wr, t, shift = 0) {
 }
 
 export function drawHit(g, h, avatar, t) {
+  if (h.delay > 0) return; // not born yet (run/skillfx.js shows the build-up)
   const k = h.kind === 'proj' ? 1 : Math.max(0, h.life / h.maxLife);
   const wr = weaponRarity(avatar);
   if (!h.sid && !h.seen && BASIC[h.fx]) { // Legendary+: every 3rd basic attack leaves an echo
     h.seen = true;
     if (wr >= ECHO_RARITY && ++basicCount % ECHO_EVERY === 0) h.echo = true;
   }
-  const draw = (h.sid && SKILL[h.sid]) || BASIC[h.fx] || FALLBACK[h.fx];
+  const draw = (h.part && PART[h.sid]?.[h.part]) || (h.sid && SKILL[h.sid]) || BASIC[h.fx] || FALLBACK[h.fx];
   if (!draw) return;
   g.save();
   draw(g, h, k, 1 - k, t, wr);
@@ -190,14 +191,37 @@ const SKILL = {
     g.lineWidth = 6 * k + 1; g.strokeStyle = H[2]; g.stroke();
     g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke();
   },
-  quake(g, h, k, p) {
-    const rr = h.r * (0.3 + 0.9 * Math.min(1, p * 2.5));
-    g.globalAlpha = k;
-    floorGlow(g, h.x, h.y, rr, 'rgba(255,154,60,.25)');
-    g.beginPath(); g.ellipse(h.x, h.y, rr, rr * 0.75, 0, 0, TAU);
-    g.lineWidth = 9 * k + 1; g.strokeStyle = 'rgba(160,120,80,.7)'; g.stroke();
-    g.globalCompositeOperation = 'lighter';
-    glow(g, h.x, h.y, h.r * 0.7 * k, F[2]);
+  quake(g, h, k, p) { // one pillar of the Fissure: rock and fire punching out of the ground
+    const age = h.fxAge || 0, up = 1 - (1 - Math.min(1, age * 10)) ** 3; // erupts fast, then settles
+    const ht = h.r * 1.9 * up * (1 - p * 0.3), w = h.r * 0.62 * (0.8 + 0.2 * up);
+    g.globalAlpha = Math.min(1, k * 3);
+    floorGlow(g, h.x, h.y + 4, h.r * 1.1, 'rgba(255,154,60,.28)');
+    g.beginPath(); g.ellipse(h.x, h.y + 4, h.r * (0.6 + 0.5 * up), h.r * 0.45, 0, 0, TAU);
+    g.lineWidth = 6 * k + 1; g.strokeStyle = 'rgba(160,120,80,.75)'; g.stroke();
+    g.beginPath(); g.moveTo(h.x - w, h.y + 4); // jagged rock column
+    for (let i = 0; i <= 6; i++) {
+      const f = i / 6, jag = (i % 2 ? 0.82 : 1) * (0.75 + 0.25 * Math.sin(h.x * 0.13 + i * 2.1));
+      g.lineTo(h.x - w * (1 - f * 0.55) + (i % 2 ? w * 0.12 : 0), h.y + 4 - ht * f * jag);
+    }
+    for (let i = 6; i >= 0; i--) {
+      const f = i / 6, jag = (i % 2 ? 1 : 0.84) * (0.75 + 0.25 * Math.sin(h.y * 0.11 + i * 1.7));
+      g.lineTo(h.x + w * (1 - f * 0.55) - (i % 2 ? w * 0.12 : 0), h.y + 4 - ht * f * jag);
+    }
+    g.lineTo(h.x + w, h.y + 4); g.closePath();
+    const gr = g.createLinearGradient(0, h.y + 4, 0, h.y + 4 - ht - 1);
+    gr.addColorStop(0, '#4a3524'); gr.addColorStop(0.5, '#7a5a3a'); gr.addColorStop(1, '#a07850');
+    g.fillStyle = gr; g.fill(); g.lineWidth = 1.6; g.strokeStyle = OUT; g.stroke();
+    g.globalCompositeOperation = 'lighter'; // fire glowing through the seams, flaring at the top
+    g.beginPath(); g.moveTo(h.x, h.y + 2); g.lineTo(h.x + Math.sin(age * 30) * 3, h.y - ht * 0.55); g.lineTo(h.x, h.y - ht * 0.95);
+    g.lineWidth = 3; g.lineCap = 'round'; g.strokeStyle = F[2]; g.stroke();
+    glow(g, h.x, h.y - ht * 0.95, h.r * 0.9 * k, F[2]);
+    glow(g, h.x, h.y + 2, h.r * 0.8, F[3]);
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < 5; i++) { // chunks thrown up
+      const d = (i - 2) * 0.45, tt = Math.min(1, age * 2.2), cx = h.x + d * h.r * 1.4 * tt, cy = h.y - (Math.sin(tt * Math.PI) * h.r * 1.6) + 4 * tt;
+      g.beginPath(); g.moveTo(cx - 3, cy); g.lineTo(cx, cy - 4); g.lineTo(cx + 3.5, cy + 1); g.closePath();
+      g.fillStyle = '#7a5a3a'; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
+    }
   },
   axe(g, h, k, p, t) {
     const spin = (h.fxAge || 0) * 24;
@@ -210,14 +234,21 @@ const SKILL = {
       g.beginPath(); g.arc(0, 0, h.r * (1.1 + i * 0.25), spin + i * 2, spin + i * 2 + 1.6);
       g.lineWidth = 2.5 - i * 0.6; g.strokeStyle = i ? PALETTES.steel[1] : '#fff'; g.stroke();
     }
-    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-    g.rotate(spin);
-    g.beginPath(); g.moveTo(-h.r, 0); g.lineTo(h.r * 0.9, 0); g.lineWidth = 3.2; g.strokeStyle = OUT; g.stroke();
-    g.lineWidth = 1.8; g.strokeStyle = '#8a5a34'; g.stroke();
-    for (const sd of [-1, 1]) { // double blade
-      g.beginPath(); g.moveTo(h.r * 0.45, 0); g.quadraticCurveTo(h.r * 0.6, sd * h.r * 0.95, h.r * 1.15, sd * h.r * 0.8);
-      g.quadraticCurveTo(h.r * 0.95, sd * h.r * 0.3, h.r * 0.75, 0); g.closePath();
-      g.fillStyle = '#e6eef8'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = OUT; g.stroke();
+    if (h.returning) { // the pull: a ring tightening round the axe as it drags things home
+      g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeStyle = PALETTES.steel[1];
+      g.beginPath(); g.arc(0, 0, h.r * (2.6 - ((h.fxAge || 0) * 4) % 1), 0, TAU); g.stroke();
+    }
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 3; i >= 0; i--) { // motion afterimages, then the solid axe
+      g.save(); g.globalAlpha = i ? 0.16 : 1; g.rotate(spin - i * 0.5);
+      g.beginPath(); g.moveTo(-h.r, 0); g.lineTo(h.r * 0.9, 0); g.lineWidth = 3.2; g.strokeStyle = OUT; g.stroke();
+      g.lineWidth = 1.8; g.strokeStyle = '#8a5a34'; g.stroke();
+      for (const sd of [-1, 1]) { // double blade
+        g.beginPath(); g.moveTo(h.r * 0.45, 0); g.quadraticCurveTo(h.r * 0.6, sd * h.r * 0.95, h.r * 1.15, sd * h.r * 0.8);
+        g.quadraticCurveTo(h.r * 0.95, sd * h.r * 0.3, h.r * 0.75, 0); g.closePath();
+        g.fillStyle = '#e6eef8'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = OUT; g.stroke();
+      }
+      g.restore();
     }
   },
   // archer
@@ -233,27 +264,35 @@ const SKILL = {
       fallingArrow(g, x, y, 1.15, H[1]);
     }
   },
-  pierce(g, h, k, p, t) {
-    const age = h.fxAge || 0;
+  pierce(g, h, k, p, t) { // Dragon Arrow: a serpent of light weaving behind the arrowhead
+    const age = h.fxAge || 0, sc = h.r / 14;
     g.translate(h.x, h.y); g.rotate(h.angle);
-    g.globalCompositeOperation = 'lighter';
+    g.globalCompositeOperation = 'lighter'; g.lineCap = 'round'; g.lineJoin = 'round';
+    for (let s2 = 0; s2 < 2; s2++) { // two strands, half a wave apart, thinning to nothing
+      for (let pass = 0; pass < 2; pass++) {
+        g.beginPath();
+        for (let i = 0; i <= 16; i++) {
+          const f = i / 16, x = -4 - f * 120, y = Math.sin(age * 16 - f * 7 + s2 * Math.PI) * (4 + f * 14) * sc;
+          if (i) g.lineTo(x, y); else g.moveTo(x, y);
+        }
+        g.globalAlpha = pass ? 0.9 : 0.35; g.lineWidth = (pass ? 2.4 : 7) * sc; g.strokeStyle = pass ? '#fff6d0' : H[2]; g.stroke();
+      }
+    }
     for (let i = 0; i < 2; i++) { // cone-shaped air waves peeling off behind
       const ph = (age * 5 + i * 0.5) % 1;
-      g.globalAlpha = 0.6 * (1 - ph);
-      g.beginPath(); g.arc(-10 - ph * 40, 0, 10 + ph * 22, -0.9, 0.9);
+      g.globalAlpha = 0.5 * (1 - ph);
+      g.beginPath(); g.arc(-10 - ph * 40, 0, (10 + ph * 22) * sc, -0.9, 0.9);
       g.lineWidth = 2; g.strokeStyle = H[1]; g.stroke();
     }
     g.globalAlpha = 1;
-    const gr = g.createLinearGradient(-110, 0, 14, 0);
-    gr.addColorStop(0, 'rgba(255,209,102,0)'); gr.addColorStop(0.7, 'rgba(255,209,102,.6)'); gr.addColorStop(1, '#ffffff');
-    g.fillStyle = gr; g.beginPath(); g.moveTo(-110, -3); g.lineTo(14, -9); g.lineTo(14, 9); g.lineTo(-110, 3); g.fill();
-    glow(g, 10, 0, 22, H[2]);
+    glow(g, 10, 0, 26 * sc, H[2]);
     g.globalCompositeOperation = 'source-over';
-    g.beginPath(); g.moveTo(-16, 0); g.lineTo(10, 0);
-    g.lineWidth = 5; g.lineCap = 'round'; g.strokeStyle = OUT; g.stroke();
-    g.lineWidth = 3; g.strokeStyle = H[2]; g.stroke();
-    g.beginPath(); g.moveTo(20, 0); g.lineTo(8, -7); g.lineTo(8, 7); g.closePath();
+    g.beginPath(); g.moveTo(-16 * sc, 0); g.lineTo(10 * sc, 0); // the shaft
+    g.lineWidth = 5 * sc; g.strokeStyle = OUT; g.stroke();
+    g.lineWidth = 3 * sc; g.strokeStyle = H[2]; g.stroke();
+    g.beginPath(); g.moveTo(24 * sc, 0); g.lineTo(8 * sc, -8 * sc); g.lineTo(11 * sc, 0); g.lineTo(8 * sc, 8 * sc); g.closePath(); // dragon-head tip
     g.fillStyle = '#fff6d0'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = OUT; g.stroke();
+    g.beginPath(); g.arc(13 * sc, -2 * sc, 1.3 * sc, 0, TAU); g.fillStyle = '#c2321f'; g.fill(); // eye
   },
   volley(g, h, k, p, t) {
     const col = VOLLEY[Math.abs(Math.round(h.angle * 57)) % VOLLEY.length];
@@ -404,6 +443,25 @@ const FALLBACK = {
   nova(g, h, k, p) { novaShape(g, h, k, p, 1); },
   shout: SKILL.shout,
   dagger(g, h) { ribbon(g, h, 30, S[1], 1.8, false); dagger(g, h.x, h.y, h.angle); },
+};
+
+// parts of a skill that look different from the skill itself: hit.part → drawing
+const PART = {
+  pierce: {
+    trail(g, h, k, p, t) { // the Dragon Arrow's burning patch
+      const age = h.fxAge || 0, a = Math.min(1, k * 3, age * 8);
+      g.globalAlpha = a;
+      floorGlow(g, h.x, h.y + 3, h.r, 'rgba(255,110,40,.22)');
+      g.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 6; i++) { // flame tongues flickering over the patch
+        const fx = Math.sin(i * 7.31 + h.x) * 0.7 * h.r, fy = Math.cos(i * 3.77 + h.y) * 0.45 * h.r;
+        const ht = (8 + Math.sin(t * 13 + i * 2.3) * 5) * (0.5 + 0.5 * k), x = h.x + fx, y = h.y + fy + 4;
+        g.beginPath(); g.moveTo(x - 4, y); g.quadraticCurveTo(x - 1, y - ht * 0.6, x + Math.sin(t * 9 + i) * 2, y - ht); g.quadraticCurveTo(x + 2, y - ht * 0.5, x + 4, y); g.closePath();
+        g.fillStyle = i % 2 ? F[2] : F[1]; g.globalAlpha = a * 0.7; g.fill();
+      }
+      glow(g, h.x, h.y, h.r * 0.7, F[3]);
+    },
+  },
 };
 
 // shapes

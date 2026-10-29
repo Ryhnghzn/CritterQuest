@@ -18,7 +18,7 @@ export const PALETTES = {
 export const HIT_ELEMENT = {
   slash: 'steel', stab: 'shadow', arrow: 'steel', fireball: 'fire', boom: 'fire',
   spin: 'steel', nova: 'ice', shadow: 'shadow', pierce: 'steel', rain: 'holy',
-  dagger: 'shadow', chain: 'lightning', shout: 'holy',
+  dagger: 'shadow', chain: 'lightning', shout: 'holy', quake: 'fire', trail: 'fire',
 };
 export const elementOf = (look) => HIT_ELEMENT[look] || 'steel';
 

@@ -78,4 +78,26 @@ describe('efek skill', () => {
     };
     expect(run(false)).toEqual(run(true));
   });
+
+  it('pilar yang menunggu hanya berdebu; retakan baru muncul saat pilar meletus', () => {
+    const g = arena('warrior', ['quake', null, null, null]);
+    cast(g, 'skill1', 0.05); // one pillar has erupted, four wait
+    const waiting = g.hits.filter((h) => h.sid === 'quake' && h.delay > 0);
+    expect(waiting.length).toBeGreaterThan(0);
+    expect(waiting.every((h) => h.fxAge === undefined)).toBe(true);
+    cast(g, 'skill1', 0); // no-op
+    for (let t = 0; t < 0.5; t += DT) { g.hitStop = 0; g.intent = { move: { x: 0, y: 0 }, aimAt: { x: 60, y: 10 }, dodge: false, attack: false }; g.step(DT); }
+    expect(g.vfx.cracks.size).toBeGreaterThanOrEqual(4);
+  });
+
+  it('jejak Panah Naga mengeluarkan bara; busur bumerang berbalik memicu efek putar', () => {
+    const g = arena('archer', ['pierce', null, null, null]);
+    cast(g, 'skill1', 0.8);
+    expect(g.hits.some((h) => h.part === 'trail' && h.fxAge > 0)).toBe(true);
+    const w = arena('warrior', ['axe', null, null, null]);
+    cast(w, 'skill1', 1.2);
+    const axe = w.hits.find((h) => h.sid === 'axe');
+    expect(axe?.returning).toBe(true);
+    expect(axe.fxTurned).toBe(true);
+  });
 });

@@ -30,3 +30,6 @@ export const ENERGY = { max: 100, start: 50, regen: 3 };
 // Ultimate charge (spec §22): filled by kills and by damage taken; full = ready.
 export const ULT = { max: 100, kill: 3, elite: 10, boss: 25, hurtPct: 40 }; // hurtPct: charge per 100% max HP lost
 export const SKILL_SLOTS = 4;
+
+// A boomerang's pull: knock-back speed added to every enemy it drags home (bosses are immune)
+export const SKILL_PULL = 260;

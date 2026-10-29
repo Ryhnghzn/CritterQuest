@@ -11,7 +11,9 @@ export const CLASS_BASE = { atkSpd: 1, critDmg: 1.5, cdr: 0, magnet: 70 };
 // Skills Q / E cost energy (`cost`) and have a short cooldown (cd in seconds, reduced by cdr):
 //   'area'  — circle around the player (follow) or at the aim point (at: 'aim', maxDist);
 //             ticks over duration; optional freeze (s)
-//   'proj'  — like the basic projectile;  'fan' — `count` projectiles over `spread` degrees
+//   'proj'  — like the basic projectile; optional delay (s), boomerang + pull, trail { every, r, life, ticks, mult };
+//             `split { at, count, spread }` (on proj / fan) bursts each arrow into `count` more;  'fan' — `count` projectiles over `spread` degrees
+//   'line'  — `count` area pillars along the aim, `step` px apart, each `gap` s after the last, standing `life` s (spec §31.7)
 //   'chain' — instant: first enemy near the aim point within range, then jumps to `count` total
 //   'dash'  — player dashes `distance` along the aim, hurting each enemy passed once
 //   'buff'  — for `duration`: dmgTaken multiplier and/or atk, atkSpd (fractions), crit, critDmg (added);
@@ -39,9 +41,9 @@ export const CLASSES = {
     skills: [
       { id: 'spin', name: 'Putaran Pedang', unlock: 1, desc: 'Berputar menebas sekeliling 5×220%, menarik musuh.', kind: 'area', cost: 35, cd: 3, r: 95, ticks: 5, duration: 1, mult: 2.2, follow: true, knock: -140 },
       { id: 'shout', name: 'Teriakan Baja', unlock: 1, desc: 'Damage diterima −60% selama 5 detik + gelombang kejut 250%.', kind: 'buff', cost: 50, cd: 8, duration: 5, dmgTaken: 0.4, blast: { r: 115, mult: 2.5, knock: 320 } },
-      { id: 'quake', name: 'Hantaman Bumi', unlock: 5, desc: 'Menghantam titik bidik: 450%, melempar & membekukan sesaat.', icon: 'pow', look: 'nova', kind: 'area', at: 'aim', maxDist: 160, cost: 45, cd: 5, r: 95, mult: 4.5, freeze: 0.8, knock: 220, duration: 0.3 },
+      { id: 'quake', name: 'Retakan Bumi', unlock: 5, desc: 'Retakan menjalar ke arah bidik: 5 pilar batu-api meletus berurutan, masing-masing 120%, melempar & membekukan sesaat.', icon: 'pow', kind: 'line', cost: 45, cd: 5, count: 5, step: 52, gap: 0.08, life: 0.45, r: 45, mult: 1.2, freeze: 0.3, knock: 160 },
       { id: 'charge', name: 'Terjang', unlock: 1, desc: 'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang. Membunuh = siap lagi.', icon: 'spd', look: 'shadow', kind: 'dash', cost: 30, cd: 3, distance: 220, duration: 0.18, r: 30, mult: 3.2, resetOnKill: true },
-      { id: 'axe', name: 'Lempar Kapak', unlock: 15, desc: 'Kapak menembus semua musuh di garis, 300%.', icon: 'pierce', look: 'pierce', kind: 'proj', cost: 30, cd: 2.5, speed: 420, range: 420, r: 12, mult: 3, pierce: Infinity },
+      { id: 'axe', name: 'Kapak Bumerang', unlock: 15, desc: 'Kapak besar berputar maju lalu kembali ke pemain, 2×200%; menyeret musuh yang dilewati.', icon: 'pierce', kind: 'proj', cost: 30, cd: 2.5, boomerang: true, pull: true, speed: 420, range: 360, r: 18, mult: 2, pierce: Infinity },
       { id: 'warcry', name: 'Amarah Perang', unlock: 20, desc: 'ATK +35%, kecepatan serang +30% selama 6 detik.', icon: 'shout', kind: 'buff', cost: 55, cd: 12, duration: 6, dmgTaken: 1, atk: 0.35, atkSpd: 0.3 },
     ],
   },
@@ -55,8 +57,8 @@ export const CLASSES = {
     ult: { id: 'starfall', name: 'Hujan Bintang', unlock: 25, icon: 'rain', look: 'rain', desc: 'Hujan panah bintang 3 detik di area sangat luas: 12×250%, memperlambat.', kind: 'area', at: 'aim', maxDist: 350, r: 200, ticks: 12, duration: 3, mult: 2.5, freeze: 0.3 },
     skills: [
       { id: 'rain', name: 'Hujan Panah', unlock: 1, desc: 'Hujan panah di titik bidik, 6×160%.', kind: 'area', at: 'aim', maxDist: 320, cost: 40, cd: 3, r: 85, ticks: 6, duration: 1.5, mult: 1.6 },
-      { id: 'pierce', name: 'Tembakan Tembus', unlock: 1, desc: 'Panah besar menembus semua musuh, 600%.', kind: 'proj', cost: 35, cd: 2.5, speed: 560, range: 650, r: 14, mult: 6, pierce: Infinity },
-      { id: 'volley', name: 'Panah Beruntun', unlock: 5, desc: '5 panah menyebar sempit, masing-masing 200%.', icon: 'fan', look: 'arrow', kind: 'fan', cost: 30, cd: 2.5, count: 5, spread: 24, speed: 520, range: 480, r: 5, mult: 2 },
+      { id: 'pierce', name: 'Panah Naga', unlock: 1, desc: 'Tahan napas sebentar, lalu naga cahaya menembus semua musuh, 600%, dan meninggalkan jejak terbakar 2 detik.', kind: 'proj', cost: 35, cd: 2.5, delay: 0.3, speed: 560, range: 650, r: 16, mult: 6, pierce: Infinity, trail: { every: 0.1, r: 24, life: 2, ticks: 4, mult: 0.4 } },
+      { id: 'volley', name: 'Panah Pecah', unlock: 5, desc: '3 panah; setelah melaju sejauh 160 px tiap panah pecah jadi 3 (9 total), masing-masing 120%.', icon: 'fan', look: 'arrow', kind: 'fan', cost: 30, cd: 2.5, count: 3, spread: 24, speed: 520, range: 480, r: 5, mult: 1.2, split: { at: 160, count: 3, spread: 30 } },
       { id: 'leap', name: 'Lompatan Mundur', unlock: 10, desc: 'Melompat menjauh dari bidikan, meninggalkan ledakan es yang membekukan.', icon: 'gale', look: 'shadow', kind: 'dash', back: true, cost: 25, cd: 4, distance: 180, duration: 0.15, r: 0, mult: 0, blast: { r: 75, mult: 1.2, knock: 0, freeze: 1.2 } },
       { id: 'trap', name: 'Ladang Jebakan', unlock: 15, desc: 'Jebakan duri di titik bidik 4 detik: 8×90%, memperlambat.', icon: 'thorn', look: 'rain', kind: 'area', at: 'aim', maxDist: 300, cost: 40, cd: 6, r: 80, ticks: 8, duration: 4, mult: 0.9, freeze: 0.4 },
       { id: 'hawk', name: 'Mata Elang', unlock: 20, desc: 'Kritis +30%, kecepatan serang +25% selama 6 detik.', icon: 'hst', kind: 'buff', cost: 50, cd: 12, duration: 6, dmgTaken: 1, crit: 30, atkSpd: 0.25 },

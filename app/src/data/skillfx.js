@@ -7,14 +7,14 @@ export const SKILL_FX = {
   // warrior
   spin: { el: 'fire', n: 14, rate: 70 },
   shout: { el: 'holy', n: 24 },
-  quake: { el: 'fire', n: 22 },
+  quake: { el: 'fire', n: 22, dust: 36 }, // dust: particles/s a waiting pillar rumbles with
   charge: { el: 'fire', n: 10, rate: 120 },
   axe: { el: 'steel', n: 8, rate: 50 },
   warcry: { el: 'blood', n: 26, rate: 18 },
   bladestorm: { el: 'fire', n: 30, rate: 140 },
   // archer
   rain: { el: 'holy', n: 10, rate: 26 },
-  pierce: { el: 'holy', n: 18, rate: 90 },
+  pierce: { el: 'holy', n: 18, rate: 90, charge: 70, patch: 16 }, // charge: wind-up particles/s; patch: embers/s per trail area
   volley: { el: 'holy', n: 14, rate: 24 },
   leap: { el: 'ice', n: 20, rate: 90 },
   trap: { el: 'steel', n: 14, rate: 22 },
