@@ -13,7 +13,7 @@ Mulai setiap sesi dengan membaca spesifikasi + rencana kerja, lalu `git log --on
 
 ## Kode
 
-- `app/` — Vite 7 + JavaScript murni (ES modules) + canvas 2D. Tanpa framework, tanpa file gambar/suara (semua dibuat lewat kode).
+- `app/` — Vite 7 + JavaScript murni (ES modules) + canvas 2D. Tanpa framework, tanpa file suara; gambar dibuat lewat kode, kecuali latar layar penuh (judul, loading, epilog) di `app/public/img/*.webp` — prompt di `docs/2026-10-29-prompt-gambar.md`, file asli di `art-src/` (tidak masuk git). Gambar dari kode tetap jadi cadangan.
 - Jalankan: `cd app && npm install --replace-registry-host=always && npm run dev`
   (`package-lock.json` menunjuk mirror `npm.mirrors.msh.team` yang tidak terjangkau; opsi itu mengalihkan ke registry npm resmi.)
 - Build: `npm run build` → `app/dist/`

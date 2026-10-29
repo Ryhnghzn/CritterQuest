@@ -1,9 +1,39 @@
-// Title backdrop "Api Unggun" (spec §29): night at the forest edge — stars, the moon, two
-// tree lines, and a campfire with flickering flames and rising embers. Drawn in CSS pixels
-// (the caller sets the device-pixel transform); the four classes sit around it as DOM
-// portraits (ui/title.js), placed against FIRE.
+// Title backdrop "Api Unggun" (spec §29): night at the forest edge under the eclipse, a campfire
+// with flickering light and rising embers. The painted backdrop (public/img/title_bg.webp) is
+// drawn to cover the screen; the light and embers are drawn on top of it. Until it has loaded
+// (or if it fails) the same night is drawn by code, with the fire in the same spot. Drawn in
+// CSS pixels (the caller sets the device-pixel transform); the four classes sit around it as
+// DOM portraits (ui/title.js), placed with artPoint().
 const TAU = Math.PI * 2;
-export const FIRE = { x: 0.6, y: 0.86 }; // the fire, as a fraction of the screen
+const AR = 2752 / 1536;                 // the painting's aspect
+const FOCUS = { x: 0.66, y: 0.4 };      // where the fire lands across the screen; how much of the vertical crop comes off the top
+// spots in the painting, as fractions of its size
+export const ART = {
+  fire: { x: 0.695, y: 0.8 },
+  moon: { x: 0.74, y: 0.16, r: 0.075 },
+  torches: [{ x: 0.898, y: 0.52 }, { x: 0.955, y: 0.47 }],
+};
+
+const art = typeof Image === 'function' ? new Image() : null;
+let artAt = 0; // when the painting finished loading (0: not yet / failed)
+if (art) {
+  art.onload = () => { artAt = performance.now(); };
+  art.src = 'img/title_bg.webp';
+}
+
+// The painting covers a w × h screen: its size and offset in CSS pixels. Wide screens crop
+// top and bottom; narrow ones crop the sides, keeping the fire near FOCUS.x.
+function cover(w, h) {
+  const W = Math.max(w, h * AR), H = W / AR;
+  const x = Math.min(0, Math.max(w - W, w * FOCUS.x - ART.fire.x * W));
+  return { x, y: (h - H) * FOCUS.y, W, H };
+}
+
+// A spot in the painting (fractions) on the screen: { x, y } in px, and k = the painting's height in px.
+export function artPoint(w, h, fx, fy) {
+  const c = cover(w, h);
+  return { x: c.x + fx * c.W, y: c.y + fy * c.H, k: c.H };
+}
 
 // a fixed scatter of points (stars, embers) — the same every frame
 const scatter = (n, seed) => Array.from({ length: n }, (_, i) => {
@@ -40,7 +70,8 @@ function flame(g, x, y, s, t) {
   }
 }
 
-export function drawCampfire(g, w, h, t) {
+// the night drawn by code: shown while the painting loads, or if it can't
+function drawNight(g, w, h, t) {
   const sky = g.createLinearGradient(0, 0, 0, h);
   sky.addColorStop(0, '#07060f'); sky.addColorStop(0.55, '#1a1026'); sky.addColorStop(1, '#0b0709');
   g.fillStyle = sky; g.fillRect(0, 0, w, h);
@@ -49,21 +80,38 @@ export function drawCampfire(g, w, h, t) {
     g.fillStyle = `rgba(235,225,255,${a * (0.3 + s.s * 0.7)})`;
     g.fillRect(s.x * w, s.y * h * 0.5, 1 + s.s * 1.2, 1 + s.s * 1.2);
   }
-  const mx = w * 0.8, my = h * 0.15, mr = Math.max(10, h * 0.03);
-  glow(g, mx, my, mr * 4.5, '255,236,200', 0.25);
-  g.fillStyle = '#efe4c8'; g.beginPath(); g.arc(mx, my, mr, 0, TAU); g.fill();
+  const m = artPoint(w, h, ART.moon.x, ART.moon.y), mr = m.k * ART.moon.r;
+  glow(g, m.x, m.y, mr * 3, '255,190,120', 0.3);
+  g.fillStyle = '#ffd9a0'; g.beginPath(); g.arc(m.x, m.y, mr * 1.08, 0, TAU); g.fill();
+  g.fillStyle = '#07060f'; g.beginPath(); g.arc(m.x, m.y, mr, 0, TAU); g.fill();
   treeline(g, w, h, h * 0.62, '#120b16', 1, h * 0.22);
   treeline(g, w, h, h * 0.7, '#0c0810', 4, h * 0.16);
   g.fillStyle = '#0a0709'; g.fillRect(0, h * 0.7, w, h);
-  const fx = w * FIRE.x, fy = h * FIRE.y, s = h / 540;
-  const pulse = 1 + Math.sin(t * 5) * 0.04 + Math.sin(t * 13) * 0.02;
-  glow(g, fx, fy - 20 * s, h * 0.55 * pulse, '255,140,60', 0.42);
+  const f = artPoint(w, h, ART.fire.x, ART.fire.y), s = f.k / 540;
   g.fillStyle = '#3a2216';
-  for (const a of [-0.5, 0.5]) { g.save(); g.translate(fx, fy); g.rotate(a); g.fillRect(-34 * s, -5 * s, 68 * s, 10 * s); g.restore(); }
-  flame(g, fx, fy, s, t);
+  for (const a of [-0.5, 0.5]) { g.save(); g.translate(f.x, f.y); g.rotate(a); g.fillRect(-34 * s, -5 * s, 68 * s, 10 * s); g.restore(); }
+  flame(g, f.x, f.y, s, t);
+}
+
+export function drawCampfire(g, w, h, t) {
+  const fade = artAt ? Math.min(1, (performance.now() - artAt) / 400) : 0;
+  if (fade < 1) drawNight(g, w, h, t);
+  if (fade > 0) {
+    const c = cover(w, h);
+    g.globalAlpha = fade; g.drawImage(art, c.x, c.y, c.W, c.H); g.globalAlpha = 1;
+  }
+  const f = artPoint(w, h, ART.fire.x, ART.fire.y), s = f.k / 540;
+  const pulse = 1 + Math.sin(t * 5) * 0.04 + Math.sin(t * 13) * 0.02;
+  g.globalCompositeOperation = 'lighter'; // the light flickers over the painted fire
+  glow(g, f.x, f.y - 30 * s, f.k * 0.45 * pulse, '255,120,40', 0.16 + Math.sin(t * 7) * 0.03);
+  ART.torches.forEach((p, i) => {
+    const q = artPoint(w, h, p.x, p.y);
+    glow(g, q.x, q.y, f.k * (0.07 + Math.sin(t * 8 + i * 2) * 0.008), '255,150,60', 0.22);
+  });
+  g.globalCompositeOperation = 'source-over';
   for (const e of EMBERS) {
     const life = (t * (0.25 + e.s * 0.3) + e.p) % 1;
-    const x = fx + (e.x - 0.5) * 60 * s + Math.sin(t * 2 + e.p * 9) * 20 * s * life, y = fy - 30 * s - life * h * 0.55;
+    const x = f.x + (e.x - 0.5) * 60 * s + Math.sin(t * 2 + e.p * 9) * 20 * s * life, y = f.y - 30 * s - life * f.k * 0.5;
     g.fillStyle = `rgba(255,${Math.round(150 + e.s * 90)},80,${(1 - life) * 0.9})`;
     g.fillRect(x, y, 2, 2);
   }

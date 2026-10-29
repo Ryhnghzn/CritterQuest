@@ -12,7 +12,7 @@ Arah gaya yang sudah diputuskan pemilik. File ini hanya menyalin keputusan yang 
 - **Bukan:** pixel art jadul, kartun chibi kepala bulat ("seperti game anak kecil"). (sumber: 2026-10-26, 2026-10-28)
 - **Tampilan:** 2.5D. Dunia 3D dibuat lewat kode, karakter/monster/NPC 2D tegak (billboard). Kamera tetap
   miring + zoom. (sumber: rencana `2026-10-28-tampilan-2.5d.md`)
-- **Tanpa file gambar/suara:** semua aset dibuat lewat kode. (sumber: CLAUDE.md)
+- **Tanpa file gambar/suara:** semua aset dibuat lewat kode, kecuali latar layar penuh (judul, loading, epilog) hasil generator gambar, dengan gaya komik gelap yang sama. (sumber: CLAUDE.md, keputusan 2026-10-29)
 
 ## Suasana
 

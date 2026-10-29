@@ -371,7 +371,7 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 #title .tseat.flip canvas{transform:scaleX(-1)}
 #title .tseat:nth-child(2){animation-delay:-.8s}#title .tseat:nth-child(3){animation-delay:-1.7s}#title .tseat:nth-child(4){animation-delay:-2.4s}
 @keyframes cq-firelit{0%,100%{filter:drop-shadow(0 0 14px rgba(255,130,60,.3)) brightness(.92)}50%{filter:drop-shadow(0 0 22px rgba(255,150,70,.45)) brightness(1.02)}}
-#title .tlogo{position:absolute;left:60%;top:5vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;
+#title .tlogo{position:absolute;left:42%;top:5vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;
   filter:drop-shadow(0 6px 18px rgba(0,0,0,.8));animation:none}
 #title .tlogo .logo{font-size:clamp(40px,10vh,96px);line-height:.95;text-align:center;max-width:9ch}
 #title .tlogo .tag{font-size:clamp(10px,1.8vh,15px);letter-spacing:.4em;text-transform:uppercase;white-space:nowrap}
