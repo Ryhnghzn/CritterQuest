@@ -220,7 +220,8 @@ export function showRewardPop(r) {
   fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr);
   const g = fx.getContext('2d');
   const palette = ['#ffd24a', '#ff6b6b', '#7fd8ff', '#8ff5c8', '#ffffff', color];
-  const bits = Array.from({ length: REWARD_POP.confetti }, (_, i) => ({
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches; // no confetti when the system asks for less motion
+  const bits = Array.from({ length: calm ? 0 : REWARD_POP.confetti }, (_, i) => ({
     x: W / 2, y: H * 0.36, a: Math.random() * TAU, v: 260 + Math.random() * 520, spin: (Math.random() - 0.5) * 14,
     w: 4 + Math.random() * 6, h: 3 + Math.random() * 4, c: palette[i % palette.length], delay: (i % 3) * 0.12,
   }));

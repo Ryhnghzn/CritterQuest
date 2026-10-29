@@ -203,7 +203,7 @@ export function stepTreasure(run) {
     if (tr.state === 'idle' && d2 < TREASURE.triggerR ** 2) spawnGuardian(run, tr);
     else if (tr.state === 'guarded' && (tr.guard.hp <= 0 || !run.enemies.includes(tr.guard))) {
       tr.state = 'unlocked'; tr.guard = null;
-      run.showBanner(t('Penjaga tumbang — petinya tidak terkunci lagi!'));
+      run.showBanner(t('Penjaga tumbang. Petinya tidak terkunci lagi!'));
     } else if (tr.state === 'unlocked' && d2 < TREASURE.openR ** 2) openTreasure(run, tr);
   }
 }

@@ -426,3 +426,6 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 #settings .sfoot .note{flex:1;margin:0;text-align:left;font-size:13px;color:#9a8f80}
 @media (max-width:640px){#settings .scols{grid-template-columns:1fr}#settings .stabs{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--cq-rowedge);padding:0 0 8px}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#settings .settings{zoom:.8;max-height:calc(125vh - 40px)}}
+
+/* keyboard focus: the chamfer clip-path hides an outside outline, so it is drawn inside the frame */
+:focus-visible{outline:2px solid var(--cq-gold-l);outline-offset:-4px}

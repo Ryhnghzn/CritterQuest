@@ -230,7 +230,7 @@ const BIG = {
     },
     folk: [
       { name: 'Raka', title: 'Pemburu', look: L(0, 2), outfit: ['#4a6b2a', '#30481c'], lines: ['Di Hutan Kelam bagian timur, musuhnya jauh lebih galak. Hati-hati.', 'Rimbawana dibangun di atas akar pohon tertua di hutan ini.'] },
-      { name: 'Melati', title: 'Penjual Bunga', look: L(2, 4), outfit: ['#d6608a', '#a83a64'], lines: ['Bunga kunang-kunang hanya mekar di malam hari. Cantik, kan?', 'Pedagang di sini menjual barang lebih bagus dari Kota Awal — tapi lebih mahal juga.'] },
+      { name: 'Melati', title: 'Penjual Bunga', look: L(2, 4), outfit: ['#d6608a', '#a83a64'], lines: ['Bunga kunang-kunang hanya mekar di malam hari. Cantik, kan?', 'Pedagang di sini menjual barang lebih bagus dari Kota Awal, tapi lebih mahal juga.'] },
       { name: 'Tole', title: 'Anak Kota', look: L(0, 5), outfit: ['#3fa7d6', '#2a7aa3'], scale: 0.72, wander: { rx: 120, ry: 40, speed: 0.5 }, lines: ['Batu teleport itu bisa membawamu ke kota mana pun yang pernah kau datangi!', 'Aku pernah lihat jamur raksasa di ujung timur hutan. Sumpah!'] },
       { name: 'Prajurit Bayu', title: 'Penjaga Kota', look: L(1, 3), outfit: ['#4b5563', '#374151'], wander: { rx: 560, ry: 6, speed: 0.1 }, lines: ['Gerbang selatan menuju Hutan Kelam. Jalan ke Kota Awal ada di ujung baratnya.', 'Malam hari kawanan musuh di hutan bertambah banyak.'] },
       { name: 'Dewi', title: 'Pengelana', look: L(3, 1), outfit: ['#8a5a9a', '#5e3a6e'], wander: { rx: 200, ry: 20, speed: 0.15 }, lines: ['Kudengar ada dungeon tersembunyi di Hutan Kelam. Gerbangnya berbeda bagi tiap orang.', 'Gudang di sini menyimpan barangmu, dan bisa kau ambil di kota besar mana pun.'] },

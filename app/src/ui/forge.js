@@ -75,7 +75,7 @@ export function forgePanel(char, { onEnhance, onReroll }, redraw) {
     card.append(lines);
     const p = it.plus, chance = ENHANCE.chance[p];
     card.append(el('div', `note chance${chance < 1 ? ' risky' : ''}`,
-      chance >= 1 ? tr('Peluang berhasil 100%') : `${t('Peluang berhasil {n}%', { n: Math.round(chance * 100) })} — ${tr(p >= ENHANCE.dropFrom ? 'gagal: turun 1 tingkat' : 'gagal: tetap')}`));
+      chance >= 1 ? tr('Peluang berhasil 100%') : `${t('Peluang berhasil {n}%', { n: Math.round(chance * 100) })}. ${tr(p >= ENHANCE.dropFrom ? 'gagal: turun 1 tingkat' : 'gagal: tetap')}`));
     card.append(costRow(char, enhanceCost(it, p)));
     const b = button(t('Tempa ke +{n}', { n: p + 1 }), 'btn small', () => onEnhance(it.id));
     b.id = 'forge-enhance';
@@ -117,7 +117,7 @@ export function salvagePanel(char, onSalvage, redraw) {
   wrap.append(grid);
   const marked = char.inventory.filter((it) => toSalvage.has(it.id));
   const y = salvageYield(marked);
-  const yieldText = MAT_IDS.filter((m) => y[m]).map((m) => `${y[m]} ${MATS[m].name}`).join(', ') || '—';
+  const yieldText = MAT_IDS.filter((m) => y[m]).map((m) => `${y[m]} ${MATS[m].name}`).join(', ') || '-';
   wrap.append(el('div', 'note', `${t('Hasil: {y}', { y: yieldText })}${marked.some((it) => it.rarity >= 3) ? ` ${tr('(+ peluang permata)')}` : ''}`));
   const act = el('div', 'row');
   const pick = (r) => button(tr(r === 0 ? 'Pilih semua Biasa' : 'Pilih ≤ Bagus'), 'btn ghost small', () => {
@@ -152,7 +152,7 @@ export function socketPanel(char, { onSocket, onUnsocket }, redraw) {
       const b = button(t('Lepas ({n} koin)', { n: UNSOCKET_GOLD }), 'btn ghost small', () => onUnsocket(it.id, i));
       row.append(gem, b);
     } else {
-      row.append(el('span', 'note', t('Soket {n} kosong — pilih permata:', { n: i + 1 })));
+      row.append(el('span', 'note', t('Soket {n} kosong. Pilih permata:', { n: i + 1 })));
       const opts = el('div', 'gemopts');
       for (const g of GEM_IDS) for (let tier = GEM_TIERS; tier >= 1; tier--) {
         const n = char.gems[g][tier - 1];

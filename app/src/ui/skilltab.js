@@ -23,7 +23,7 @@ export function renderSkillTab(char, opts, redraw) {
   const ubox = el('div', 'skbtns');
   ubox.append(el('span', 'lock', ult.unlock > char.level ? `LV ${ult.unlock}` : '5'));
   urow.append(uic, utx, ubox);
-  skills.append(urow, el('div', 'attrhead', tr('Skill — pasang maksimal 4 (tombol 1–4)')));
+  skills.append(urow, el('div', 'attrhead', tr('Skill (pasang maksimal 4, tombol 1–4)')));
   for (const s of CLASSES[char.classId].skills) {
     const locked = s.unlock > char.level, slot = char.skills.indexOf(s.id);
     const row = el('div', `skill${locked ? ' locked' : ''}${slot >= 0 ? ' worn' : ''}`);

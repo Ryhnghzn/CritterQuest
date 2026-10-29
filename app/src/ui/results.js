@@ -22,7 +22,7 @@ export function renderResults(box, info, { onContinue, continueLabel = null }) {
   const title = el('h2', trip.died ? 'h bad' : 'h', titleText);
   const where = el('div', 'sub', dungeonById(trip.dungeon).name);
   const tiles = el('div', 'tiles');
-  const floor = trip.floor > 0 ? String(trip.floor) : '—';
+  const floor = trip.floor > 0 ? String(trip.floor) : '-';
   for (const [label, value] of [['Lantai', floor], ['Kill', String(trip.kills)], ['EXP', `+${trip.exp}`], ['Koin', `+${trip.gold - goldLost}`]]) {
     const tile = el('div', 'tile');
     tile.append(el('span', null, tr(label)), el('b', null, value));
@@ -32,13 +32,13 @@ export function renderResults(box, info, { onContinue, continueLabel = null }) {
   if (trip.cleared) badges.append(el('span', 'badge', t('{name} tumbang!', { name: bossOf(trip.dungeon) })));
   if (newRecord) badges.append(el('span', 'badge', t('Rekor baru: Lantai {n}', { n: trip.floor })));
   if (levelsGained > 0) badges.append(el('span', 'badge mint', t('Naik level! LV {n}', { n: char.level })));
-  if (bountiesDone > 0) badges.append(el('span', 'badge mint', t('{n} tugas selesai — klaim di Balai Petualang', { n: bountiesDone })));
+  if (bountiesDone > 0) badges.append(el('span', 'badge mint', t('{n} tugas selesai. Klaim di Balai Petualang', { n: bountiesDone })));
   if (uniquesFound?.length) badges.append(el('span', 'badge', t('Kodeks: +{n} item unik', { n: uniquesFound.length })));
   // bounty board progress after this trip (spec §24)
   const board = el('div', 'rbounties');
   const x = char.expedition; // expedition progress (spec §25.5)
-  if (x && x.dungeon === trip.dungeon) board.append(el('div', `rb${x.have >= x.need ? ' done' : ''}`, `${t('Ekspedisi {d}', { d: dungeonById(x.dungeon).name })} — ${x.have}/${x.need}`));
-  for (const b of char.bounties.filter((x) => x.taken)) board.append(el('div', `rb${isDone(b) ? ' done' : ''}`, `${bountyText(b)} — ${b.have}/${b.need}`));
+  if (x && x.dungeon === trip.dungeon) board.append(el('div', `rb${x.have >= x.need ? ' done' : ''}`, `${t('Ekspedisi {d}', { d: dungeonById(x.dungeon).name })}: ${x.have}/${x.need}`));
+  for (const b of char.bounties.filter((x) => x.taken)) board.append(el('div', `rb${isDone(b) ? ' done' : ''}`, `${bountyText(b)}: ${b.have}/${b.need}`));
   const notes = el('div', 'sub');
   if (trip.died) notes.textContent = `${tr('Kamu terbangun di kota dengan sisa tenaga.')}${goldLost > 0 ? ` ${t('{n} koin hilang.', { n: goldLost })}` : ''}`;
   const loot = el('div', 'loot');

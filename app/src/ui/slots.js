@@ -34,7 +34,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
       card.append(
         el('div', 'plus', '+'),
         el('div', 'nm', t('Slot {n}', { n: e.slot + 1 })),
-        el('div', 'ds', tr('Kosong — buat petualang baru')),
+        el('div', 'ds', tr('Kosong. Buat petualang baru')),
         button(tr('Buat'), 'btn small', (ev) => { ev.stopPropagation(); onCreate(e.slot); }),
       );
       card.addEventListener('click', () => onCreate(e.slot));

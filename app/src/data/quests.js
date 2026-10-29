@@ -67,7 +67,7 @@ export const MAIN = [
     id: 'ch4', title: 'Makam di Bawah Pasir',
     steps: [
       { kind: 'town', town: 'pasir' },
-      { kind: 'talk', town: 'pasir', npc: 'folk1', who: 'Zahra', say: 'Dongeng tentang Makam Pasir? Itu bukan dongeng. Raja Mumi tidur di sana bersama hartanya — dan sebuah pecahan yang membuat pasir bergerak sendiri. Gerbangnya tersembunyi di tengah Gurun Merah.' },
+      { kind: 'talk', town: 'pasir', npc: 'folk1', who: 'Zahra', say: 'Dongeng tentang Makam Pasir? Itu bukan dongeng. Raja Mumi tidur di sana bersama hartanya, dan sebuah pecahan yang membuat pasir bergerak sendiri. Gerbangnya tersembunyi di tengah Gurun Merah.' },
       { kind: 'gate', dungeon: 'tomb' },
       { kind: 'boss', dungeon: 'tomb' },
       { kind: 'talk', town: 'pasir', npc: 'folk1', who: 'Zahra', say: 'Kau kembali hidup-hidup! Akan kutarikan kisahmu malam ini. Pecahan terakhir ada di Gunung Api. Carilah Ignis si penambang di Baraapi.' },
@@ -78,7 +78,7 @@ export const MAIN = [
     id: 'ch5', title: 'Api yang Tak Padam',
     steps: [
       { kind: 'town', town: 'bara' },
-      { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Batu di gunung ini bergerak sejak pecahan itu terbangun. Benteng Lava, di sisi barat Gunung Api. Rajanya tidur di kolam api — dan dia tidak suka dibangunkan.' },
+      { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Batu di gunung ini bergerak sejak pecahan itu terbangun. Benteng Lava, di sisi barat Gunung Api. Rajanya tidur di kolam api, dan dia tidak suka dibangunkan.' },
       { kind: 'gate', dungeon: 'lava' },
       { kind: 'boss', dungeon: 'lava' },
       { kind: 'talk', town: 'bara', npc: 'folk0', who: 'Ignis', say: 'Lima pecahan… Gunung ini berhenti bergetar. Bawa semuanya ke Kakek Odo di Kota Awal. Tapi hati-hati: langit di timur Baraapi mulai menggelap.' },

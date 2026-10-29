@@ -156,5 +156,5 @@ export function updatePointsBadge({ attr, talent }) {
   if (b.textContent === text) return;
   b.textContent = text;
   btn.classList.toggle('alert', n > 0);
-  btn.title = n ? `${tr('Karakter (I)')} — ${t('{a} poin atribut · {b} poin bakat', { a: Math.max(0, attr), b: Math.max(0, talent) })}` : tr('Karakter (I)');
+  btn.title = n ? `${tr('Karakter (I)')}: ${t('{a} poin atribut · {b} poin bakat', { a: Math.max(0, attr), b: Math.max(0, talent) })}` : tr('Karakter (I)');
 }

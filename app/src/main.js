@@ -135,6 +135,7 @@ function toggleAuto() {
 // Effects level (Settings → Grafis, plan "Efek Lebay" §A): auto / full / lite. Auto drops to
 // lite for the session when FPS stays low in a fight; choosing again clears that.
 const TOUCH = matchMedia('(pointer: coarse)').matches;
+const CALM = matchMedia('(prefers-reduced-motion: reduce)');
 const fpsWatch = new FpsWatch();
 const fpsMeter = new FpsWatch({ fps: 0, seconds: Infinity }); // FPS readout only
 let fxForcedLite = false, fpsShown = false;
@@ -265,7 +266,7 @@ function checkPoints() {
     const bits = [];
     if (p.attr > 0) bits.push(t('{n} poin atribut', { n: p.attr }));
     if (p.talent > 0) bits.push(t('{n} poin bakat', { n: p.talent }));
-    toast(t('{what} belum dibagi — buka Karakter (I)', { what: bits.join(' & ') }));
+    toast(t('{what} belum dibagi. Buka Karakter (I)', { what: bits.join(' & ') }));
   }
   ptsSeen = n;
 }
@@ -355,7 +356,7 @@ function openNpc(npc, message = null) {
     onSalvage: (ids) => serve((c, now) => salvage(c, ids, now), (r) => t('Diurai! {mats}', { mats: Object.entries(r.mats).filter(([, n]) => n).map(([m, n]) => `+${n} ${MATS[m].name}`).join(', ') }) + (r.gems.length ? t(' + {n} permata', { n: r.gems.length }) : '')),
     onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), tr('Permata terpasang. Berkilau, bukan?')),
     onUnsocket: (id, slot) => serve((c, now) => unsocket(c, id, slot, now), tr('Permata dilepas dan kembali ke tasmu.')),
-    onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), tr('Tiga menjadi satu — permata naik tingkat!')),
+    onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), tr('Tiga menjadi satu: permata naik tingkat!')),
     onTalentRespec: async () => {
       if (await confirmDialog(t('Atur ulang semua bakat seharga {n} koin?', { n: talentRespecPrice(current) }), tr('Atur ulang'))) {
         serve(respecTalents, tr('Bakatmu kembali. Bagi lagi di tab Skill.'));
@@ -400,7 +401,7 @@ const REFUSE = {
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
-  marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh — selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.', taken: 'Tugas itu sudah kau ambil.', nottaken: 'Tugas itu belum kau ambil.',
+  marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh. Selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.', taken: 'Tugas itu sudah kau ambil.', nottaken: 'Tugas itu belum kau ambil.',
   mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', stashfull: 'Gudang sudah penuh.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
@@ -691,7 +692,7 @@ async function commitField() {
   refreshFieldQuests();
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
   else if (current.quests.main.step !== before.quests.main.step || current.quests.main.ch !== before.quests.main.ch) questNews(before);
-  else if (r.bountiesDone > 0) toast(t('{n} tugas selesai — klaim di Balai Petualang', { n: r.bountiesDone }));
+  else if (r.bountiesDone > 0) toast(t('{n} tugas selesai. Klaim di Balai Petualang', { n: r.bountiesDone }));
   return saveCurrent();
 }
 
@@ -1100,7 +1101,7 @@ function frame(dt) {
   if (scene === 'run' && game.state === ST.PLAY && settings.effects === 'auto' && !fxForcedLite && fpsWatch.push(dt)) {
     fxForcedLite = true;
     applyEffects();
-    toast(tr('FPS rendah — efek diubah ke Ringan'));
+    toast(tr('FPS rendah: efek diubah ke Ringan'));
   }
   if (worldLoading) return;
   if (scene === 'run') {
@@ -1135,7 +1136,7 @@ function frame(dt) {
 function drawMenuBackdrop() {
   const g = view.ctx, k = view.c.width / innerWidth;
   g.setTransform(k, 0, 0, k, 0, 0);
-  drawCampfire(g, innerWidth, innerHeight, simT);
+  drawCampfire(g, innerWidth, innerHeight, CALM.matches ? 0 : simT); // reduced motion: a still night
 }
 
 // The title (spec §29): Lanjutkan opens the hero played last (or the first one there is).

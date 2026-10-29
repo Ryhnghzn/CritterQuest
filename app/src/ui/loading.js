@@ -12,16 +12,17 @@ const STEPS = {
   dungeon: 'Menyusun lorong dungeon…', shadow: 'Menyiapkan bayangan…', people: 'Membangunkan warga…', foes: 'Membangunkan monster…', ready: 'Siap!',
 };
 const TIPS = [
-  'Ambil tugas di Papan Tugas dulu — progres baru dihitung setelah diambil.',
+  'Ambil tugas di Papan Tugas dulu. Progres baru dihitung setelah diambil.',
   'Tekan Spasi untuk dodge: sesaat kebal terhadap serangan.',
   'Pedagang Malam hanya buka setelah matahari terbenam.',
   'Angka hijau di tombol Karakter berarti ada poin yang belum dibagi.',
-  'Gerbang dungeon tersembunyi di wilayah — jelajahi kabutnya.',
+  'Gerbang dungeon tersembunyi di wilayah. Jelajahi kabutnya.',
   'Tidur di Penginapan memulihkan HP penuh.',
-  'Peti harta di wilayah dijaga — kalahkan penjaganya dulu.',
+  'Peti harta di wilayah dijaga. Kalahkan penjaganya dulu.',
   'Ramuan di sabuk dipakai dengan Z X C V.',
 ];
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+const CALM = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 
 let box = null, raf = 0, target = 0, shown = 0, stepKey = 'torch', hero = null, t0 = 0, tipAt = 0;
 
@@ -79,7 +80,7 @@ function paint(now) {
   if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawScene(g, w, h, t, shown);
+  drawScene(g, w, h, CALM.matches ? 0 : t, shown); // reduced motion: a still scene, the bar still fills
   raf = requestAnimationFrame(paint);
 }
 

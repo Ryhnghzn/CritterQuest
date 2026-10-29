@@ -35,8 +35,8 @@ const LINES = {
   potion: 'Hehehe… ramuan segar dari kuali. Mau yang mana?',
   gear: 'Tungku sudah panas! Beli peti, jual rongsokan, tempa gear-mu, atau urai jadi bahan.',
   jeweler: 'Permata yang tepat di soket yang tepat… itu seni, Sayang.',
-  gate: 'Gerbang dungeon tidak ada di kota. Carilah sendiri di luar sana — atau ambil ekspedisi di Balai Petualang.',
-  trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat — selamanya.',
+  gate: 'Gerbang dungeon tidak ada di kota. Carilah sendiri di luar sana, atau ambil ekspedisi di Balai Petualang.',
+  trainer: 'Otot tidak tumbuh dari duduk-duduk. Latihan denganku membuatmu lebih kuat, selamanya.',
   board: 'Papan tugas sudah dibuka! Selesaikan tugas di dungeon, lalu ambil hadiahmu di sini.',
   barber: 'Rambutmu kusut habis dari dungeon, ya? Duduk sini, biar kurapikan!',
   teleport: 'Batu rune ini berdengung pelan. Sentuh, dan sebut kota yang pernah kau datangi.',
@@ -45,7 +45,7 @@ const LINES = {
   jewelry: 'Kalung dan cincin, masing-masing dengan kisahnya sendiri.',
   night: 'Psst… barang yang tak dijual di etalase. Hanya malam ini.',
   storage: 'Titip apa saja di sini. Barangmu aman, dan bisa kau ambil di kota besar mana pun.',
-  mats: 'Debu, kristal, inti, permata — semua yang dibutuhkan pandai besi. Jumlahnya terbatas.',
+  mats: 'Debu, kristal, inti, permata: semua yang dibutuhkan pandai besi. Jumlahnya terbatas.',
 };
 const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga',
   teleport: 'Perjalanan Cepat', weapons: 'Pandai Senjata', armor: 'Penjahit Zirah', jewelry: 'Toko Perhiasan', storage: 'Gudang', mats: 'Pedagang Bahan', night: 'Pedagang Malam' };
@@ -89,7 +89,7 @@ function buildNpc(box, npc, ctx) {
 
   const actions = el('div', 'row');
   if (npc.role === 'inn') {
-    const b = button(t('Tidur — {n} koin', { n: innPrice(char) }), 'btn', ctx.onInn);
+    const b = button(t('Tidur ({n} koin)', { n: innPrice(char) }), 'btn', ctx.onInn);
     b.id = 'npc-inn';
     actions.append(b);
   } else if (npc.role === 'potion') {
@@ -118,7 +118,7 @@ function buildNpc(box, npc, ctx) {
     const x = char.expedition;
     if (x) {
       const where = regionOfDungeon(x.dungeon);
-      body.append(el('div', 'note exphint', t('Ekspedisi: {d} — gerbangnya di {r} ({a}/{b} lantai)', { d: dungeonById(x.dungeon).name, r: where.name, a: x.have, b: x.need })));
+      body.append(el('div', 'note exphint', t('Ekspedisi: {d}. Gerbangnya di {r} ({a}/{b} lantai)', { d: dungeonById(x.dungeon).name, r: where.name, a: x.have, b: x.need })));
     }
     const regs = el('div', 'regions');
     regs.append(el('span', 'note', tr('Keluar ke wilayah:')));
@@ -221,7 +221,7 @@ function potionList(char, onBuy) {
 // Four belt slots; tapping one puts the next potion type in it.
 function beltEditor(char, onBelt) {
   const wrap = el('div', 'beltedit');
-  wrap.append(el('span', 'note', tr('Sabuk (tombol Z X C V) — ketuk untuk ganti:')));
+  wrap.append(el('span', 'note', tr('Sabuk (tombol Z X C V). Ketuk untuk ganti:')));
   const row = el('div', 'row');
   char.belt.forEach((id, i) => {
     const b = button('', 'beltslot', () => onBelt(i));
@@ -273,7 +273,7 @@ function sellPanel(char, onSell, redraw) {
     g.style.setProperty('--c', RARITIES[it.rarity].color);
     g.append(gearCanvas(it, 26), el('span', 'ilv', String(it.itemLevel)));
     if (worn) g.append(el('span', 'eq', 'E'));
-    g.title = `${itemName(it)} — ${worn ? tr('sedang dipakai') : t('{n} koin', { n: SELL_PRICE(it) })}`;
+    g.title = `${itemName(it)} · ${worn ? tr('sedang dipakai') : t('{n} koin', { n: SELL_PRICE(it) })}`;
     g.dataset.item = it.id;
     grid.append(g);
   }
@@ -281,7 +281,7 @@ function sellPanel(char, onSell, redraw) {
   const total = char.inventory.filter((it) => toSell.has(it.id)).reduce((n, it) => n + SELL_PRICE(it), 0);
   const act = el('div', 'row');
   const pickJunk = (r) => button(tr(r === 0 ? 'Pilih semua Biasa' : 'Pilih ≤ Bagus'), 'btn ghost small', () => { toSell = new Set(junkIds(char, r)); redraw(); });
-  const sell = button(t('Jual {n} — {g} koin', { n: toSell.size, g: total }), 'btn small', () => { const ids = [...toSell]; toSell.clear(); onSell(ids); });
+  const sell = button(t('Jual {n} ({g} koin)', { n: toSell.size, g: total }), 'btn small', () => { const ids = [...toSell]; toSell.clear(); onSell(ids); });
   sell.id = 'npc-sell';
   sell.disabled = !toSell.size;
   act.append(pickJunk(0), pickJunk(1), sell);
@@ -353,7 +353,7 @@ function barberPanel(char, onHaircut, redraw) {
     colors.append(b);
   });
   const same = newLook.hair === char.look.hair && newLook.hairColor === char.look.hairColor;
-  const go = button(same ? tr('Pilih gaya baru') : t('Potong — {n} koin', { n: BARBER_PRICE }), 'btn small', () => { const l = newLook; newLook = null; onHaircut(l); });
+  const go = button(same ? tr('Pilih gaya baru') : t('Potong ({n} koin)', { n: BARBER_PRICE }), 'btn small', () => { const l = newLook; newLook = null; onHaircut(l); });
   go.id = 'npc-haircut';
   go.disabled = same || char.gold < BARBER_PRICE;
   opts.append(el('span', 'note', tr('Gaya')), hair, el('span', 'note', tr('Warna')), colors, go);

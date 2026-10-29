@@ -6,7 +6,7 @@ import { DAY } from '../data/time.js';
 import { tr, t } from '../i18n.js';
 
 const LINES = [
-  'Sang Gerhana runtuh. Cahaya kelima Pecahan Segel menyatu, dan langit di atas Tanah Gerhana retak terbuka — bukan oleh kegelapan, melainkan oleh fajar.',
+  'Sang Gerhana runtuh. Cahaya kelima Pecahan Segel menyatu, dan langit di atas Tanah Gerhana retak terbuka, bukan oleh kegelapan, melainkan oleh fajar.',
   'Di Kota Awal, api unggun Kakek Odo menyala lebih terang dari biasanya. Di Rimbawana, Bekubara, Pasirluas, dan Baraapi, orang-orang menengadah dan tak tahu mengapa mereka tersenyum.',
   'Kisah ini selesai. Petualanganmu belum.',
 ];

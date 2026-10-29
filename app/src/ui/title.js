@@ -49,6 +49,6 @@ export function renderTitle(box, { last, lang, onContinue, onSlots, onSettings, 
     langs.append(b);
   }
   menu.append(play, settings, langs);
-  const foot = el('div', 'tfoot', last ? t('Enter — lanjutkan sebagai {name}', { name: last.name }) : tr('Enter — pilih petualang'));
+  const foot = el('div', 'tfoot', last ? t('Enter: lanjutkan sebagai {name}', { name: last.name }) : tr('Enter: pilih petualang'));
   box.append(seats, logo, menu, foot);
 }

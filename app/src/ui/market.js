@@ -24,7 +24,7 @@ function wareGrid(char, shop, entries, onBuy, redraw) {
     g.style.setProperty('--c', RARITIES[e.item.rarity].color);
     g.append(gearCanvas(e.item, 26), el('span', 'ilv', String(e.item.itemLevel)));
     if (e.sold) g.append(el('span', 'eq sold', '✓'));
-    g.title = `${itemName(e.item)} — ${e.sold ? tr('Terjual') : t('{n} koin', { n: e.price })}`;
+    g.title = `${itemName(e.item)} · ${e.sold ? tr('Terjual') : t('{n} koin', { n: e.price })}`;
     g.dataset.ware = e.key;
     grid.append(g);
   }
@@ -35,9 +35,9 @@ function wareGrid(char, shop, entries, onBuy, redraw) {
     const box = el('div', 'panel gdetail');
     detail(box, char, e.item, { editable: false, quiet: true });
     const act = el('div', 'row');
-    if (e.sold) act.append(el('span', 'note', tr('Terjual — stok baru besok pagi.')));
+    if (e.sold) act.append(el('span', 'note', tr('Terjual. Stok baru besok pagi.')));
     else {
-      const b = button(t('Beli — {n} koin', { n: e.price }), 'btn small', () => onBuy(e.key));
+      const b = button(t('Beli ({n} koin)', { n: e.price }), 'btn small', () => onBuy(e.key));
       b.id = 'market-buy';
       b.disabled = char.gold < e.price;
       act.append(b);

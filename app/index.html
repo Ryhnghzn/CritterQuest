@@ -567,8 +567,8 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 @media (pointer:coarse) and (orientation:landscape) and (max-height:540px){
   #hud,#townhud{zoom:.6;width:auto}
   #qtrack{zoom:.64}
-  #mute,#pausebtn,#charbtn,#autobtn,#cheatbtn{zoom:.72}
-  #minimap{top:46px;width:150px;height:88px}
+  #cheatbtn{zoom:.72}
+  #minimap{top:62px;width:150px;height:88px}
   #actions,#belt{zoom:.7}
   #joy{zoom:.8}
   #prompt{zoom:.75}
@@ -576,6 +576,12 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
   #banner{top:20%;font-size:26px}
   .screen{padding:20px 12px 20px}
   .screen>*{zoom:.72}
+  .screen .swatch{width:61px;height:61px} /* 44px after the .72 zoom */
+}
+/* touch targets stay 44px; the top buttons keep full size (chamfer clip-path would cut a larger hit area) */
+@media (pointer:coarse){.swatch{width:44px;height:44px}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 /* quests (spec §26.3) */
 .questbox{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;border:1px solid rgba(255,210,74,.45);border-radius:10px;background:rgba(255,210,74,.07)}
