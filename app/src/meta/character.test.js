@@ -140,8 +140,7 @@ describe('addExp: pasang skill otomatis', () => {
     expect(r.newSkills).toEqual([{ id: 'quake', slot: 2 }]);
   });
   it('semua slot penuh: tidak ada perubahan', () => {
-    const c = make(); c.level = 4; c.exp = 0; c.skills = ['spin', 'shout', 'spin', 'shout'];
-    c.skills = ['spin', 'shout', 'charge', 'axe'];
+    const c = make(); c.level = 4; c.exp = 0; c.skills = ['spin', 'shout', 'charge', 'axe'];
     const r = addExp(c, expToNext(4));
     expect(r.char.skills).toEqual(['spin', 'shout', 'charge', 'axe']);
     expect(r.newSkills).toEqual([]);

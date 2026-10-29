@@ -48,7 +48,7 @@ export function renderSkillTab(char, opts, redraw) {
     const cell = el('div', 'skcell');
     cell.append(card);
     if (s) {
-      const off = button('×', 'skoff', (e) => { e.stopPropagation(); opts.onEquip(i, null); });
+      const off = button('×', 'skoff', (e) => { e.stopPropagation(); picked.slot = null; picked.skill = null; opts.onEquip(i, null); });
       off.title = tr('Lepas dari tombol');
       off.setAttribute('aria-label', tr('Lepas dari tombol'));
       off.dataset.skill = `${s.id}-off`;

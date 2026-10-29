@@ -70,9 +70,6 @@
 #ui .btn.danger{color:#f0909e;--cq-edge:rgba(224,82,106,.55)}
 #ui .btn.claim{--cq-fill:#4a3410;--cq-edge:var(--cq-gold-l);color:#fff3cf}
 #ui .btn:disabled,#confirm .btn:disabled{--cq-edge:#3a3038;--cq-fill:#141015;color:#8a8070;opacity:.7}
-#ui .skbtns .skkey{--cq-fill:#141015;--cq-edge:var(--cq-gold-d);color:var(--ink)}
-#ui .skbtns .skkey:hover:not(:disabled){--cq-fill:#5a1620;--cq-edge:var(--cq-gold)}
-#ui .skbtns .skkey.on{--cq-fill:#2a1e10;--cq-edge:var(--cq-gold-l);color:var(--cq-gold-l);box-shadow:inset 0 -2px 0 var(--cq-gold)}
 #ui .attr .plus{--cq-cut:6px}
 #ui .btn.reroll small{text-transform:none}
 

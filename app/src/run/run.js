@@ -195,8 +195,7 @@ export class Game {
     const got = autoEquip(this.classId, ids, level - 1, level);
     if (!got.length) return;
     this.setSkills(ids);
-    const sk = this.skillDefs[got[0].slot];
-    this.showBanner(t('Skill baru: {name} (tombol {n})', { name: sk.name, n: got[0].slot + 1 }));
+    this.showBanner(got.map((g) => t('Skill baru: {name} (tombol {n})', { name: this.skillDefs[g.slot].name, n: g.slot + 1 })).join(' · '));
   }
 
   // stats = base stats × active potion buffs

@@ -487,9 +487,14 @@ function closeTownOverlay() {
 }
 
 // The character as it stands mid-trip: EXP so far and points spent in the dungeon.
+// During a trip the running Game is the source of truth for the worn skills (spec §31.6):
+// addExp would re-run its auto-equip from the trip's start level and refill slots the player emptied.
+function runSkillIds() { return game.skillDefs.map((s) => s?.id ?? null); }
+
 function tripChar() {
   const { char } = addExp(current, game.expGained);
-  return allocate(char, tripAttrs, char.updatedAt) || char;
+  const c = allocate(char, tripAttrs, char.updatedAt) || char;
+  return { ...c, skills: runSkillIds() };
 }
 
 // Skill change mid-trip (spec §31.6): saved at once, the new skill starts on its full cooldown.
@@ -703,7 +708,7 @@ async function commitField() {
   const before = current;
   const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now());
   tripAttrs = {};
-  current = r.char;
+  current = { ...r.char, skills: runSkillIds() };
   fieldSaveT = 0;
   refreshFieldQuests();
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
@@ -861,7 +866,7 @@ async function endRun(died) {
   const newRecord = trip.floor > current.records.dungeons[r.dungeon].bestFloor;
   const before = current;
   const applied = applyTrip(current, trip, Date.now());
-  current = applied.char; // keep progress in memory even if the write fails
+  current = { ...applied.char, skills: runSkillIds() }; // keep progress in memory even if the write fails
   questNews(before);
   const saveError = await saveCurrent();
   // back out of a gate in a region (gold portal), or wake in town (spec §25.5)

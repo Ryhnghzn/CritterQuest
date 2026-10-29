@@ -310,4 +310,15 @@ describe('efek item unik', () => {
     expect(g.skillDefs[2]?.id).toBe('quake');
     expect(g.bannerT).toBeGreaterThan(0);
   });
+
+  it('level-up di run tidak mengisi lagi slot yang dikosongkan lewat setSkills di level yang sama', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 4 });
+    g.gems.push({ x: g.px, y: g.py, v: expToNext(4) + 1 });
+    g.step(1 / 60);
+    expect(g.skillDefs[2]?.id).toBe('quake');
+    g.setSkills(['spin', 'shout', null, null]); // player unequips it
+    g.step(1 / 60);
+    expect(g.skillDefs[2]).toBeNull(); // the run never re-equips on its own
+  });
 });
