@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { makeArea, makeSweep, makeProjectile, inShape, stepHits, inherit, castScale } from './hits.js';
+import { makeArea, makeSweep, makeProjectile, makeOrbit, inShape, stepHits, inherit, castScale } from './hits.js';
+import { BOOMERANG_MAX_TRAVEL } from '../data/balance.js';
 
 const DT = 1 / 60;
 const enemy = (x, y, r = 10) => ({ x, y, r, hp: 1000 });
@@ -173,6 +174,15 @@ describe('boomerang', () => {
     expect(e.kx).toBeLessThan(0); // dragged toward the player
   });
 
+  it('batas aman: pemain yang tak terjangkau membuat bumerang mati setelah jarak tempuh maksimum', () => {
+    const p = boom();
+    const hits = [p];
+    const ctx = { px: -1e5, py: 0, onHit() {}, add() {} }; // never catchable
+    const frames = Math.ceil(((p.range * BOOMERANG_MAX_TRAVEL) / p.speed) / DT) + 5;
+    for (let i = 0; i < frames; i++) stepHits(hits, [], DT, ctx);
+    expect(hits.length).toBe(0);
+  });
+
   it('pull tidak menyeret bos', () => {
     const e = { ...enemy(100, 0, 15), kx: 0, ky: 0, boss: true };
     const hits = [boom({ pull: 300 })];
@@ -275,5 +285,132 @@ describe('inherit', () => {
   it('castScale = pengganda cast pada induk', () => {
     expect(castScale({ mult: 9, mult0: 6 })).toBeCloseTo(1.5);
     expect(castScale({ mult: 3 })).toBe(1);
+  });
+});
+
+describe('curve (proyektil melengkung)', () => {
+  it('arah berputar curve rad/dtk, laju tetap', () => {
+    const p = makeProjectile({ x: 0, y: 0, angle: 0, speed: 300, range: 1000, r: 5, mult: 1, curve: Math.PI });
+    const hits = [p];
+    run(hits, [], 0.5);
+    expect(p.angle).toBeCloseTo(Math.PI / 2, 1);
+    expect(Math.hypot(p.vx, p.vy)).toBeCloseTo(300);
+    expect(p.vy).toBeGreaterThan(250);
+  });
+  it('tanpa curve lurus', () => {
+    const p = makeProjectile({ x: 0, y: 0, angle: 0.3, speed: 300, range: 1000, r: 5, mult: 1 });
+    run([p], [], 0.5);
+    expect(p.angle).toBe(0.3);
+  });
+});
+
+describe('explode.shards', () => {
+  const ball = (over = {}) => makeProjectile({ x: 0, y: 0, angle: 0, speed: 200, range: 480, r: 14, mult: 3, explode: { r: 85, shards: { count: 6, speed: 300, range: 160, r: 8, mult: 1.2 } }, fx: 'fireball', ...over });
+
+  it('ledakan menambah 6 serpihan radial dari titik tumbukan', () => {
+    const hits = [ball()];
+    const ctx = { px: 0, py: 0, onHit() {}, add: (h) => hits.push(h) };
+    const e = enemy(30, 0, 15);
+    for (let i = 0; i < 40 && !hits.some((h) => h.part === 'shard'); i++) stepHits(hits, [e], DT, ctx);
+    const shards = hits.filter((h) => h.part === 'shard');
+    expect(shards.length).toBe(6);
+    const angles = shards.map((s) => ((s.angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)).sort((a, b) => a - b);
+    for (let i = 1; i < 6; i++) expect(angles[i] - angles[i - 1]).toBeCloseTo(Math.PI / 3);
+    expect(shards.every((s) => s.kind === 'proj' && s.range === 160 && s.r === 8 && s.mult === 1.2)).toBe(true);
+    expect(shards.every((s) => s.hitSet.has(e))).toBe(true); // the struck enemy is not hit again point-blank
+  });
+
+  it('serpihan mewarisi flag skill dan pengganda cast sekali saja', () => {
+    const p = ball();
+    p.skill = true; p.sid = 'inferno'; p.execute = 0.3; p.crit = true; p.mult *= 2.25;
+    const hits = [p];
+    const ctx = { px: 0, py: 0, onHit() {}, add: (h) => hits.push(h) };
+    for (let i = 0; i < 40 && !hits.some((h) => h.part === 'shard'); i++) stepHits(hits, [enemy(30, 0, 15)], DT, ctx);
+    const shards = hits.filter((h) => h.part === 'shard');
+    expect(shards.length).toBe(6);
+    for (const s of shards) {
+      expect(s.skill && s.sid === 'inferno' && s.execute === 0.3 && s.crit).toBeTruthy();
+      expect(s.mult).toBeCloseTo(1.2 * 2.25);
+    }
+  });
+
+  it('serpihan melukai musuh lain yang jauh dari ledakan', () => {
+    const hits = [ball()];
+    const far = enemy(30 + 120, 0, 15);
+    const counts = run(hits, [enemy(30, 0, 15), far], 1);
+    expect(counts[1]).toBeGreaterThan(0);
+  });
+});
+
+describe('orbit', () => {
+  const aimCtx = (hits, extra = {}) => ({ px: 0, py: 0, aimPX: 500, aimPY: 0, onHit() {}, add: (h) => hits.push(h), ...extra });
+  const shuri = (over = {}) => makeOrbit({ radius: 70, spin: 7, every: 0.25, duration: 3, r: 22, mult: 0.8, throw: { speed: 520, range: 420, r: 16, mult: 3, pierce: Infinity }, ...over });
+
+  it('mengelilingi pemain pada jarak radius dan ikut berpindah', () => {
+    const o = shuri();
+    const hits = [o];
+    const ctx = aimCtx(hits);
+    for (let i = 0; i < 30; i++) stepHits(hits, [], DT, ctx);
+    expect(Math.hypot(o.x - ctx.px, o.y - ctx.py)).toBeCloseTo(70);
+    ctx.px = 200; ctx.py = 50;
+    stepHits(hits, [], DT, ctx);
+    expect(Math.hypot(o.x - 200, o.y - 50)).toBeCloseTo(70);
+  });
+
+  it('berputar sebesar spin rad/dtk', () => {
+    const o = shuri();
+    const hits = [o];
+    const a0 = o.angle;
+    const ctx = aimCtx(hits);
+    for (let i = 0; i < 30; i++) stepHits(hits, [], DT, ctx);
+    expect(o.angle - a0).toBeCloseTo(3.5, 1);
+  });
+
+  it('tiap musuh paling banyak duration/every kali, dan kena lebih dari sekali', () => {
+    const o = shuri({ spin: 0.0001 }); // practically parked at (70, 0)
+    const hits = [o];
+    let n = 0;
+    const ctx = aimCtx(hits, { onHit: () => n++ });
+    const e = enemy(70, 0, 15);
+    for (let t = 0; t < 3 - 1e-6; t += DT) stepHits(hits, [e], DT, ctx); // orbit only: the throw would hit too
+    expect(n).toBeGreaterThan(8);
+    expect(n).toBeLessThanOrEqual(3 / 0.25);
+  });
+
+  it('dua musuh dihitung terpisah', () => {
+    const o = shuri({ spin: 0.0001 });
+    const hits = [o];
+    const per = new Map();
+    const ctx = aimCtx(hits, { onHit: (h, e) => per.set(e, (per.get(e) || 0) + 1) });
+    const a = enemy(70, 0, 15), b = enemy(70, 20, 15);
+    for (let t = 0; t < 1; t += DT) stepHits(hits, [a, b], DT, ctx);
+    expect(per.get(a)).toBeGreaterThanOrEqual(3);
+    expect(per.get(b)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('di akhir umur melempar proyektil ke titik bidik dan orbit hilang', () => {
+    const o = shuri();
+    o.skill = true; o.sid = 'shuriken'; o.execute = 0.3; o.crit = true; o.mult *= 2.25;
+    const hits = [o];
+    const ctx = aimCtx(hits, { aimPX: 0, aimPY: 400 });
+    for (let t = 0; t < 3.1; t += DT) stepHits(hits, [], DT, ctx);
+    expect(hits.includes(o)).toBe(false);
+    expect(hits.length).toBe(1);
+    const th = hits[0];
+    expect(th.kind).toBe('proj');
+    expect(th.part).toBe('throw');
+    expect(th.vy).toBeGreaterThan(0);
+    expect(Math.abs(th.vx)).toBeLessThan(th.vy);
+    expect(th.pierce).toBe(Infinity);
+    expect(th.skill && th.sid === 'shuriken' && th.execute === 0.3 && th.crit).toBeTruthy();
+    expect(th.mult).toBeCloseTo(3 * 2.25);
+  });
+
+  it('tidak melempar sebelum umurnya habis', () => {
+    const hits = [shuri()];
+    const ctx = aimCtx(hits);
+    for (let t = 0; t < 2.9; t += DT) stepHits(hits, [], DT, ctx);
+    expect(hits.length).toBe(1);
+    expect(hits[0].kind).toBe('orbit');
   });
 });

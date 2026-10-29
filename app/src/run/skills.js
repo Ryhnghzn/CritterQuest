@@ -3,7 +3,7 @@
 // cooldowns, reduced by cdr).
 import { CLASSES } from '../data/classes.js';
 import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/balance.js';
-import { makeArea, makeSweep, makeProjectile } from './hits.js';
+import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx } from './skillfx.js';
 import { traitMods, traitCast, traitCastExecute, traitFocusShot } from './traits.js';
@@ -146,16 +146,28 @@ function castSkill(run, s) {
         run.hits.push(pillar);
       }
       break;
-    case 'fan':
-      for (let k = 0; k < s.count; k++) {
-        const a = angle + (k / (s.count - 1) - 0.5) * s.spread * DEG;
-        run.hits.push(makeProjectile({
-          x: run.px, y: run.py, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null,
-        }));
+    case 'fan': { // a full circle (spread 360) spaces the arrows by count, not count - 1
+      const full = s.spread >= 360, n = s.count;
+      for (let k = 0; k < n; k++) {
+        const a = angle + (n > 1 ? k / (full ? n : n - 1) - (full ? 0 : 0.5) : 0) * s.spread * DEG;
+        const ring = s.ring || 0;
+        const d = makeProjectile({
+          x: run.px + Math.cos(a) * ring, y: run.py + Math.sin(a) * ring, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult,
+          pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null, delay: s.delay || 0, curve: s.curve || 0,
+        });
+        d.hover = ring > 0 && d.delay > 0; // floats where it is until it launches
+        run.hits.push(d);
       }
       break;
-    case 'chain':
-      chain(run, s);
+    }
+    case 'orbit': {
+      const o = makeOrbit({ radius: s.radius, spin: s.spin, every: s.every, duration: s.duration, r: s.r, mult: s.mult, angle, throw: s.throw || null, fx: s.look || s.id });
+      o.x = run.px + run.aimX * s.radius; o.y = run.py + run.aimY * s.radius;
+      run.hits.push(o);
+      break;
+    }
+    case 'storm':
+      storm(run, s);
       break;
     case 'dash': {
       const dir = s.back ? -1 : 1; // Lompatan Mundur jumps away from the aim
@@ -193,29 +205,37 @@ function blast(run, b) {
   run.hits[run.hits.length - 1].knock = b.knock || 0;
 }
 
-// Petir Berantai: first target = enemy nearest the aim point within range,
-// then each jump goes to the nearest enemy not yet struck.
-function chain(run, s) {
+// Badai Petir: lightning picks a chain of targets and every one gets its own lightning
+// strike (an area riding on the enemy), `gap` s after the one before.
+function storm(run, s) {
+  const list = pickChain(run, s);
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    const strike = makeArea({ x: e.x, y: e.y, r: s.r, mult: s.mult, fx: 'chain', delay: s.gap * i });
+    strike.target = e;
+    run.hits.push(strike);
+  }
+}
+
+// Targets of a lightning chain: first = enemy nearest the aim point within range, then each jump
+// goes to the nearest enemy not yet struck.
+function pickChain(run, s) {
+  const out = [];
   let cur = null, best = Infinity;
   for (const e of run.enemies) {
     if (e.hp <= 0 || Math.hypot(e.x - run.px, e.y - run.py) > s.range) continue;
     const d = Math.hypot(e.x - run.aimPX, e.y - run.aimPY);
     if (d < best) { best = d; cur = e; }
   }
-  const struck = new Set();
-  const hit = { mult: s.mult, freeze: 0, fx: 'chain' };
-  let fx = run.px, fy = run.py;
-  for (let i = 0; i < s.count && cur; i++) {
-    run.damageEnemy(hit, cur);
-    struck.add(cur);
-    run.spawnLightning(fx, fy, cur.x, cur.y);
-    fx = cur.x; fy = cur.y;
+  while (cur && out.length < s.count) {
+    out.push(cur);
     let next = null, bd = s.jump;
     for (const e of run.enemies) {
-      if (e.hp <= 0 || struck.has(e)) continue;
-      const d = Math.hypot(e.x - fx, e.y - fy);
+      if (e.hp <= 0 || out.includes(e)) continue;
+      const d = Math.hypot(e.x - cur.x, e.y - cur.y);
       if (d < bd) { bd = d; next = e; }
     }
     cur = next;
   }
+  return out;
 }

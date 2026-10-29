@@ -13,10 +13,15 @@
 //    on the way home along with it
 //  - trail { every, r, life, ticks, mult }: drops a small lingering area behind it
 //  - split { at, count, spread, mult }: at distance `at` it bursts into `count` arrows
+//  - curve: turning speed (rad/s), so the flight bends into a spiral
+//  - hover: while its `delay` runs it is drawn floating (a dagger waiting in a ring)
+//  - explode.shards { count, speed, range, r, mult }: the burst also throws `count` arrows outward
+// orbit: a blade circling the player (`radius`, `spin` rad/s); each enemy at most once per `every` s;
+//   when `duration` ends it flies off as a `throw` projectile at the aim point (ctx.aimPX / aimPY)
 // stepHits() reports contacts through ctx.onHit(hit, enemy); damage is the caller's job.
 const DEG = Math.PI / 180;
-import { SKILL_PULL } from '../data/balance.js';
-const RETURN_CATCH = 20; // a boomerang this close to the player is caught
+import { SKILL_PULL, RETURN_CATCH, BOOMERANG_MAX_TRAVEL } from '../data/balance.js';
+const TAU = Math.PI * 2;
 const FX_MIN = 0.18; // keep instant hits on screen long enough to be seen
 
 export function makeArea({ x, y, r, angle = 0, arc = null, mult, ticks = 1, duration = 0, follow = false, freeze = 0, fx = null, delay = 0 }) {
@@ -31,12 +36,19 @@ export function makeSweep({ x, y, r, mult, duration, follow = false, fx = null, 
   return { kind: 'sweep', x, y, r, arc: null, mult, mult0: mult, follow, fx, delay, life: duration, maxLife: duration, hitSet: new Set() };
 }
 
-export function makeProjectile({ x, y, angle, speed, range, r, mult, pierce = 0, explode = null, fx = null, delay = 0, boomerang = false, pull = 0, trail = null, split = null }) {
+export function makeProjectile({ x, y, angle, speed, range, r, mult, pierce = 0, explode = null, fx = null, delay = 0, boomerang = false, pull = 0, trail = null, split = null, curve = 0, hover = false }) {
   return {
     kind: 'proj', x, y, r, angle, mult, mult0: mult, pierce, explode, fx, delay,
-    boomerang, returning: false, pull: pull === true ? SKILL_PULL : pull || 0, trail, trailT: 0, split,
+    boomerang, returning: false, pull: pull === true ? SKILL_PULL : pull || 0, trail, trailT: 0, split, curve, hover,
     vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, speed, dist: 0, range,
     hitSet: new Set(), life: 1, dead: false,
+  };
+}
+
+export function makeOrbit({ radius, spin, every, duration, r, mult, angle = 0, throw: thrown = null, fx = null }) {
+  return {
+    kind: 'orbit', x: 0, y: 0, r, angle, radius, spin, every, mult, mult0: mult, fx, delay: 0, throw: thrown,
+    age: 0, cx: 0, cy: 0, life: duration, maxLife: duration, lastHit: new Map(), // enemy → age at its last hit (one Map per cast)
   };
 }
 
@@ -79,6 +91,7 @@ export function stepHits(hits, enemies, dt, ctx) {
     if (h.follow) { h.x = ctx.px; h.y = ctx.py; }
     if (h.kind === 'area') stepArea(h, enemies, dt, ctx);
     else if (h.kind === 'sweep') stepSweep(h, enemies, dt, ctx);
+    else if (h.kind === 'orbit') stepOrbit(h, enemies, dt, ctx);
     else stepProjectile(h, enemies, dt, ctx);
     const done = h.kind === 'proj' ? h.dead : h.life <= 0 && (h.kind !== 'area' || h.ticksLeft <= 0);
     if (done) { hits[i] = hits[hits.length - 1]; hits.pop(); }
@@ -107,6 +120,31 @@ function stepSweep(h, enemies, dt, ctx) {
   h.life -= dt;
 }
 
+function stepOrbit(h, enemies, dt, ctx) {
+  h.angle += h.spin * dt;
+  h.cx = ctx.px; h.cy = ctx.py; // orbit centre (the renderer draws afterimages along the circle)
+  h.x = ctx.px + Math.cos(h.angle) * h.radius;
+  h.y = ctx.py + Math.sin(h.angle) * h.radius;
+  h.age += dt;
+  for (const e of enemies) {
+    if (e.hp <= 0 || !inShape(h, e)) continue;
+    const last = h.lastHit.get(e);
+    if (last !== undefined && h.age - last < h.every - 1e-9) continue;
+    h.lastHit.set(e, h.age);
+    ctx.onHit(h, e);
+  }
+  h.life -= dt;
+  if (h.life <= 0 && h.throw) { // the blade leaves its orbit and is hurled at the aim point
+    const th = h.throw;
+    let a = Math.atan2(ctx.aimPY - h.y, ctx.aimPX - h.x);
+    if (Number.isNaN(a) || Math.hypot(ctx.aimPX - h.x, ctx.aimPY - h.y) < 1e-6) a = h.angle;
+    const c = makeProjectile({ x: h.x, y: h.y, angle: a, speed: th.speed, range: th.range, r: th.r, mult: th.mult * castScale(h), pierce: th.pierce || 0, fx: h.fx });
+    c.mult0 = th.mult;
+    c.part = 'throw';
+    ctx.add(inherit(c, h));
+  }
+}
+
 function stepProjectile(h, enemies, dt, ctx) {
   if (h.returning) { // boomerang on its way home: steer at the player
     const dx = ctx.px - h.x, dy = ctx.py - h.y, d = Math.hypot(dx, dy);
@@ -114,8 +152,13 @@ function stepProjectile(h, enemies, dt, ctx) {
     h.vx = (dx / d) * h.speed; h.vy = (dy / d) * h.speed;
     h.angle = Math.atan2(h.vy, h.vx);
   }
+  if (h.curve && !h.returning) {
+    h.angle += h.curve * dt;
+    h.vx = Math.cos(h.angle) * h.speed; h.vy = Math.sin(h.angle) * h.speed;
+  }
   h.x += h.vx * dt; h.y += h.vy * dt;
   h.dist += h.speed * dt;
+  if (h.boomerang && h.dist >= h.range * BOOMERANG_MAX_TRAVEL) { h.dead = true; return; } // safety: never fly forever
   if (h.trail) {
     h.trailT += dt;
     const tr = h.trail;
@@ -132,6 +175,7 @@ function stepProjectile(h, enemies, dt, ctx) {
     if (h.explode) {
       const blast = makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom' });
       ctx.add(inherit(blast, h)); // a skill's explosion still counts as the skill, looks like it and keeps Kombo
+      if (h.explode.shards) shardsOut(h, e, ctx);
       h.dead = true;
       return;
     }
@@ -155,6 +199,19 @@ function splitUp(h, ctx) {
     const c = makeProjectile({ x: h.x, y: h.y, angle: a, speed: h.speed, range: Math.max(0, h.range - h.dist), r: h.r, mult: h.mult * sm, pierce: h.pierce, fx: h.fx });
     c.mult0 = h.mult0 * sm;
     c.part = 'split';
+    ctx.add(inherit(c, h));
+  }
+}
+
+// The burst throws shards outward, evenly around the circle. The enemy that set it off is
+// already inside the blast, so the shards skip it (otherwise they would all hit it point-blank).
+function shardsOut(h, struck, ctx) {
+  const sh = h.explode.shards, n = sh.count, scale = castScale(h);
+  for (let k = 0; k < n; k++) {
+    const c = makeProjectile({ x: h.x, y: h.y, angle: h.angle + (k / n) * TAU, speed: sh.speed, range: sh.range, r: sh.r, mult: sh.mult * scale, fx: h.fx });
+    c.mult0 = sh.mult;
+    c.part = 'shard';
+    c.hitSet.add(struck);
     ctx.add(inherit(c, h));
   }
 }

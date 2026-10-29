@@ -202,12 +202,12 @@ shuriken: { kind: 'orbit', radius: 70, spin: 7, every: 0.25, duration: 3, r: 22,
 - [ ] **D3. `boomerang` + `pull`** — tes pergi-pulang & 2 kali kena. Visual: kapak besar berputar, percikan.
 - [ ] **D4. `trail` + `delay` proj** (Panah Naga) — tes area jejak muncul. Visual: naga cahaya meliuk (sinus di sepanjang lintasan), jejak terbakar.
 - [ ] **D5. `split`** (Panah Pecah) — tes 3 → 9 proyektil. Visual: kilau kembang api saat pecah.
-- [ ] **D6. `storm`** di `castSkill` (pilih target seperti `chain()` yang ada, lalu area `target` + `delay = gap × i`) — tes 8 sambaran pada musuh berbeda dalam urutan waktu. Visual: awan gelap di atas pemain, kilat layar tipis per sambaran.
-- [ ] **D7. `explode.shards`** (Matahari Kecil) — tes 6 serpihan. Visual: bola api lambat besar, jalur terbakar.
-- [ ] **D8. `ring` + `curve`** pada `fan` (Lingkaran Belati) — tes posisi awal melingkar & lintasan melengkung. Visual: belati melayang berdenyut sebelum melesat.
-- [ ] **D9. `orbit` + `throw`** (Shuriken Raksasa) — tes jumlah kena per musuh ≤ `duration/every`, proyektil lempar muncul di akhir. Visual: shuriken besar berputar dengan bayangan gerak.
+- [x] **D6. `storm`** di `castSkill` (pilih target seperti `chain()` yang ada, lalu area `target` + `delay = gap × i`) — tes 8 sambaran pada musuh berbeda dalam urutan waktu. Visual: awan gelap di atas pemain, kilat layar tipis per sambaran.
+- [x] **D7. `explode.shards`** (Matahari Kecil) — tes 6 serpihan. Visual: bola api lambat besar, jalur terbakar.
+- [x] **D8. `ring` + `curve`** pada `fan` (Lingkaran Belati) — tes posisi awal melingkar & lintasan melengkung. Visual: belati melayang berdenyut sebelum melesat.
+- [x] **D9. `orbit` + `throw`** (Shuriken Raksasa) — tes jumlah kena per musuh ≤ `duration/every`, proyektil lempar muncul di akhir. Visual: shuriken besar berputar dengan bayangan gerak.
 - [ ] **D10. Setel damage** di cheat panel: bandingkan DPS rata-rata ke skill lama di Celah/dungeon yang sama; catat angka akhir di spesifikasi bila berubah.
-- [ ] **D11. Kamus EN** nama & deskripsi 8 skill; ikon tetap.
+- [x] **D11. Kamus EN** nama & deskripsi 8 skill; ikon tetap.
 - [ ] **D12. Verifikasi** (2D & 2.5D, mode efek Penuh/Ringan, FPS ≥ 50 PC, ≥ 40 HP) → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup D: 8 skill lebay`.
 
 ---

@@ -12,9 +12,14 @@ export const CLASS_BASE = { atkSpd: 1, critDmg: 1.5, cdr: 0, magnet: 70 };
 //   'area'  — circle around the player (follow) or at the aim point (at: 'aim', maxDist);
 //             ticks over duration; optional freeze (s)
 //   'proj'  — like the basic projectile; optional delay (s), boomerang + pull, trail { every, r, life, ticks, mult };
-//             `split { at, count, spread }` (on proj / fan) bursts each arrow into `count` more;  'fan' — `count` projectiles over `spread` degrees
+//             `split { at, count, spread }` (on proj / fan) bursts each arrow into `count` more;
+//             `explode { r, shards { count, speed, range, r, mult } }`;  'fan' — `count` projectiles over `spread` degrees
+//             (360 = a full circle; `ring` px from the player, floating `delay` s first, then `curve` rad/s turning)
 //   'line'  — `count` area pillars along the aim, `step` px apart, each `gap` s after the last, standing `life` s (spec §31.7)
-//   'chain' — instant: first enemy near the aim point within range, then jumps to `count` total
+//   'storm' — first enemy near the aim point within range, then jumps (`jump` px) to `count` enemies in total;
+//             each gets a lightning strike (area `r`), `gap` s after the one before
+//   'orbit' — a blade circling the player (`radius`, `spin` rad/s) for `duration`, hitting each enemy at most once per
+//             `every` s, then thrown at the aim point as `throw` (a projectile)
 //   'dash'  — player dashes `distance` along the aim, hurting each enemy passed once
 //   'buff'  — for `duration`: dmgTaken multiplier and/or atk, atkSpd (fractions), crit, critDmg (added);
 //             optional `blast` shockwave { r, mult, knock, freeze }
@@ -74,10 +79,10 @@ export const CLASSES = {
     ult: { id: 'meteorstorm', name: 'Hujan Meteor', unlock: 25, icon: 'ember', look: 'boom', desc: 'Meteor berjatuhan 2,4 detik: 6×600% di area luas, mendorong.', kind: 'area', at: 'aim', maxDist: 340, r: 220, ticks: 6, duration: 2.4, mult: 6, knock: 120 },
     skills: [
       { id: 'nova', name: 'Nova Es', unlock: 1, desc: 'Ledakan es di sekeliling: 300%, membekukan 1,5 detik, mendorong.', kind: 'area', cost: 45, cd: 4, r: 125, mult: 3, freeze: 1.5, duration: 0.4, knock: 160 },
-      { id: 'chain', name: 'Petir Berantai', unlock: 1, desc: 'Petir melompat ke 8 musuh, 350%.', kind: 'chain', cost: 35, cd: 2.5, count: 8, mult: 3.5, range: 450, jump: 200 },
+      { id: 'chain', name: 'Badai Petir', unlock: 1, desc: 'Awan petir menyambar 8 musuh berurutan, masing-masing 350%.', kind: 'storm', cost: 35, cd: 2.5, count: 8, gap: 0.1, r: 36, mult: 3.5, range: 450, jump: 200 },
       { id: 'meteor', name: 'Meteor', unlock: 5, desc: 'Meteor jatuh di titik bidik: 600% area besar.', icon: 'ember', look: 'boom', kind: 'area', at: 'aim', maxDist: 340, cost: 55, cd: 6, r: 110, mult: 6, knock: 180, duration: 0.4 },
       { id: 'blink', name: 'Teleportasi', unlock: 10, desc: 'Berpindah seketika 230 px ke arah bidikan.', icon: 'zap', look: 'shadow', kind: 'dash', cost: 20, cd: 3, distance: 230, duration: 0.08, r: 0, mult: 0 },
-      { id: 'inferno', name: 'Bola Api Raksasa', unlock: 15, desc: 'Bola api besar meledak 400% di area luas.', icon: 'ember', look: 'fireball', kind: 'proj', cost: 40, cd: 3, speed: 300, range: 480, r: 12, mult: 4, explode: { r: 85 } },
+      { id: 'inferno', name: 'Matahari Kecil', unlock: 15, desc: 'Bola api raksasa melaju pelan membakar jalurnya; meledak 300% di area luas dan menebar 6 serpihan api 120%.', icon: 'ember', look: 'fireball', kind: 'proj', cost: 40, cd: 3, speed: 200, range: 480, r: 14, mult: 3, explode: { r: 85, shards: { count: 6, speed: 300, range: 160, r: 8, mult: 1.2 } }, trail: { every: 0.12, r: 26, life: 1.5, ticks: 3, mult: 0.2 } },
       { id: 'manashield', name: 'Perisai Mana', unlock: 20, desc: 'Damage diterima −55% dan ATK +20% selama 7 detik.', icon: 'bubble', kind: 'buff', cost: 50, cd: 14, duration: 7, dmgTaken: 0.45, atk: 0.2 },
     ],
   },
@@ -91,10 +96,10 @@ export const CLASSES = {
     ult: { id: 'thousandshadows', name: 'Tarian Seribu Bayangan', unlock: 25, icon: 'shadow', look: 'spin', desc: 'Kebal 2 detik sambil menebas semua di sekitar: 12×260%.', kind: 'area', follow: true, r: 130, ticks: 12, duration: 2, mult: 2.6, invuln: 2 },
     skills: [
       { id: 'shadow', name: 'Langkah Bayangan', unlock: 1, desc: 'Melesat 180 px, 500% ke yang dilewati, kebal.', kind: 'dash', cost: 30, cd: 2, distance: 180, duration: 0.16, r: 26, mult: 5 },
-      { id: 'fan', name: 'Kipas Belati', unlock: 1, desc: '11 belati menyebar, masing-masing 180%.', kind: 'fan', cost: 40, cd: 3, count: 11, spread: 80, speed: 440, range: 320, r: 5, mult: 1.8 },
+      { id: 'fan', name: 'Lingkaran Belati', unlock: 1, desc: '11 belati melayang melingkar di sekitarmu, lalu melesat berputar ke luar, masing-masing 180%.', kind: 'fan', cost: 40, cd: 3, count: 11, spread: 360, ring: 40, delay: 0.4, curve: 2.2, speed: 400, range: 320, r: 6, mult: 1.8 },
       { id: 'poison', name: 'Kabut Racun', unlock: 5, desc: 'Kabut racun di titik bidik 3 detik: 8×90%.', icon: 'thorn', look: 'rain', kind: 'area', at: 'aim', maxDist: 220, cost: 35, cd: 5, r: 75, ticks: 8, duration: 3, mult: 0.9 },
       { id: 'smoke', name: 'Bom Asap', unlock: 10, desc: 'Asap membekukan musuh sekitar 1,2 detik; damage diterima −40% selama 4 detik.', icon: 'bubble', kind: 'buff', cost: 40, cd: 8, duration: 4, dmgTaken: 0.6, blast: { r: 100, mult: 1.5, knock: 0, freeze: 1.2 } },
-      { id: 'shuriken', name: 'Shuriken', unlock: 15, desc: '3 shuriken menembus 2 musuh, masing-masing 300%.', icon: 'fan', look: 'dagger', kind: 'fan', cost: 30, cd: 2.5, count: 3, spread: 14, speed: 500, range: 420, r: 6, mult: 3, pierce: 2 },
+      { id: 'shuriken', name: 'Shuriken Raksasa', unlock: 15, desc: 'Shuriken raksasa mengitarimu 3 detik, menebas 80% tiap 0,25 detik, lalu dilempar ke bidikan menembus semua musuh 300%.', icon: 'fan', look: 'dagger', kind: 'orbit', cost: 30, cd: 2.5, radius: 70, spin: 7, every: 0.25, duration: 3, r: 22, mult: 0.8, throw: { speed: 520, range: 420, r: 16, mult: 3, pierce: Infinity } },
       { id: 'assassinate', name: 'Naluri Pembunuh', unlock: 20, desc: 'Kritis +40% dan damage kritis +60% selama 6 detik.', icon: 'pow', kind: 'buff', cost: 50, cd: 12, duration: 6, dmgTaken: 1, crit: 40, critDmg: 0.6 },
     ],
   },

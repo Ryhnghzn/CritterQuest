@@ -22,15 +22,15 @@ export const SKILL_FX = {
   starfall: { el: 'holy', n: 30, rate: 30 },
   // mage
   nova: { el: 'ice', n: 30 },
-  chain: { el: 'lightning', n: 8 },
+  chain: { el: 'lightning', n: 8, charge: 30 }, // charge: sparks/s gathering over a target about to be struck
   meteor: { el: 'fire', n: 34 },
   blink: { el: 'lightning', n: 22, rate: 100 },
-  inferno: { el: 'fire', n: 40, rate: 90 },
+  inferno: { el: 'fire', n: 40, rate: 90, shardRate: 40, patch: 14 }, // shardRate: trail particles/s per shard; patch: embers/s per scorched-path area
   manashield: { el: 'ice', n: 20, rate: 6 },
   meteorstorm: { el: 'fire', n: 26, rate: 8 },
   // assassin
   shadow: { el: 'shadow', n: 14, rate: 120 },
-  fan: { el: 'shadow', n: 16, rate: 20 },
+  fan: { el: 'shadow', n: 16, rate: 20, charge: 14 }, // charge: wisps/s off a dagger floating in the ring
   poison: { el: 'poison', n: 18, rate: 30 },
   smoke: { el: 'shadow', n: 26 },
   shuriken: { el: 'steel', n: 8, rate: 40 },

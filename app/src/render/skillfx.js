@@ -25,7 +25,10 @@ function weaponCol(wr, t, shift = 0) {
 }
 
 export function drawHit(g, h, avatar, t) {
-  if (h.delay > 0) return; // not born yet (run/skillfx.js shows the build-up)
+  if (h.delay > 0) { // not born yet (run/skillfx.js shows the build-up)
+    if (h.hover) floatingBlade(g, h, t);
+    return;
+  }
   const k = h.kind === 'proj' ? 1 : Math.max(0, h.life / h.maxLife);
   const wr = weaponRarity(avatar);
   if (!h.sid && !h.seen && BASIC[h.fx]) { // Legendary+: every 3rd basic attack leaves an echo
@@ -392,16 +395,16 @@ const SKILL = {
     ribbon(g, h, 30, S[1], 1.8, false);
     dagger(g, h.x, h.y, h.angle);
   },
-  shuriken(g, h, k, p, t) {
-    g.translate(h.x, h.y);
-    g.globalCompositeOperation = 'lighter';
-    g.globalAlpha = 0.55; glow(g, 0, 0, 14, PALETTES.steel[1]);
-    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-    g.rotate((h.fxAge || 0) * 30);
-    g.beginPath();
-    for (let i = 0; i < 8; i++) { const d = i % 2 ? 2.4 : 8; g.lineTo(Math.cos((i / 8) * TAU) * d, Math.sin((i / 8) * TAU) * d); }
-    g.closePath(); g.fillStyle = '#dfe6f2'; g.fill(); g.lineWidth = 1; g.strokeStyle = OUT; g.stroke();
-    g.beginPath(); g.arc(0, 0, 1.6, 0, TAU); g.fillStyle = OUT; g.fill();
+  shuriken(g, h, k, p, t) { // the giant blade circling the player, trailing afterimages along its orbit
+    const spin = (h.fxAge || 0) * 26, a = Math.min(1, k * 6, (h.fxAge || 0) * 8);
+    for (let i = 4; i >= 1; i--) { // ghosts a little way back on the circle
+      const q = h.angle - i * 0.16;
+      g.save(); g.globalAlpha = a * (0.28 - i * 0.05);
+      shurikenShape(g, h.cx + Math.cos(q) * h.radius, h.cy + Math.sin(q) * h.radius, h.r, spin - i * 0.5);
+      g.restore();
+    }
+    g.globalAlpha = a;
+    shurikenShape(g, h.x, h.y, h.r, spin);
   },
   poison(g, h, k, p, t) {
     const age = h.fxAge || 0, a = Math.min(1, k * 4, age * 5);
@@ -447,6 +450,16 @@ const FALLBACK = {
 
 // parts of a skill that look different from the skill itself: hit.part → drawing
 const PART = {
+  inferno: {
+    trail(g, h, k, p, t) { PART.pierce.trail(g, h, k, p, t); }, // the scorched path looks like the Dragon Arrow's
+    shard(g, h, k, p, t) { fireOrb(g, h.x, h.y, h.r * 1.1, h.angle, t); },
+  },
+  shuriken: {
+    throw(g, h) { // the hurled blade: big, spinning fast, with a streak behind
+      ribbon(g, h, 60, PALETTES.steel[1], 3, false);
+      shurikenShape(g, h.x, h.y, h.r, (h.fxAge || 0) * 34);
+    },
+  },
   pierce: {
     trail(g, h, k, p, t) { // the Dragon Arrow's burning patch
       const age = h.fxAge || 0, a = Math.min(1, k * 3, age * 8);
@@ -606,6 +619,35 @@ function constellation(g, x, y, r, t) {
 function drawFalls(g, h, draw) {
   if (!h.falls) return;
   for (const f of h.falls) { g.save(); draw(f.x, f.y, Math.max(0, f.t / f.max), f); g.restore(); }
+}
+
+// A star-shaped throwing blade of radius r, spun by `spin`, with a soft glow.
+function shurikenShape(g, x, y, r, spin) {
+  g.save();
+  g.translate(x, y);
+  g.globalCompositeOperation = 'lighter';
+  g.globalAlpha *= 0.55; glow(g, 0, 0, r * 1.7, PALETTES.steel[1]);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = Math.min(1, g.globalAlpha / 0.55);
+  g.rotate(spin);
+  g.beginPath();
+  for (let i = 0; i < 8; i++) { const d = i % 2 ? r * 0.3 : r; g.lineTo(Math.cos((i / 8) * TAU) * d, Math.sin((i / 8) * TAU) * d); }
+  g.closePath(); g.fillStyle = '#dfe6f2'; g.fill(); g.lineWidth = Math.max(1, r * 0.12); g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.arc(0, 0, r * 0.2, 0, TAU); g.fillStyle = OUT; g.fill();
+  g.restore();
+}
+
+// A dagger waiting in the Dagger Circle: it pulses, faster the closer it is to launching.
+function floatingBlade(g, h, t) {
+  g.save();
+  const pulse = 0.5 + 0.5 * Math.sin(t * 14 + h.angle * 3);
+  g.globalCompositeOperation = 'lighter';
+  g.globalAlpha = 0.25 + 0.35 * pulse; glow(g, h.x, h.y, 12 + pulse * 6, S[2]);
+  g.restore();
+  g.save();
+  g.translate(h.x, h.y); g.scale(1 + pulse * 0.25, 1 + pulse * 0.25); g.translate(-h.x, -h.y);
+  dagger(g, h.x, h.y, h.angle);
+  g.restore();
 }
 
 function dagger(g, x, y, a) {

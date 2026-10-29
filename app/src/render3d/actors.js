@@ -19,7 +19,7 @@ const DOLL_SCALE = 0.82, ATTACK_ANIM = 0.45;
 // lifted into 3D (the rest of the effects stay on the ground decal)
 const AIR_KINDS = new Set(['dot', 'ember', 'spark', 'star']);
 const PROJ_COLOR = { arrow: '#ffe6a0', fireball: '#ff7a2a', pierce: '#7fd8ff', dagger: '#c9a0ff', axe: '#eef0ff' };
-const BLAST_COLOR = { quake: '#ff9a3c', boom: '#ff8a3a', nova: '#9fe8ff', shout: '#ffd27a', rain: '#ffe6a0', spin: '#ff9a5a', shadow: '#b48aff' };
+const BLAST_COLOR = { chain: '#bfe0ff', quake: '#ff9a3c', boom: '#ff8a3a', nova: '#9fe8ff', shout: '#ffd27a', rain: '#ffe6a0', spin: '#ff9a5a', shadow: '#b48aff' };
 const PROJ_H = 26, MAX_POINTS = 700, MAX_SPRITES = 180;
 let glowTex = null;
 function glowTexture() { // soft round glow, shared by projectile sprites and particles
@@ -101,7 +101,18 @@ export class Actors {
     };
     if (playing) {
       for (const h of game.hits) {
-        if (h.kind !== 'proj' || h.dead || h.delay > 0) continue; // a delayed arrow is still being drawn back
+        if (h.kind === 'orbit') { // the giant shuriken circling the hero (the flat shape is on the ground decal)
+          put(h.x, h.y, PROJ_H, h.r * 1.8 + 10, '#dfe6f2', 0.9);
+          put(h.x, h.y, PROJ_H, h.r * 0.8 + 4, '#ffffff', 1);
+          continue;
+        }
+        if (h.kind !== 'proj' || h.dead || (h.delay > 0 && !h.hover)) continue; // a delayed arrow is still being drawn back
+        if (h.delay > 0) { // a dagger floating in the Dagger Circle: it pulses
+          const pu = 0.5 + 0.5 * Math.sin(game.time * 14 + h.angle * 3);
+          put(h.x, h.y, PROJ_H, 12 + pu * 8, PROJ_COLOR.dagger, 0.6 + 0.4 * pu);
+          put(h.x, h.y, PROJ_H, 6, '#ffffff', 1);
+          continue;
+        }
         const col = PROJ_COLOR[h.fx] || '#fff1c0', sp = Math.hypot(h.vx, h.vy) || 1, dx = h.vx / sp, dy = h.vy / sp;
         const size = (h.fx === 'fireball' ? 7 : h.fx === 'pierce' || h.fx === 'axe' ? 6 : 3.4) * Math.max(1, h.r / 4) + 10;
         put(h.x, h.y, PROJ_H, size, col, 1);

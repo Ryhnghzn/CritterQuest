@@ -127,8 +127,11 @@ export function castFx(run, s, from) {
       v.burst('smoke', x, y, '#bfe8ff', { n: 8, speed: 2 });
       run.addShake('medium');
       break;
-    case 'chain':
+    case 'chain': // a dark storm cloud gathers over the player; every strike adds its own show (strikeFx)
       v.flash(P[2], 0.18, 0.1);
+      v.burst('smoke', x, y - 56, ['#262638', '#3a3a52', '#1c1c2a'], { n: 18, speed: 1.2 });
+      v.burst('stars', x, y - 56, P, { n: 5, speed: 0.6 });
+      v.ring(x, y + 8, { r1: 50, life: 0.35, color: P[1], width: 3 });
       break;
     case 'meteor':
       v.flash('#ffb04a', 0.3, 0.15);
@@ -146,6 +149,7 @@ export function castFx(run, s, from) {
       break;
     case 'inferno':
       v.burst('blast', x + ca * 10, y + sa * 10, P, { n: 8, angle: a, spread: 0.8 });
+      v.ring(x + ca * 14, y + sa * 14, { r1: 30, life: 0.3, color: P[2], width: 5 });
       break;
     case 'manashield':
       v.ring(x, y, { r1: 34, life: 0.4, color: P[2], width: 4 });
@@ -159,8 +163,9 @@ export function castFx(run, s, from) {
     case 'shadow':
       v.burst('smoke', x, y, '#5a3a7a', { n: 10, speed: 1.5 });
       break;
-    case 'fan':
-      v.burst('hit', x, y, P, { n, angle: a, spread: 1.6 });
+    case 'fan': // the ring of daggers appears with a shimmer; they pulse until they launch
+      v.ring(x, y, { r1: s.ring + 16, r0: 4, life: 0.35, color: P[2], width: 3 });
+      v.burst('stars', x, y, P, { n: 6, speed: 0.6 });
       break;
     case 'poison':
       v.burst('smoke', at.x, at.y, '#5a9a3a', { n: 12, speed: 2 });
@@ -173,7 +178,8 @@ export function castFx(run, s, from) {
       v.burst('stars', x, y, ['#ffe27a', '#ffffff'], { n: 6 });
       break;
     case 'shuriken':
-      v.burst('hit', x, y, PALETTES.steel, { n: 6, angle: a, spread: 0.5 });
+      v.ring(x, y, { r1: s.radius + 14, life: 0.3, color: PALETTES.steel[2], width: 3 });
+      v.burst('hit', x, y, PALETTES.steel, { n: 8, speed: 0.8 });
       break;
     case 'assassinate':
       v.ring(x, y, { r1: 60, life: 0.4, color: P[2], width: 5 });
@@ -198,7 +204,25 @@ function waitFx(run, h, dt) {
   } else if (id === 'pierce' && h.kind === 'proj') {
     const P = pal(id);
     for (let i = steps(v, SKILL_FX.pierce.charge, dt); i > 0; i--) suck(v, h.x, h.y, v.range(20, 40), P, 0.2);
+  } else if (id === 'chain') { // sparks gather over the next victim
+    const P = pal(id);
+    for (let i = steps(v, SKILL_FX.chain.charge, dt); i > 0; i--) suck(v, h.x, h.y - 10, v.range(14, 30), P, 0.2, 'spark', 1.4);
+  } else if (id === 'fan' && h.kind === 'proj') { // a dagger floating in the ring: wisps spin off it
+    const P = pal(id);
+    for (let i = steps(v, SKILL_FX.fan.charge, dt); i > 0; i--) suck(v, h.x, h.y, v.range(10, 22), P, 0.18);
   }
+}
+
+// One lightning strike lands on its victim: a bolt from the cloud above, a flash of light, a spark burst.
+function strikeFx(run, h) {
+  const v = run.vfx, P = pal('chain');
+  v.bolt(h.x + v.range(-30, 30), h.y - 190, h.x, h.y, '#fff6b0', 0.28);
+  v.bolt(h.x + v.range(-10, 10), h.y - 120, h.x + v.range(-8, 8), h.y - 4, P[2], 0.22);
+  v.ring(h.x, h.y + 8, { r1: h.r * 1.6, life: 0.3, color: P[2], width: 4 });
+  v.burst('hit', h.x, h.y, P, { n: 10 });
+  v.burst('stars', h.x, h.y - 6, P, { n: 3 });
+  v.flash('#dff0ff', 0.1, 0.06); // thin flash: eight strikes in a row must not blind the screen
+  run.addShake('light');
 }
 
 // A pillar of the fissure bursts out of the ground; the crack leaps on to the next one.
@@ -271,6 +295,7 @@ export function stepHitFx(run, h, dt) {
   if (first) {
     if (h.fx === 'boom') explosion(run, h);
     else if (id === 'quake') pillarFx(run, h);
+    else if (id === 'chain') strikeFx(run, h);
     else if (h.fx === 'nova' && id === 'leap') { // ice blast left at the take-off point
       const P = PALETTES.ice;
       v.ring(h.x, h.y, { r1: h.r, life: 0.4, color: P[2], width: 6 });
@@ -337,6 +362,19 @@ export function stepHitFx(run, h, dt) {
         v.spawn('ember', px, py, v.range(-12, 12), -v.range(30, 80), v.range(0.4, 0.8), v.range(1.4, 2.6), PALETTES.fire, 0.96, -30);
       }
       break;
+    case 'inferno': // the scorched path of the little sun (the blast itself is handled in explosion)
+      if (h.part !== 'trail') break;
+      for (let i = steps(v, S.patch, dt); i > 0; i--) {
+        const [px, py] = inside(v, h.x, h.y, h.r * 0.8);
+        v.spawn('ember', px, py, v.range(-12, 12), -v.range(30, 90), v.range(0.4, 0.9), v.range(1.6, 3), PALETTES.fire, 0.96, -30);
+      }
+      break;
+    case 'shuriken': // sparks flung off the orbiting blade
+      for (let i = steps(v, S.rate, dt); i > 0; i--) {
+        const q = h.angle + Math.PI / 2, c = Math.cos(q), s2 = Math.sin(q);
+        v.spawn('spark', h.x + v.range(-6, 6), h.y + v.range(-6, 6), c * v.range(40, 120), s2 * v.range(40, 120), 0.22, 1.5, PALETTES.steel, 0.88);
+      }
+      break;
     case 'thousandshadows':
       for (let i = steps(v, S.rate, dt); i > 0; i--) { const [px, py] = inside(v, h.x, h.y, h.r); v.cut(px, py, v.rand() * TAU, v.range(16, 38), P[v.rand() < 0.5 ? 1 : 2], 0.25); }
       if (last) {
@@ -392,6 +430,10 @@ function projTrail(run, h, dt) {
   }
   const S = SKILL_FX[id], P = pal(id);
   if (!S?.rate) return;
+  if (h.part === 'shard') { // a fire shard of the little sun: a thin ember tail only
+    for (let i = steps(v, S.shardRate, dt); i > 0; i--) v.spawn('ember', h.x + v.range(-2, 2), h.y + v.range(-2, 2), bx * 30 + v.range(-20, 20), by * 30 + v.range(-20, 20), v.range(0.2, 0.4), v.range(1.4, 2.2), PALETTES.fire, 0.9, -30);
+    return;
+  }
   for (let i = steps(v, S.rate, dt); i > 0; i--) {
     switch (id) {
       case 'pierce':
@@ -411,7 +453,7 @@ function projTrail(run, h, dt) {
         v.spawn('dot', h.x + bx * 4, h.y + by * 4, bx * 20, by * 20, 0.25, 1.5, P, 0.9);
     }
   }
-  if (id === 'pierce') v.beam(h.x + bx * h.speed * dt, h.y + by * h.speed * dt, h.x, h.y, P[2], 0.35, 2.5); // fading line left behind
+  if (id === 'pierce' || h.part === 'throw') v.beam(h.x + bx * h.speed * dt, h.y + by * h.speed * dt, h.x, h.y, P[2], 0.35, 2.5); // fading line left behind
 }
 
 // A hit lands on an enemy (replaces the plain spark burst).

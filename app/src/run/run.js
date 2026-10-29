@@ -58,6 +58,7 @@ export class Game {
     const run = this;
     this.hitCtx = {
       get px() { return run.px; }, get py() { return run.py; },
+      get aimPX() { return run.aimPX; }, get aimPY() { return run.aimPY; }, // where an orbiting blade is thrown
       onHit: (h, e) => this.damageEnemy(h, e),
       add: (h) => this.hits.push(h),
     };
