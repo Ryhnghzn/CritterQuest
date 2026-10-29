@@ -1032,3 +1032,24 @@ Masalah: Warrior terasa datar, lambat membunuh, susah mengejar, dan cepat mati d
 - **Dua ketukan:** pilih slot lalu skill, atau skill lalu slot. Skill yang sudah ada di slot lain bertukar (`equipSkill()` yang ada). Pilihan disorot; ketuk lagi untuk batal. Kartu slot yang terisi punya tombol × untuk melepas (minimal satu skill tetap terpasang).
 - **Kapan saja:** di kota, wilayah, dan dungeon (game berhenti selama panel terbuka). Skill yang baru dimasukkan ke slot mulai dengan jeda penuh. Simulasi yang sedang berjalan langsung memakai susunan baru. **Bakat tetap hanya di kota.**
 - **Pasang otomatis:** saat naik level membuka skill baru dan masih ada slot kosong, skill itu masuk ke slot kosong pertama, dengan pesan "Skill baru: {nama} (tombol {n})".
+
+### 31.7 Skill lebay: bentuk baru untuk 8 skill
+Dua skill per kelas diganti bentuk geraknya (id, ikon, slot, biaya, dan jeda tetap; nama baru lewat kamus). Total damage disetel supaya kira-kira setara skill lamanya. Jenis gerak baru di simulasi (`run/skills.js`): `line` (ledakan berurutan sepanjang garis), `boomerang` (pergi lalu kembali ke pemain), `split` (proyektil pecah di tengah jalan), `storm` (sambaran tertunda satu per satu), `orbit` (mengelilingi pemain lalu dilempar). Efek visual memakai RNG efek sendiri (aturan Efek Lebay), angka di `data/classes.js` (gerak/damage) dan `data/skillfx.js` (visual).
+
+| Kelas | id | Nama baru | Bentuk |
+|---|---|---|---|
+| Warrior | `quake` | Retakan Bumi | Retakan menjalar ke arah bidik; 5 pilar batu-api meletus berurutan (jeda 0,08 dtk) sepanjang 260 px, tiap pilar 120% + melempar & beku sesaat |
+| Warrior | `axe` | Kapak Bumerang | Kapak besar berputar maju 360 px lalu kembali ke pemain; kena saat pergi dan pulang (2×200%), menyeret musuh searah |
+| Archer | `pierce` | Panah Naga | Tahan 0,3 dtk, lalu naga cahaya meliuk menembus semua (600%), meninggalkan jejak terbakar 2 dtk (4×40%) |
+| Archer | `volley` | Panah Pecah | 3 panah; setelah 160 px tiap panah pecah jadi 3 (9 total), masing-masing 120% |
+| Mage | `chain` | Badai Petir | Awan gelap di atas pemain; 8 sambaran ke musuh berbeda satu per satu (jeda 0,1 dtk), masing-masing 350%, kilat layar tipis |
+| Mage | `inferno` | Matahari Kecil | Bola api lambat (speed 200) membakar jalur (zona 1,5 dtk), meledak 300% lalu memecah 6 bola api kecil 120% |
+| Assassin | `fan` | Lingkaran Belati | 11 belati melayang mengelilingi pemain 0,4 dtk, lalu melesat keluar berpola spiral, masing-masing 180% |
+| Assassin | `shuriken` | Shuriken Raksasa | Satu shuriken besar mengorbit pemain 3 dtk (radius 70, kena tiap 0,25 dtk 80%), lalu dilempar ke titik bidik 300% |
+
+### 31.8 Momen puncak mekanik khas
+- **Mengamuk:** sosok Warrior membesar 15%, mata menyala, kedip merah di layar, tulisan besar "MENGAMUK!".
+- **Panas:** di atas 80 tongkat Mage menyala jingga makin terang; saat Kepanasan jubah berasap.
+- **Bidik penuh:** garis cahaya menembus layar searah tembakan + hit-stop singkat.
+- **Eksekusi 5 Kombo:** layar sesaat hitam-putih, musuh terbelah tebasan merah.
+- Semua ikut tingkat efek (Penuh/Ringan) dan "kurangi gerakan" di pengaturan.
