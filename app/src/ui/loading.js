@@ -1,5 +1,6 @@
 // Loading screen (spec §29) shown while a 3D place is built: a painting of the place being
-// entered (public/img/load_<place>.webp, dimmed; the dark night alone until it has loaded),
+// entered (public/img/load_<place>.webp, dimmed; loading_bg.webp for anywhere else, with its
+// painted eclipse set behind the progress ring; the dark night alone until it has loaded),
 // an eclipse closing as the progress, the hero running on, what is being built and a rotating
 // tip. The building itself happens in steps (render3d warm()); step() waits for frames between
 // them so this screen keeps moving.
@@ -25,25 +26,29 @@ const TIPS = [
 // painted backdrops, one per place (town, region biome or dungeon id): cached once asked for
 const ART = new Map();
 const PLACES = ['town', 'forest', 'ice', 'desert', 'volcano', 'eclipse', 'shadow', 'crystal', 'fungus', 'tomb', 'lava', 'spire'];
+// the general backdrop's painted eclipse (fractions of the painting: centre, disc radius of its
+// height) and the colour of its sky, which fills above it once it is moved down to the ring
+const GENERAL = { file: 'loading_bg', eclipse: { x: 0.5, y: 0.259, r: 0.105 }, sky: '#0e0d0d' };
 function art(place) {
-  if (!place || !PLACES.includes(place) || typeof Image !== 'function') return null;
-  if (!ART.has(place)) {
-    const img = new Image(), a = { img, at: 0 };
+  if (typeof Image !== 'function') return null;
+  const key = PLACES.includes(place) ? place : 'general';
+  if (!ART.has(key)) {
+    const img = new Image(), a = key === 'general' ? { ...GENERAL, img, at: 0 } : { img, at: 0 };
     img.onload = () => { a.at = performance.now(); };
-    img.src = `img/load_${place}.webp`;
-    ART.set(place, a);
+    img.src = `img/${a.file || `load_${key}`}.webp`;
+    ART.set(key, a);
   }
-  return ART.get(place);
+  return ART.get(key);
 }
 // After the first load, fetch the rest while idle so later loading screens show theirs at once.
-const prefetch = () => (window.requestIdleCallback || setTimeout)(() => PLACES.forEach(art));
+const prefetch = () => (window.requestIdleCallback || setTimeout)(() => [...PLACES, null].forEach(art));
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const CALM = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 
 let box = null, raf = 0, target = 0, shown = 0, stepKey = 'torch', hero = null, bg = null, t0 = 0, tipAt = 0, fetched = false;
 
 // avatar: { classId, look } of the hero who runs across (null: none); place: which painting
-// (one of PLACES; anything else: none)
+// (one of PLACES; anything else: the general one)
 export function showLoading(avatar = null, place = null) {
   hero = avatar; bg = art(place);
   target = shown = 0; stepKey = 'torch';
@@ -103,16 +108,33 @@ function paint(now) {
 }
 
 // the painting, covering the screen and dimmed so the eclipse, bar and tip stay readable
-function drawArt(g, w, h) {
+function drawArt(g, w, h, cx, cy, R) {
   const fade = bg?.at ? Math.min(1, (performance.now() - bg.at) / 300) : 0;
   if (!fade) return;
-  const { img } = bg, k = Math.max(w / img.width, h / img.height), W = img.width * k, H = img.height * k;
-  g.globalAlpha = fade * 0.75;
-  g.drawImage(img, (w - W) / 2, (h - H) / 2, W, H);
+  const { img, eclipse: e } = bg;
+  if (e) { // the painted eclipse sits just inside the ring; the sky colour fills above the painting
+    const H = Math.max((R * 0.95) / e.r, w / (img.width / img.height)), W = H * img.width / img.height;
+    const x = cx - e.x * W, y = cy - e.y * H;
+    g.globalAlpha = fade;
+    if (y > 0) { g.fillStyle = bg.sky; g.fillRect(0, 0, w, y + 2); }
+    g.drawImage(img, x, y, W, H);
+    const seam = g.createLinearGradient(0, y, 0, y + 40);
+    seam.addColorStop(0, bg.sky); seam.addColorStop(1, 'rgba(14,13,13,0)');
+    g.fillStyle = seam; g.fillRect(0, y, w, 40);
+  } else {
+    const k = Math.max(w / img.width, h / img.height), W = img.width * k, H = img.height * k;
+    g.globalAlpha = fade * 0.75;
+    g.drawImage(img, (w - W) / 2, (h - H) / 2, W, H);
+  }
   g.globalAlpha = 1;
+  if (e) return lowShade(g, w, h); // already dark: only the bottom, under the bar and tip
   const v = g.createRadialGradient(w / 2, h * 0.4, Math.min(w, h) * 0.15, w / 2, h * 0.45, Math.max(w, h) * 0.75);
   v.addColorStop(0, 'rgba(7,5,10,.55)'); v.addColorStop(0.5, 'rgba(7,5,10,.25)'); v.addColorStop(1, 'rgba(7,5,10,.8)');
   g.fillStyle = v; g.fillRect(0, 0, w, h);
+  lowShade(g, w, h);
+}
+
+function lowShade(g, w, h) {
   const low = g.createLinearGradient(0, h * 0.6, 0, h);
   low.addColorStop(0, 'rgba(7,5,10,0)'); low.addColorStop(1, 'rgba(7,5,10,.9)');
   g.fillStyle = low; g.fillRect(0, h * 0.6, w, h * 0.4);
@@ -120,8 +142,8 @@ function drawArt(g, w, h) {
 
 function drawScene(g, w, h, t, p) {
   g.fillStyle = '#07050a'; g.fillRect(0, 0, w, h);
-  drawArt(g, w, h);
   const cx = w / 2, cy = h * 0.4, R = Math.min(w, h) * 0.13;
+  drawArt(g, w, h, cx, cy, R);
   const halo = g.createRadialGradient(cx, cy, 0, cx, cy, R * 2.6);
   halo.addColorStop(0, `rgba(201,162,74,${bg?.at ? 0.45 : 0.2})`); halo.addColorStop(1, 'rgba(201,162,74,0)'); // brighter over a painting
   g.fillStyle = halo; g.fillRect(cx - R * 3, cy - R * 3, R * 6, R * 6);
