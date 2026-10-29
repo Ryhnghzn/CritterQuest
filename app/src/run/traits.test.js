@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initTrait, traitStep, traitBasicHit, traitHurt, traitCast, traitMods, traitLevel } from './traits.js';
+import { initTrait, traitDealt, traitStep, traitBasicHit, traitHurt, traitCast, traitMods, traitLevel } from './traits.js';
 import { CLASSES } from '../data/classes.js';
 
 function mockRun(classId = 'warrior') {
@@ -106,6 +106,31 @@ describe('Murka (warrior)', () => {
     expect(r.trait.on).toBe(0);
     expect(r.buffed).toBe(1);
     expect(traitMods(r).slowImmune).toBe(false);
+  });
+
+  it('damage yang diberikan skill menahan penyusutan tanpa menambah Murka', () => {
+    const r = mockRun();
+    r.trait.v = 50;
+    traitStep(r, 2.9, false, false);
+    traitDealt(r);
+    traitStep(r, 2.9, false, false);
+    expect(r.trait.v).toBe(50);
+  });
+
+  it('Mengamuk memakai nilai puncak Murka', () => {
+    const r = mockRun();
+    r.trait.on = 3;
+    const m = traitMods(r);
+    expect([m.arcR, m.arcDeg, m.lifesteal]).toEqual([72, 160, 0.04]);
+    expect(m.dmgTaken).toBeCloseTo(0.8);
+  });
+
+  it('Mengamuk menghapus efek lambat', () => {
+    const r = mockRun();
+    r.slowT = 2;
+    r.trait.v = 99;
+    traitBasicHit(r);
+    expect(r.slowT).toBe(0);
   });
 
   it('traitCast netral untuk Warrior', () => {

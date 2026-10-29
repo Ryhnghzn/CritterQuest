@@ -37,9 +37,15 @@ function rageAdd(run, c, n) {
   t.v = Math.min(c.max, t.v + n);
   if (t.v >= c.max) {
     t.v = 0; t.on = c.frenzy.duration;
+    run.slowT = 0; // Mengamuk shrugs off an active slow
     run.showBanner(tr('MENGAMUK!'));
     run.applyBuffs();
   }
+}
+
+// Any damage the player deals (skills, ult, waves too): only restarts the decay timer, never adds to the bar.
+export function traitDealt(run) {
+  if (run.trait) run.trait.idle = 0;
 }
 
 // Called once per enemy struck by a basic attack.
@@ -74,7 +80,7 @@ export function traitMods(run) {
   m.arcR = a.r; m.arcDeg = a.arc; m.lifesteal = 0; m.dmgTaken = 1; m.skillDmg = 0;
   m.locked = false; m.slow = 0; m.slowImmune = false;
   if (c && run.trait && c.id === 'rage') {
-    const k = run.trait.v / c.max;
+    const k = run.trait.on > 0 ? 1 : run.trait.v / c.max; // Mengamuk = peak values
     m.arcR = c.arcR[0] + (c.arcR[1] - c.arcR[0]) * k;
     m.arcDeg = c.arcDeg[0] + (c.arcDeg[1] - c.arcDeg[0]) * k;
     m.lifesteal = c.lifesteal * k;

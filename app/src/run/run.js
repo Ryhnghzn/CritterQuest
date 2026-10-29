@@ -11,7 +11,7 @@ import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown, chargeUlt } from './skills.js';
 import { stepHits } from './hits.js';
-import { initTrait, traitStep, traitBasicHit, traitHurt, traitMods } from './traits.js';
+import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods } from './traits.js';
 import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
@@ -359,6 +359,7 @@ export class Game {
     e.hp -= dmg;
     const basic = BASIC_FX.has(h.fx) && !h.skill;
     const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
+    traitDealt(this);
     if (basic) traitBasicHit(this);
     if (basic) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy * (1 + (fx.energy || 0)));
     if (h.knock && !e.boss) { // push away from (or pull toward) the area's centre

@@ -360,4 +360,13 @@ describe('Warrior: Murka & Terjang', () => {
     g.step(1 / 60);
     expect(g.trait.v).toBeGreaterThanOrEqual(3);
   });
+  it('damage dari skill mereset jeda Murka tanpa menambah bar', () => {
+    const g = warrior();
+    const e = g.spawnEnemy('slink');
+    e.hp = 1e9; e.maxHp = 1e9;
+    g.trait.idle = 2.5;
+    g.damageEnemy({ mult: 1, skill: true, fx: 'spin' }, e);
+    expect(g.trait.idle).toBe(0);
+    expect(g.trait.v).toBe(0);
+  });
 });
