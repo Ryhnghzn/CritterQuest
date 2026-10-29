@@ -50,6 +50,8 @@ export const CLASSES = {
     stats: { maxHp: 95, atk: 11, def: 0, crit: 8, moveSpd: 115 },
     growth: { maxHp: 8, atk: 1.2 },
     attack: { kind: 'proj', fx: 'arrow', interval: 0.45, mult: 1, speed: 380, range: 450, r: 4, pierce: 0, energy: 8 },
+    // Bidik (spec §31.4): fills while standing still and attacking; a full bar makes the next arrow a big piercing crit.
+    trait: { id: 'focus', max: 100, color: '#7be08a', rate: 60, shot: { pierce: 3, size: 2 } },
     ult: { id: 'starfall', name: 'Hujan Bintang', unlock: 25, icon: 'rain', look: 'rain', desc: 'Hujan panah bintang 3 detik di area sangat luas: 12×250%, memperlambat.', kind: 'area', at: 'aim', maxDist: 350, r: 200, ticks: 12, duration: 3, mult: 2.5, freeze: 0.3 },
     skills: [
       { id: 'rain', name: 'Hujan Panah', unlock: 1, desc: 'Hujan panah di titik bidik, 6×160%.', kind: 'area', at: 'aim', maxDist: 320, cost: 40, cd: 3, r: 85, ticks: 6, duration: 1.5, mult: 1.6 },
@@ -65,9 +67,11 @@ export const CLASSES = {
     stats: { maxHp: 85, atk: 16, def: 0, crit: 5, moveSpd: 100 },
     growth: { maxHp: 7, atk: 1.6 },
     attack: { kind: 'proj', fx: 'fireball', interval: 0.8, mult: 1, speed: 260, range: 420, r: 6, pierce: 0, explode: { r: 36 }, energy: 9 },
+    // Panas (spec §31.3): skills add cost × perCost; bonus climbs to bonusAt; reaching max overheats (skills locked, slowed).
+    trait: { id: 'heat', max: 100, color: '#ff8a3d', perCost: 0.6, decay: 15, bonusAt: 80, skillDmg: 0.3, overheat: { duration: 2.5, slow: 0.3 } },
     ult: { id: 'meteorstorm', name: 'Hujan Meteor', unlock: 25, icon: 'ember', look: 'boom', desc: 'Meteor berjatuhan 2,4 detik: 6×600% di area luas, mendorong.', kind: 'area', at: 'aim', maxDist: 340, r: 220, ticks: 6, duration: 2.4, mult: 6, knock: 120 },
     skills: [
-      { id: 'nova', name: 'Nova Es', unlock: 1, desc: 'Ledakan es di sekeliling: 300%, membekukan 2,2 detik, mendorong.', kind: 'area', cost: 45, cd: 4, r: 125, mult: 3, freeze: 2.2, duration: 0.4, knock: 160 },
+      { id: 'nova', name: 'Nova Es', unlock: 1, desc: 'Ledakan es di sekeliling: 300%, membekukan 1,5 detik, mendorong.', kind: 'area', cost: 45, cd: 4, r: 125, mult: 3, freeze: 1.5, duration: 0.4, knock: 160 },
       { id: 'chain', name: 'Petir Berantai', unlock: 1, desc: 'Petir melompat ke 8 musuh, 350%.', kind: 'chain', cost: 35, cd: 2.5, count: 8, mult: 3.5, range: 450, jump: 200 },
       { id: 'meteor', name: 'Meteor', unlock: 5, desc: 'Meteor jatuh di titik bidik: 600% area besar.', icon: 'ember', look: 'boom', kind: 'area', at: 'aim', maxDist: 340, cost: 55, cd: 6, r: 110, mult: 6, knock: 180, duration: 0.4 },
       { id: 'blink', name: 'Teleportasi', unlock: 10, desc: 'Berpindah seketika 230 px ke arah bidikan.', icon: 'zap', look: 'shadow', kind: 'dash', cost: 20, cd: 3, distance: 230, duration: 0.08, r: 0, mult: 0 },
@@ -80,6 +84,8 @@ export const CLASSES = {
     stats: { maxHp: 90, atk: 9, def: 0, crit: 20, moveSpd: 125 },
     growth: { maxHp: 8, atk: 1.0 },
     attack: { kind: 'arc', fx: 'stab', interval: 0.3, mult: 1, r: 34, arc: 50, energy: 4 },
+    // Kombo (spec §31.5): points from basic stabs; any skill spends them for +perPoint each; at max it executes weak normal enemies.
+    trait: { id: 'combo', max: 5, color: '#b07cff', hitsPer: 3, idleAfter: 4, perPoint: 0.25, executeBelow: 0.3 },
     ult: { id: 'thousandshadows', name: 'Tarian Seribu Bayangan', unlock: 25, icon: 'shadow', look: 'spin', desc: 'Kebal 2 detik sambil menebas semua di sekitar: 12×260%.', kind: 'area', follow: true, r: 130, ticks: 12, duration: 2, mult: 2.6, invuln: 2 },
     skills: [
       { id: 'shadow', name: 'Langkah Bayangan', unlock: 1, desc: 'Melesat 180 px, 500% ke yang dilewati, kebal.', kind: 'dash', cost: 30, cd: 2, distance: 180, duration: 0.16, r: 26, mult: 5 },

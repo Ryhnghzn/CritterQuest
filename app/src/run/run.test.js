@@ -370,3 +370,88 @@ describe('Warrior: Murka & Terjang', () => {
     expect(g.trait.v).toBe(0);
   });
 });
+
+describe('Mage Panas, Archer Bidik, Assassin Kombo (wiring)', () => {
+  const mk = (classId, skills, level = 25) => {
+    const g = new Game();
+    g.start({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats, crit: 0 }, skills, level });
+    g.spawnT = 1e9;
+    return g;
+  };
+  const idle = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false, potion: -1 };
+  const dummy = (g, x = 40, y = 0) => { const e = g.spawnEnemy('tank'); Object.assign(e, { x: g.px + x, y: g.py + y, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 }); return e; };
+
+  it('Kepanasan mengunci semua skill dan memperlambat gerak', () => {
+    const g = mk('mage', ['meteor', 'nova', null, null]);
+    g.energy = 100;
+    g.trait.v = 60;
+    g.intent = { ...idle, skill1: true };
+    g.step(1 / 60); // 60 + 33 = 93: bonus, still ready
+    expect(g.trait.lock).toBe(0);
+    g.energy = 100; g.skillCd[1] = 0; g.trait.v = 80;
+    g.intent = { ...idle, skill2: true };
+    g.step(1 / 60); // nova (45 × 0.6 = 27) tips it over
+    expect(g.trait.lock).toBeGreaterThan(2);
+    const before = g.skillCd[0];
+    g.energy = 100; g.skillCd[0] = 0;
+    g.intent = { ...idle, skill1: true };
+    g.step(1 / 60);
+    expect(g.skillCd[0]).toBe(0); // not cast
+    g.intent = { ...idle, move: { x: 1, y: 0 } };
+    const x0 = g.px; g.step(1 / 60);
+    const slowed = g.px - x0;
+    g.trait.lock = 0; g.intent = { ...idle, move: { x: 1, y: 0 } };
+    const x1 = g.px; g.step(1 / 60);
+    expect(slowed).toBeLessThan((g.px - x1) * 0.8);
+    expect(before).toBeGreaterThanOrEqual(0);
+  });
+
+  it('bonus damage Panas dan pengali Kombo masuk ke hit skill', () => {
+    const a = mk('assassin', ['fan', null, null, null]);
+    dummy(a);
+    a.energy = 100; a.trait.v = 5;
+    a.intent = { ...idle, skill1: true };
+    a.step(1 / 60);
+    const fan = a.hits.filter((h) => h.skill);
+    expect(fan.length).toBeGreaterThan(0);
+    expect(fan[0].mult).toBeCloseTo(CLASSES.assassin.skills[1].mult * 2.25);
+    expect(fan[0].execute).toBe(0.3);
+    expect(a.trait.v).toBe(0);
+  });
+
+  it('eksekusi: musuh biasa di bawah 30% mati, bos dan elite tidak', () => {
+    const g = mk('assassin', ['fan', null, null, null]);
+    const mkE = (extra) => { const e = dummy(g); Object.assign(e, extra); e.hp = 29; e.maxHp = 100; return e; };
+    const normal = mkE({}), boss = mkE({ boss: true }), elite = mkE({ elite: true }), healthy = mkE({}); healthy.hp = 50;
+    for (const e of [normal, boss, elite, healthy]) g.damageEnemy({ mult: 0.001, skill: true, execute: 0.3, fx: 'dagger' }, e);
+    expect(normal.hp).toBeLessThanOrEqual(0);
+    expect(boss.hp).toBeGreaterThan(0);
+    expect(elite.hp).toBeGreaterThan(0);
+    expect(healthy.hp).toBeGreaterThan(0);
+  });
+
+  it('skillDmg Panas menambah damage skill', () => {
+    const g = mk('mage', ['nova', null, null, null]);
+    const e = dummy(g);
+    g.damageEnemy({ mult: 1, skill: true, fx: 'nova' }, e);
+    const base = 1e6 - e.hp; e.hp = 1e6;
+    g.trait.v = 90;
+    g.damageEnemy({ mult: 1, skill: true, fx: 'nova' }, e);
+    expect(1e6 - e.hp).toBeCloseTo(base * 1.3, 0);
+  });
+
+  it('panah Bidik penuh: menembus 3, lebih besar, pasti kritis', () => {
+    const g = mk('archer', ['rain', null, null, null]);
+    g.trait.v = 100; g.trait.focus = true;
+    g.intent = { ...idle, attack: true };
+    g.step(1 / 60);
+    const p = g.hits.find((h) => h.kind === 'proj');
+    expect(p.pierce).toBe(3);
+    expect(p.r).toBe(CLASSES.archer.attack.r * 2);
+    expect(p.crit).toBe(true);
+    expect(g.trait.v).toBeLessThan(2); // emptied (the same step may refill a sliver)
+    const e = dummy(g);
+    g.damageEnemy({ mult: 1, crit: true, fx: 'arrow' }, e); // crit stat is 0 here
+    expect(1e6 - e.hp).toBeCloseTo(g.stats.atk * g.stats.critDmg, 0);
+  });
+});

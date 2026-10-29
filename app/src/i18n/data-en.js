@@ -57,7 +57,7 @@ export const SKILL_EN = {
   'Hujan Bintang': 'Starfall',
   'Hujan panah bintang 3 detik di area sangat luas: 12×250%, memperlambat.': 'Star-arrows rain for 3 seconds over a huge area: 12×250%, slowing.',
   'Nova Es': 'Frost Nova',
-  'Ledakan es di sekeliling: 300%, membekukan 2,2 detik, mendorong.': 'An ice blast all around: 300%, freezes for 2.2 seconds, knocks back.',
+  'Ledakan es di sekeliling: 300%, membekukan 1,5 detik, mendorong.': 'An ice blast all around: 300%, freezes for 1.5 seconds, knocks back.',
   'Petir Berantai': 'Chain Lightning',
   'Petir melompat ke 8 musuh, 350%.': 'Lightning jumps between 8 enemies, 350%.',
   'Meteor': 'Meteor',

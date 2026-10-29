@@ -6,7 +6,7 @@ import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/b
 import { makeArea, makeSweep, makeProjectile } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx } from './skillfx.js';
-import { traitMods } from './traits.js';
+import { traitMods, traitCast, traitCastExecute, traitFocusShot } from './traits.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -40,10 +40,15 @@ export function stepAttack(run, intent, dt) {
       run.hits.push(w);
     }
   } else {
-    run.hits.push(makeProjectile({
+    const focus = run.trait && traitFocusShot(run); // full Bidik: piercing, bigger, forced crit (spec §31.4)
+    const shot = focus ? CLASSES[run.classId].trait.shot : null;
+    const proj = makeProjectile({
       x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
-      speed: a.speed, range: a.range, r: a.r, mult: a.mult, pierce: a.pierce, explode: a.explode, fx: a.fx,
-    }));
+      speed: a.speed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
+      pierce: shot ? shot.pierce : a.pierce, explode: a.explode, fx: a.fx,
+    });
+    if (focus) proj.crit = true;
+    run.hits.push(proj);
   }
   sfx.attack(a.fx);
 }
@@ -61,15 +66,21 @@ export function stepSkills(run, intent, dt) {
   const skills = run.skillDefs;
   if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
   const pressed = [intent.skill1, intent.skill2, intent.skill3, intent.skill4];
+  const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
   for (let i = 0; i < SKILL_SLOTS; i++) {
-    if (!pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
+    if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
     if (run.energy < skills[i].cost) { run.noEnergyT = 0.4; continue; }
     run.energy -= skills[i].cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
     const before = run.hits.length;
     castSkill(run, skills[i]);
-    for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true; // skill damage bonus, no energy, pierces shields
+    const mul = traitCast(run, skills[i]), exec = traitCastExecute(); // Panas / Bidik / Kombo (spec §31.3–31.5)
+    for (let k = before; k < run.hits.length; k++) { // skill damage bonus, no energy, pierces shields
+      const h = run.hits[k];
+      h.skill = true; h.mult *= mul;
+      if (exec) h.execute = exec;
+    }
     castFx(run, skills[i], before);
     run.attackT = ATTACK_POSE;
     markCast(run, skills[i]);
