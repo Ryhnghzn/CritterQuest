@@ -128,7 +128,10 @@ export default {
   'Lepas dari tombol': 'Remove from key',
   Bakat: 'Talents',
   '1 poin bakat tiap 2 level. Atur ulang di Pelatih.': '1 talent point every 2 levels. Reset at the Trainer.',
-  'Ganti skill & bakat di kota.': 'Change skills & talents in town.',
+  'Bakat hanya bisa diatur di kota.': 'Talents can only be set in town.',
+  'Skill baru: {name} (tombol {n})': 'New skill: {name} (key {n})',
+  'Kosong': 'Empty',
+  'Ketuk satu slot lalu satu skill untuk memasang.': 'Tap a slot, then a skill, to equip it.',
 
   // results.js
   'Tumbang!': 'Defeated!',

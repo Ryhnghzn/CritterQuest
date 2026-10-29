@@ -289,4 +289,25 @@ describe('efek item unik', () => {
     g.die();
     expect(g.state).toBe(ST.OVER);
   });
+
+  it('setSkills: slot yang berubah mulai dengan jeda penuh, slot lain tetap', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 20 });
+    g.skillCd[0] = 0.5;
+    g.setSkills(['spin', 'warcry', null, null]);
+    expect(g.skillDefs[1].id).toBe('warcry');
+    expect(g.skillCd[1]).toBeCloseTo(g.skillCdMax[1]);
+    expect(g.skillCd[0]).toBe(0.5);
+  });
+
+  it('naik level di dalam run memasang skill baru ke slot kosong pertama', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 4 });
+    expect(g.skillDefs[2]).toBeNull();
+    g.gems.push({ x: g.px, y: g.py, v: expToNext(4) + 1 });
+    g.step(1 / 60);
+    expect(g.level).toBe(5);
+    expect(g.skillDefs[2]?.id).toBe('quake');
+    expect(g.bannerT).toBeGreaterThan(0);
+  });
 });

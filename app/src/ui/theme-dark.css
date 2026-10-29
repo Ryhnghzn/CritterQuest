@@ -16,13 +16,13 @@
 
 /* defaults for every framed thing (zero specificity: per-class rules below win) */
 :where(#hud,#townhud,#qtrack,#prompt,#toast,#mute,#pausebtn,#charbtn,#autobtn,.panel,.card,.dcard,.btn,.chip,.tile,.chest,.stat,.attr,
-  .skill,.shoprow,.lootrow,.beast,.quest,.questbox,.socket,.cdx,.stage,.iconbubble,.lvbadge,.badge,.lv,.hchip,.sic,.lic,.gdic,.beltslot,.act){
+  .skill,.skslot,.shoprow,.lootrow,.beast,.quest,.questbox,.socket,.cdx,.stage,.iconbubble,.lvbadge,.badge,.lv,.hchip,.sic,.lic,.gdic,.beltslot,.act){
   --cq-cut:8px; --cq-edge:var(--cq-gold-d); --cq-fill:var(--cq-panel);
 }
 
 /* the chamfer frame */
 :is(#ui,#confirm) :is(#hud,#townhud,#qtrack,#prompt,#toast,#mute,#pausebtn,#charbtn,#autobtn,.panel,.card,.dcard,.btn,.chip,.tile,.chest,.stat,.attr,
-  .skill,.shoprow,.lootrow,.beast,.quest,.questbox,.socket,.cdx,.stage,.iconbubble,.lvbadge,.badge,.lv,.hchip,.sic,.lic,.gdic,.beltslot),
+  .skill,.skslot,.shoprow,.lootrow,.beast,.quest,.questbox,.socket,.cdx,.stage,.iconbubble,.lvbadge,.badge,.lv,.hchip,.sic,.lic,.gdic,.beltslot),
 #ui .act::before{
   border:1px solid var(--cq-edge); border-radius:0;
   background:
@@ -111,6 +111,10 @@
 #ui :is(.stat,.attr,.skill,.shoprow,.lootrow,.beast,.socket,.gemcell){--cq-cut:5px;--cq-fill:var(--cq-row);--cq-edge:var(--cq-rowedge)}
 #ui .lootrow{--cq-edge:color-mix(in srgb,var(--c) 55%,#000)}
 #ui .skill.worn{--cq-edge:var(--cq-gold);--cq-fill:#1a1410}
+#ui .skslot{--cq-cut:6px;--cq-fill:var(--cq-row);--cq-edge:var(--cq-rowedge)}
+#ui .skslot.filled{--cq-edge:var(--cq-gold-d)}
+#ui .skslot:hover:not(:disabled):not(.ult){--cq-edge:var(--cq-gold)}
+#ui :is(.skslot,.skill).picked{--cq-edge:var(--cq-gold-l);--cq-fill:#2a1e10;box-shadow:none}
 #ui .shoprow.bounty.active{--cq-edge:#7fd8ff;box-shadow:none}
 #ui .shoprow.bounty.done{--cq-edge:var(--cq-gold);box-shadow:none}
 #ui .beast.boss{--cq-edge:rgba(194,107,216,.55);box-shadow:none}

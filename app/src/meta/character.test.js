@@ -131,6 +131,23 @@ const trip = (over = {}) => ({
   exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 0, cleared: false, died: false, hp: 100, potions: pots(), ...over,
 });
 
+describe('addExp: pasang skill otomatis', () => {
+  it('skill yang terbuka masuk ke slot kosong pertama', () => {
+    const c = make(); c.level = 4; c.exp = 0; c.skills = ['spin', 'shout', null, null];
+    const r = addExp(c, expToNext(4));
+    expect(r.char.level).toBe(5);
+    expect(r.char.skills[2]).toBe('quake');
+    expect(r.newSkills).toEqual([{ id: 'quake', slot: 2 }]);
+  });
+  it('semua slot penuh: tidak ada perubahan', () => {
+    const c = make(); c.level = 4; c.exp = 0; c.skills = ['spin', 'shout', 'spin', 'shout'];
+    c.skills = ['spin', 'shout', 'charge', 'axe'];
+    const r = addExp(c, expToNext(4));
+    expect(r.char.skills).toEqual(['spin', 'shout', 'charge', 'axe']);
+    expect(r.newSkills).toEqual([]);
+  });
+});
+
 describe('applyTrip', () => {
   it('pulang: semua hadiah dibawa, HP disimpan, rekor naik', () => {
     const before = { ...make(), gold: 5, records: { trips: 4, kills: 10, bossKills: 0, dungeons: dungeonRecs({ bestFloor: 2, clears: 0 }) } };

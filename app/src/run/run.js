@@ -3,7 +3,7 @@
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT } from '../data/balance.js';
-import { expToNext } from '../meta/character.js';
+import { expToNext, autoEquip } from '../meta/character.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -176,6 +176,27 @@ export class Game {
     this.stats = { ...stats, hp };
     this.applyBuffs();
     this.skillCdMax = this.skillDefs.map((sk) => (sk ? skillCooldown(stats, sk) : 0));
+  }
+
+  // Skills changed mid-trip (spec §31.6): a skill put into a slot starts on its full cooldown.
+  setSkills(ids) {
+    const pool = CLASSES[this.classId].skills;
+    ids.forEach((id, i) => {
+      if ((this.skillDefs[i]?.id ?? null) === id) return;
+      this.skillDefs[i] = id ? pool.find((s) => s.id === id) : null;
+      this.skillCdMax[i] = this.skillDefs[i] ? skillCooldown(this.stats, this.skillDefs[i]) : 0;
+      this.skillCd[i] = this.skillCdMax[i];
+    });
+  }
+
+  // A skill unlocked by the level just reached goes to the first empty slot (spec §31.6).
+  autoEquipSkills(level) {
+    const ids = this.skillDefs.map((sk) => sk?.id ?? null);
+    const got = autoEquip(this.classId, ids, level - 1, level);
+    if (!got.length) return;
+    this.setSkills(ids);
+    const sk = this.skillDefs[got[0].slot];
+    this.showBanner(t('Skill baru: {name} (tombol {n})', { name: sk.name, n: got[0].slot + 1 }));
   }
 
   // stats = base stats × active potion buffs
@@ -512,6 +533,7 @@ export class Game {
         this.showBanner(t('Naik level! LV {n}', { n: this.level }));
         this.addFloater(this.px, this.py - 44, t('+{n} poin', { n: POINTS_PER_LEVEL }), '#8fffc0');
         sfx.levelup();
+        this.autoEquipSkills(this.level);
       }
     }
   }

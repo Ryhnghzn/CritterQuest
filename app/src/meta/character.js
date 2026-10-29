@@ -54,8 +54,23 @@ export function createCharacter({ slot, name, look, classId }, now) {
 
 export function expToNext(level) { return CHAR_EXP_BASE + CHAR_EXP_GROWTH * level; }
 
+// Skills whose unlock level was just passed (from < unlock <= to) and that are not worn yet
+// go into the first empty slots of `skills` (mutated); returns [{ id, slot }] (spec §31.6).
+export function autoEquip(classId, skills, from, to) {
+  const out = [];
+  for (const s of CLASSES[classId].skills) {
+    if (s.unlock <= from || s.unlock > to || skills.includes(s.id)) continue;
+    const slot = skills.indexOf(null);
+    if (slot < 0) break;
+    skills[slot] = s.id;
+    out.push({ id: s.id, slot });
+  }
+  return out;
+}
+
 export function addExp(char, amount) {
   const c = structuredClone(char);
+  const from = c.level;
   let levelsGained = 0;
   c.exp += Math.floor(amount);
   while (c.level < CHAR_LEVEL_MAX && c.exp >= expToNext(c.level)) {
@@ -64,7 +79,8 @@ export function addExp(char, amount) {
     levelsGained++;
   }
   if (c.level >= CHAR_LEVEL_MAX) c.exp = 0;
-  return { char: c, levelsGained };
+  const newSkills = autoEquip(c.classId, c.skills, from, c.level);
+  return { char: c, levelsGained, newSkills };
 }
 
 // Every stat the equipped gear adds, summed.

@@ -532,6 +532,26 @@ input.name:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(217,178,94,.1
 .skbtns .skkey.on{background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;border-color:#e6c27a}
 .skbtns .skkey:disabled{opacity:1;cursor:default}
 .skill .lock{font-size:12px;font-weight:700;color:var(--dim);padding:4px 8px;border:1px dashed var(--line);border-radius:3px}
+/* Kelas Lebih Hidup A: slot cards + two-tap equip (spec §31.6) */
+.slots{display:flex;gap:6px;flex-wrap:wrap}
+.skcell{position:relative;flex:1 1 72px;min-width:72px}
+.skslot{font-family:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-height:78px;padding:6px 4px;text-align:center;background:rgba(0,0,0,.3);border:1px solid var(--line)}
+.skslot:disabled{cursor:default;color:inherit}
+.slots>.skslot{flex:1 1 72px;min-width:72px}
+.skslot .sname{font-size:11px;line-height:1.15;color:var(--dim)}
+.skslot .snum{font-size:12px;font-weight:700;color:#e6c27a}
+.skslot .plus{font-size:24px;line-height:30px;color:var(--dim)}
+.skslot .sic{width:34px;height:34px;display:grid;place-items:center}
+.skslot.empty{border-style:dashed}
+.skslot.ult.locked{opacity:.45}
+.skslot.picked,.skill.picked{border-color:#ffe9a8;box-shadow:0 0 0 2px rgba(255,233,168,.55)}
+.skoff{position:absolute;top:0;right:0;width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;font-family:inherit}
+.skoff:hover:not(:disabled){color:#ff8a96}
+.skoff:disabled{opacity:.3;cursor:default}
+button.skill{font-family:inherit;color:inherit;text-align:left;cursor:pointer;min-height:56px;width:100%}
+button.skill:disabled{cursor:default;color:inherit}
+.skill .badgeno{display:grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:linear-gradient(180deg,#e6c27a,#9c7428);color:#1a1208;font-weight:700;font-size:13px}
+@media (pointer:coarse){.skslot{min-height:88px}.skill{min-height:62px}}
 /* 9D: regions — minimap & full map (spec §25.1) */
 #minimap{position:absolute;right:12px;top:66px;z-index:5;pointer-events:auto;width:180px;height:108px;border-radius:10px;border:1px solid var(--line);background:#07060c;box-shadow:0 4px 18px rgba(0,0,0,.5);cursor:pointer}
 @media (max-width:560px){#minimap{top:222px;right:12px;width:132px;height:80px}}

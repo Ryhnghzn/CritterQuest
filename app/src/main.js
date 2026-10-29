@@ -492,10 +492,20 @@ function tripChar() {
   return allocate(char, tripAttrs, char.updatedAt) || char;
 }
 
+// Skill change mid-trip (spec §31.6): saved at once, the new skill starts on its full cooldown.
+function equipInRun(slot, id) {
+  const r = equipSkill(tripChar(), slot, id, Date.now()); // levels gained in the trip count
+  if (!r.ok) { openCharPanel(); return; }
+  current = { ...current, skills: r.char.skills };
+  game.setSkills(current.skills);
+  saveCurrent();
+  openCharPanel();
+}
+
 function openCharPanel() {
   if (scene === 'run') {
     game.state = ST.PAUSE;
-    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false }, skill: { editable: false } });
+    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false }, skill: { editable: true, talentsEditable: false, onEquip: equipInRun } });
     showOverlay('charpanel');
     return;
   }
@@ -503,7 +513,7 @@ function openCharPanel() {
   renderCharPanel($('charpanel'), current, town.hp, {
     onClose: closeTownOverlay, onAllocate: allocateInTown,
     skill: {
-      editable: true,
+      editable: true, talentsEditable: true,
       onEquip: (slot, id) => changeGear((c, now) => equipSkill(c, slot, id, now)),
       onTalents: (add) => changeGear((c, now) => { const n = allocateTalents(c, add, now); return n ? { ok: true, char: n } : { ok: false }; }),
     },
