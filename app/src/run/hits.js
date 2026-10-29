@@ -5,6 +5,7 @@
 //  - sweep: circle that lives for `duration`; each enemy at most once
 //  - proj:  moving circle; each enemy at most once; passes through `pierce`
 //           more enemies, or bursts into an area (`explode`) on first contact
+// An area may carry `only` (an enemy): then it damages that enemy alone (a lightning strike).
 // Any hit may carry `delay` (seconds): until it runs out the hit neither moves, ticks nor
 // ages. An area may carry `target` (an enemy): it then rides on that enemy.
 // Projectile extras (all optional):
@@ -14,7 +15,7 @@
 //  - trail { every, r, life, ticks, mult }: drops a small lingering area behind it
 //  - split { at, count, spread, mult }: at distance `at` it bursts into `count` arrows
 //  - curve: turning speed (rad/s), so the flight bends into a spiral
-//  - hover: while its `delay` runs it is drawn floating (a dagger waiting in a ring)
+//  - hover: ring radius (px); while its `delay` runs it floats on that ring around the player (a dagger waiting in a circle)
 //  - explode.shards { count, speed, range, r, mult }: the burst also throws `count` arrows outward
 // orbit: a blade circling the player (`radius`, `spin` rad/s); each enemy at most once per `every` s;
 //   when `duration` ends it flies off as a `throw` projectile at the aim point (ctx.aimPX / aimPY)
@@ -27,7 +28,7 @@ const FX_MIN = 0.18; // keep instant hits on screen long enough to be seen
 export function makeArea({ x, y, r, angle = 0, arc = null, mult, ticks = 1, duration = 0, follow = false, freeze = 0, fx = null, delay = 0 }) {
   const life = Math.max(duration, FX_MIN);
   return {
-    kind: 'area', x, y, r, angle, arc: arc === null ? null : arc * DEG, mult, mult0: mult, freeze, fx, follow, delay, target: null,
+    kind: 'area', x, y, r, angle, arc: arc === null ? null : arc * DEG, mult, mult0: mult, freeze, fx, follow, delay, target: null, only: null,
     ticksLeft: ticks, tickEvery: ticks > 1 ? duration / ticks : 0, tickT: 0, life, maxLife: life,
   };
 }
@@ -36,7 +37,7 @@ export function makeSweep({ x, y, r, mult, duration, follow = false, fx = null, 
   return { kind: 'sweep', x, y, r, arc: null, mult, mult0: mult, follow, fx, delay, life: duration, maxLife: duration, hitSet: new Set() };
 }
 
-export function makeProjectile({ x, y, angle, speed, range, r, mult, pierce = 0, explode = null, fx = null, delay = 0, boomerang = false, pull = 0, trail = null, split = null, curve = 0, hover = false }) {
+export function makeProjectile({ x, y, angle, speed, range, r, mult, pierce = 0, explode = null, fx = null, delay = 0, boomerang = false, pull = 0, trail = null, split = null, curve = 0, hover = 0 }) {
   return {
     kind: 'proj', x, y, r, angle, mult, mult0: mult, pierce, explode, fx, delay,
     boomerang, returning: false, pull: pull === true ? SKILL_PULL : pull || 0, trail, trailT: 0, split, curve, hover,
@@ -86,7 +87,11 @@ export function inShape(h, e) {
 export function stepHits(hits, enemies, dt, ctx) {
   for (let i = hits.length - 1; i >= 0; i--) {
     const h = hits[i];
-    if (h.delay > 0) { h.delay -= dt; if (h.delay > 0) continue; } // not born yet
+    if (h.delay > 0) { // not born yet
+      if (h.hover) { h.x = ctx.px + Math.cos(h.angle) * h.hover; h.y = ctx.py + Math.sin(h.angle) * h.hover; } // rides the ring round the player
+      h.delay -= dt;
+      if (h.delay > 0) continue;
+    }
     if (h.target && h.target.hp > 0) { h.x = h.target.x; h.y = h.target.y; }
     if (h.follow) { h.x = ctx.px; h.y = ctx.py; }
     if (h.kind === 'area') stepArea(h, enemies, dt, ctx);
@@ -102,7 +107,7 @@ function stepArea(h, enemies, dt, ctx) {
   if (h.ticksLeft > 0) {
     h.tickT -= dt;
     while (h.tickT <= 0 && h.ticksLeft > 0) {
-      for (const e of enemies) if (e.hp > 0 && inShape(h, e)) ctx.onHit(h, e);
+      for (const e of enemies) if (e.hp > 0 && (!h.only || e === h.only) && inShape(h, e)) ctx.onHit(h, e);
       h.ticksLeft--;
       h.tickT += h.tickEvery;
       if (h.tickEvery === 0) break;

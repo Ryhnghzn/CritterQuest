@@ -414,3 +414,22 @@ describe('orbit', () => {
     expect(hits[0].kind).toBe('orbit');
   });
 });
+
+describe('only (sambaran tunggal) dan hover (cincin)', () => {
+  it('area dengan only melukai musuh itu saja', () => {
+    const a = enemy(0, 0), b = enemy(10, 0);
+    const h = makeArea({ x: 0, y: 0, r: 40, mult: 1 });
+    h.only = a;
+    expect(run([h], [a, b], 0.5)).toEqual([1, 0]);
+  });
+  it('proyektil hover tertunda mengikuti pemain di cincin lalu melesat', () => {
+    const p = makeProjectile({ x: 40, y: 0, angle: 0, speed: 100, range: 300, r: 5, mult: 1, delay: 0.3, hover: 40 });
+    const hits = [p];
+    const ctx = { px: 0, py: 0, onHit() {}, add() {} };
+    for (let i = 0; i < 10; i++) { ctx.px += 5; stepHits(hits, [], DT, ctx); }
+    expect(p.x).toBeCloseTo(ctx.px + 40);
+    expect(p.dist).toBe(0);
+    for (let i = 0; i < 20; i++) stepHits(hits, [], DT, ctx);
+    expect(p.dist).toBeGreaterThan(0);
+  });
+});

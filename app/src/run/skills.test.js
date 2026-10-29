@@ -462,7 +462,7 @@ describe('skill lebay: Warrior & Archer (§31.7)', () => {
     expect(axe.skill).toBe(true);
     hold(g, 2.5, { attack: false, aimAt: { x: 300, y: 0 } });
     expect(g.hits.some((h) => h.sid === 'axe')).toBe(false); // caught
-    const per = 14 * 2; // atk × mult
+    const per = 14 * SK('warrior', 4).mult; // atk × mult
     expect(1e6 - e.hp).toBeCloseTo(per * 2, 0);
   });
 
@@ -480,15 +480,15 @@ describe('skill lebay: Warrior & Archer (§31.7)', () => {
     expect(trail.every((h) => h.skill && h.sid === 'pierce' && h.kind === 'area')).toBe(true);
   });
 
-  it('Panah Pecah: 3 panah pecah menjadi 9 yang masih berstatus skill', () => {
+  it('Panah Pecah: 5 panah pecah menjadi 15 yang masih berstatus skill', () => {
     const g = mk('archer', ['volley', null, null, null]);
     cast(g, 1);
     const arrows = g.hits.filter((h) => h.sid === 'volley');
-    expect(arrows.length).toBe(3);
+    expect(arrows.length).toBe(5);
     expect(arrows.every((h) => h.split && h.skill)).toBe(true);
     hold(g, 0.4, { attack: false, aimAt: { x: 100, y: 0 } });
     const kids = g.hits.filter((h) => h.sid === 'volley');
-    expect(kids.length).toBe(9);
+    expect(kids.length).toBe(15);
     expect(kids.every((h) => h.skill && !h.split)).toBe(true);
   });
 });
@@ -534,7 +534,7 @@ describe('skill lebay: Mage & Assassin (§31.7)', () => {
       expect(Math.hypot(d.x - g.px, d.y - g.py)).toBeCloseTo(s.ring);
       expect(d.delay).toBeGreaterThan(s.delay - 0.05);
       expect(d.curve).toBe(s.curve);
-      expect(d.hover).toBe(true);
+      expect(d.hover).toBe(s.ring);
       expect(d.skill).toBe(true);
     }
     const dirs = ds.map((d) => Math.atan2(d.y - g.py, d.x - g.px)).sort((a, b) => a - b);
@@ -545,6 +545,43 @@ describe('skill lebay: Mage & Assassin (§31.7)', () => {
     idle(g, 0.6, { aimAt: { x: 500, y: 0 } });
     expect(Math.hypot(d0.x - g.px, d0.y - g.py)).toBeGreaterThan(s.ring + 50);
     expect(Math.abs(d0.angle - a0)).toBeGreaterThan(0.5); // curved
+  });
+
+  it('Lingkaran Belati: belati ikut pemain selama melayang, melesat dari cincin di posisi saat itu', () => {
+    const g = mk('assassin', ['fan', null, null, null]);
+    cast(g, { x: 500, y: 0 });
+    const s = SK('assassin', 1);
+    const d0 = g.hits.find((h) => h.sid === 'fan');
+    hold(g, 0.2, { attack: false, move: { x: 1, y: 0 }, aimAt: { x: 500, y: 0 } });
+    expect(g.px).toBeGreaterThan(5);
+    expect(d0.delay).toBeGreaterThan(0);
+    expect(Math.hypot(d0.x - g.px, d0.y - g.py)).toBeCloseTo(s.ring);
+    hold(g, 0.1, { attack: false, move: { x: 0, y: 0 }, aimAt: { x: 500, y: 0 } });
+    // launched from the ring round where the player stood at launch time
+    const px = g.px;
+    hold(g, s.delay, { attack: false, move: { x: 0, y: 0 }, aimAt: { x: 500, y: 0 } });
+    expect(d0.delay).toBeLessThanOrEqual(0);
+    expect(Math.hypot(d0.x - px, d0.y - g.py)).toBeGreaterThan(s.ring);
+  });
+
+  it('Badai Petir: tiap sambaran hanya melukai sasarannya, walau musuh bergerombol', () => {
+    const s = SK('mage', 1);
+    const g = mk('mage', ['chain', null, null, null]);
+    const es = [[100, 0], [110, 20], [90, 20], [120, -10], [100, -25]].map(([x, y]) => still(g, x, y));
+    cast(g, { x: 100, y: 0 });
+    idle(g, 1.2);
+    const d = es.map((e) => 1e6 - e.hp);
+    expect(d.every((x) => x >= s.mult * g.stats.atk - 1e-6 && x <= s.mult * g.stats.atk * 1.4)).toBe(true); // one strike each, not five
+  });
+
+  it('Badai Petir: sasaran yang mati sebelum sambaran tidak melukai tetangga', () => {
+    const g = mk('mage', ['chain', null, null, null]);
+    const [a, b] = [still(g, 100, 0), still(g, 110, 10)];
+    cast(g, { x: 100, y: 0 });
+    b.hp = 0; // dies before its strike lands (second strike, delay 0.1)
+    const before = 1e6 - a.hp;
+    idle(g, 0.5);
+    expect(1e6 - a.hp).toBe(before);
   });
 
   it('Shuriken Raksasa: berputar di sekitar pemain, kena berulang, lalu dilempar ke bidikan', () => {

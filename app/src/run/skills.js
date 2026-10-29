@@ -151,12 +151,11 @@ function castSkill(run, s) {
       for (let k = 0; k < n; k++) {
         const a = angle + (n > 1 ? k / (full ? n : n - 1) - (full ? 0 : 0.5) : 0) * s.spread * DEG;
         const ring = s.ring || 0;
-        const d = makeProjectile({
+        run.hits.push(makeProjectile({
           x: run.px + Math.cos(a) * ring, y: run.py + Math.sin(a) * ring, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult,
           pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null, delay: s.delay || 0, curve: s.curve || 0,
-        });
-        d.hover = ring > 0 && d.delay > 0; // floats where it is until it launches
-        run.hits.push(d);
+          hover: s.delay ? ring : 0, // floats on the ring round the player until it launches
+        }));
       }
       break;
     }
@@ -213,6 +212,7 @@ function storm(run, s) {
     const e = list[i];
     const strike = makeArea({ x: e.x, y: e.y, r: s.r, mult: s.mult, fx: 'chain', delay: s.gap * i });
     strike.target = e;
+    strike.only = e; // this strike hurts its own victim alone, however crowded it is
     run.hits.push(strike);
   }
 }
