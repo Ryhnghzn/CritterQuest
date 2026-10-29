@@ -1,7 +1,8 @@
-// Loading screen (spec §29) shown while a 3D place is built: an eclipse closing as the
-// progress, the hero running on, what is being built and a rotating tip. The building
-// itself happens in steps (render3d warm()); step() waits for frames between them so
-// this screen keeps moving.
+// Loading screen (spec §29) shown while a 3D place is built: a painting of the place being
+// entered (public/img/load_<place>.webp, dimmed; the dark night alone until it has loaded),
+// an eclipse closing as the progress, the hero running on, what is being built and a rotating
+// tip. The building itself happens in steps (render3d warm()); step() waits for frames between
+// them so this screen keeps moving.
 import { el } from './screens.js';
 import { drawDoll } from '../art/doll.js';
 import { tr } from '../i18n.js';
@@ -21,14 +22,30 @@ const TIPS = [
   'Peti harta di wilayah dijaga. Kalahkan penjaganya dulu.',
   'Ramuan di sabuk dipakai dengan Z X C V.',
 ];
+// painted backdrops, one per place (town, region biome or dungeon id): cached once asked for
+const ART = new Map();
+const PLACES = ['town', 'forest', 'ice', 'desert', 'volcano', 'eclipse', 'shadow', 'crystal', 'fungus', 'tomb', 'lava', 'spire'];
+function art(place) {
+  if (!place || !PLACES.includes(place) || typeof Image !== 'function') return null;
+  if (!ART.has(place)) {
+    const img = new Image(), a = { img, at: 0 };
+    img.onload = () => { a.at = performance.now(); };
+    img.src = `img/load_${place}.webp`;
+    ART.set(place, a);
+  }
+  return ART.get(place);
+}
+// After the first load, fetch the rest while idle so later loading screens show theirs at once.
+const prefetch = () => (window.requestIdleCallback || setTimeout)(() => PLACES.forEach(art));
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const CALM = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 
-let box = null, raf = 0, target = 0, shown = 0, stepKey = 'torch', hero = null, t0 = 0, tipAt = 0;
+let box = null, raf = 0, target = 0, shown = 0, stepKey = 'torch', hero = null, bg = null, t0 = 0, tipAt = 0, fetched = false;
 
-// avatar: { classId, look } of the hero who runs across (null: none)
-export function showLoading(avatar = null) {
-  hero = avatar;
+// avatar: { classId, look } of the hero who runs across (null: none); place: which painting
+// (one of PLACES; anything else: none)
+export function showLoading(avatar = null, place = null) {
+  hero = avatar; bg = art(place);
   target = shown = 0; stepKey = 'torch';
   if (!box) build();
   box.classList.remove('out', 'hidden');
@@ -54,6 +71,7 @@ export async function hideLoading() {
   await new Promise((r) => setTimeout(r, 320));
   box.classList.add('hidden');
   cancelAnimationFrame(raf);
+  if (!fetched) { fetched = true; prefetch(); }
 }
 
 function build() {
@@ -84,11 +102,28 @@ function paint(now) {
   raf = requestAnimationFrame(paint);
 }
 
+// the painting, covering the screen and dimmed so the eclipse, bar and tip stay readable
+function drawArt(g, w, h) {
+  const fade = bg?.at ? Math.min(1, (performance.now() - bg.at) / 300) : 0;
+  if (!fade) return;
+  const { img } = bg, k = Math.max(w / img.width, h / img.height), W = img.width * k, H = img.height * k;
+  g.globalAlpha = fade * 0.75;
+  g.drawImage(img, (w - W) / 2, (h - H) / 2, W, H);
+  g.globalAlpha = 1;
+  const v = g.createRadialGradient(w / 2, h * 0.4, Math.min(w, h) * 0.15, w / 2, h * 0.45, Math.max(w, h) * 0.75);
+  v.addColorStop(0, 'rgba(7,5,10,.55)'); v.addColorStop(0.5, 'rgba(7,5,10,.25)'); v.addColorStop(1, 'rgba(7,5,10,.8)');
+  g.fillStyle = v; g.fillRect(0, 0, w, h);
+  const low = g.createLinearGradient(0, h * 0.6, 0, h);
+  low.addColorStop(0, 'rgba(7,5,10,0)'); low.addColorStop(1, 'rgba(7,5,10,.9)');
+  g.fillStyle = low; g.fillRect(0, h * 0.6, w, h * 0.4);
+}
+
 function drawScene(g, w, h, t, p) {
   g.fillStyle = '#07050a'; g.fillRect(0, 0, w, h);
+  drawArt(g, w, h);
   const cx = w / 2, cy = h * 0.4, R = Math.min(w, h) * 0.13;
   const halo = g.createRadialGradient(cx, cy, 0, cx, cy, R * 2.6);
-  halo.addColorStop(0, 'rgba(201,162,74,.2)'); halo.addColorStop(1, 'rgba(201,162,74,0)');
+  halo.addColorStop(0, `rgba(201,162,74,${bg?.at ? 0.45 : 0.2})`); halo.addColorStop(1, 'rgba(201,162,74,0)'); // brighter over a painting
   g.fillStyle = halo; g.fillRect(cx - R * 3, cy - R * 3, R * 6, R * 6);
   g.lineCap = 'round';
   g.strokeStyle = 'rgba(201,162,74,.25)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke();

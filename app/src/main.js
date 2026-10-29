@@ -44,7 +44,7 @@ import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL } from './data/balance.
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
-import { FIELD, TREASURE, TOWNS, TOWN_IDS, regionById, regionOfDungeon } from './data/world.js';
+import { FIELD, TREASURE, TOWNS, TOWN_IDS, REGIONS, regionById, regionOfDungeon } from './data/world.js';
 import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
 import { buyDisplay, buyNight, buyMats, isNight } from './meta/market.js';
 import { deposit, withdraw } from './meta/stash.js';
@@ -311,14 +311,16 @@ function enterTown(char, at) {
   $('banner').style.opacity = 0; // a region / floor title may still be fading
   showTownOverlay(null);
   updateTownHUD(current, town);
-  loadWorld(T3.needsWarm(town), (step) => T3.warm(town, avatarOf(current), current.location, step));
+  const place = char.location === 'home' ? 'town' : REGIONS.find((r) => r.to === char.location)?.biome;
+  loadWorld(T3.needsWarm(town), (step) => T3.warm(town, avatarOf(current), current.location, step), 'people', place);
 }
 
 // Builds a 3D place behind the loading screen (spec §29) when it is not built yet.
-async function loadWorld(needed, warm, last = 'people') {
+// place: the loading painting (ui/loading.js PLACES)
+async function loadWorld(needed, warm, last = 'people', place = null) {
   if (FLAT || !needed || worldLoading) return;
   worldLoading = true;
-  showLoading(current && avatarOf(current));
+  showLoading(current && avatarOf(current), place);
   try { await warm(loadingStep); } catch (e) { console.error(e); } // the first frame builds whatever is left
   await loadingStep(0.92, last);
   worldLoading = false; // the first (heaviest) frames draw under the loading screen
@@ -607,7 +609,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   });
   tripAttrs = {};
   setupRunUI();
-  await loadWorld(R3.needsWarm(game), (step) => R3.warm(game, step), 'foes');
+  await loadWorld(R3.needsWarm(game), (step) => R3.warm(game, step), 'foes', dungeon);
 }
 
 // Skill / ultimate buttons, the avatar and the pause menu for a dungeon trip or a region.
@@ -657,7 +659,7 @@ async function explore(regionId, at = 'west') {
   tripAttrs = {};
   fieldSaveT = 0;
   setupRunUI();
-  await loadWorld(R4.needsWarm(game), (step) => R4.warm(game, step), 'foes');
+  await loadWorld(R4.needsWarm(game), (step) => R4.warm(game, step), 'foes', region.biome);
 }
 
 // This character's dungeon gates in a region and where the expedition arrow points.
