@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
-import { waveQueue, FLOOR_COUNT, makeElite } from './dungeon.js';
+import { waveQueue, FLOOR_COUNT, makeElite, spawnFromLane, stepDungeon, hpMul } from './dungeon.js';
+import { HORDE } from '../data/balance.js';
 import { inside } from './room.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { ELITE } from '../data/items.js';
@@ -42,14 +43,58 @@ function enter(g, kind) {
   step(g);
 }
 
-const total = (floor) => FLOORS[floor - 1].waves.reduce((n, w) => n + Object.values(w.mix).reduce((a, b) => a + b, 0), 0);
+// enemies a floor sends: normal counts × HORDE.count (spec §33.2), bosses as they are
+const many = (type, n) => (ENEMIES[type].boss ? n : Math.max(1, Math.round(n * HORDE.count)));
+const total = (floor) => FLOORS[floor - 1].waves.reduce((n, w) => n + Object.entries(w.mix).reduce((a, [ty, k]) => a + many(ty, k), 0), 0);
 
 describe('gelombang', () => {
-  it('urutan muncul: bos dulu, jumlah sesuai data', () => {
+  it('urutan muncul: bos dulu, jumlah musuh biasa × HORDE.count (spec §33.2)', () => {
     const q = waveQueue({ mix: { slink: 3, boss: 1, tank: 2 } });
     expect(q[0]).toBe('boss');
-    expect(q.filter((t) => t === 'slink')).toHaveLength(3);
-    expect(q.filter((t) => t === 'tank')).toHaveLength(2);
+    expect(q.filter((t) => t === 'boss')).toHaveLength(1);
+    expect(q.filter((t) => t === 'slink')).toHaveLength(Math.round(3 * HORDE.count));
+    expect(q.filter((t) => t === 'tank')).toHaveLength(Math.round(2 * HORDE.count));
+  });
+
+  it('musuh keluar berkelompok dari satu lorong', () => {
+    const g = start();
+    g.spawnT = 0;
+    stepDungeon(g, DT);
+    expect(g.enemies.length).toBeGreaterThanOrEqual(HORDE.pack[0]);
+    expect(g.enemies.length).toBeLessThanOrEqual(HORDE.pack[1]);
+    expect(new Set(g.enemies.map((e) => e.lane)).size).toBe(1);
+    expect(g.spawnT).toBeCloseTo(FLOORS[0].waves[0].every * HORDE.packGap);
+  });
+
+  it('bos keluar sendirian', () => {
+    const g = start();
+    g.queue = ['boss', 'slink', 'slink', 'slink']; g.queueI = 0; g.spawnT = 0;
+    stepDungeon(g, DT);
+    expect(g.enemies.map((e) => e.type)).toEqual(['boss']);
+  });
+
+  it('tidak ada kelompok baru selama HORDE.liveCap musuh hidup', () => {
+    const g = start();
+    for (let i = 0; i < HORDE.liveCap; i++) g.spawnEnemy('slink');
+    g.spawnT = 0;
+    stepDungeon(g, DT);
+    expect(g.enemies.length).toBe(HORDE.liveCap);
+    expect(g.queueI).toBe(0);
+  });
+
+  it('HP musuh gerombolan × HORDE.hp, bos tidak', () => {
+    const g = start();
+    const s = spawnFromLane(g, 'slink');
+    if (!s.elite) expect(s.maxHp).toBeCloseTo(ENEMIES.slink.hp * hpMul(1, g.dungeon) * HORDE.hp);
+    expect(spawnFromLane(g, 'boss').maxHp).toBeCloseTo(ENEMIES.boss.hp * hpMul(1, g.dungeon));
+  });
+
+  it('peluang elite × HORDE.eliteMul', () => {
+    const g = start();
+    g.floor = 5;
+    let n = 0;
+    for (let i = 0; i < 6000; i++) { g.enemies.length = 0; if (spawnFromLane(g, 'slink').elite) n++; }
+    expect(n / 6000).toBeCloseTo(ELITE.chance[4] * HORDE.eliteMul, 1);
   });
 
   it('musuh muncul di ujung lorong lalu masuk ke ruangan', () => {
@@ -67,13 +112,17 @@ describe('gelombang', () => {
     for (const m of g.enemies) if (!m.entering) expect(inside(g.room, m.x, m.y, m.r - 1e-6)).toBe(true);
   });
 
-  it('gelombang berikut menunggu sampai musuh tersisa sedikit', () => {
+  it('gelombang berikut datang saat hidup ≤ HORDE.nextAt × ukuran gelombang', () => {
     const g = start();
-    for (let i = 0; i < 60 * 30; i++) step(g);
-    expect(g.wave).toBe(0);
-    expect(g.enemies.length).toBeGreaterThan(WAVE.nextAlive);
-    for (const e of g.enemies) e.hp = 0;
+    for (let i = 0; i < 60 * 30 && g.queueI < g.queue.length; i++) step(g);
+    expect(g.queueI).toBe(g.queue.length); // the whole wave is out
+    const keep = Math.ceil(g.queue.length * HORDE.nextAt);
+    while (g.enemies.length > keep + 1) g.enemies.pop();
+    for (const e of g.enemies) { e.speed = 0; e.dmg = 0; }
     for (let i = 0; i < 60 * (WAVE.gap + 0.5); i++) step(g);
+    expect(g.wave).toBe(0); // one too many still alive
+    g.enemies.pop();
+    for (let i = 0; i < 60 * (WAVE.gap + 0.1); i++) step(g);
     expect(g.wave).toBe(1);
   });
 

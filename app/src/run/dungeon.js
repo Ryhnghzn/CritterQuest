@@ -3,7 +3,7 @@
 // cleared floor opens portals in the centre (blue = down, gold = home). Pure
 // logic on the run state (run/run.js); the run decides what an exit means.
 import { tr, t } from '../i18n.js';
-import { rand, rrange } from '../core/rng.js';
+import { rand, rrange, rint } from '../core/rng.js';
 import { ROOM, WAVE, PORTAL, COINS, FLOOR_HP_STEP } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { makeRoom, inside, confine, SHAPES } from './room.js';
@@ -11,7 +11,7 @@ import { ELITE, DROP, RARITIES, MYTHIC } from '../data/items.js';
 import { MYTHIC_PICK } from '../data/itemfx.js';
 import { ENEMIES } from '../data/enemies.js';
 import { dropItem, itemName, itemLevelFor } from '../meta/itemgen.js';
-import { CHAR_LEVEL_MAX } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, HORDE } from '../data/balance.js';
 import { MAT_DROPS, MATS, GEM_IDS, GEMS } from '../data/forge.js';
 
 export const FLOOR_COUNT = DUNGEONS[0].floors.length; // every dungeon has 5 floors
@@ -22,10 +22,11 @@ const FIRST_SPAWN = 1.2;      // seconds of calm at the start of a floor
 export const hpMul = (floor, dungeon = DUNGEONS[0]) => (1 + FLOOR_HP_STEP * (floor - 1)) * dungeon.hpMul;
 const floorsOf = (run) => run.dungeon.floors;
 
-// Spawn order of one wave: bosses first, everything else shuffled.
+// Spawn order of one wave: bosses first, everything else shuffled; normal counts × HORDE.count (spec §33.2).
 export function waveQueue(wave) {
   const lead = [], rest = [];
-  for (const [type, n] of Object.entries(wave.mix)) {
+  for (const [type, k] of Object.entries(wave.mix)) {
+    const n = ENEMIES[type].boss ? k : Math.max(1, Math.round(k * HORDE.count));
     for (let i = 0; i < n; i++) (ENEMIES[type].boss ? lead : rest).push(type);
   }
   for (let i = rest.length - 1; i > 0; i--) {
@@ -62,14 +63,17 @@ function beginWave(run, i) {
   run.waveGap = 0;
 }
 
-// One enemy at the far end of a random lane; it walks in before chasing.
-export function spawnFromLane(run, type) {
+// One enemy at the far end of a lane (random unless given); it walks in before chasing.
+export function spawnFromLane(run, type, lane = null) {
   const lanes = run.room.lanes;
-  const lane = lanes[Math.floor(rand() * lanes.length)];
+  lane ||= lanes[Math.floor(rand() * lanes.length)];
   const along = ROOM.wall + ROOM.laneLen * rrange(0.5, 1);
   const side = rrange(-1, 1) * (ROOM.laneWidth / 2 - 14);
   const e = run.spawnEnemy(type);
-  if (!e.boss && rand() < ELITE.chance[run.floor - 1]) makeElite(e);
+  if (!e.boss) { // the horde: weaker one by one, elites a bit rarer (spec §33.2)
+    e.hp *= HORDE.hp; e.maxHp *= HORDE.hp;
+    if (rand() < ELITE.chance[run.floor - 1] * HORDE.eliteMul) makeElite(e);
+  }
   e.x = lane.x + lane.dx * along - lane.dy * side;
   e.y = lane.y + lane.dy * along + lane.dx * side;
   e.lane = lane;
@@ -114,12 +118,9 @@ export function stepDungeon(run, dt) {
   const waves = floorsOf(run)[run.floor - 1].waves;
   if (run.queueI < run.queue.length) {
     run.spawnT -= dt;
-    if (run.spawnT <= 0) {
-      run.spawnT = waves[run.wave].every;
-      spawnFromLane(run, run.queue[run.queueI++]);
-    }
+    if (run.spawnT <= 0) spawnGroup(run, waves[run.wave].every);
   } else if (run.wave + 1 < waves.length) {
-    if (run.enemies.length <= WAVE.nextAlive) {
+    if (run.enemies.length <= Math.ceil(run.queue.length * HORDE.nextAt)) {
       run.waveGap += dt;
       if (run.waveGap >= WAVE.gap) {
         beginWave(run, run.wave + 1);
@@ -129,6 +130,18 @@ export function stepDungeon(run, dt) {
   } else if (run.enemies.length === 0) {
     clearFloor(run);
   }
+}
+
+// The next group of the wave out of one lane (spec §33.2): a boss alone, others HORDE.pack at a
+// time, none while the room holds HORDE.liveCap.
+function spawnGroup(run, every) {
+  const Q = run.queue;
+  if (ENEMIES[Q[run.queueI]].boss) { spawnFromLane(run, Q[run.queueI++]); run.spawnT = every; return; }
+  let k = Math.min(rint(HORDE.pack[0], HORDE.pack[1]), HORDE.liveCap - run.enemies.length);
+  if (k <= 0) { run.spawnT = HORDE.retry; return; }
+  const lane = run.room.lanes[Math.floor(rand() * run.room.lanes.length)];
+  while (k-- > 0 && run.queueI < Q.length && !ENEMIES[Q[run.queueI]].boss) spawnFromLane(run, Q[run.queueI++], lane);
+  run.spawnT = every * HORDE.packGap;
 }
 
 function clearFloor(run) {

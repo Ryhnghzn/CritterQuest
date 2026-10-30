@@ -48,7 +48,7 @@ describe('hasil ronde', () => {
     const r = g.result();
     expect(r.exp).toBe(total);
     expect(Object.values(r.killsBy).reduce((a, b) => a + b, 0)).toBe(g.kills);
-    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, killsBy: g.killsBy, elites: 0, elitesBy: {}, floorsCleared: 0, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
+    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: g.loot, bossKills: g.bossKills, killsBy: g.killsBy, elites: g.elites, elitesBy: g.elitesBy, floorsCleared: g.floorsCleared, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
   });
 
   it('menghitung bos yang dikalahkan', () => {

@@ -1083,7 +1083,7 @@ Pendekatan: sisi pemain lewat satu blok pengali `TEMPO`, sisi musuh lewat aturan
 
 ### 33.2 Kedatangan musuh di dungeon (`HORDE`)
 - **Berkelompok:** antrean gelombang keluar per kelompok 3–6 musuh sekaligus dari satu lorong (bos selalu sendiri dan pertama). Jeda antarkelompok = `every × 2,5` dari data gelombang.
-- **Lebih dekat:** lorong 240 → 140 px; musuh muncul di separuh dalam lorong.
+- **Lebih dekat:** lorong 240 → 140 px; musuh muncul di separuh luar lorong (tersembunyi) lalu masuk.
 - **Tumpang tindih:** gelombang berikutnya mulai saat gelombang sekarang sudah keluar semua dan musuh hidup ≤ 40% jumlah gelombang itu (bukan lagi ≤ 2), setelah jeda 0,6 dtk (dari 1,5).
 - **Jumlah ×1,6, HP ×0,8** untuk musuh biasa (dibulatkan per jenis, minimal 1; bos & mini bos tidak berubah). Elite: peluang per musuh ×0,75 supaya jumlah elite per lantai tidak melonjak.
 - **Batas hidup 45 musuh** di dungeon (kelompok berikutnya menunggu) supaya HP tetap ≥ 40 FPS.

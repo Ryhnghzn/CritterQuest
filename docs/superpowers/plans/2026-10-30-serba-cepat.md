@@ -96,8 +96,8 @@ it('gerak memakai TEMPO.move (stat di layar tetap)', () => {
 
 **File:** `data/balance.js` (`HORDE`), `data/dungeon.js`, `run/dungeon.js`, `run/run.js`, tes `run/dungeon.test.js`.
 
-- [ ] **B1. Data.** Tambahkan `HORDE` ke `data/balance.js`. `data/dungeon.js`: `ROOM.laneLen: 140`, `WAVE = { gap: 0.6 }` (hapus `nextAlive`, diganti `HORDE.nextAt`), `PORTAL.armDelay: 0.4`; komentar `§33`.
-- [ ] **B2. Tes** (`run/dungeon.test.js`):
+- [x] **B1. Data.** Tambahkan `HORDE` ke `data/balance.js`. `data/dungeon.js`: `ROOM.laneLen: 140`, `WAVE = { gap: 0.6 }` (hapus `nextAlive`, diganti `HORDE.nextAt`), `PORTAL.armDelay: 0.4`; komentar `§33`.
+- [x] **B2. Tes** (`run/dungeon.test.js`):
 ```js
 it('jumlah gelombang ×HORDE.count, bos tetap satu', () => {
   const q = waveQueue({ mix: { slink: 5, boss: 1 } });
@@ -117,8 +117,8 @@ it('HP musuh gerombolan ×HORDE.hp, bos tidak', () => { /* spawnFromLane slink v
 it('peluang elite ×HORDE.eliteMul', () => { /* rata-rata 4000 spawnFromLane di lantai 5 ≈ ELITE.chance[4] × 0.75 ± 0.01 */ });
 ```
   Tulis isi tes yang dikomentari sebagai kode nyata memakai `g.enemies`, `g.queue`, `g.queueI`, `g.wave`, `stepDungeon`. Perbarui tes lama yang memakai `WAVE.nextAlive` (baris ~74) ke aturan 40%.
-- [ ] **B3. Jalankan** → gagal.
-- [ ] **B4. Terapkan** di `run/dungeon.js`:
+- [x] **B3. Jalankan** → gagal.
+- [x] **B4. Terapkan** di `run/dungeon.js`:
   - `waveQueue`: `n = ENEMIES[type].boss ? n : Math.max(1, Math.round(n * HORDE.count))`.
   - `spawnFromLane(run, type, lane = null)`: pakai `lane` bila diberi; HP `×HORDE.hp` bila bukan bos (sebelum `makeElite`); elite `rand() < ELITE.chance[f] * HORDE.eliteMul`.
   - `stepDungeon` saat antrean belum habis dan `spawnT <= 0`: bila jenis berikut bos → spawn sendiri; selain itu `k = min(rint(HORDE.pack[0], HORDE.pack[1]), sisa antrean non-bos berturut-turut, HORDE.liveCap − hidup)`; bila `k <= 0` → `spawnT = 0.2` (coba lagi); selain itu pilih satu lorong `rand()`, spawn `k` musuh di lorong itu, `spawnT = every × HORDE.packGap`.

@@ -25,6 +25,19 @@ export const DODGE = { distance: 180, duration: 0.18, invuln: 0.25, cooldown: 0.
 // Hack-and-slash tempo (spec §33.1): player side only, applied where used (run/player.js,
 // run/skills.js), so the character screen still shows the plain stats.
 export const TEMPO = { move: 1.5, attackInterval: 0.7, projSpeed: 1.3 };
+// Enemy arrival & rewards (spec §33.2–33.4)
+export const HORDE = {
+  count: 1.6,        // normal enemies per wave × this (bosses unchanged)
+  hp: 0.8,           // HP of horde enemies (dungeon waves, region packs & escorts; not bosses, guardians)
+  pack: [3, 6],      // a wave comes out of one lane in groups of this many
+  packGap: 2.5,      // seconds between groups = wave.every × this
+  retry: 0.2,        // seconds before trying again while the room is full
+  nextAt: 0.4,       // next wave once alive ≤ this × the current wave's size
+  liveCap: 45,       // dungeon: no new group while this many are alive
+  eliteMul: 0.75,    // elite chance per enemy × this
+  reward: 0.65,      // EXP, coin chance, gear chance, quest-item chance of normal enemies × this
+  merge: 24,         // a new EXP gem joins a resting one within this many px
+};
 export const AUTO_AIM_RANGE = 450;     // touch: aim at the nearest enemy within this range
 export const AUTO_ATTACK_MARGIN = 14;  // auto mode: melee swings once an enemy centre is within r + this
 export const CDR_MAX = 40;             // % (spec §4.1)
