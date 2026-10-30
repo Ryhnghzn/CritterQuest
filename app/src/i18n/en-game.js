@@ -113,6 +113,7 @@ export default {
   'Peta terbuka': 'Map revealed',
   '{name} · LV {a}–{b}': '{name} · LV {a}–{b}',
   'Gerbang {name} masih ditutup': 'The gate of {name} is still closed',
+  'Jalan ke {name} ada di ujung jalan setapak': 'The way to {name} is at the end of the path',
   'Lencana bertambah': 'Badges added',
   'Semua tugas selesai': 'All bounties finished',
   'Tugas baru ditempel di papan.': 'A new bounty is pinned to the board.',

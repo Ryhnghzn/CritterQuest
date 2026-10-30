@@ -201,6 +201,95 @@ export function gateMesh(c0, c1) {
   return G;
 }
 
+// the town gate where a region's road leaves it (spec §25.1): two towers, a beam with a
+// banner, lanterns on the inner side and a palisade along the edge. Built with the wall along z
+// and the inside of the region towards +x; half: half the opening, wall: how far the palisade reaches.
+const TOWN_GATE = {
+  forest: { wood: '#5a3e24', stone: '#4a4038', cap: '#2f4a2a' },
+  ice: { wood: '#5a4a3e', stone: '#6a7686', cap: '#e8f2ff' },
+  desert: { wood: '#7a5634', stone: '#a8824e', cap: '#c2843a' },
+  volcano: { wood: '#2a2020', stone: '#3a3030', cap: '#5a2a1a' },
+  eclipse: { wood: '#2a2236', stone: '#3a3048', cap: '#6a4a9a' },
+};
+export function townGateMesh(biome, half, wall) {
+  const G = new THREE.Group(), u = S, st = TOWN_GATE[biome] || TOWN_GATE.forest, P = [];
+  const tz = half + 22;
+  for (const s of [-1, 1]) {
+    P.push(part(Box(40 * u, 104 * u, 40 * u), st.stone, { y: 52 * u, z: s * tz * u }));
+    P.push(part(Box(48 * u, 7 * u, 48 * u), st.cap, { y: 106 * u, z: s * tz * u }));
+    for (const [ox, oz] of [[-15, -15], [15, -15], [-15, 15], [15, 15]]) P.push(part(Box(10 * u, 12 * u, 10 * u), st.stone, { x: ox * u, y: 115 * u, z: (s * tz + oz) * u }));
+    // palisade: sharpened posts and two rails
+    for (let z = half + 54; z <= wall; z += 20) {
+      P.push(part(Cyl(7 * u, 8 * u, 62 * u), st.wood, { y: 31 * u, z: s * z * u }));
+      P.push(part(Cone(8 * u, 16 * u, 6), st.wood, { y: 70 * u, z: s * z * u }));
+    }
+    const len = wall - half - 44;
+    for (const y of [18, 44]) P.push(part(Box(6 * u, 6 * u, len * u), '#2a1c10', { x: 9 * u, y: y * u, z: s * (half + 44 + len / 2) * u }));
+    P.push(part(Box(6 * u, 14 * u, 4 * u), '#2a1c10', { x: 23 * u, y: 74 * u, z: s * (half + 4) * u })); // lantern bracket
+  }
+  P.push(part(Box(12 * u, 10 * u, (half + 22) * 2 * u), st.wood, { y: 96 * u })); // the beam over the road
+  P.push(part(Box(2 * u, 36 * u, 40 * u), '#7a1e1e', { x: 7 * u, y: 74 * u }));
+  P.push(part(Box(2.5 * u, 8 * u, 14 * u), '#d8a84a', { x: 7 * u, y: 80 * u }));
+  G.add(new THREE.Mesh(merge(P), vtoon(0)));
+  const lamps = [];
+  for (const s of [-1, 1]) {
+    const lamp = new THREE.Mesh(Box(10 * u, 12 * u, 10 * u), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc070).multiplyScalar(2) }));
+    lamp.position.set(23 * u, 64 * u, s * (half + 4) * u); G.add(lamp);
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(60 * u, 60 * u), additive(new THREE.Color(0xffa040).multiplyScalar(1.4), 0.6, glowTex()));
+    halo.position.copy(lamp.position); halo.position.x += 2 * u; halo.rotation.y = Math.PI / 2; G.add(halo);
+    lamps.push(halo);
+  }
+  G.userData = { lamps };
+  return G;
+}
+
+// clouds that tile, for the fog past a region's edge
+let CLOUD = null;
+const cloudTex = () => CLOUD || (CLOUD = (() => {
+  const t = canvasTex(256, 256, (g) => {
+    const r = rndTex(11);
+    for (let i = 0; i < 90; i++) {
+      const x = r() * 256, y = r() * 256, rad = 24 + r() * 56, a = 0.16 + r() * 0.2;
+      for (const [dx, dy] of [[0, 0], [256, 0], [-256, 0], [0, 256], [0, -256]]) { // drawn wrapped, so it tiles
+        const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, rad);
+        gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = gr; g.fillRect(x + dx - rad, y + dy - rad, rad * 2, rad * 2);
+      }
+    }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+})());
+const rndTex = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
+// fades from thick (u = 0, outside) to nothing (u = 1, at the edge)
+let FADE = null;
+const fadeTex = () => FADE || (FADE = canvasTex(64, 4, (g) => {
+  const gr = g.createLinearGradient(0, 0, 64, 0);
+  gr.addColorStop(0, '#fff'); gr.addColorStop(0.7, '#ddd'); gr.addColorStop(1, '#000');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 4);
+}));
+
+// fog past a region's west (dir -1) or east (dir 1) edge: stacked layers of drifting cloud,
+// thick outside and thinning to nothing just inside the edge (edgeX), the whole height h
+export function fogBank(edgeX, h, dir, color) {
+  const G = new THREE.Group(), depth = 700, inside = 110;
+  const layers = [];
+  [[4, 1], [26, 0.9], [56, 0.75], [92, 0.6], [130, 0.45]].forEach(([y, op], i) => {
+    const map = cloudTex().clone(); map.needsUpdate = true;
+    map.repeat.set(depth / 240, h / 240);
+    const alpha = fadeTex();
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color, map, alphaMap: alpha, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2;
+    if (dir > 0) m.rotation.z = Math.PI; // the fade runs from outside to the edge
+    m.scale.set((depth + inside) * S, h * S, 1);
+    m.position.set((edgeX + dir * (depth - inside) / 2) * S, y * S, h / 2 * S);
+    m.userData = { map, speed: (i % 2 ? -1 : 1) * (0.006 + i * 0.003) };
+    G.add(m); layers.push(m);
+  });
+  G.userData = { layers };
+  return G;
+}
+
 // treasure chest on its dais (spec §25.3): chained while guarded, lid thrown back once open
 export function chestMesh(lord) {
   const G = new THREE.Group(), u = S * (lord ? 1.35 : 1);

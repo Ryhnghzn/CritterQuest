@@ -1,7 +1,7 @@
 // Region play (spec §25.1): the same fight as in a dungeon, on an open map.
 // Packs of enemies walk in from just off-screen around the player, stronger
 // toward the east; far stragglers vanish; walking off the west / east edge
-// leaves the region. Pure logic on the run state (run/run.js).
+// where the road ends leaves the region. Pure logic on the run state (run/run.js).
 import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
 import { FIELD, FIELD_SCALE, TREASURE, READY_TOWNS, TOWNS, regionById } from '../data/world.js';
@@ -120,14 +120,21 @@ export function stepField(run, dt) {
     }
     if (d2 < FIELD.gateR * FIELD.gateR) run.nearGate = g;
   }
-  // edges: west goes back, east on to the next town (closed until it is built)
+  // edges: the road's end on the west goes back, on the east on to the next town (closed until
+  // it is built); anywhere else the edge is a wall
   if (run.edgeT > 0) run.edgeT -= dt;
-  if (run.px < FIELD.exitZone) run.exit = 'west';
-  else if (run.px > map.w - FIELD.exitZone) {
-    if (region.to && READY_TOWNS.includes(region.to)) run.exit = 'east';
+  const note = (text) => { if (run.edgeT <= 0) { run.edgeT = 3; run.showBanner(text); } };
+  const atRoad = (y) => Math.abs(run.py - y) < FIELD.exitHalf;
+  if (run.px < FIELD.exitZone) {
+    if (atRoad(map.start.y)) run.exit = 'west';
+    else { run.px = FIELD.exitZone + 4; note(t('Jalan ke {name} ada di ujung jalan setapak', { name: TOWNS[region.from].name })); }
+  } else if (run.px > map.w - FIELD.exitZone) {
+    const open = region.to && READY_TOWNS.includes(region.to);
+    if (open && atRoad(map.end.y)) run.exit = 'east';
     else {
       run.px = map.w - FIELD.exitZone - 4;
-      if (run.edgeT <= 0) { run.edgeT = 3; run.showBanner(region.to ? t('Gerbang {name} masih ditutup', { name: TOWNS[region.to].name }) : t('Tidak ada jalan lagi ke timur')); }
+      note(open ? t('Jalan ke {name} ada di ujung jalan setapak', { name: TOWNS[region.to].name })
+        : region.to ? t('Gerbang {name} masih ditutup', { name: TOWNS[region.to].name }) : t('Tidak ada jalan lagi ke timur'));
     }
   }
 }

@@ -70,7 +70,9 @@ export const regionOfDungeon = (dungeonId) => REGIONS.find((r) => r.dungeons.som
 // Field rules (spec §25.1, §25.5)
 export const FIELD = {
   pathWidth: 90, riverWidth: 130, bridgeHalf: 90, edge: 40,
-  exitZone: 70,            // walking this close to the west / east edge leaves the region
+  exitZone: 70,            // walking this close to the west / east edge leaves the region…
+  exitHalf: 110,           // …but only at the road's end: within this far of its y (elsewhere the edge is a wall)
+  gateWall: 460,           // the town gate there: its palisade reaches this far up and down the edge from the road
   spawnMin: 560, spawnMax: 760, despawn: 1500,
   maxEnemies: 25, pack: [3, 6],
   packEvery: 4.2, nightPackEvery: 2.8, // seconds between packs

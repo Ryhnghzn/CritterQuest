@@ -7,7 +7,7 @@ import { t as tf } from '../i18n.js';
 import { FIELD, TOWNS } from '../data/world.js';
 import { dungeonById } from '../data/dungeons.js';
 import { OUT } from '../art/sprites.js';
-import { TAU, shadow, shade } from './paint.js';
+import { TAU, shadow, shade, actor } from './paint.js';
 import { drawHideout, drawQuestSpot, hideoutLights } from './hideout.js';
 
 const cache = new Map(); // region id → { decals, pines, lakeShapes }
@@ -524,6 +524,107 @@ function signpost(g, x, y, text, dir) {
   g.textBaseline = 'alphabetic';
 }
 
+// the way out of a region: a warm pool of light where the road meets the edge (dir -1 west, 1 east)
+function exitGlow(g, x, y, t, dir) {
+  const k = 1 + Math.sin(t * 2.2) * 0.06, rx = 70 * k, ry = FIELD.exitHalf * k;
+  const gr = g.createRadialGradient(x, y, 4, x, y, ry);
+  gr.addColorStop(0, 'rgba(255,215,140,.42)'); gr.addColorStop(0.6, 'rgba(255,170,80,.16)'); gr.addColorStop(1, 'rgba(255,150,60,0)');
+  g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU); g.fill();
+  g.lineWidth = 2.5; g.strokeStyle = `rgba(255,220,150,${0.45 + Math.sin(t * 2.2) * 0.15})`;
+  g.beginPath(); g.ellipse(x, y, rx * 0.75, ry * 0.75, 0, dir < 0 ? -Math.PI / 2 : Math.PI / 2, dir < 0 ? Math.PI / 2 : Math.PI * 1.5, true); g.stroke();
+}
+
+// the town gate where the road leaves a region (2D): posts and towers drawn upright one by one
+// in y order with the rest; the lintel and banner go with the lower tower
+const GATE2D = {
+  forest: { wood: '#5a3e24', stone: '#4a4038', cap: '#2f4a2a' }, ice: { wood: '#5a4a3e', stone: '#6a7686', cap: '#e8f2ff' },
+  desert: { wood: '#7a5634', stone: '#a8824e', cap: '#c2843a' }, volcano: { wood: '#2a2020', stone: '#3a3030', cap: '#5a2a1a' },
+  eclipse: { wood: '#2a2236', stone: '#3a3048', cap: '#6a4a9a' },
+};
+const gateParts = new WeakMap();
+function townGateParts(map) {
+  let list = gateParts.get(map);
+  if (list) return list;
+  list = [];
+  for (const [x, y, on] of [[FIELD.exitZone - 30, map.start.y, true], [map.w - FIELD.exitZone + 30, map.end.y, !!map.region.to]]) {
+    if (!on) continue;
+    for (const s of [-1, 1]) {
+      for (let d = FIELD.exitHalf + 54; d <= FIELD.gateWall; d += 20) list.push({ townGate: 'post', x, y: y + s * d });
+      list.push({ townGate: s < 0 ? 'tower' : 'tower2', x, y: y + s * (FIELD.exitHalf + 22), top: y - FIELD.exitHalf - 22 });
+    }
+  }
+  gateParts.set(map, list);
+  return list;
+}
+// two warriors standing guard in front of each town gate's towers, facing into the region
+const GUARD_LOOK = { hair: 1, hairColor: 2, gear: { weapon: { tier: 3, rarity: 2 }, helm: { tier: 3, rarity: 2 }, armor: { tier: 3, rarity: 2 }, boots: { tier: 2, rarity: 1 } } };
+const guardsOf = new WeakMap();
+export function gateGuards(map) {
+  let list = guardsOf.get(map);
+  if (list) return list;
+  list = [];
+  for (const [x, y, dir, on] of [[FIELD.exitZone + 34, map.start.y, 1, true], [map.w - FIELD.exitZone - 34, map.end.y, -1, !!map.region.to]]) {
+    if (on) for (const s of [-1, 1]) list.push({ guard: true, x, y: y + s * (FIELD.exitHalf + 26), facing: dir, look: GUARD_LOOK, pose: { t: 0, moving: 0, walk: 0 } });
+  }
+  guardsOf.set(map, list);
+  return list;
+}
+export function drawGuard(g, gd, t) {
+  gd.pose.t = t + gd.y * 0.01;
+  actor(g, gd.x, gd.y, 'warrior', gd.look, gd.pose, gd.facing);
+}
+
+function townGatePart(g, p, biome, t) {
+  const st = GATE2D[biome] || GATE2D.forest, { x, y } = p;
+  if (p.townGate === 'post') {
+    g.beginPath(); g.moveTo(x - 7, y); g.lineTo(x - 7, y - 56); g.lineTo(x, y - 70); g.lineTo(x + 7, y - 56); g.lineTo(x + 7, y); g.closePath();
+    g.fillStyle = st.wood; g.fill(); g.lineWidth = 1.5; g.strokeStyle = OUT; g.stroke();
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + 2, y - 56, 5, 56);
+    return;
+  }
+  shadow(g, x, y + 4, 30, 9);
+  g.fillStyle = st.stone; g.fillRect(x - 20, y - 104, 40, 104); g.lineWidth = 2; g.strokeStyle = OUT; g.strokeRect(x - 20, y - 104, 40, 104);
+  g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x + 7, y - 104, 13, 104);
+  g.fillStyle = st.cap; g.fillRect(x - 24, y - 111, 48, 7); g.strokeRect(x - 24, y - 111, 48, 7);
+  for (const ox of [-19, -4, 11]) { g.fillStyle = st.stone; g.fillRect(x + ox, y - 122, 8, 11); g.strokeRect(x + ox, y - 122, 8, 11); }
+  // the lantern on the inner face
+  const fl = 0.85 + Math.sin(t * 9 + y) * 0.1;
+  g.fillStyle = `rgba(255,200,120,${fl})`; g.fillRect(x - 5, y - 70, 10, 12); g.strokeRect(x - 5, y - 70, 10, 12);
+  if (p.townGate !== 'tower2') return;
+  // the beam from the upper tower to this one, with the banner hanging in the middle
+  const y0 = p.top;
+  g.fillStyle = st.wood; g.fillRect(x - 6, y0 - 101, 12, y - y0); g.strokeRect(x - 6, y0 - 101, 12, y - y0);
+  const my = (y0 + y) / 2, sway = Math.sin(t * 1.6) * 2;
+  g.beginPath(); g.moveTo(x - 10, my - 96); g.lineTo(x + 10, my - 96); g.lineTo(x + 10 + sway, my - 60); g.lineTo(x + sway, my - 67); g.lineTo(x - 10 + sway, my - 60); g.closePath();
+  g.fillStyle = '#7a1e1e'; g.fill(); g.strokeStyle = OUT; g.stroke();
+  g.fillStyle = '#d8a84a'; g.fillRect(x - 4 + sway / 2, my - 88, 8, 9);
+}
+
+// fog past the west and east edges: a thick band thinning to nothing just inside, with drifting puffs
+const FOG2D = { forest: '106,122,112', ice: '184,200,220', desert: '154,130,104', volcano: '90,64,56', eclipse: '106,74,154' };
+function edgeFog(g, map, rect, biome, t) {
+  const rgb = FOG2D[biome] || FOG2D.forest, depth = 420, inside = 70;
+  for (const dir of [-1, 1]) {
+    const ex = dir < 0 ? 0 : map.w, far = ex + dir * depth, near = ex - dir * inside;
+    const x0 = Math.min(far, near), x1 = Math.max(far, near);
+    if (x1 < rect.x0 || x0 > rect.x1) continue;
+    const gr = g.createLinearGradient(far, 0, near, 0);
+    gr.addColorStop(0, `rgba(${rgb},.85)`); gr.addColorStop(0.6, `rgba(${rgb},.35)`); gr.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = gr; g.fillRect(x0, rect.y0, x1 - x0, rect.y1 - rect.y0);
+    const step = 90, k0 = Math.floor(rect.y0 / step) - 1, k1 = Math.ceil(rect.y1 / step) + 1;
+    for (let k = k0; k <= k1; k++) {
+      for (let j = 0; j < 3; j++) {
+        const h = Math.sin(k * 12.9898 + j * 78.233 + dir) * 43758.5453, r = h - Math.floor(h);
+        const px = ex + dir * (j * 120 - 40 + r * 60), py = k * step + Math.sin(t * 0.3 + k + j * 2) * 30, rad = 90 + r * 70;
+        const a = (0.22 - j * 0.04) * (0.8 + Math.sin(t * 0.5 + k * 1.3 + j) * 0.2);
+        const pg = g.createRadialGradient(px, py, 0, px, py, rad);
+        pg.addColorStop(0, `rgba(${rgb},${a.toFixed(3)})`); pg.addColorStop(1, `rgba(${rgb},0)`);
+        g.fillStyle = pg; g.fillRect(px - rad, py - rad, rad * 2, rad * 2);
+      }
+    }
+  }
+}
+
 // dungeon gates (spec §25.5): a ruined stone arch around a swirling portal
 export const gateGlow = (g) => dungeonById(g.dungeon).theme.glow || ['200,130,255', '120,200,255'];
 
@@ -602,10 +703,12 @@ export function drawField(g, game, ground, t, rect) {
   drawRivers(g, map, rect, theme, biome, t, d.bridges);
   for (const l of d.lakeShapes) if (vis(l.x, l.y, l.r + 40)) lake(g, l, theme, biome, t);
   for (const list of buckets(d.decals, rect, 10)) for (const dc of list) if (vis(dc.x, dc.y, 10)) decal(g, dc, biome, t);
-  // signposts at the exits
+  // signposts and the light at the exits
   const from = TOWNS[region.from], to = TOWNS[region.to];
-  if (vis(map.start.x, map.start.y, 200)) signpost(g, FIELD.exitZone + 40, map.start.y - 70, tf('Ke {name}', { name: from.name }), -1);
-  if (to && vis(map.end.x, map.end.y, 200)) signpost(g, map.w - FIELD.exitZone - 40, map.end.y - 70, tf('Ke {name}', { name: to.name }), 1);
+  if (vis(map.start.x, map.start.y, 200)) exitGlow(g, FIELD.exitZone, map.start.y, t, -1);
+  if (to && vis(map.end.x, map.end.y, 200)) exitGlow(g, map.w - FIELD.exitZone, map.end.y, t, 1);
+  if (vis(map.start.x, map.start.y, 200)) signpost(g, FIELD.exitZone + 110, map.start.y - FIELD.exitHalf - 40, tf('Ke {name}', { name: from.name }), -1);
+  if (to && vis(map.end.x, map.end.y, 200)) signpost(g, map.w - FIELD.exitZone - 110, map.end.y - FIELD.exitHalf - 40, tf('Ke {name}', { name: to.name }), 1);
   // solids & gates in y order (trees overlap what stands behind them)
   spires.length = 0; // eclipse crystals seen this frame (their glow is added in fieldDecorLights)
   if (!stamp || stamp.length < map.solids.length) stamp = new Uint32Array(Math.max(map.solids.length, 1024));
@@ -626,12 +729,16 @@ export function drawField(g, game, ground, t, rect) {
     }
   }
   for (const gt of game.gates || []) if (vis(gt.x, gt.y, 160)) list.push({ gate: gt, y: gt.y });
+  for (const p of townGateParts(map)) if (vis(p.x, p.y, 200)) list.push(p);
+  for (const gd of gateGuards(map)) if (vis(gd.x, gd.y, 120)) list.push(gd);
   for (const tr of game.treasures || []) if (vis(tr.x, tr.y, 140)) list.push({ chest: tr, y: tr.y });
   for (const h of game.hidden || []) if (vis(h.x, h.y - 60, 200)) list.push({ home: h, y: h.y });
   for (const sp of game.questSpots || []) if (vis(sp.x, sp.y, 120)) list.push({ spot: sp, y: sp.y });
   list.sort((a, b) => a.y - b.y);
   for (const s of list) {
     if (s.gate) gate(g, s.gate, t, game.nearGate === s.gate);
+    else if (s.townGate) townGatePart(g, s, biome, t);
+    else if (s.guard) drawGuard(g, s, t);
     else if (s.chest) treasureChest(g, s.chest, t);
     else if (s.home) drawHideout(g, s.home, t, biome, game.nearHidden === s.home);
     else if (s.spot) drawQuestSpot(g, s.spot, t);
@@ -656,6 +763,7 @@ export function drawField(g, game, ground, t, rect) {
     gr.addColorStop(0, `rgba(${edgeRgb},.85)`); gr.addColorStop(1, `rgba(${edgeRgb},0)`);
     g.fillStyle = gr; g.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
   }
+  edgeFog(g, map, rect, biome, t);
   if (biome === 'eclipse') eclipseMotes(g, rect, t);
 }
 
@@ -679,8 +787,10 @@ export function fieldDecorLights(game, t, out, rect) {
   const map = game.fmap, biome = map.region.biome;
   const vis = (x, y, m) => !rect || (x > rect.x0 - m && x < rect.x1 + m && y > rect.y0 - m && y < rect.y1 + m);
   for (const ru of map.ruins) if (vis(ru.x, ru.y, ru.r + 120)) out.push({ x: ru.x, y: ru.y, r: ru.r + 80, rgb: biome === 'volcano' ? '255,140,60' : '150,140,255', tint: 0.035 + Math.sin(t * 1.3 + ru.x) * 0.01 });
-  if (vis(map.start.x, map.start.y, 200)) out.push({ x: FIELD.exitZone + 40, y: map.start.y - 90, r: 120, rgb: '255,190,110', tint: 0.08 });
-  if (map.region.to && vis(map.end.x, map.end.y, 200)) out.push({ x: map.w - FIELD.exitZone - 40, y: map.end.y - 90, r: 120, rgb: '255,190,110', tint: 0.08 });
+  for (const [x, y, on] of [[FIELD.exitZone, map.start.y, true], [map.w - FIELD.exitZone, map.end.y, !!map.region.to]]) {
+    if (!on || !vis(x, y, 300)) continue; // the gate's two lanterns
+    for (const s of [-1, 1]) out.push({ x, y: y + s * (FIELD.exitHalf + 4) - 64, r: 150 + Math.sin(t * 9 + s) * 8, rgb: '255,170,80', tint: 0.12 });
+  }
   for (const gt of game.gates || []) {
     if (!vis(gt.x, gt.y, 260)) continue;
     const [, c1] = gateGlow(gt);

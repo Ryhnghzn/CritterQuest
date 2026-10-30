@@ -12,8 +12,8 @@ import { S, sharp, SHARP } from './stage.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
 import { buildProps, indexProps, gatherNear, inCutaway, bridgeSpots, tilesAround } from './fieldprops.js';
-import { propGeometry, vtoon, LIFT, gateMesh, chestMesh, homeMesh, bridgesMesh, riverRibbon, signMesh, additive, glowTex } from './fieldkit.js';
-import { groundTile, drawField, fieldDecorLights, targetArrow, gateGlow } from '../render/field.js';
+import { propGeometry, vtoon, LIFT, gateMesh, chestMesh, homeMesh, bridgesMesh, riverRibbon, signMesh, additive, glowTex, townGateMesh, fogBank } from './fieldkit.js';
+import { groundTile, drawField, fieldDecorLights, targetArrow, gateGlow, gateGuards, drawGuard } from '../render/field.js';
 import { drawQuestSpot } from '../render/hideout.js';
 import { actor, tag } from '../render/paint.js';
 import { t as tf } from '../i18n.js';
@@ -31,6 +31,9 @@ const CAP = 700;           // instances per kind at most
 const EDGE = { forest: '#070b08', ice: '#080c12', desert: '#120c08', volcano: '#0a0605', eclipse: '#06030c' };
 const FOG_DAY = { forest: 0x24342c, ice: 0x4a5a72, desert: 0x5a3e2c, volcano: 0x34160e, eclipse: 0x1a0c2e };
 const FOG_NIGHT = 0x06070f;
+// the fog bank past the edges (by day; it sinks towards FOG_BANK_NIGHT at night)
+const FOG_BANK = { forest: 0xa8b8ae, ice: 0xdde8f4, desert: 0xc8b090, volcano: 0x7a5a50, eclipse: 0x8a6ac0 };
+const FOG_BANK_NIGHT = 0x1a1e2a;
 const LIGHT_K = { ice: 0.5, desert: 0.9 }; // pale snow would glare (and bloom) under the forest's light
 // how far (radius units) a prop sinks when it stands between the hero and the camera
 const SINK = { rock: 0.6, icerock: 0.9, floatrock: 1.4, crystal: 1.3, cactus: 1.7 };
@@ -145,8 +148,21 @@ export class Field25 {
       }
     }
     const from = TOWNS[region.from], to = region.to && TOWNS[region.to];
-    const s1 = signMesh(tf('Ke {name}', { name: from.name }), -1); s1.position.set((FIELD.exitZone + 40) * S, 0, (map.start.y - 70) * S); G.add(s1);
-    if (to) { const s2 = signMesh(tf('Ke {name}', { name: to.name }), 1); s2.position.set((map.w - FIELD.exitZone - 40) * S, 0, (map.end.y - 70) * S); G.add(s2); }
+    const s1 = signMesh(tf('Ke {name}', { name: from.name }), -1); s1.position.set((FIELD.exitZone + 110) * S, 0, (map.start.y - FIELD.exitHalf - 40) * S); G.add(s1);
+    if (to) { const s2 = signMesh(tf('Ke {name}', { name: to.name }), 1); s2.position.set((map.w - FIELD.exitZone - 110) * S, 0, (map.end.y - FIELD.exitHalf - 40) * S); G.add(s2); }
+    // the way out: a town gate where the road meets the edge, a warm light in it, fog past the edge
+    this.exitGlows = []; this.gateLamps = []; this.fogLayers = [];
+    for (const [x, y, dir, gate] of [[FIELD.exitZone, map.start.y, -1, true], [map.w - FIELD.exitZone, map.end.y, 1, !!to]]) {
+      const fog = fogBank(dir < 0 ? 0 : map.w, map.h, dir, new THREE.Color(FOG_BANK[biome] || FOG_BANK.forest));
+      G.add(fog); this.fogLayers.push(...fog.userData.layers);
+      if (!gate) continue;
+      const gm = townGateMesh(biome, FIELD.exitHalf, FIELD.gateWall);
+      gm.position.set((dir < 0 ? FIELD.exitZone - 30 : map.w - FIELD.exitZone + 30) * S, 0, y * S);
+      if (dir > 0) gm.rotation.y = Math.PI;
+      G.add(gm); this.gateLamps.push(...gm.userData.lamps);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(140 * S, FIELD.exitHalf * 2 * S), additive(new THREE.Color(0xffb860).multiplyScalar(1.4), 0.5, glowTex()));
+      m.rotation.x = -Math.PI / 2; m.position.set(x * S, 0.06, y * S); G.add(m); this.exitGlows.push(m);
+    }
     // things that belong to this character / visit: rebuilt when their lists change
     this.gateGroup = new THREE.Group(); G.add(this.gateGroup); this.gatesRef = null;
     this.chestGroup = new THREE.Group(); G.add(this.chestGroup); this.chestRef = null;
@@ -183,6 +199,7 @@ export class Field25 {
       this.cards.push(this.card({ home: h, x: px, y: py, look: { ...h.look, outfit: h.outfit }, who: { ...h, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 }));
     }
     for (const sp of game.questSpots || []) this.cards.push(this.card({ spot: sp, x: sp.x, y: sp.y, w: 150, top: 100, bottom: 40 }));
+    for (const gd of gateGuards(game.fmap)) this.cards.push(this.card({ guard: gd, x: gd.x, y: gd.y, w: 110, top: 110, bottom: 20 }));
   }
   card(o) {
     const c = document.createElement('canvas'), tex = canvasTexture(c);
@@ -198,6 +215,7 @@ export class Field25 {
     g.setTransform(k, 0, 0, k, (cd.w / 2 - cd.x) * k, (cd.top - cd.y) * k);
     g.lineJoin = 'round';
     if (cd.spot) drawQuestSpot(g, cd.spot, t);
+    else if (cd.guard) drawGuard(g, cd.guard, t);
     else {
       const h = cd.home;
       cd.pose.t = t + h.x;
@@ -205,7 +223,7 @@ export class Field25 {
       tag(g, cd.who, cd.x, cd.y, t, game.nearHidden === h, h.mark);
     }
     cd.tex.needsUpdate = true;
-    const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home.scale || 1);
+    const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home?.scale || 1);
     cd.mesh.position.set(cd.x * S, (feet - (cd.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
     cd.mesh.rotation.y = this.stage.yaw;
   }
@@ -365,6 +383,7 @@ export class Field25 {
       this.sun.intensity = (2.4 - 1.9 * n) * lk;
       this.groundGlow((0.55 - 0.35 * n) * lk);
       fog.color.set(FOG_DAY[this.biome] || FOG_DAY.forest).lerp(_c2.set(FOG_NIGHT), n);
+      for (const m of this.fogLayers || []) m.material.color.set(FOG_BANK[this.biome] || FOG_BANK.forest).lerp(_c2.set(FOG_BANK_NIGHT), n * 0.8);
     }
     sc.background.copy(fog.color);
     const z = this.stage.zoom;
@@ -398,6 +417,9 @@ export class Field25 {
   animate(game, t, lite) {
     if (this.river) this.river.material.opacity = this.biome === 'volcano' ? 0.42 + Math.sin(t * 1.3) * 0.08 : this.river.material.opacity;
     for (const m of this.lakeGlows) if (this.biome === 'volcano' || this.biome === 'eclipse') m.scale.setScalar(1 + Math.sin(t * 1.1 + m.userData.ph) * 0.04);
+    for (const m of this.fogLayers) m.userData.map.offset.y = t * m.userData.speed;
+    for (const m of this.gateLamps) m.material.opacity = 0.5 + Math.sin(t * 9 + m.id) * 0.06 + Math.sin(t * 23) * 0.04;
+    for (const m of this.exitGlows) { const k = 1 + Math.sin(t * 2.2) * 0.06; m.scale.set(k, k, 1); m.material.opacity = 0.42 + Math.sin(t * 2.2) * 0.1; }
     for (const grp of this.gateGroup.children) {
       const { portal, core } = grp.userData;
       portal.rotation.z = -t * 1.6;

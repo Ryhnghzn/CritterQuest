@@ -83,6 +83,22 @@ describe('mode wilayah', () => {
     expect(h.state).toBe(ST.OVER);
     expect(h.exitTo).toBe('east');
   });
+  it('tepi di luar ujung jalan adalah dinding, bukan jalan ke kota', () => {
+    const g = new Game();
+    g.explore(setup());
+    g.intent = idle; g.packT = 99;
+    g.px = FIELD.exitZone - 5; g.py = g.fmap.start.y + FIELD.exitHalf + 200;
+    g.step(1 / 60);
+    expect(g.state).toBe(ST.PLAY);
+    expect(g.px).toBeGreaterThanOrEqual(FIELD.exitZone);
+    const h = new Game();
+    h.explore({ ...setup(), at: 'east' });
+    h.intent = idle; h.packT = 99;
+    h.px = forest.w - FIELD.exitZone + 5; h.py = h.fmap.end.y - FIELD.exitHalf - 200;
+    h.step(1 / 60);
+    expect(h.state).toBe(ST.PLAY);
+    expect(h.px).toBeLessThanOrEqual(forest.w - FIELD.exitZone);
+  });
   it('masuk dari timur tidak langsung keluar lagi', () => {
     const g = new Game();
     g.explore({ ...setup(), at: 'east' });
