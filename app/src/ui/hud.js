@@ -29,14 +29,28 @@ export function updateHUD(game) {
   $('enfill').style.transform = `scaleX(${game.energy / ENERGY.max})`;
   $('entext').textContent = t('Energi {n}', { n: Math.floor(game.energy) });
   $('enbar').classList.toggle('empty', game.noEnergyT > 0);
-  const tc = CLASSES[game.classId].trait, tb = $('trbar');
-  tb.classList.toggle('hidden', !tc);
+  const tc = CLASSES[game.classId].trait, tb = $('trbar'), tp = $('trpips');
+  const combo = tc?.id === 'combo';
+  tb.classList.toggle('hidden', !tc || combo);
+  tp.classList.toggle('hidden', !combo);
   if (tc) { // class signature bar (spec §31)
-    const on = game.trait.on > 0;
-    tb.style.setProperty('--c', tc.color);
-    $('trfill').style.transform = `scaleX(${traitLevel(game)})`;
-    $('trtext').textContent = on ? t('MENGAMUK {s}s', { s: Math.ceil(game.trait.on) }) : t('Murka {n}', { n: Math.floor(game.trait.v) });
-    tb.classList.toggle('hot', on);
+    const tr_ = game.trait, v = Math.floor(tr_.v);
+    if (combo) {
+      tp.style.setProperty('--c', tc.color);
+      tp.title = tr('Kombo');
+      const pips = tp.children;
+      for (let i = 0; i < pips.length; i++) pips[i].classList.toggle('on', i < v);
+    } else {
+      const hot = tc.id === 'heat' ? tr_.lock > 0 : tr_.on > 0;
+      const text = tc.id === 'heat' ? (tr_.lock > 0 ? t('Kepanasan {s}s', { s: tr_.lock.toFixed(1) }) : t('Panas {n}', { n: v }))
+        : tc.id === 'focus' ? tr('Bidik')
+        : tr_.on > 0 ? t('MENGAMUK {s}s', { s: Math.ceil(tr_.on) }) : t('Murka {n}', { n: v });
+      tb.style.setProperty('--c', tc.color);
+      $('trfill').style.transform = `scaleX(${traitLevel(game)})`;
+      $('trtext').textContent = text;
+      tb.classList.toggle('hot', hot);
+      tb.classList.toggle('ready', tc.id === 'focus' && tr_.focus);
+    }
   }
   const chips = [];
   if (game.shield > 0) chips.push(['shield', t('Perisai {n}', { n: Math.ceil(game.shield) })]);
@@ -65,6 +79,7 @@ export function updateActions(game) {
     const b = $(`act-s${i + 1}`), sk = skills[i];
     b.querySelector('.cost').textContent = sk ? sk.cost : '';
     b.classList.toggle('noen', !!sk && game.energy < sk.cost);
+    b.classList.toggle('locked', !!sk && !!game.trait && game.trait.lock > 0); // Kepanasan
     const left = ring(b, game.skillCd[i], game.skillCdMax[i]);
     b.querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
   }

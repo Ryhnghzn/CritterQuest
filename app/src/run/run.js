@@ -58,6 +58,7 @@ export class Game {
     const run = this;
     this.hitCtx = {
       get px() { return run.px; }, get py() { return run.py; },
+      get aimPX() { return run.aimPX; }, get aimPY() { return run.aimPY; }, // where an orbiting blade is thrown
       onHit: (h, e) => this.damageEnemy(h, e),
       add: (h) => this.hits.push(h),
     };
@@ -104,7 +105,7 @@ export class Game {
     this.ult = ult; this.ultCharge = 0;
     this.skillBuff = null; this.skillBuffT = 0; // atk / atkSpd / crit / critDmg from a buff skill
     this.buffT = 0; this.dmgTakenMul = 1;
-    this.dashSpeed = 0;
+    this.dashSpeed = 0; this.skillDash = false;
     this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
     this.time = 0; this.kills = 0;
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
@@ -256,7 +257,7 @@ export class Game {
     stepAttack(this, this.intent, dt);
     stepSkills(this, this.intent, dt);
     const mv = this.intent.move;
-    traitStep(this, dt, mv.x !== 0 || mv.y !== 0, !!(this.intent.attack || this.intent.auto));
+    traitStep(this, dt, mv.x !== 0 || mv.y !== 0 || (this.dodgeT > 0 && !this.skillDash), !!(this.intent.attack || this.intent.auto));
     this.stepPotion(dt);
     this.stepEffects(dt);
     for (const h of this.hits) stepHitFx(this, h, dt);
@@ -351,12 +352,13 @@ export class Game {
   damageEnemy(h, e) {
     if (e.hidden) return; // a sand worm under the sand
     const s = this.stats;
-    const crit = rand() * 100 < s.crit;
+    const crit = h.crit || rand() * 100 < s.crit; // h.crit: Bidik's focus shot never rolls
     const fx = this.fx;
-    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) : 1);
+    let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
+    if (h.execute && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) e.hp = 0; // Kombo at max (spec §31.5)
     const basic = BASIC_FX.has(h.fx) && !h.skill;
     const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
     traitDealt(this);

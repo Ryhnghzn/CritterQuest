@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initTrait, traitDealt, traitStep, traitBasicHit, traitHurt, traitCast, traitMods, traitLevel } from './traits.js';
+import { initTrait, traitDealt, traitStep, traitBasicHit, traitHurt, traitCast, traitMods, traitLevel, traitFocusShot, traitCastExecute } from './traits.js';
 import { CLASSES } from '../data/classes.js';
 
 function mockRun(classId = 'warrior') {
@@ -140,7 +140,8 @@ describe('Murka (warrior)', () => {
 
 describe('kelas tanpa trait', () => {
   it('berperilaku seperti biasa', () => {
-    const cls = Object.keys(CLASSES).find((id) => !CLASSES[id].trait);
+    const cls = 'traitless'; // every real class has a trait now: use a stand-in
+    CLASSES[cls] = { attack: { r: 40, arc: 90 } };
     const r = mockRun(cls);
     traitBasicHit(r); traitHurt(r, 50); traitStep(r, 5, true, true);
     expect(r.trait.v).toBe(0);
@@ -148,5 +149,146 @@ describe('kelas tanpa trait', () => {
     expect(traitMods(r)).toEqual({ arcR: a.r, arcDeg: a.arc, lifesteal: 0, dmgTaken: 1, skillDmg: 0, locked: false, slow: 0, slowImmune: false });
     expect(traitCast(r, { id: 'x' })).toBe(1);
     expect(traitLevel(r)).toBe(0);
+    delete CLASSES[cls];
+  });
+});
+
+const skillOf = (cls, id) => CLASSES[cls].skills.find((k) => k.id === id);
+
+describe('Panas (mage)', () => {
+  it('Meteor (biaya 55) menambah 33', () => {
+    const r = mockRun('mage');
+    expect(traitCast(r, skillOf('mage', 'meteor'))).toBe(1);
+    expect(r.trait.v).toBeCloseTo(33);
+  });
+
+  it('bonus damage skill naik bertahap sampai 80 lalu tetap', () => {
+    const r = mockRun('mage');
+    expect(traitMods(r).skillDmg).toBe(0);
+    r.trait.v = 40;
+    expect(traitMods(r).skillDmg).toBeCloseTo(0.15);
+    r.trait.v = 90;
+    expect(traitMods(r).skillDmg).toBeCloseTo(0.3);
+  });
+
+  it('mencapai 100 memicu Kepanasan: kunci 2,5 dtk, lambat 30%, Panas 0', () => {
+    const r = mockRun('mage');
+    r.trait.v = 80;
+    traitCast(r, skillOf('mage', 'meteor'));
+    expect(r.trait.v).toBe(0);
+    expect(r.trait.lock).toBe(2.5);
+    const m = traitMods(r);
+    expect([m.locked, m.slow, m.skillDmg]).toEqual([true, 0.3, 0]);
+    traitStep(r, 2, false, false);
+    expect(traitMods(r).locked).toBe(true);
+    traitStep(r, 0.6, false, false);
+    expect(r.trait.lock).toBe(0);
+    expect(traitMods(r).locked).toBe(false);
+    expect(traitMods(r).slow).toBe(0);
+    expect(r.banners).toEqual(['KEPANASAN!']);
+  });
+
+  it('menyusut 15 per detik', () => {
+    const r = mockRun('mage');
+    r.trait.v = 50;
+    traitStep(r, 1, false, false);
+    expect(r.trait.v).toBeCloseTo(35);
+    traitStep(r, 10, false, false);
+    expect(r.trait.v).toBe(0);
+  });
+
+  it('serangan dasar tidak menambah Panas', () => {
+    const r = mockRun('mage');
+    traitBasicHit(r);
+    expect(r.trait.v).toBe(0);
+  });
+});
+
+describe('Bidik (archer)', () => {
+  it('mengisi 60/dtk saat diam sambil menyerang', () => {
+    const r = mockRun('archer');
+    traitStep(r, 1, false, true);
+    expect(r.trait.v).toBe(60);
+    traitStep(r, 1, false, false); // not attacking: holds
+    expect(r.trait.v).toBe(60);
+  });
+
+  it('bergerak mengosongkan', () => {
+    const r = mockRun('archer');
+    r.trait.v = 70;
+    traitStep(r, 0.1, true, true);
+    expect(r.trait.v).toBe(0);
+  });
+
+  it('penuh menyalakan focus; traitFocusShot sekali lalu kosong', () => {
+    const r = mockRun('archer');
+    expect(traitFocusShot(r)).toBe(false);
+    traitStep(r, 2, false, true);
+    expect(r.trait.v).toBe(100);
+    expect(r.trait.focus).toBe(true);
+    expect(traitLevel(r)).toBe(1);
+    expect(traitFocusShot(r)).toBe(true);
+    expect(r.trait.v).toBe(0);
+    expect(traitFocusShot(r)).toBe(false);
+  });
+
+  it('Lompatan Mundur langsung memenuhi Bidik', () => {
+    const r = mockRun('archer');
+    expect(traitCast(r, skillOf('archer', 'leap'))).toBe(1);
+    expect(r.trait.v).toBe(100);
+    expect(r.trait.focus).toBe(true);
+    traitCast(r, skillOf('archer', 'rain'));
+    expect(r.trait.v).toBe(100);
+  });
+});
+
+describe('Kombo (assassin)', () => {
+  it('3 tusukan = 1 titik, maksimal 5', () => {
+    const r = mockRun('assassin');
+    for (let i = 0; i < 9; i++) traitBasicHit(r);
+    expect(r.trait.v).toBe(3);
+    for (let i = 0; i < 30; i++) traitBasicHit(r);
+    expect(r.trait.v).toBe(5);
+  });
+
+  it('4 detik tanpa menyerang menghapus titik', () => {
+    const r = mockRun('assassin');
+    for (let i = 0; i < 6; i++) traitBasicHit(r);
+    traitStep(r, 3.9, false, false);
+    expect(r.trait.v).toBe(2);
+    traitStep(r, 0.2, false, false);
+    expect(r.trait.v).toBe(0);
+    expect(r.trait.hits).toBe(0);
+  });
+
+  it('menyerang menahan penghapusan', () => {
+    const r = mockRun('assassin');
+    for (let i = 0; i < 3; i++) traitBasicHit(r);
+    traitStep(r, 3.5, false, true);
+    traitDealt(r);
+    traitStep(r, 3.5, false, true);
+    expect(r.trait.v).toBe(1);
+  });
+
+  it('5 titik: skill x2,25, eksekusi 0,3, titik habis', () => {
+    const r = mockRun('assassin');
+    r.trait.v = 5;
+    expect(traitCast(r, skillOf('assassin', 'fan'))).toBe(2.25);
+    expect(r.trait.v).toBe(0);
+    expect(traitCastExecute()).toBe(0.3);
+  });
+
+  it('2 titik: x1,5 tanpa eksekusi; 0 titik: x1', () => {
+    const r = mockRun('assassin');
+    r.trait.v = 2;
+    expect(traitCast(r, skillOf('assassin', 'fan'))).toBe(1.5);
+    expect(traitCastExecute()).toBe(0);
+    expect(traitCast(r, skillOf('assassin', 'fan'))).toBe(1);
+  });
+
+  it('level = titik / 5', () => {
+    const r = mockRun('assassin');
+    r.trait.v = 3;
+    expect(traitLevel(r)).toBeCloseTo(0.6);
   });
 });

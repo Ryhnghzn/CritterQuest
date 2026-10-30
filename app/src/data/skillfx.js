@@ -7,14 +7,14 @@ export const SKILL_FX = {
   // warrior
   spin: { el: 'fire', n: 14, rate: 70 },
   shout: { el: 'holy', n: 24 },
-  quake: { el: 'fire', n: 22 },
+  quake: { el: 'fire', n: 22, dust: 36 }, // dust: particles/s a waiting pillar rumbles with
   charge: { el: 'fire', n: 10, rate: 120 },
   axe: { el: 'steel', n: 8, rate: 50 },
   warcry: { el: 'blood', n: 26, rate: 18 },
   bladestorm: { el: 'fire', n: 30, rate: 140 },
   // archer
   rain: { el: 'holy', n: 10, rate: 26 },
-  pierce: { el: 'holy', n: 18, rate: 90 },
+  pierce: { el: 'holy', n: 18, rate: 90, charge: 70, patch: 16 }, // charge: wind-up particles/s; patch: embers/s per trail area
   volley: { el: 'holy', n: 14, rate: 24 },
   leap: { el: 'ice', n: 20, rate: 90 },
   trap: { el: 'steel', n: 14, rate: 22 },
@@ -22,15 +22,15 @@ export const SKILL_FX = {
   starfall: { el: 'holy', n: 30, rate: 30 },
   // mage
   nova: { el: 'ice', n: 30 },
-  chain: { el: 'lightning', n: 8 },
+  chain: { el: 'lightning', n: 8, charge: 30 }, // charge: sparks/s gathering over a target about to be struck
   meteor: { el: 'fire', n: 34 },
   blink: { el: 'lightning', n: 22, rate: 100 },
-  inferno: { el: 'fire', n: 40, rate: 90 },
+  inferno: { el: 'fire', n: 40, rate: 90, shardRate: 40, patch: 14 }, // shardRate: trail particles/s per shard; patch: embers/s per scorched-path area
   manashield: { el: 'ice', n: 20, rate: 6 },
   meteorstorm: { el: 'fire', n: 26, rate: 8 },
   // assassin
   shadow: { el: 'shadow', n: 14, rate: 120 },
-  fan: { el: 'shadow', n: 16, rate: 20 },
+  fan: { el: 'shadow', n: 16, rate: 20, charge: 14 }, // charge: wisps/s off a dagger floating in the ring
   poison: { el: 'poison', n: 18, rate: 30 },
   smoke: { el: 'shadow', n: 26 },
   shuriken: { el: 'steel', n: 8, rate: 40 },

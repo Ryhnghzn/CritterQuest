@@ -6,6 +6,7 @@ import { DODGE, AUTO_AIM_RANGE } from '../data/balance.js';
 import { confinePlayer } from './dungeon.js';
 import { confineFieldPlayer } from './field.js';
 import { sfx } from '../core/audio.js';
+import { traitMods } from './traits.js';
 
 const DODGE_SPEED = DODGE.distance / DODGE.duration;
 const AIM_AHEAD = 120; // skill target point when there is nothing to aim at
@@ -37,6 +38,7 @@ export function stepPlayer(run, intent, dt) {
     run.dodgeY = moving ? my / ml : run.aimY;
     run.dodgeT = DODGE.duration;
     run.dashSpeed = DODGE_SPEED;
+    run.skillDash = false; // a real dodge (clears Bidik), unlike a skill dash
     run.dodgeCd = DODGE.cooldown * run.dodgeCdMul;
     run.dodgeInv = DODGE.invuln;
     sfx.dodge();
@@ -49,7 +51,7 @@ export function stepPlayer(run, intent, dt) {
     run.py += run.dodgeY * run.dashSpeed * step;
     run.dodgeT -= dt;
   } else {
-    const spd = run.stats.moveSpd * (run.slowT > 0 ? 1 - run.slowK : 1); // frost slows (spec §25.4)
+    const spd = run.stats.moveSpd * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow); // frost slows (spec §25.4), Kepanasan too (§31.3)
     run.px += mx * spd * dt;
     run.py += my * spd * dt;
   }

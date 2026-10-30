@@ -222,13 +222,17 @@ describe('skill archer', () => {
     const area = g.hits.find((h) => h.fx === 'rain');
     expect(Math.hypot(area.x, area.y)).toBeCloseTo(SK('archer', 0).maxDist);
   });
-  it('Tembakan Tembus: menembus semua musuh di garis', () => {
+  it('Panah Naga: menembus semua musuh di garis (jejak terbakar menambah damage)', () => {
     const s = SK('archer', 1);
     const { g, e } = arena('archer', { x: 100 });
     const more = dummies(g, [[150, 0], [220, 0]]);
     cast(g, 2, { aimAt: { x: 500, y: 0 } });
     idle(g, 1);
-    for (const x of [e, ...more]) expect(1e6 - x.hp).toBeCloseTo(s.mult * 11);
+    // direct hit once (not twice) plus at most a few ticks of the burning trail under it
+    for (const x of [e, ...more]) {
+      expect(1e6 - x.hp).toBeGreaterThanOrEqual(s.mult * 11 - 1e-6);
+      expect(1e6 - x.hp).toBeLessThan(s.mult * 11 * 1.6);
+    }
   });
 });
 
@@ -239,7 +243,8 @@ describe('skill mage', () => {
     const [far] = dummies(g, [[s.r + 80, 0]]);
     e.speed = 40;
     cast(g, 1);
-    expect(dealt(e)).toBeCloseTo(s.mult * 16);
+    // the cast itself adds Panas (cost × 0.6), and that heat already boosts its own hits (spec §31.3)
+    expect(dealt(e)).toBeCloseTo(s.mult * 16 * (1 + 0.3 * (s.cost * 0.6) / 80), 1);
     expect(far.hp).toBe(1e6);
     idle(g, 0.2);
     const x = e.x;
@@ -248,14 +253,40 @@ describe('skill mage', () => {
     idle(g, 1);
     expect(e.x).not.toBe(x);
   });
-  it('Petir Berantai: melompat ke beberapa musuh', () => {
+  it('Badai Petir: sambaran berurutan pada musuh berbeda, tiap musuh kena sekali', () => {
     const s = SK('mage', 1);
     const { g, e } = arena('mage', { x: 100 });
-    const rest = dummies(g, Array.from({ length: s.count }, (_, i) => [100 + (i + 1) * 100, 0]));
+    // a 4×3 grid, 70 px apart (inside the room, and far enough that one strike never touches its neighbour)
+    const rest = dummies(g, Array.from({ length: s.count }, (_, i) => [100 + ((i + 1) % 4) * 70, Math.floor((i + 1) / 4) * 70]));
+    const all = [e, ...rest];
     cast(g, 2, { aimAt: { x: 100, y: 0 } });
-    const hitList = [e, ...rest].map((x) => 1e6 - x.hp);
-    expect(hitList.slice(0, s.count).every((d) => Math.abs(d - s.mult * 16) < 1e-6)).toBe(true);
-    expect(hitList[s.count]).toBe(0);
+    const strikes = g.hits.filter((h) => h.sid === 'chain');
+    expect(strikes.length).toBe(s.count);
+    expect(new Set(strikes.map((h) => h.target)).size).toBe(s.count);
+    expect(strikes[0].target).toBe(e);
+    strikes.forEach((h, i) => { expect(h.kind).toBe('area'); expect(h.skill).toBe(true); expect(h.delay).toBeGreaterThan(s.gap * i - 0.05); expect(h.delay).toBeLessThanOrEqual(s.gap * i + 1e-9); });
+    idle(g, 1.5, { aimAt: { x: 100, y: 0 } });
+    const hitList = all.map((x) => 1e6 - x.hp);
+    // the cast adds Panas, which lifts the damage a little (spec §31.3)
+    const struck = hitList.filter((d) => d > 0);
+    expect(struck.length).toBe(s.count);
+    expect(struck.every((d) => d >= s.mult * 16 - 1e-6 && d <= s.mult * 16 * 1.4)).toBe(true);
+  });
+  it('Badai Petir: sambaran jatuh satu per satu menurut waktu', () => {
+    const s = SK('mage', 1);
+    const { g, e } = arena('mage', { x: 100 });
+    const rest = dummies(g, [[200, 0], [300, 0], [400, 0]]);
+    cast(g, 2, { aimAt: { x: 100, y: 0 } });
+    expect(1e6 - e.hp).toBeGreaterThan(0);
+    expect(rest[2].hp).toBe(1e6);
+    idle(g, s.gap * 3 + 0.05, { aimAt: { x: 100, y: 0 } });
+    expect(rest[2].hp).toBeLessThan(1e6);
+  });
+  it('Badai Petir: musuh lebih sedikit dari count = sambaran sebanyak musuh', () => {
+    const { g } = arena('mage', { x: 100 });
+    dummies(g, [[200, 0]]);
+    cast(g, 2, { aimAt: { x: 100, y: 0 } });
+    expect(g.hits.filter((h) => h.sid === 'chain').length).toBe(2);
   });
 });
 
@@ -371,5 +402,209 @@ describe('4 slot skill & ultimate', () => {
     const e = g.spawnEnemy('slink'); e.x = 300; e.hp = 0;
     hold(g, DT, { attack: false });
     expect(g.ultCharge).toBe(0);
+  });
+});
+
+describe('skill lebay: Warrior & Archer (§31.7)', () => {
+  const mk = (classId, skills) => {
+    const g = new Game();
+    g.start({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats, crit: 0 }, skills });
+    g.spawnT = 1e9;
+    g.energy = 100;
+    return g;
+  };
+  const cast = (g, slot, aim = { x: 100, y: 0 }) => hold(g, DT, { attack: false, [`skill${slot}`]: true, aimAt: aim });
+
+  it('Retakan Bumi: 5 pilar berurutan sepanjang bidikan, dihitung saat cast', () => {
+    const g = mk('warrior', ['quake', null, null, null]);
+    cast(g, 1);
+    const pillars = g.hits.filter((h) => h.sid === 'quake');
+    expect(pillars.length).toBe(5);
+    pillars.sort((a, b) => a.x - b.x);
+    pillars.forEach((h, i) => {
+      expect(h.kind).toBe('area');
+      expect(h.x).toBeCloseTo(52 * (i + 1) + (g.px - 0), 0);
+      expect(h.y).toBeCloseTo(g.py, 0);
+      expect(h.r).toBe(45);
+      expect(h.skill).toBe(true);
+      expect(h.knock).toBe(160);
+      expect(h.freeze).toBe(0.3);
+      expect(h.delay).toBeGreaterThan(0.08 * i - 0.05);
+      expect(h.delay).toBeLessThanOrEqual(0.08 * i + 1e-9);
+    });
+    // walking away afterwards does not drag the pillars along
+    const x0 = pillars[4].x;
+    hold(g, 0.2, { attack: false, move: { x: -1, y: 0 }, aimAt: { x: 100, y: 0 } });
+    expect(pillars[4].x).toBe(x0);
+  });
+
+  it('Retakan Bumi: musuh di ujung kena belakangan daripada yang dekat', () => {
+    const g = mk('warrior', ['quake', null, null, null]);
+    const near = g.spawnEnemy('tank'), far = g.spawnEnemy('tank');
+    Object.assign(near, { x: 52, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+    Object.assign(far, { x: 260, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+    cast(g, 1, { x: 300, y: 0 });
+    hold(g, 0.1, { attack: false, aimAt: { x: 300, y: 0 } });
+    expect(near.hp).toBeLessThan(1e6);
+    expect(far.hp).toBe(1e6);
+    hold(g, 0.4, { attack: false, aimAt: { x: 300, y: 0 } });
+    expect(far.hp).toBeLessThan(1e6);
+  });
+
+  it('Kapak Bumerang: pergi-pulang, kena dua kali dan menyeret musuh', () => {
+    const g = mk('warrior', ['axe', null, null, null]);
+    const e = g.spawnEnemy('tank');
+    Object.assign(e, { x: 150, y: 0, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 });
+    cast(g, 1, { x: 300, y: 0 });
+    const axe = g.hits.find((h) => h.sid === 'axe');
+    expect(axe.boomerang).toBe(true);
+    expect(axe.pull).toBeGreaterThan(0);
+    expect(axe.skill).toBe(true);
+    hold(g, 2.5, { attack: false, aimAt: { x: 300, y: 0 } });
+    expect(g.hits.some((h) => h.sid === 'axe')).toBe(false); // caught
+    const per = 14 * SK('warrior', 4).mult; // atk × mult
+    expect(1e6 - e.hp).toBeCloseTo(per * 2, 0);
+  });
+
+  it('Panah Naga: tertunda 0,3 dtk lalu menabur jejak area yang membawa flag skill', () => {
+    const g = mk('archer', ['pierce', null, null, null]);
+    cast(g, 1);
+    const p = g.hits.find((h) => h.sid === 'pierce');
+    expect(p.delay).toBeGreaterThan(0.25);
+    const x0 = p.x;
+    hold(g, 0.1, { attack: false, aimAt: { x: 100, y: 0 } });
+    expect(p.x).toBe(x0);
+    hold(g, 0.5, { attack: false, aimAt: { x: 100, y: 0 } });
+    const trail = g.hits.filter((h) => h.part === 'trail');
+    expect(trail.length).toBeGreaterThan(0);
+    expect(trail.every((h) => h.skill && h.sid === 'pierce' && h.kind === 'area')).toBe(true);
+  });
+
+  it('Panah Pecah: 5 panah pecah menjadi 15 yang masih berstatus skill', () => {
+    const g = mk('archer', ['volley', null, null, null]);
+    cast(g, 1);
+    const arrows = g.hits.filter((h) => h.sid === 'volley');
+    expect(arrows.length).toBe(5);
+    expect(arrows.every((h) => h.split && h.skill)).toBe(true);
+    hold(g, 0.4, { attack: false, aimAt: { x: 100, y: 0 } });
+    const kids = g.hits.filter((h) => h.sid === 'volley');
+    expect(kids.length).toBe(15);
+    expect(kids.every((h) => h.skill && !h.split)).toBe(true);
+  });
+});
+
+describe('skill lebay: Mage & Assassin (§31.7)', () => {
+  const mk = (classId, skills) => {
+    const g = new Game();
+    g.start({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats, crit: 0 }, skills });
+    g.spawnT = 1e9;
+    g.energy = 100;
+    return g;
+  };
+  const still = (g, x, y = 0) => { const e = g.spawnEnemy('tank'); Object.assign(e, { x, y, hp: 1e6, maxHp: 1e6, speed: 0, dmg: 0 }); return e; };
+  const cast = (g, aim = { x: 100, y: 0 }, extra = {}) => hold(g, DT, { attack: false, skill1: true, aimAt: aim, ...extra });
+
+  it('Matahari Kecil: bola api lambat dengan jejak, meledak dan menebar 6 serpihan', () => {
+    const g = mk('mage', ['inferno', null, null, null]);
+    const near = still(g, 100), farOne = still(g, 230);
+    cast(g);
+    const ball = g.hits.find((h) => h.sid === 'inferno');
+    expect(ball.trail).toBeTruthy();
+    expect(ball.explode.shards.count).toBe(6);
+    expect(ball.speed).toBeLessThan(250);
+    let shards = [];
+    for (let i = 0; i < 120 && !shards.length; i++) { hold(g, DT, { attack: false, aimAt: { x: 100, y: 0 } }); shards = g.hits.filter((h) => h.part === 'shard'); }
+    expect(shards.length).toBe(6);
+    expect(shards.every((h) => h.skill && h.sid === 'inferno')).toBe(true);
+    expect(g.hits.some((h) => h.part === 'trail' && h.sid === 'inferno')).toBe(true);
+    idle(g, 1, { aimAt: { x: 100, y: 0 } });
+    expect(1e6 - farOne.hp).toBeGreaterThan(0); // shards carry the fire further out
+    // the struck enemy takes the blast (+ Panas) and nothing from the point-blank shards
+    expect(1e6 - near.hp).toBeGreaterThan(SK('mage', 4).mult * 16 - 1e-6);
+    expect(1e6 - near.hp).toBeLessThan(SK('mage', 4).mult * 16 * 1.5);
+  });
+
+  it('Lingkaran Belati: 11 belati melayang melingkar, lalu melesat melengkung', () => {
+    const g = mk('assassin', ['fan', null, null, null]);
+    cast(g, { x: 500, y: 0 });
+    const ds = g.hits.filter((h) => h.sid === 'fan');
+    const s = SK('assassin', 1);
+    expect(ds.length).toBe(s.count);
+    for (const d of ds) {
+      expect(Math.hypot(d.x - g.px, d.y - g.py)).toBeCloseTo(s.ring);
+      expect(d.delay).toBeGreaterThan(s.delay - 0.05);
+      expect(d.curve).toBe(s.curve);
+      expect(d.hover).toBe(s.ring);
+      expect(d.skill).toBe(true);
+    }
+    const dirs = ds.map((d) => Math.atan2(d.y - g.py, d.x - g.px)).sort((a, b) => a - b);
+    for (let i = 1; i < dirs.length; i++) expect(dirs[i] - dirs[i - 1]).toBeCloseTo((2 * Math.PI) / s.count, 3);
+    const d0 = ds[0], x0 = d0.x, a0 = d0.angle;
+    idle(g, 0.2, { aimAt: { x: 500, y: 0 } });
+    expect(d0.x).toBe(x0); // still floating
+    idle(g, 0.6, { aimAt: { x: 500, y: 0 } });
+    expect(Math.hypot(d0.x - g.px, d0.y - g.py)).toBeGreaterThan(s.ring + 50);
+    expect(Math.abs(d0.angle - a0)).toBeGreaterThan(0.5); // curved
+  });
+
+  it('Lingkaran Belati: belati ikut pemain selama melayang, melesat dari cincin di posisi saat itu', () => {
+    const g = mk('assassin', ['fan', null, null, null]);
+    cast(g, { x: 500, y: 0 });
+    const s = SK('assassin', 1);
+    const d0 = g.hits.find((h) => h.sid === 'fan');
+    hold(g, 0.2, { attack: false, move: { x: 1, y: 0 }, aimAt: { x: 500, y: 0 } });
+    expect(g.px).toBeGreaterThan(5);
+    expect(d0.delay).toBeGreaterThan(0);
+    expect(Math.hypot(d0.x - g.px, d0.y - g.py)).toBeCloseTo(s.ring);
+    hold(g, 0.1, { attack: false, move: { x: 0, y: 0 }, aimAt: { x: 500, y: 0 } });
+    // launched from the ring round where the player stood at launch time
+    const px = g.px;
+    hold(g, s.delay, { attack: false, move: { x: 0, y: 0 }, aimAt: { x: 500, y: 0 } });
+    expect(d0.delay).toBeLessThanOrEqual(0);
+    expect(Math.hypot(d0.x - px, d0.y - g.py)).toBeGreaterThan(s.ring);
+  });
+
+  it('Badai Petir: tiap sambaran hanya melukai sasarannya, walau musuh bergerombol', () => {
+    const s = SK('mage', 1);
+    const g = mk('mage', ['chain', null, null, null]);
+    const es = [[100, 0], [110, 20], [90, 20], [120, -10], [100, -25]].map(([x, y]) => still(g, x, y));
+    cast(g, { x: 100, y: 0 });
+    idle(g, 1.2);
+    const d = es.map((e) => 1e6 - e.hp);
+    expect(d.every((x) => x >= s.mult * g.stats.atk - 1e-6 && x <= s.mult * g.stats.atk * 1.4)).toBe(true); // one strike each, not five
+  });
+
+  it('Badai Petir: sasaran yang mati sebelum sambaran tidak melukai tetangga', () => {
+    const g = mk('mage', ['chain', null, null, null]);
+    const [a, b] = [still(g, 100, 0), still(g, 110, 10)];
+    cast(g, { x: 100, y: 0 });
+    b.hp = 0; // dies before its strike lands (second strike, delay 0.1)
+    const before = 1e6 - a.hp;
+    idle(g, 0.5);
+    expect(1e6 - a.hp).toBe(before);
+  });
+
+  it('Shuriken Raksasa: berputar di sekitar pemain, kena berulang, lalu dilempar ke bidikan', () => {
+    const s = SK('assassin', 4);
+    const g = mk('assassin', ['shuriken', null, null, null]);
+    g.trait.v = 5; // Kombo full: x2.25 and execute
+    const e = still(g, 70, 0), e2 = still(g, -70, 0);
+    cast(g, { x: 0, y: 400 });
+    const o = g.hits.find((h) => h.kind === 'orbit');
+    expect(o.sid).toBe('shuriken');
+    expect(o.skill && o.execute === 0.3).toBeTruthy();
+    expect(o.mult).toBeCloseTo(s.mult * 2.25);
+    let n = 0;
+    for (let t = 0; t < 2.9; t += DT) { hold(g, DT, { attack: false, aimAt: { x: 0, y: 400 } }); }
+    n = (1e6 - e.hp) / (16 * 0 + g.stats.atk * s.mult * 2.25);
+    expect(n).toBeGreaterThan(1.5);
+    expect(n).toBeLessThanOrEqual(s.duration / s.every + 1e-6);
+    expect(1e6 - e2.hp).toBeGreaterThan(0); // the blade came round to the other side too
+    idle(g, 0.4, { aimAt: { x: 0, y: 400 } });
+    const th = g.hits.find((h) => h.part === 'throw');
+    expect(th).toBeTruthy();
+    expect(th.skill && th.sid === 'shuriken' && th.execute === 0.3).toBeTruthy();
+    expect(th.mult).toBeCloseTo(s.throw.mult * 2.25);
+    expect(th.vy).toBeGreaterThan(Math.abs(th.vx));
   });
 });

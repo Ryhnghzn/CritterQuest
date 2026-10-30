@@ -56,13 +56,11 @@ export function castFx(run, s, from) {
       v.flash(P[1], 0.22, 0.15);
       run.addShake('medium');
       break;
-    case 'quake':
-      v.crack(at.x, at.y, { rays: 11, len: s.r * 1.1, color: '#ff9a3c', life: 1.6 });
-      v.ring(at.x, at.y, { r1: s.r * 1.2, life: 0.45, color: '#d8b48a', width: 8 });
-      v.burst('shards', at.x, at.y, ['#7a5a3a', '#a07850', '#5a4030'], { n, speed: 1.3 });
-      v.burst('smoke', at.x, at.y, DUST, { n: 12, speed: 2 });
-      v.burst('blast', at.x, at.y, P, { n: 12 });
-      run.addShake('heavy');
+    case 'quake': // the pillars add their own show when they erupt (pillarFx)
+      v.ring(x, y + 8, { r1: 38, life: 0.3, color: '#d8b48a', width: 6 });
+      v.burst('smoke', x + ca * 14, y + sa * 14 + 8, DUST, { n: 8, angle: a, spread: 0.6, speed: 1.6 });
+      v.burst('shards', x + ca * 14, y + sa * 14 + 8, ['#7a5a3a', '#a07850', '#5a4030'], { n: 6, angle: a, spread: 0.8 });
+      run.addShake('light');
       break;
     case 'charge':
       v.burst('smoke', x, y + 8, DUST, { n: 6 });
@@ -129,8 +127,11 @@ export function castFx(run, s, from) {
       v.burst('smoke', x, y, '#bfe8ff', { n: 8, speed: 2 });
       run.addShake('medium');
       break;
-    case 'chain':
+    case 'chain': // a dark storm cloud gathers over the player; every strike adds its own show (strikeFx)
       v.flash(P[2], 0.18, 0.1);
+      v.burst('smoke', x, y - 56, ['#262638', '#3a3a52', '#1c1c2a'], { n: 18, speed: 1.2 });
+      v.burst('stars', x, y - 56, P, { n: 5, speed: 0.6 });
+      v.ring(x, y + 8, { r1: 50, life: 0.35, color: P[1], width: 3 });
       break;
     case 'meteor':
       v.flash('#ffb04a', 0.3, 0.15);
@@ -148,6 +149,7 @@ export function castFx(run, s, from) {
       break;
     case 'inferno':
       v.burst('blast', x + ca * 10, y + sa * 10, P, { n: 8, angle: a, spread: 0.8 });
+      v.ring(x + ca * 14, y + sa * 14, { r1: 30, life: 0.3, color: P[2], width: 5 });
       break;
     case 'manashield':
       v.ring(x, y, { r1: 34, life: 0.4, color: P[2], width: 4 });
@@ -161,8 +163,9 @@ export function castFx(run, s, from) {
     case 'shadow':
       v.burst('smoke', x, y, '#5a3a7a', { n: 10, speed: 1.5 });
       break;
-    case 'fan':
-      v.burst('hit', x, y, P, { n, angle: a, spread: 1.6 });
+    case 'fan': // the ring of daggers appears with a shimmer; they pulse until they launch
+      v.ring(x, y, { r1: s.ring + 16, r0: 4, life: 0.35, color: P[2], width: 3 });
+      v.burst('stars', x, y, P, { n: 6, speed: 0.6 });
       break;
     case 'poison':
       v.burst('smoke', at.x, at.y, '#5a9a3a', { n: 12, speed: 2 });
@@ -175,7 +178,8 @@ export function castFx(run, s, from) {
       v.burst('stars', x, y, ['#ffe27a', '#ffffff'], { n: 6 });
       break;
     case 'shuriken':
-      v.burst('hit', x, y, PALETTES.steel, { n: 6, angle: a, spread: 0.5 });
+      v.ring(x, y, { r1: s.radius + 14, life: 0.3, color: PALETTES.steel[2], width: 3 });
+      v.burst('hit', x, y, PALETTES.steel, { n: 8, speed: 0.8 });
       break;
     case 'assassinate':
       v.ring(x, y, { r1: 60, life: 0.4, color: P[2], width: 5 });
@@ -187,6 +191,65 @@ export function castFx(run, s, from) {
       v.burst('smoke', x, y, '#3a1a5a', { n: 14, speed: 2.5 });
       break;
   }
+}
+
+// What a hit that is still waiting (h.delay > 0) shows: dust under a pillar about to erupt,
+// breath drawn in before the dragon arrow flies.
+function waitFx(run, h, dt) {
+  const v = run.vfx, id = h.sid;
+  if (id === 'quake') {
+    for (let i = steps(v, SKILL_FX.quake.dust, dt); i > 0; i--) {
+      v.spawn('dot', h.x + v.range(-h.r, h.r), h.y + v.range(-4, 6), v.range(-15, 15), -v.range(15, 45), v.range(0.25, 0.45), v.range(1.4, 2.6), DUST, 0.93);
+    }
+  } else if (id === 'pierce' && h.kind === 'proj') {
+    const P = pal(id);
+    for (let i = steps(v, SKILL_FX.pierce.charge, dt); i > 0; i--) suck(v, h.x, h.y, v.range(20, 40), P, 0.2);
+  } else if (id === 'chain') { // sparks gather over the next victim
+    const P = pal(id);
+    for (let i = steps(v, SKILL_FX.chain.charge, dt); i > 0; i--) suck(v, h.x, h.y - 10, v.range(14, 30), P, 0.2, 'spark', 1.4);
+  } else if (id === 'fan' && h.kind === 'proj') { // a dagger floating in the ring: wisps spin off it
+    const P = pal(id);
+    for (let i = steps(v, SKILL_FX.fan.charge, dt); i > 0; i--) suck(v, h.x, h.y, v.range(10, 22), P, 0.18);
+  }
+}
+
+// One lightning strike lands on its victim: a bolt from the cloud above, a flash of light, a spark burst.
+function strikeFx(run, h) {
+  const v = run.vfx, P = pal('chain');
+  v.bolt(h.x + v.range(-30, 30), h.y - 190, h.x, h.y, '#fff6b0', 0.28);
+  v.bolt(h.x + v.range(-10, 10), h.y - 120, h.x + v.range(-8, 8), h.y - 4, P[2], 0.22);
+  v.ring(h.x, h.y + 8, { r1: h.r * 1.6, life: 0.3, color: P[2], width: 4 });
+  v.burst('hit', h.x, h.y, P, { n: 10 });
+  v.burst('stars', h.x, h.y - 6, P, { n: 3 });
+  v.flash('#dff0ff', 0.1, 0.06); // thin flash: eight strikes in a row must not blind the screen
+  run.addShake('light');
+}
+
+// A pillar of the fissure bursts out of the ground; the crack leaps on to the next one.
+function pillarFx(run, h) {
+  const v = run.vfx, P = pal('quake');
+  v.crack(h.x, h.y + 6, { rays: 7, len: h.r * 1.3, color: '#ff9a3c', life: 1.4 });
+  v.ring(h.x, h.y + 6, { r1: h.r * 1.5, life: 0.35, color: '#d8b48a', width: 5 });
+  v.burst('shards', h.x, h.y, ['#7a5a3a', '#a07850', '#5a4030'], { n: 8, speed: 1.3 });
+  v.burst('blast', h.x, h.y, P, { n: 8 });
+  v.burst('smoke', h.x, h.y + 6, DUST, { n: 5, speed: 1.5 });
+  if (h.reach) v.beam(h.x, h.y + 6, h.x + Math.cos(h.angle) * h.reach, h.y + 6 + Math.sin(h.angle) * h.reach, '#ff9a3c', 0.3, 3);
+  run.addShake('light');
+}
+
+// The boomerang reaches the end of its flight and comes about.
+function turnFx(run, h) {
+  const v = run.vfx;
+  v.ring(h.x, h.y, { r1: h.r * 2.2, life: 0.3, color: PALETTES.steel[2], width: 4 });
+  v.burst('hit', h.x, h.y, PALETTES.steel, { n: 10, angle: h.angle, spread: 1.6 });
+  v.burst('stars', h.x, h.y, PALETTES.steel, { n: 4 });
+}
+
+// A split arrow bursts: a little firework where the volley breaks apart.
+function splitFx(run, h) {
+  const v = run.vfx, P = pal('volley');
+  v.burst('stars', h.x, h.y, P, { n: 3, speed: 0.8 });
+  v.burst('hit', h.x, h.y, P, { n: 3, angle: h.angle, spread: 0.7 });
 }
 
 // a star / meteor that falls from the sky and bursts where it lands (visual only;
@@ -215,16 +278,24 @@ function landFall(run, h, f) {
 
 // Called before stepHits, so the hit still has the life it had last step.
 export function stepHitFx(run, h, dt) {
+  if (h.delay > 0) { waitFx(run, h, dt); return; } // not born yet: only the build-up shows
   const v = run.vfx, id = h.sid, first = h.fxAge === undefined;
   h.fxAge = (h.fxAge || 0) + dt;
   const ticked = first ? 0 : (h.fxTicks ?? 0) - (h.ticksLeft ?? 0); // area ticks since last step
   h.fxTicks = h.ticksLeft;
   const last = h.kind !== 'proj' && h.life <= dt;
 
-  if (h.kind === 'proj') { projTrail(run, h, dt); return; }
+  if (h.kind === 'proj') {
+    if (first && h.part === 'split') splitFx(run, h);
+    if (h.returning && !h.fxTurned) { h.fxTurned = true; turnFx(run, h); }
+    projTrail(run, h, dt);
+    return;
+  }
 
   if (first) {
     if (h.fx === 'boom') explosion(run, h);
+    else if (id === 'quake') pillarFx(run, h);
+    else if (id === 'chain') strikeFx(run, h);
     else if (h.fx === 'nova' && id === 'leap') { // ice blast left at the take-off point
       const P = PALETTES.ice;
       v.ring(h.x, h.y, { r1: h.r, life: 0.4, color: P[2], width: 6 });
@@ -285,6 +356,25 @@ export function stepHitFx(run, h, dt) {
       if (storm && v.rand() < dt * 6) run.addShake('light');
       break;
     }
+    case 'pierce': // the dragon's burning trail: embers licking up off the patch
+      for (let i = steps(v, S.patch, dt); i > 0; i--) {
+        const [px, py] = inside(v, h.x, h.y, h.r * 0.8);
+        v.spawn('ember', px, py, v.range(-12, 12), -v.range(30, 80), v.range(0.4, 0.8), v.range(1.4, 2.6), PALETTES.fire, 0.96, -30);
+      }
+      break;
+    case 'inferno': // the scorched path of the little sun (the blast itself is handled in explosion)
+      if (h.part !== 'trail') break;
+      for (let i = steps(v, S.patch, dt); i > 0; i--) {
+        const [px, py] = inside(v, h.x, h.y, h.r * 0.8);
+        v.spawn('ember', px, py, v.range(-12, 12), -v.range(30, 90), v.range(0.4, 0.9), v.range(1.6, 3), PALETTES.fire, 0.96, -30);
+      }
+      break;
+    case 'shuriken': // sparks flung off the orbiting blade
+      for (let i = steps(v, S.rate, dt); i > 0; i--) {
+        const q = h.angle + Math.PI / 2, c = Math.cos(q), s2 = Math.sin(q);
+        v.spawn('spark', h.x + v.range(-6, 6), h.y + v.range(-6, 6), c * v.range(40, 120), s2 * v.range(40, 120), 0.22, 1.5, PALETTES.steel, 0.88);
+      }
+      break;
     case 'thousandshadows':
       for (let i = steps(v, S.rate, dt); i > 0; i--) { const [px, py] = inside(v, h.x, h.y, h.r); v.cut(px, py, v.rand() * TAU, v.range(16, 38), P[v.rand() < 0.5 ? 1 : 2], 0.25); }
       if (last) {
@@ -340,6 +430,10 @@ function projTrail(run, h, dt) {
   }
   const S = SKILL_FX[id], P = pal(id);
   if (!S?.rate) return;
+  if (h.part === 'shard') { // a fire shard of the little sun: a thin ember tail only
+    for (let i = steps(v, S.shardRate, dt); i > 0; i--) v.spawn('ember', h.x + v.range(-2, 2), h.y + v.range(-2, 2), bx * 30 + v.range(-20, 20), by * 30 + v.range(-20, 20), v.range(0.2, 0.4), v.range(1.4, 2.2), PALETTES.fire, 0.9, -30);
+    return;
+  }
   for (let i = steps(v, S.rate, dt); i > 0; i--) {
     switch (id) {
       case 'pierce':
@@ -359,7 +453,7 @@ function projTrail(run, h, dt) {
         v.spawn('dot', h.x + bx * 4, h.y + by * 4, bx * 20, by * 20, 0.25, 1.5, P, 0.9);
     }
   }
-  if (id === 'pierce') v.beam(h.x + bx * h.speed * dt, h.y + by * h.speed * dt, h.x, h.y, P[2], 0.35, 2.5); // fading line left behind
+  if (id === 'pierce' || h.part === 'throw') v.beam(h.x + bx * h.speed * dt, h.y + by * h.speed * dt, h.x, h.y, P[2], 0.35, 2.5); // fading line left behind
 }
 
 // A hit lands on an enemy (replaces the plain spark burst).

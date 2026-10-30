@@ -3,10 +3,10 @@
 // cooldowns, reduced by cdr).
 import { CLASSES } from '../data/classes.js';
 import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/balance.js';
-import { makeArea, makeSweep, makeProjectile } from './hits.js';
+import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx } from './skillfx.js';
-import { traitMods } from './traits.js';
+import { traitMods, traitCast, traitCastExecute, traitFocusShot } from './traits.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -40,10 +40,15 @@ export function stepAttack(run, intent, dt) {
       run.hits.push(w);
     }
   } else {
-    run.hits.push(makeProjectile({
+    const focus = run.trait && traitFocusShot(run); // full Bidik: piercing, bigger, forced crit (spec §31.4)
+    const shot = focus ? CLASSES[run.classId].trait.shot : null;
+    const proj = makeProjectile({
       x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
-      speed: a.speed, range: a.range, r: a.r, mult: a.mult, pierce: a.pierce, explode: a.explode, fx: a.fx,
-    }));
+      speed: a.speed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
+      pierce: shot ? shot.pierce : a.pierce, explode: a.explode, fx: a.fx,
+    });
+    if (focus) proj.crit = true;
+    run.hits.push(proj);
   }
   sfx.attack(a.fx);
 }
@@ -61,15 +66,21 @@ export function stepSkills(run, intent, dt) {
   const skills = run.skillDefs;
   if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
   const pressed = [intent.skill1, intent.skill2, intent.skill3, intent.skill4];
+  const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
   for (let i = 0; i < SKILL_SLOTS; i++) {
-    if (!pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
+    if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
     if (run.energy < skills[i].cost) { run.noEnergyT = 0.4; continue; }
     run.energy -= skills[i].cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
     const before = run.hits.length;
     castSkill(run, skills[i]);
-    for (let k = before; k < run.hits.length; k++) run.hits[k].skill = true; // skill damage bonus, no energy, pierces shields
+    const mul = traitCast(run, skills[i]), exec = traitCastExecute(); // Panas / Bidik / Kombo (spec §31.3–31.5)
+    for (let k = before; k < run.hits.length; k++) { // skill damage bonus, no energy, pierces shields
+      const h = run.hits[k];
+      h.skill = true; h.mult *= mul;
+      if (exec) h.execute = exec;
+    }
     castFx(run, skills[i], before);
     run.attackT = ATTACK_POSE;
     markCast(run, skills[i]);
@@ -122,24 +133,47 @@ function castSkill(run, s) {
       run.hits.push(makeProjectile({
         x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
         speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, explode: s.explode || null, fx: s.look || s.id,
+        delay: s.delay || 0, boomerang: !!s.boomerang, pull: s.pull || 0, trail: s.trail || null, split: s.split || null,
       }));
       break;
-    case 'fan':
-      for (let k = 0; k < s.count; k++) {
-        const a = angle + (k / (s.count - 1) - 0.5) * s.spread * DEG;
+    case 'line': // pillars fixed on the line at cast time; each erupts `gap` s after the one before
+      for (let i = 0; i < s.count; i++) {
+        const d = s.step * (i + 1);
+        const pillar = makeArea({ x: run.px + run.aimX * d, y: run.py + run.aimY * d, r: s.r, mult: s.mult, duration: s.life, freeze: s.freeze ?? 0, fx: s.look || s.id, delay: s.gap * i });
+        pillar.knock = s.knock || 0;
+        pillar.angle = angle;                       // direction of the fissure (visual only)
+        pillar.reach = i < s.count - 1 ? s.step : 0; // px to the next pillar: the crack leaps there when this one erupts
+        run.hits.push(pillar);
+      }
+      break;
+    case 'fan': { // a full circle (spread 360) spaces the arrows by count, not count - 1
+      const full = s.spread >= 360, n = s.count;
+      for (let k = 0; k < n; k++) {
+        const a = angle + (n > 1 ? k / (full ? n : n - 1) - (full ? 0 : 0.5) : 0) * s.spread * DEG;
+        const ring = s.ring || 0;
         run.hits.push(makeProjectile({
-          x: run.px, y: run.py, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce || 0, fx: s.look || 'dagger',
+          x: run.px + Math.cos(a) * ring, y: run.py + Math.sin(a) * ring, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult,
+          pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null, delay: s.delay || 0, curve: s.curve || 0,
+          hover: s.delay ? ring : 0, // floats on the ring round the player until it launches
         }));
       }
       break;
-    case 'chain':
-      chain(run, s);
+    }
+    case 'orbit': {
+      const o = makeOrbit({ radius: s.radius, spin: s.spin, every: s.every, duration: s.duration, r: s.r, mult: s.mult, angle, throw: s.throw || null, fx: s.look || s.id });
+      o.x = run.px + run.aimX * s.radius; o.y = run.py + run.aimY * s.radius;
+      run.hits.push(o);
+      break;
+    }
+    case 'storm':
+      storm(run, s);
       break;
     case 'dash': {
       const dir = s.back ? -1 : 1; // Lompatan Mundur jumps away from the aim
       if (s.blast) blast(run, s.blast);
       run.dodgeT = s.duration;
       run.dashSpeed = s.distance / s.duration;
+      run.skillDash = true; // skill dashes never clear Bidik
       run.dodgeX = run.aimX * dir; run.dodgeY = run.aimY * dir;
       run.dodgeInv = Math.max(run.dodgeInv, s.duration + 0.1);
       if (s.mult > 0) {
@@ -170,29 +204,38 @@ function blast(run, b) {
   run.hits[run.hits.length - 1].knock = b.knock || 0;
 }
 
-// Petir Berantai: first target = enemy nearest the aim point within range,
-// then each jump goes to the nearest enemy not yet struck.
-function chain(run, s) {
+// Badai Petir: lightning picks a chain of targets and every one gets its own lightning
+// strike (an area riding on the enemy), `gap` s after the one before.
+function storm(run, s) {
+  const list = pickChain(run, s);
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    const strike = makeArea({ x: e.x, y: e.y, r: s.r, mult: s.mult, fx: 'chain', delay: s.gap * i });
+    strike.target = e;
+    strike.only = e; // this strike hurts its own victim alone, however crowded it is
+    run.hits.push(strike);
+  }
+}
+
+// Targets of a lightning chain: first = enemy nearest the aim point within range, then each jump
+// goes to the nearest enemy not yet struck.
+function pickChain(run, s) {
+  const out = [];
   let cur = null, best = Infinity;
   for (const e of run.enemies) {
     if (e.hp <= 0 || Math.hypot(e.x - run.px, e.y - run.py) > s.range) continue;
     const d = Math.hypot(e.x - run.aimPX, e.y - run.aimPY);
     if (d < best) { best = d; cur = e; }
   }
-  const struck = new Set();
-  const hit = { mult: s.mult, freeze: 0, fx: 'chain' };
-  let fx = run.px, fy = run.py;
-  for (let i = 0; i < s.count && cur; i++) {
-    run.damageEnemy(hit, cur);
-    struck.add(cur);
-    run.spawnLightning(fx, fy, cur.x, cur.y);
-    fx = cur.x; fy = cur.y;
+  while (cur && out.length < s.count) {
+    out.push(cur);
     let next = null, bd = s.jump;
     for (const e of run.enemies) {
-      if (e.hp <= 0 || struck.has(e)) continue;
-      const d = Math.hypot(e.x - fx, e.y - fy);
+      if (e.hp <= 0 || out.includes(e)) continue;
+      const d = Math.hypot(e.x - cur.x, e.y - cur.y);
       if (d < bd) { bd = d; next = e; }
     }
     cur = next;
   }
+  return out;
 }
