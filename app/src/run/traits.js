@@ -3,6 +3,7 @@
 // Kinds: 'rage' (Warrior), 'heat' (Mage), 'focus' (Archer), 'combo' (Assassin).
 import { CLASSES } from '../data/classes.js';
 import { tr } from '../i18n.js';
+import { frenzyFx } from './skillfx.js';
 
 const MODS = { arcR: 0, arcDeg: 0, lifesteal: 0, dmgTaken: 1, skillDmg: 0, locked: false, slow: 0, slowImmune: false };
 
@@ -59,6 +60,7 @@ function rageAdd(run, c, n) {
     run.slowT = 0; // Mengamuk shrugs off an active slow
     run.showBanner(tr('MENGAMUK!'));
     run.applyBuffs();
+    if (run.vfx) frenzyFx(run); // spec §31.8 (test stand-ins have no vfx)
   }
 }
 

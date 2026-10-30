@@ -58,3 +58,12 @@ export const ULT_TINT = {
   meteorstorm: ['255,50,20', 0.16],
   thousandshadows: ['60,10,90', 0.3],
 };
+
+// Class signature peaks (spec §31.8). Lite effects drop the scale, smoke and screen line;
+// reduced motion drops the flash and the black-and-white moment.
+export const TRAIT_FX = {
+  frenzy: { scale: 1.15, flash: ['#ff3040', 0.3, 0.2], ring: 95 },  // Mengamuk: hero size, red flash (colour, alpha, s)
+  heat: { glowFrom: 80, smoke: 14 },                                   // Panas: staff glows above this; Kepanasan smoke/s
+  focus: { line: 1500, ring: [34, 10], ahead: 70 },                    // Bidik: shot line length; aim ring radius empty → full, distance ahead
+  execute: { gray: 0.15, slash: 2.6 },                                 // Kombo: black-and-white seconds; slash length × enemy radius
+};

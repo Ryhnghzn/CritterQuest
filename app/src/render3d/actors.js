@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { S, sharp } from './stage.js';
 import { Renderer } from '../render/world.js';
 import { drawFlashes, drawFloaters } from '../render/fxkit.js';
-import { playerAlpha } from '../render/skillfx.js';
+import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
 import { drawDoll } from '../art/doll.js';
 import { auraBack, auraFront, bestRarity } from '../art/aura.js';
@@ -219,8 +219,10 @@ export class Actors {
       g.save();
       g.globalAlpha = playerAlpha(game);
       if (game.dodgeT > 0) g.rotate(game.dodgeX * 0.25);
-      g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
-      drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+      const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
+      g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
+      const hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+      drawTraitHero(g, game, t, hero);
       g.restore();
     }
     auraFront(g, 0, 0, game.fx, bestRarity(a.look.gear), t, { ...opt, level: game.level, facing: this.facing, enemies: game.enemies, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });

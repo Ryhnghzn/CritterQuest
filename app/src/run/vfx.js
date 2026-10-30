@@ -53,6 +53,7 @@ export class Vfx {
     this.rings = new Pool(CAPS.rings, () => ({ x: 0, y: 0, r0: 0, r1: 0, life: 0, max: 1, delay: 0, color: '#fff', width: 2 }));
     this.cracks = new Pool(CAPS.cracks, () => ({ x: 0, y: 0, rays: [], life: 0, max: 1, color: '#fff' }));
     this.flashes = new Pool(CAPS.flashes, () => ({ color: '#fff', alpha: 1, life: 0, max: 1 }));
+    this.grayT = 0; // seconds the screen stays black and white (Kombo execute, spec §31.8)
   }
 
   // cap: particle cap for this device (QUALITY[..].cap or .touchCap)
@@ -63,6 +64,7 @@ export class Vfx {
 
   clear() {
     this.particles.clear(); this.rings.clear(); this.cracks.clear(); this.flashes.clear();
+    this.grayT = 0;
   }
 
   range(a, b) { return a + this.rand() * (b - a); }
@@ -132,8 +134,12 @@ export class Vfx {
     f.color = color; f.alpha = alpha; f.life = f.max = life;
   }
 
+  // the whole screen in black and white for `life` seconds
+  gray(life) { this.grayT = Math.max(this.grayT, life); }
+
   step(dt) {
     const k = dt * 60; // drag is given per 1/60 s
+    if (this.grayT > 0) this.grayT = Math.max(0, this.grayT - dt);
     const P = this.particles;
     for (let i = P.n - 1; i >= 0; i--) {
       const p = P.items[i];

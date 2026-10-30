@@ -20,7 +20,7 @@ import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedU
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
 import { Vfx } from './vfx.js';
-import { stepHitFx, impactFx, stepPlayerFx } from './skillfx.js';
+import { stepHitFx, impactFx, stepPlayerFx, executeFx } from './skillfx.js';
 import { bloodThread, thornsBurst, killBlast, phoenixRise, shieldFlash, goldGlint } from './auraevents.js';
 import { SHAKE, SHAKE_DECAY, HITSTOP, FLOATER, PALETTES, elementOf } from '../data/fx.js';
 
@@ -53,6 +53,7 @@ export class Game {
     this.state = ST.TITLE;
     this.shake = 0;
     this.hitStop = 0;     // seconds the loop holds the simulation (main.js), set by addHitStop
+    this.calm = false;    // reduced motion (main.js): the peak moments skip their flash and black-and-white
     this.weaponRarity = 0; // weapon rarity, colours attack sparks (set by main.js)
     this.reset(DEFAULT_START);
     const run = this;
@@ -358,7 +359,7 @@ export class Game {
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     e.hp -= dmg;
-    if (h.execute && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) e.hp = 0; // Kombo at max (spec §31.5)
+    if (h.execute && e.hp > 0 && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) { e.hp = 0; executeFx(this, e); } // Kombo at max (spec §31.5, §31.8)
     const basic = BASIC_FX.has(h.fx) && !h.skill;
     const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
     traitDealt(this);

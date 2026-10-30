@@ -94,3 +94,16 @@ describe('activeQuality', () => {
     ['full', false, 'full'], ['full', true, 'lite'], ['lite', false, 'lite'], ['lite', true, 'lite'],
   ])('%s + paksa=%s → %s', (s, f, want) => { expect(activeQuality(s, f)).toBe(want); });
 });
+
+describe('Vfx hitam-putih', () => {
+  it('gray() menyalakan timer, step mematikannya, clear menghapusnya', () => {
+    const v = new Vfx();
+    expect(v.grayT).toBe(0);
+    v.gray(0.15);
+    expect(v.grayT).toBeCloseTo(0.15);
+    v.step(0.2);
+    expect(v.grayT).toBe(0);
+    v.gray(0.15); v.clear();
+    expect(v.grayT).toBe(0);
+  });
+});

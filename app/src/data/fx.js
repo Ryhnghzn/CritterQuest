@@ -41,7 +41,7 @@ export const SHAKE_DECAY = 3;
 export const SHAKE_PX = 9;
 
 // Hit-stop: the simulation pauses this many seconds (the longest wins).
-export const HITSTOP = { crit: 0.03, boss: 0.06, ult: 0.08, max: 0.12 };
+export const HITSTOP = { crit: 0.03, frenzy: 0.06, boss: 0.06, ult: 0.08, max: 0.12 };
 
 // Floating damage numbers.
 export const FLOATER = {

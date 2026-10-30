@@ -143,12 +143,14 @@ const TOUCH = matchMedia('(pointer: coarse)').matches;
 const CALM = matchMedia('(prefers-reduced-motion: reduce)');
 const fpsWatch = new FpsWatch();
 const fpsMeter = new FpsWatch({ fps: 0, seconds: Infinity }); // FPS readout only
-let fxForcedLite = false, fpsShown = false;
+let fxForcedLite = false, fpsShown = false, grayOn = false;
 function applyEffects() {
   const id = activeQuality(settings.effects, fxForcedLite), q = QUALITY[id];
   game.vfx.setQuality(q, TOUCH ? q.touchCap : q.cap);
-  R.shakeOn = q.shake && settings.shake;
+  R.shakeOn = q.shake && settings.shake && !CALM.matches;
+  game.calm = CALM.matches; // the class peaks skip their flash and black-and-white (spec §31.8)
 }
+CALM.addEventListener('change', applyEffects);
 
 // Everything the Settings menu controls (spec §29), applied at start and after each change.
 function applySettings() {
@@ -1162,6 +1164,8 @@ function frame(dt) {
     toast(tr('FPS rendah: efek diubah ke Ringan'));
   }
   if (worldLoading) return;
+  const gray = scene === 'run' && game.vfx.grayT > 0; // Kombo execute (spec §31.8): both canvases in black and white
+  if (gray !== grayOn) { grayOn = gray; document.body.classList.toggle('fxgray', gray); }
   if (scene === 'run') {
     drawRunView(simT);
     if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); updateQuestTracker(current, game.state === ST.PLAY); checkPoints(); }

@@ -20,7 +20,7 @@ import { groundTile, drawField, fieldDecorLights, targetArrow } from './field.js
 import { REGIONS } from '../data/world.js';
 import { skyAt } from '../meta/clock.js';
 import { drawVfx, drawFlashes, drawFloaters } from './fxkit.js';
-import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, playerAlpha } from './skillfx.js';
+import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, playerAlpha } from './skillfx.js';
 import { SHAKE_PX } from '../data/fx.js';
 
 const DOLL_SCALE = 0.82;   // player doll size in world units
@@ -211,14 +211,16 @@ export class Renderer {
       g.globalAlpha = playerAlpha(game); // Bom Asap: a faint silhouette
       g.translate(game.px, game.py + 10);
       if (dodging) g.rotate(game.dodgeX * 0.25);
-      g.scale(DOLL_SCALE * this.facing, DOLL_SCALE);
+      const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8)
+      g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
       const attack = Math.max(0, game.attackT / ATTACK_POSE);
       if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
       this.lastAttackT = game.attackT;
       const ph = (t - this.atkStart) / ATTACK_ANIM;
       const move = this.skillMove(game, t);
       const dodge = dodging ? 1 - game.dodgeT / DODGE.duration : undefined;
-      drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+      const hero = drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+      drawTraitHero(g, game, t, hero);
       g.restore();
     }
     playerStatus(g, game, t);
@@ -233,6 +235,7 @@ export class Renderer {
     for (const h of game.hits) drawHit(g, h, this.avatar, t);
     drawEnemyMarks(g, game, t);
     drawBuffAura(g, game, t);
+    drawFocusAim(g, game, t);
     potionAuras(g, game, t);
     if (this.avatar) auraFront(g, game.px, game.py + 10, game.fx, bestRarity(this.avatar.look.gear), t, { host: this, lite: game.vfx.mul < 1, level: game.level, set: this.avatar.set, facing: this.facing, enemies: game.enemies, frenzyOn: game.frenzyOn, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });
 

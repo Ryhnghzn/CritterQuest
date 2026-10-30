@@ -36,7 +36,7 @@
 - `Game#setSkills(ids: (string|null)[4])`: ganti `skillDefs`; slot yang isinya berubah → `skillCd[i] = skillCdMax[i]` (jeda penuh); slot yang sama tidak diubah.
 - `addExp(char, amount)` → `{ char, levelsGained, newSkills: [{ id, slot }] }`: skill yang `unlock`-nya terlewati (level lama < unlock ≤ level baru) dan belum terpasang masuk ke slot `null` pertama.
 
-- [ ] **A1. Tes `setSkills`** di `run/run.test.js`:
+- [x] **A1. Tes `setSkills`** di `run/run.test.js`:
 ```js
 it('setSkills: slot yang berubah mulai dengan jeda penuh, slot lain tetap', () => {
   const g = new Game();
@@ -48,7 +48,7 @@ it('setSkills: slot yang berubah mulai dengan jeda penuh, slot lain tetap', () =
   expect(g.skillCd[0]).toBe(0.5);
 });
 ```
-- [ ] **A2. Terapkan `setSkills`** di `run/run.js` (setelah `setStats`):
+- [x] **A2. Terapkan `setSkills`** di `run/run.js` (setelah `setStats`):
 ```js
   // Skills changed mid-trip (spec §31.6): a skill put into a slot starts on its full cooldown.
   setSkills(ids) {
@@ -61,16 +61,16 @@ it('setSkills: slot yang berubah mulai dengan jeda penuh, slot lain tetap', () =
     });
   }
 ```
-- [ ] **A3. Tes pasang otomatis** di `meta/character.test.js`: karakter warrior LV 4 dengan `skills: ['spin','shout',null,null]`, `addExp` cukup untuk LV 5 → `char.skills[2] === 'quake'`, `newSkills` = `[{ id: 'quake', slot: 2 }]`. Kasus kedua: semua slot penuh → tidak ada perubahan, `newSkills` kosong.
-- [ ] **A4. Terapkan** di `addExp`: catat `from = c.level` sebelum loop; setelah loop, untuk tiap skill kelas dengan `from < unlock <= c.level` yang belum ada di `c.skills`, isi `c.skills.indexOf(null)` bila ≥ 0. Pemanggil lain (`applyTrip`, `bounties`, `quests`, `world`) tidak perlu diubah karena memakai `char` hasilnya.
-- [ ] **A5. Pasang otomatis di dalam run:** di `run/run.js` loop naik level (`updateGems`), setelah `this.level++`, panggil fungsi kecil yang sama aturannya: skill dengan `unlock === this.level`, slot kosong pertama → `setSkills` + `showBanner(t('Skill baru: {name} (tombol {n})', …))`. Tes: run warrior LV 4 dengan slot kosong, beri EXP gem cukup → `skillDefs[2].id === 'quake'`.
-- [ ] **A6. Tab Skill baru** (`ui/skilltab.js`):
+- [x] **A3. Tes pasang otomatis** di `meta/character.test.js`: karakter warrior LV 4 dengan `skills: ['spin','shout',null,null]`, `addExp` cukup untuk LV 5 → `char.skills[2] === 'quake'`, `newSkills` = `[{ id: 'quake', slot: 2 }]`. Kasus kedua: semua slot penuh → tidak ada perubahan, `newSkills` kosong.
+- [x] **A4. Terapkan** di `addExp`: catat `from = c.level` sebelum loop; setelah loop, untuk tiap skill kelas dengan `from < unlock <= c.level` yang belum ada di `c.skills`, isi `c.skills.indexOf(null)` bila ≥ 0. Pemanggil lain (`applyTrip`, `bounties`, `quests`, `world`) tidak perlu diubah karena memakai `char` hasilnya.
+- [x] **A5. Pasang otomatis di dalam run:** di `run/run.js` loop naik level (`updateGems`), setelah `this.level++`, panggil fungsi kecil yang sama aturannya: skill dengan `unlock === this.level`, slot kosong pertama → `setSkills` + `showBanner(t('Skill baru: {name} (tombol {n})', …))`. Tes: run warrior LV 4 dengan slot kosong, beri EXP gem cukup → `skillDefs[2].id === 'quake'`.
+- [x] **A6. Tab Skill baru** (`ui/skilltab.js`):
   - Baris atas `div.slots`: 4 `button.slotcard` (ikon 30 px, nama, nomor 1–4; kosong = `+`) + kartu Ultimate (5, tidak bisa dipilih). Kartu terisi punya tombol kecil × (lepas; minimal satu skill tetap).
   - Daftar pool: tiap baris `button.skill` (ikon, nama, deskripsi, energi · jeda); terpasang = lencana nomor; terkunci = `LV n`, tidak bisa diketuk.
   - State modul `picked = { slot: number|null, skill: string|null }`. Ketuk slot lalu skill (atau sebaliknya) → `opts.onEquip(slot, id)`, reset `picked`. Ketuk yang sama lagi = batal. Sorotan kelas `.picked`.
   - `data-slot` / `data-skill` dipertahankan untuk uji manual & cheat.
   - Bakat: tidak berubah; tetap `opts.talentsEditable` (hanya di kota).
-- [ ] **A7. `main.js`:** di run, `skill: { editable: true, talentsEditable: false, onEquip }` dengan
+- [x] **A7. `main.js`:** di run, `skill: { editable: true, talentsEditable: false, onEquip }` dengan
 ```js
 onEquip: (slot, id) => {
   const r = equipSkill(tripChar(), slot, id, Date.now()); // level di tengah trip ikut dihitung
@@ -82,9 +82,9 @@ onEquip: (slot, id) => {
 },
 ```
   Di kota: `talentsEditable: true`. Ubah `skilltab.js` agar bakat memakai `opts.talentsEditable` (bukan `opts.editable`), dan catatan "Ganti skill & bakat di kota." diganti "Bakat hanya bisa diatur di kota."
-- [ ] **A8. Kamus EN** untuk teks baru (`Skill baru: {name} (tombol {n})`, `Bakat hanya bisa diatur di kota.`, label kartu kosong bila ada).
-- [ ] **A9. Verifikasi:** `npm test`, `npm run build`. Cek manual: ganti skill di kota, wilayah, dan dungeon (PC & HP), jeda penuh pada skill baru, pasang otomatis saat naik level.
-- [ ] **A10. Berhenti → cek pemilik → commit** `Kelas Lebih Hidup A: tab Skill kartu slot, ganti skill kapan saja, pasang otomatis`.
+- [x] **A8. Kamus EN** untuk teks baru (`Skill baru: {name} (tombol {n})`, `Bakat hanya bisa diatur di kota.`, label kartu kosong bila ada).
+- [x] **A9. Verifikasi:** `npm test`, `npm run build`. Cek manual: ganti skill di kota, wilayah, dan dungeon (PC & HP), jeda penuh pada skill baru, pasang otomatis saat naik level.
+- [x] **A10. Berhenti → cek pemilik → commit** `Kelas Lebih Hidup A: tab Skill kartu slot, ganti skill kapan saja, pasang otomatis`.
 
 ---
 
@@ -118,26 +118,26 @@ trait: {
 - `traitMods(run)` → `{ arcR, arcDeg, lifesteal, dmgTaken, skillDmg, locked, slow, slowImmune }` (objek dipakai ulang, tidak dialokasi per frame)
 - `traitLevel(run)` → `0..1` untuk HUD
 
-- [ ] **B1. Tes Murka** (`run/traits.test.js`), pakai objek run tiruan `{ classId: 'warrior', stats: { maxHp: 200 }, trait: null }`:
+- [x] **B1. Tes Murka** (`run/traits.test.js`), pakai objek run tiruan `{ classId: 'warrior', stats: { maxHp: 200 }, trait: null }`:
   - `traitBasicHit` ×10 → `v === 30`.
   - `traitHurt(run, 20)` (10% HP) → `v` bertambah 15.
   - Tidak bertarung 3 dtk lalu 1 dtk lagi → `v` turun 12; bertarung mereset `idle`.
   - `v = 50` → `traitMods` memberi `arcR 59`, `arcDeg 130`, `lifesteal 0.02`, `dmgTaken 0.9`.
   - `v` mencapai 100 → `on === 6`, `v === 0`; selama `on > 0` `traitBasicHit` tidak menambah `v`; `slowImmune === true`.
-- [ ] **B2. Terapkan** `run/traits.js` untuk `rage` sampai tes lulus. Mengamuk mulai: `run.showBanner(tr('MENGAMUK!'))`, `run.applyBuffs()` (atkSpd +40% lewat `applyBuffs` membaca `run.trait.on`).
-- [ ] **B3. Sambungkan ke run:**
+- [x] **B2. Terapkan** `run/traits.js` untuk `rage` sampai tes lulus. Mengamuk mulai: `run.showBanner(tr('MENGAMUK!'))`, `run.applyBuffs()` (atkSpd +40% lewat `applyBuffs` membaca `run.trait.on`).
+- [x] **B3. Sambungkan ke run:**
   - `reset`: `initTrait(this)`.
   - `step`: `traitStep(this, dt, this.intent.move.x !== 0 || this.intent.move.y !== 0)` setelah `stepSkills`.
   - `stepAttack`: untuk `arc`, pakai `traitMods(run).arcR/arcDeg` bila kelas punya `trait`; selama Mengamuk tambahkan hit `wave` (makeArea kecil di depan, `knock`).
   - `damageEnemy`: bila hit dasar (`BASIC_FX` & `!h.skill`) → `traitBasicHit(this)`; lifesteal dari `traitMods` ditambahkan ke `fx.lifesteal`.
   - `hurtPlayer`: `dmg *= traitMods(this).dmgTaken` sebelum perisai; `traitHurt(this, dmg)` setelah; efek lambat diabaikan bila `slowImmune`.
   - `applyBuffs`: `if (this.trait?.on > 0 && CLASSES[this.classId].trait.frenzy) this.stats.atkSpd *= 1 + frenzy.atkSpd`.
-- [ ] **B4. Terjang pulih saat membunuh:** `castSkill` dash dengan `s.resetOnKill` → sweep diberi `resetSid = s.id`. Di `damageEnemy`, bila `e.hp <= 0 && h.resetSid` → `skillCd[skillDefs.findIndex(d => d?.id === h.resetSid)] = 0`. Tes di `run/run.test.js`: musuh HP 1 di jalur Terjang → jeda slot Terjang 0 setelah step.
-- [ ] **B5. Penyetelan data:** warrior `moveSpd: 112`; `charge.unlock: 1`. Pastikan tes lama yang memakai urutan unlock tetap lulus (perbarui ekspektasi bila ada).
-- [ ] **B6. HUD:** `<div class="trbar" id="trbar"><i id="trfill"></i><span id="trtext"></span></div>` di bawah `#enbar` (`index.html:692`). `updateHUD`: sembunyikan bila kelas tanpa `trait`; isi `scaleX(traitLevel(game))`, warna `--c` dari `trait.color`, teks `Murka {n}` / `MENGAMUK {s}s`. Kelas `.hot` saat Mengamuk (berdenyut, mati bila `prefers-reduced-motion`).
-- [ ] **B7. Kamus EN:** `Murka` → `Rage`, `MENGAMUK!` → `RAMPAGE!`, `Terjang` deskripsi baru ("cooldown pulih saat membunuh").
-- [ ] **B8. Perbarui deskripsi skill** Terjang di `data/classes.js`: `'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang. Membunuh = siap lagi.'`
-- [ ] **B9. Verifikasi** (tes, build, main Warrior di dungeon & wilayah PC/HP) → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup B: Warrior Murka & Mengamuk`.
+- [x] **B4. Terjang pulih saat membunuh:** `castSkill` dash dengan `s.resetOnKill` → sweep diberi `resetSid = s.id`. Di `damageEnemy`, bila `e.hp <= 0 && h.resetSid` → `skillCd[skillDefs.findIndex(d => d?.id === h.resetSid)] = 0`. Tes di `run/run.test.js`: musuh HP 1 di jalur Terjang → jeda slot Terjang 0 setelah step.
+- [x] **B5. Penyetelan data:** warrior `moveSpd: 112`; `charge.unlock: 1`. Pastikan tes lama yang memakai urutan unlock tetap lulus (perbarui ekspektasi bila ada).
+- [x] **B6. HUD:** `<div class="trbar" id="trbar"><i id="trfill"></i><span id="trtext"></span></div>` di bawah `#enbar` (`index.html:692`). `updateHUD`: sembunyikan bila kelas tanpa `trait`; isi `scaleX(traitLevel(game))`, warna `--c` dari `trait.color`, teks `Murka {n}` / `MENGAMUK {s}s`. Kelas `.hot` saat Mengamuk (berdenyut, mati bila `prefers-reduced-motion`).
+- [x] **B7. Kamus EN:** `Murka` → `Rage`, `MENGAMUK!` → `RAMPAGE!`, `Terjang` deskripsi baru ("cooldown pulih saat membunuh").
+- [x] **B8. Perbarui deskripsi skill** Terjang di `data/classes.js`: `'Menerjang 220 px, 320% ke yang dilewati, kebal saat menerjang. Membunuh = siap lagi.'`
+- [x] **B9. Verifikasi** (tes, build, main Warrior di dungeon & wilayah PC/HP) → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup B: Warrior Murka & Mengamuk`.
 
 ---
 
@@ -154,19 +154,19 @@ trait: { id: 'combo', max: 5, color: '#b07cff', hitsPer: 3, idleAfter: 4, perPoi
 ```
 Penyetelan: mage `nova.freeze: 1.5`.
 
-- [ ] **C1. Tes Panas:** `traitCast` Meteor (cost 55) → `v === 33`; `v = 40` → `skillDmg 0.15`; `v = 90` → `skillDmg 0.3`; `v` ≥ 100 → `lock === 2.5`, `slow === 0.3`, `locked === true`, `v === 0`; `lock` habis → `locked === false`; menyusut 15/dtk.
-- [ ] **C2. Tes Bidik:** diam 1 dtk (`moving=false`) & menyerang → `v === 60`; bergerak → `v === 0`; `v === 100` → `focus === true`; fungsi `traitFocusShot(run)` → `true` sekali lalu `v === 0`. Lompatan Mundur (`traitCast` skill `leap`) → `v === 100`.
-- [ ] **C3. Tes Kombo:** `traitBasicHit` ×9 → `v === 3`; 4 dtk tanpa serang → `v === 0`; `v = 5` → `traitCast` mengembalikan `2.25` dan `v === 0`, dan hit skill itu diberi `execute = 0.3`; `v = 2` → `1.5`, tanpa `execute`.
-- [ ] **C4. Terapkan** ketiganya di `run/traits.js`.
-- [ ] **C5. Sambungkan:**
+- [x] **C1. Tes Panas:** `traitCast` Meteor (cost 55) → `v === 33`; `v = 40` → `skillDmg 0.15`; `v = 90` → `skillDmg 0.3`; `v` ≥ 100 → `lock === 2.5`, `slow === 0.3`, `locked === true`, `v === 0`; `lock` habis → `locked === false`; menyusut 15/dtk.
+- [x] **C2. Tes Bidik:** diam 1 dtk (`moving=false`) & menyerang → `v === 60`; bergerak → `v === 0`; `v === 100` → `focus === true`; fungsi `traitFocusShot(run)` → `true` sekali lalu `v === 0`. Lompatan Mundur (`traitCast` skill `leap`) → `v === 100`.
+- [x] **C3. Tes Kombo:** `traitBasicHit` ×9 → `v === 3`; 4 dtk tanpa serang → `v === 0`; `v = 5` → `traitCast` mengembalikan `2.25` dan `v === 0`, dan hit skill itu diberi `execute = 0.3`; `v = 2` → `1.5`, tanpa `execute`.
+- [x] **C4. Terapkan** ketiganya di `run/traits.js`.
+- [x] **C5. Sambungkan:**
   - `stepSkills`: lewati semua skill bila `traitMods(run).locked` (tampilkan `noEnergyT`-mirip `run.lockT` untuk HUD). Setelah `castSkill`, `const mul = traitCast(run, skill)`; set `h.mult *= mul` dan `h.execute` untuk hit baru (`before..length`).
   - `damageEnemy`: `skillDmg` dari `traitMods` ditambahkan ke bonus skill; eksekusi: `if (h.execute && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) e.hp = 0`.
   - `stepAttack` Archer: bila `traitFocusShot(run)` → proyektil dasar diberi `pierce: shot.pierce`, `r × shot.size`, `crit: true` (paksa kritis di `damageEnemy`: `const crit = h.crit || rand() * 100 < s.crit`).
   - `stepPlayer`: kecepatan × `(1 - traitMods(run).slow)`.
   - Bidik hanya mengisi saat menyerang: `traitStep` menerima `attacking` (`intent.attack || intent.auto`) — perluas tanda tangan jadi `traitStep(run, dt, moving, attacking)` dan perbarui pemanggil & tes B.
-- [ ] **C6. HUD:** Panas (jingga, `Panas {n}` / `Kepanasan {s}s`), Bidik (hijau, `Bidik` + kelas `.ready` saat penuh), Kombo (5 belati: `#trbar` diganti 5 `<i class="pip">` bila `trait.id === 'combo'`). Tombol skill diberi kelas `.locked` saat Kepanasan.
-- [ ] **C7. Kamus EN:** `Panas`→`Heat`, `Kepanasan`→`Overheat`, `Bidik`→`Focus`, `Kombo`→`Combo`; deskripsi Nova Es (1,5 dtk).
-- [ ] **C8. Verifikasi** → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup C: Panas, Bidik, Kombo`.
+- [x] **C6. HUD:** Panas (jingga, `Panas {n}` / `Kepanasan {s}s`), Bidik (hijau, `Bidik` + kelas `.ready` saat penuh), Kombo (5 belati: `#trbar` diganti 5 `<i class="pip">` bila `trait.id === 'combo'`). Tombol skill diberi kelas `.locked` saat Kepanasan.
+- [x] **C7. Kamus EN:** `Panas`→`Heat`, `Kepanasan`→`Overheat`, `Bidik`→`Focus`, `Kombo`→`Combo`; deskripsi Nova Es (1,5 dtk).
+- [x] **C8. Verifikasi** → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup C: Panas, Bidik, Kombo`.
 
 ---
 
@@ -197,30 +197,30 @@ shuriken: { kind: 'orbit', radius: 70, spin: 7, every: 0.25, duration: 3, r: 22,
 ```
 (biaya, jeda, unlock, ikon tetap; deskripsi diperbarui sesuai §31.7.)
 
-- [ ] **D1. Mesin `delay` + `target`** — tes, terapkan.
-- [ ] **D2. `line`** di `castSkill` (pilar `i` di `px + aim × step × (i+1)`, `delay = gap × i`) — tes jumlah & posisi pilar. Visual: retakan menjalar + pilar batu-api + musuh terlempar (`run/skillfx.js` `castFx`/`stepHitFx`, `render/skillfx.js` `drawHit`).
-- [ ] **D3. `boomerang` + `pull`** — tes pergi-pulang & 2 kali kena. Visual: kapak besar berputar, percikan.
-- [ ] **D4. `trail` + `delay` proj** (Panah Naga) — tes area jejak muncul. Visual: naga cahaya meliuk (sinus di sepanjang lintasan), jejak terbakar.
-- [ ] **D5. `split`** (Panah Pecah) — tes 3 → 9 proyektil. Visual: kilau kembang api saat pecah.
+- [x] **D1. Mesin `delay` + `target`** — tes, terapkan.
+- [x] **D2. `line`** di `castSkill` (pilar `i` di `px + aim × step × (i+1)`, `delay = gap × i`) — tes jumlah & posisi pilar. Visual: retakan menjalar + pilar batu-api + musuh terlempar (`run/skillfx.js` `castFx`/`stepHitFx`, `render/skillfx.js` `drawHit`).
+- [x] **D3. `boomerang` + `pull`** — tes pergi-pulang & 2 kali kena. Visual: kapak besar berputar, percikan.
+- [x] **D4. `trail` + `delay` proj** (Panah Naga) — tes area jejak muncul. Visual: naga cahaya meliuk (sinus di sepanjang lintasan), jejak terbakar.
+- [x] **D5. `split`** (Panah Pecah) — tes 3 → 9 proyektil. Visual: kilau kembang api saat pecah.
 - [x] **D6. `storm`** di `castSkill` (pilih target seperti `chain()` yang ada, lalu area `target` + `delay = gap × i`) — tes 8 sambaran pada musuh berbeda dalam urutan waktu. Visual: awan gelap di atas pemain, kilat layar tipis per sambaran.
 - [x] **D7. `explode.shards`** (Matahari Kecil) — tes 6 serpihan. Visual: bola api lambat besar, jalur terbakar.
 - [x] **D8. `ring` + `curve`** pada `fan` (Lingkaran Belati) — tes posisi awal melingkar & lintasan melengkung. Visual: belati melayang berdenyut sebelum melesat.
 - [x] **D9. `orbit` + `throw`** (Shuriken Raksasa) — tes jumlah kena per musuh ≤ `duration/every`, proyektil lempar muncul di akhir. Visual: shuriken besar berputar dengan bayangan gerak.
-- [ ] **D10. Setel damage** di cheat panel: bandingkan DPS rata-rata ke skill lama di Celah/dungeon yang sama; catat angka akhir di spesifikasi bila berubah.
+- [x] **D10. Setel damage** di cheat panel: bandingkan DPS rata-rata ke skill lama di Celah/dungeon yang sama; catat angka akhir di spesifikasi bila berubah.
 - [x] **D11. Kamus EN** nama & deskripsi 8 skill; ikon tetap.
-- [ ] **D12. Verifikasi** (2D & 2.5D, mode efek Penuh/Ringan, FPS ≥ 50 PC, ≥ 40 HP) → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup D: 8 skill lebay`.
+- [x] **D12. Verifikasi** (2D & 2.5D, mode efek Penuh/Ringan, FPS ≥ 50 PC, ≥ 40 HP) → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup D: 8 skill lebay`.
 
 ---
 
 ## Bagian E — Momen puncak (§31.8)
 
 Semua visual, tanpa logika simulasi baru; membaca `run.trait`.
-- [ ] **E1. Mengamuk:** di `render/world.js` (dan pemain 2.5D di `render3d/actors.js`) skala sosok ×1,15 selama `trait.on > 0`, mata menyala; `run.vfx.flash('#ff3040', 0.3, 0.2)` + `addShake('medium')` + `addHitStop` saat mulai (di `traits.js` lewat callback yang sudah ada di run, bukan RNG simulasi).
-- [ ] **E2. Panas:** tongkat Mage bercahaya jingga sebanding `v` di atas 80; saat Kepanasan asap naik dari pemain (`run/skillfx.js` `stepPlayerFx`).
-- [ ] **E3. Bidik penuh:** lingkaran bidik mengecil di depan Archer saat mengisi; saat tembakan: garis cahaya menembus layar searah tembakan + `addHitStop('crit')`.
-- [ ] **E4. Eksekusi:** layar hitam-putih 0,15 dtk (filter canvas `grayscale` di `render/world.js`) + tebasan merah membelah musuh.
-- [ ] **E5. Tingkat efek & gerak tenang:** Ringan = tanpa skala/asap/garis layar; `prefers-reduced-motion` = tanpa getar, kedip, dan hitam-putih.
-- [ ] **E6. Verifikasi** → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup E: momen puncak`.
+- [x] **E1. Mengamuk:** di `render/world.js` (dan pemain 2.5D di `render3d/actors.js`) skala sosok ×1,15 selama `trait.on > 0`, mata menyala; `run.vfx.flash('#ff3040', 0.3, 0.2)` + `addShake('medium')` + `addHitStop` saat mulai (di `traits.js` lewat callback yang sudah ada di run, bukan RNG simulasi).
+- [x] **E2. Panas:** tongkat Mage bercahaya jingga sebanding `v` di atas 80; saat Kepanasan asap naik dari pemain (`run/skillfx.js` `stepPlayerFx`).
+- [x] **E3. Bidik penuh:** lingkaran bidik mengecil di depan Archer saat mengisi; saat tembakan: garis cahaya menembus layar searah tembakan + `addHitStop('crit')`.
+- [x] **E4. Eksekusi:** layar hitam-putih 0,15 dtk (filter canvas `grayscale` di `render/world.js`) + tebasan merah membelah musuh.
+- [x] **E5. Tingkat efek & gerak tenang:** Ringan = tanpa skala/asap/garis layar; `prefers-reduced-motion` = tanpa getar, kedip, dan hitam-putih.
+- [x] **E6. Verifikasi** → **berhenti, cek pemilik, commit** `Kelas Lebih Hidup E: momen puncak`.
 
 ---
 

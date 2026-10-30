@@ -5,8 +5,9 @@
 //   drawUltTint    — the screen colour while an ultimate rages
 //   drawBuffAura   — the player's look while a buff skill runs
 //   drawEnemyMarks — ice crystals / dizzy stars / vines on struck enemies
+//   heroScale / drawTraitHero / drawFocusAim — the class signature peaks (spec §31.8)
 import { PALETTES } from '../data/fx.js';
-import { ECHO_RARITY, ECHO_EVERY, RAINBOW_RARITY, RAINBOW, ULT_TINT } from '../data/skillfx.js';
+import { ECHO_RARITY, ECHO_EVERY, RAINBOW_RARITY, RAINBOW, ULT_TINT, TRAIT_FX } from '../data/skillfx.js';
 import { RARITIES } from '../data/items.js';
 import { CLASSES } from '../data/classes.js';
 import { glow, star4 } from './fxkit.js';
@@ -840,4 +841,52 @@ export function drawEnemyMarks(g, game, t) {
       g.restore();
     }
   }
+}
+
+const traitId = (game) => (game.trait ? CLASSES[game.classId]?.trait?.id : null);
+
+// Mengamuk: the warrior stands bigger (not in lite)
+export function heroScale(game, lite) {
+  return !lite && traitId(game) === 'rage' && game.trait.on > 0 ? TRAIT_FX.frenzy.scale : 1;
+}
+
+// On the hero, in doll space (origin between the feet, facing right); hero: what drawDoll
+// returns ({ head: { x, y, r } }). Glowing red eyes in Mengamuk, the mage's staff glowing
+// orange with Panas above 80.
+export function drawTraitHero(g, game, t, hero) {
+  const id = traitId(game), tr = game.trait;
+  if (id === 'rage' && tr.on > 0 && hero?.head) {
+    const p = 0.8 + Math.sin(t * 12) * 0.2, h = hero.head, ey = h.y + h.r * 0.1;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (const ex of [h.x + h.r * 0.15, h.x + h.r * 0.6]) { glow(g, ex, ey, 3.2 * p, '#ff3040'); glow(g, ex, ey, 1.2, '#ffe0e0'); }
+    g.restore();
+  } else if (id === 'heat') {
+    const from = TRAIT_FX.heat.glowFrom, k = tr.lock > 0 ? 0.5 : Math.max(0, (tr.v - from) / (100 - from));
+    if (k <= 0) return;
+    const p = 1 + Math.sin(t * (8 + k * 10)) * 0.15;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    glow(g, 9, -47, (8 + k * 14) * p, '#ff7a2a');
+    glow(g, 9, -47, (3 + k * 4) * p, '#ffd166');
+    g.restore();
+  }
+}
+
+// Bidik filling (ground layer): an aim ring ahead of the archer that shrinks as the bar fills;
+// full = a small bright ring with a cross
+export function drawFocusAim(g, game, t) {
+  if (traitId(game) !== 'focus') return;
+  const tr = game.trait, F = TRAIT_FX.focus, k = Math.min(1, tr.v / 100);
+  if (k <= 0) return;
+  const x = game.px + game.aimX * F.ahead, y = game.py + game.aimY * F.ahead;
+  const r = F.ring[0] + (F.ring[1] - F.ring[0]) * k, full = tr.focus;
+  g.save();
+  g.lineWidth = full ? 2.5 : 1.6;
+  g.strokeStyle = full ? `rgba(220,255,225,${0.8 + Math.sin(t * 10) * 0.2})` : `rgba(123,224,138,${0.25 + k * 0.55})`;
+  g.beginPath(); g.arc(x, y, full ? r + Math.sin(t * 10) * 1.5 : r, 0, TAU); g.stroke();
+  for (let i = 0; i < 4; i++) { // four ticks pointing in
+    const a = i * Math.PI / 2 + (full ? 0 : t * 1.5), c = Math.cos(a), s = Math.sin(a);
+    g.beginPath(); g.moveTo(x + c * (r + 6), y + s * (r + 6)); g.lineTo(x + c * (r - 3), y + s * (r - 3)); g.stroke();
+  }
+  if (full) { g.globalCompositeOperation = 'lighter'; glow(g, x, y, 12, '#7be08a'); }
+  g.restore();
 }

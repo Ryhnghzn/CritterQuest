@@ -101,3 +101,72 @@ describe('efek skill', () => {
     expect(axe.fxTurned).toBe(true);
   });
 });
+
+describe('momen puncak mekanik khas (spec §31.8)', () => {
+  const mk = (classId, skills = [null, null, null, null]) => {
+    const g = new Game();
+    g.start({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats, crit: 0 }, skills, level: 25 });
+    g.spawnT = 1e9;
+    return g;
+  };
+  const idle = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false, potion: -1 };
+  const lite = (g) => { g.vfx.mul = 0.5; };
+  const count = (g, kind) => g.vfx.particles.items.slice(0, g.vfx.particles.size).filter((p) => p.kind === kind);
+  const victim = (g, hp, maxHp = 100) => { const e = g.spawnEnemy('tank'); Object.assign(e, { x: g.px + 40, y: g.py, hp, maxHp, speed: 0, dmg: 0 }); return e; };
+
+  it('Mengamuk mulai: kilat merah, getar, hit-stop', () => {
+    const g = mk('warrior');
+    g.trait.v = CLASSES.warrior.trait.max - 0.01;
+    g.damageEnemy({ mult: 0.001, fx: CLASSES.warrior.attack.fx }, victim(g, 1e6, 1e6));
+    expect(g.trait.on).toBeGreaterThan(0);
+    expect(g.vfx.flashes.size).toBe(1);
+    expect(g.shake).toBeGreaterThan(0);
+    expect(g.hitStop).toBeGreaterThan(0);
+  });
+
+  it('gerak tenang: Mengamuk tanpa kilat', () => {
+    const g = mk('warrior');
+    g.calm = true;
+    g.trait.v = CLASSES.warrior.trait.max - 0.01;
+    g.damageEnemy({ mult: 0.001, fx: CLASSES.warrior.attack.fx }, victim(g, 1e6, 1e6));
+    expect(g.trait.on).toBeGreaterThan(0);
+    expect(g.vfx.flashes.size).toBe(0);
+  });
+
+  it('Kepanasan: asap naik dari pemain, kecuali efek Ringan', () => {
+    for (const [isLite, want] of [[false, true], [true, false]]) {
+      const g = mk('mage');
+      if (isLite) lite(g);
+      g.trait.lock = 2;
+      for (let i = 0; i < 30; i++) { g.intent = { ...idle }; g.step(DT); }
+      expect(count(g, 'smoke').length > 0, `lite=${isLite}`).toBe(want);
+    }
+  });
+
+  it('tembakan Bidik: garis cahaya menembus layar + hit-stop; Ringan tanpa garis', () => {
+    for (const [isLite, want] of [[false, true], [true, false]]) {
+      const g = mk('archer');
+      if (isLite) lite(g);
+      g.trait.v = 100; g.trait.focus = true;
+      g.intent = { ...idle, attack: true };
+      g.step(DT);
+      const long = count(g, 'beam').filter((p) => Math.hypot(p.x2 - p.x, p.y2 - p.y) > 1000);
+      expect(long.length > 0, `lite=${isLite}`).toBe(want);
+      expect(g.hitStop).toBeGreaterThan(0);
+    }
+  });
+
+  it('eksekusi Kombo: layar hitam-putih sesaat + tebasan merah; gerak tenang tanpa hitam-putih', () => {
+    const g = mk('assassin');
+    g.damageEnemy({ mult: 0.001, skill: true, execute: 0.3, fx: 'dagger' }, victim(g, 29));
+    expect(g.vfx.grayT).toBeGreaterThan(0);
+    expect(count(g, 'cut').length).toBeGreaterThan(0);
+    const calm = mk('assassin');
+    calm.calm = true;
+    calm.damageEnemy({ mult: 0.001, skill: true, execute: 0.3, fx: 'dagger' }, victim(calm, 29));
+    expect(calm.vfx.grayT).toBe(0);
+    const none = mk('assassin'); // no execute: a plain hit
+    none.damageEnemy({ mult: 0.001, skill: true, execute: 0.3, fx: 'dagger' }, victim(none, 80));
+    expect(none.vfx.grayT).toBe(0);
+  });
+});

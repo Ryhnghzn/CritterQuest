@@ -5,7 +5,7 @@ import { CLASSES } from '../data/classes.js';
 import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/balance.js';
 import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
-import { castFx } from './skillfx.js';
+import { castFx, focusShotFx } from './skillfx.js';
 import { traitMods, traitCast, traitCastExecute, traitFocusShot } from './traits.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
@@ -47,7 +47,7 @@ export function stepAttack(run, intent, dt) {
       speed: a.speed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
       pierce: shot ? shot.pierce : a.pierce, explode: a.explode, fx: a.fx,
     });
-    if (focus) proj.crit = true;
+    if (focus) { proj.crit = true; focusShotFx(run, angle); }
     run.hits.push(proj);
   }
   sfx.attack(a.fx);

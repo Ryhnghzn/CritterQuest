@@ -5,8 +5,9 @@
 //   stepHitFx — every step a hit lives: trails, storms, the closing blast
 //   impactFx  — a hit lands on an enemy
 //   stepPlayerFx — dash trails and buff auras that shed particles
+//   frenzyFx / focusShotFx / executeFx — the class signature peaks (spec §31.8)
 import { PALETTES, elementOf } from '../data/fx.js';
-import { SKILL_FX, BASIC_FX } from '../data/skillfx.js';
+import { SKILL_FX, BASIC_FX, TRAIT_FX } from '../data/skillfx.js';
 import { RARITIES } from '../data/items.js';
 
 const TAU = Math.PI * 2;
@@ -522,6 +523,11 @@ export function impactFx(run, h, e, crit) {
 // Dash trails & buff auras that shed particles; runs every step.
 export function stepPlayerFx(run, dt) {
   const v = run.vfx, x = run.px, y = run.py;
+  if (run.trait?.lock > 0 && v.mul >= 1) { // Kepanasan: smoke rising off the mage (not in lite)
+    for (let i = steps(v, TRAIT_FX.heat.smoke, dt); i > 0; i--) {
+      v.spawn('smoke', x + v.range(-9, 9), y - v.range(8, 30), v.range(-8, 8), -v.range(30, 55), v.range(0.7, 1.1), v.range(5, 9), ['#5a4a48', '#7a6660', '#3a3030'], 0.97, -14);
+    }
+  }
   if (run.dashSid) {
     const id = run.dashSid, P = pal(id), S = SKILL_FX[id];
     if (run.dodgeT > 0) {
@@ -576,4 +582,38 @@ export function stepPlayerFx(run, dt) {
       }
     }
   }
+}
+
+// Class signature peaks (spec §31.8). Lite effects (vfx.mul < 1) drop the screen line;
+// reduced motion (run.calm) drops the flash and the black-and-white moment.
+
+// Mengamuk starts: a red flash, a shake, a held beat and a burst of rage round the warrior
+export function frenzyFx(run) {
+  const v = run.vfx, F = TRAIT_FX.frenzy;
+  if (!run.calm) v.flash(...F.flash);
+  run.addShake('medium'); run.addHitStop('frenzy');
+  v.ring(run.px, run.py, { r1: F.ring, life: 0.45, color: '#ff3040', width: 5 });
+  v.ring(run.px, run.py, { r1: F.ring * 0.6, life: 0.35, color: '#ffb030', width: 3, delay: 0.06 });
+  v.burst('blast', run.px, run.py, ['#ff3040', '#ff7a2a', '#ffd166'], { n: 20 });
+}
+
+// a full-Bidik arrow: a line of light through the whole screen along the shot
+export function focusShotFx(run, angle) {
+  run.addHitStop('crit');
+  const v = run.vfx;
+  if (v.mul < 1) return;
+  const L = TRAIT_FX.focus.line, dx = Math.cos(angle), dy = Math.sin(angle), x = run.px, y = run.py;
+  v.beam(x - dx * 40, y - dy * 40, x + dx * L, y + dy * L, '#7be08a', 0.4, 9);
+  v.beam(x - dx * 40, y - dy * 40, x + dx * L, y + dy * L, '#f4fff0', 0.28, 3);
+  v.ring(x, y, { r1: 36, life: 0.3, color: '#b8ffc8', width: 3 });
+}
+
+// a Kombo execute: the screen goes black and white for a moment, a red slash splits the enemy
+export function executeFx(run, e) {
+  const v = run.vfx, E = TRAIT_FX.execute;
+  if (!run.calm) v.gray(E.gray);
+  const a = Math.atan2(e.y - run.py, e.x - run.px) + Math.PI * 0.35, len = e.r * E.slash + 20;
+  v.cut(e.x, e.y, a, len, '#ff2a3a', 0.4);
+  v.cut(e.x, e.y, a, len * 0.7, '#ffffff', 0.25);
+  v.burst('kill', e.x, e.y, ['#ff2a3a', '#a0101e', '#1a0508'], { n: 16 });
 }
