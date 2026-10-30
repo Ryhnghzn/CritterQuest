@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konsep Pet & Mount</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./pet/style.css">
+</head>
+<body>
+<main>
+  <header class="intro">
+    <h1>Konsep Pet & Mount</h1>
+    <p>Semua digambar lewat kode dengan gaya karakter game. Klik kartu untuk melihatnya di panggung; pet mengikuti karakter yang menunggang. Di bawah panggung, coba kosmetiknya: warna, pelana, topi pet, jejak, dan aura. Fungsi di tiap kartu hanya contoh, belum dihitung keseimbangannya.</p>
+  </header>
+  <section class="stage">
+    <canvas id="stage"></canvas>
+    <div class="ctl">
+      <div class="grp" id="classes"></div>
+      <div class="grp" id="modes"></div>
+    </div>
+    <div class="now" id="now"></div>
+  </section>
+  <section class="cosm" id="cosm"></section>
+  <section class="sec"><h2>Mount</h2><p>Ditunggangi di wilayah untuk perjalanan jauh; turun otomatis saat bertarung. Yang bersayap melayang.</p><div class="grid" id="mounts"></div></section>
+  <section class="sec"><h2>Pet</h2><p>Mengikuti ke mana pun, juga ke dungeon. Satu kemampuan kecil per pet.</p><div class="grid" id="pets"></div></section>
+</main>
+<script type="module" src="./pet/main.js"></script>
+</body>
+</html>
