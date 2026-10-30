@@ -5,12 +5,15 @@ export const SETTING_CHOICES = {
   view: ['25d', '2d'],
   sharp: ['save', 'normal', 'sharp'],
   zoom: ['near', 'mid', 'far'],
+  camSens: ['slow', 'normal', 'fast', 'xfast'],
   lang: ['en', 'id'],
 };
 export const SETTING_DEFAULTS = {
-  musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far',
+  musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal',
 };
 // starting camera zoom (render3d/stage.js ZOOM: bigger = farther)
 export const ZOOM_START = { near: 1, mid: 1.18, far: 1.35 };
 // texture & render resolution against render3d/stage.js SHARP
 export const SHARP_SCALE = { save: 0.7, normal: 1, sharp: 1.25 };
+// camera turn speed (render3d/stage.js): a multiplier on the two-finger twist / drag and the mouse drag
+export const CAM_SENS = { slow: 1, normal: 1.8, fast: 2.6, xfast: 3.6 };

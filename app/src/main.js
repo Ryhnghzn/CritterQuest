@@ -14,7 +14,7 @@ import { Dungeon25 } from './render3d/dungeon.js';
 import { Field25 } from './render3d/field.js';
 import { Town25 } from './render3d/town.js';
 import { Stage, setSharpScale } from './render3d/stage.js';
-import { SHARP_SCALE, ZOOM_START } from './data/settings.js';
+import { SHARP_SCALE, ZOOM_START, CAM_SENS } from './data/settings.js';
 import { renderSettings } from './ui/settings.js';
 import { freshSettings } from './meta/schema.js';
 import { CLASSES, CLASS_BASE } from './data/classes.js';
@@ -160,6 +160,7 @@ function applySettings() {
   fpsShown = settings.showFps; fpsMeter.reset();
   $('fps').classList.toggle('hidden', !fpsShown);
   setSharpScale(SHARP_SCALE[settings.sharp]);
+  STAGE.turnSens = CAM_SENS[settings.camSens];
   STAGE.resize();
   const flat = URL_2D || settings.view === '2d';
   if (flat !== FLAT) { FLAT = flat; T3.hide(); R3.hide(); R4.hide(); }

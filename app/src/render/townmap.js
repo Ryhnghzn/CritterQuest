@@ -1,7 +1,7 @@
 // The town map (spec §30), top-down: the walls, houses with their shop icon, features, the people
 // outdoors, quest marks and the player. Full map (labels: true) or the corner minimap.
 import { drawIcon } from '../art/sprites.js';
-import { questMark } from './paint.js';
+import { questMark, markStyle } from './paint.js';
 import { SERVICES, FEATURE_COLOR } from '../data/townmap.js';
 import { tr } from '../i18n.js';
 
@@ -17,10 +17,12 @@ function label(g, text, x, y, color, size) {
 
 // a small mark on the minimap, where the full-size "!" would cover the house
 function tinyMark(g, x, y, mark) {
+  const st = markStyle(mark);
+  if (st.main) { g.save(); g.translate(x, y); g.rotate(Math.PI / 4); g.fillStyle = 'rgba(60,30,4,.92)'; g.fillRect(-6, -6, 12, 12); g.lineWidth = 1.2; g.strokeStyle = '#ffd36a'; g.strokeRect(-6, -6, 12, 12); g.restore(); }
   g.font = '900 11px Barlow, system-ui, sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 3; g.strokeStyle = 'rgba(30,18,6,.95)'; g.strokeText(mark, x, y);
-  g.fillStyle = mark === '!' ? '#ffd24a' : '#ffe9a8'; g.fillText(mark, x, y);
+  g.lineWidth = 3; g.strokeStyle = 'rgba(30,18,6,.95)'; g.strokeText(st.ch, x, y);
+  g.fillStyle = st.fill; g.fillText(st.ch, x, y);
   g.textBaseline = 'alphabetic';
 }
 

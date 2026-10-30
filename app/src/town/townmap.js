@@ -2,11 +2,9 @@
 // Pure: the caller passes the quest marks (meta/quests.js npcMarks) and offers (talkOffers).
 import { townDef, doorsOf } from '../data/towns.js';
 import { SERVICES } from '../data/townmap.js';
+import { strongerMark as stronger } from '../meta/quests.js';
 
-// '?' (a quest step to finish) outranks '!' (a new quest), as in npcMarks
-const stronger = (a, b) => (a === '?' || b === '?' ? '?' : a || b || null);
-
-// opts: { marks: { npcId: '!' | '?' }, offers: (npcId) => [{ title }], night }
+// opts: { marks: { npcId: '!' | '?' | 'M!' | 'M?' } (meta/quests.js), offers: (npcId) => [{ title }], night }
 // → { w, h, wall, places: [{ id, kind, x, y, w, h, name, sign, roof, door, people, mark }],
 //     people: [{ id, role, name, title, x, y, mark, quests }] } — places hold who lives inside.
 export function townMapInfo(townId, { marks = {}, offers = () => [], night = false } = {}) {

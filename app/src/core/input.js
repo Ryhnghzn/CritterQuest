@@ -56,7 +56,7 @@ function setTouchMode() {
 
 addEventListener('touchstart', (e) => {
   setTouchMode();
-  if (e.target.closest('.screen, .modal, #mute, .touchbtn')) return;
+  if (e.target.closest('.screen, .modal, #mute, .touchbtn, #cheat, #cheatbtn')) return;
   for (const t of e.changedTouches) {
     if (input.joy || t.clientX > innerWidth / 2) continue; // stick lives on the left half
     input.joy = { id: t.identifier, ox: t.clientX, oy: t.clientY, dx: 0, dy: 0 };

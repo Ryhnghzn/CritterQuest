@@ -19,7 +19,7 @@ export function renderTownLegend(box, legend, onFocus) {
 
   const qc = col('Quest di kota ini');
   if (!legend.quests.length) qc.append(el('div', 'note', tr('Tidak ada quest di kota ini sekarang.')));
-  for (const q of legend.quests) row(qc, el('span', `tmmark${q.mark === '?' ? ' step' : ''}`, q.mark), tr(q.title), where(q), q.id);
+  for (const q of legend.quests) row(qc, el('span', `tmmark${q.mark.endsWith('?') ? ' step' : ''}${q.mark[0] === 'M' ? ' main' : ''}`, q.mark[q.mark.length - 1]), tr(q.title), where(q), q.id);
 
   const sc = col('Toko & layanan');
   for (const s of legend.shops) row(sc, iconCanvas(s.icon, 26), s.where ? tr(s.where) : s.who, s.where ? `${tr(s.text)} · ${s.who}` : tr(s.text), s.id);

@@ -4,6 +4,7 @@
 // shows the whole region; the minimap a window around the player. The static
 // layer is cached per region and scale; each call only paints fog & markers.
 import { tr } from '../i18n.js';
+import { markStyle } from './paint.js';
 import { TOWNS, FIELD } from '../data/world.js';
 import { dungeonById } from '../data/dungeons.js';
 import { fogSize, fogAt } from '../meta/world.js';
@@ -181,7 +182,7 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
     const k = opts.labels ? 1 : 0.65;
     g.beginPath(); g.moveTo(x - 7 * k, y); g.lineTo(x - 7 * k, y - 7 * k); g.lineTo(x, y - 13 * k); g.lineTo(x + 7 * k, y - 7 * k); g.lineTo(x + 7 * k, y); g.closePath();
     g.fillStyle = hd.hut ? '#c89a6a' : '#9ab0c8'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = '#2a1606'; g.stroke();
-    if (hd.mark) { g.font = `900 ${opts.labels ? 13 : 9}px Barlow, system-ui, sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#2a1606'; g.strokeText(hd.mark, x, y - 15 * k); g.fillStyle = '#ffd24a'; g.fillText(hd.mark, x, y - 15 * k); }
+    if (hd.mark) { g.font = `900 ${opts.labels ? 13 : 9}px Barlow, system-ui, sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#2a1606'; const ms = markStyle(hd.mark); g.strokeText(ms.ch, x, y - 15 * k); g.fillStyle = ms.fill; g.fillText(ms.ch, x, y - 15 * k); }
     if (opts.labels) label(g, hd.name, x, y + 13, '#f3e2b8', 'center', 11);
   }
   // quest target (spec §26.3): a hint circle around a gate not found yet, else a "!" pin

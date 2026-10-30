@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { activeQuests, syncQuests, talkOffers, npcMarks, questTalk, questTarget, shards, mainDone, rewardPreview, questDef } from './quests.js';
+import { activeQuests, syncQuests, talkOffers, npcMarks, questTalk, questTarget, shards, mainDone, rewardPreview, questDef, strongerMark, markChar, isMainMark } from './quests.js';
 import { createCharacter, applyTrip } from './character.js';
 import { applyField, visitTown, gateSpots } from './world.js';
 import { validateSlot } from './schema.js';
@@ -16,7 +16,7 @@ describe('quest utama', () => {
   it('dimulai dengan bicara pada Kakek Odo (tanda !)', () => {
     const c = make();
     expect(activeQuests(c)[0].id).toBe('ch1');
-    expect(npcMarks(c, 'home').odo).toBe('!');
+    expect(npcMarks(c, 'home').odo).toBe('M!');
     expect(talkOffers(c, 'home', 'odo')[0]).toMatchObject({ id: 'ch1', start: true, ends: false });
     expect(talkOffers(c, 'home', 'dara')).toEqual([]);
     expect(questTalk(c, 'ch1', 'home', 'dara', 5).ok).toBe(false);
@@ -29,7 +29,7 @@ describe('quest utama', () => {
     expect(c.quests.main.step).toBe(2);
     c = applyTrip(c, trip({ floor: 5, cleared: true }), 7).char;
     expect(c.quests.main.step).toBe(3);
-    expect(npcMarks(c, 'home').odo).toBe('?');
+    expect(npcMarks(c, 'home').odo).toBe('M?');
     const r = talk(c, 'ch1', 'home', 'odo');
     expect(r.done).toBe(true);
     expect(r.got.shard).toBe(true);
@@ -57,7 +57,7 @@ describe('quest utama', () => {
     expect(c.quests.main.step).toBe(3);                  // straight to the report
     c = talk(c, 'ch1', 'home', 'odo').char;
     expect(c.quests.main).toEqual({ ch: 1, step: 1, prog: 0 }); // Rimbawana already visited
-    expect(npcMarks(c, 'rimba').board).toBe('?');
+    expect(npcMarks(c, 'rimba').board).toBe('M?');
     c = talk(c, 'ch2', 'rimba', 'board').char;
     expect(c.quests.main.step).toBe(3);                  // crystal gate already found
   });
@@ -381,5 +381,17 @@ describe('bab 6 & akhir cerita (spec §26.7)', () => {
     expect(again.ending).toBe(false);
     expect(again.char.records.ending).toBe(77);
     expect(validateSlot(again.char)).toEqual([]);
+  });
+});
+
+describe('tanda quest', () => {
+  it('langkah mengalahkan quest baru, cerita utama mengalahkan sampingan', () => {
+    expect(strongerMark('!', '?')).toBe('?');
+    expect(strongerMark('?', 'M!')).toBe('?');
+    expect(strongerMark('!', 'M!')).toBe('M!');
+    expect(strongerMark('M?', '?')).toBe('M?');
+    expect(strongerMark(null, '!')).toBe('!');
+    expect(strongerMark(undefined, undefined)).toBe(null);
+    expect([markChar('M?'), markChar('!'), isMainMark('M!'), isMainMark('?')]).toEqual(['?', '!', true, false]);
   });
 });

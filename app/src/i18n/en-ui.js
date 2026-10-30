@@ -472,4 +472,9 @@ export default {
   'Pindah ke kota lain': 'Travel to another town',
   'Barang langka, 18:00–05:00': 'Rare goods, 18:00–05:00',
   'Keluar ke wilayah': 'Head out to the regions',
+  'Sensitivitas putar kamera': 'Camera turn sensitivity',
+  'Lambat': 'Slow',
+  'Sangat cepat': 'Very fast',
+  'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser.': 'Turn the camera: on a phone slide or twist two fingers, on a PC hold the right mouse button and drag.',
+  'Cepat': 'Fast',
 };

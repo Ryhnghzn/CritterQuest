@@ -272,21 +272,22 @@ export function readSlot(raw) {
 }
 
 // Settings (spec §9.2) have their own version: v2 added autoAttack, v4 the effects level,
-// v5 the Settings menu (spec §29).
-export const SETTINGS_VERSION = 5;
+// v5 the Settings menu (spec §29), v6 the camera turn speed.
+export const SETTINGS_VERSION = 6;
 const SETTINGS_MIGRATIONS = {
   1: (d) => ({ ...d, version: 2, autoAttack: false }),
   2: (d) => ({ ...d, version: 3, lang: 'en' }), // spec §23: English by default
   3: (d) => ({ ...d, version: 4, effects: 'full' }), // plan "Efek Lebay" §A
   // v5: 'full' meant "full, dropping to lite on low FPS" — that is now 'auto'
   4: (d) => ({ ...d, version: 5, effects: d.effects === 'full' ? 'auto' : d.effects, ...SETTING_DEFAULTS }),
+  5: (d) => ({ ...d, version: 6, camSens: 'normal' }),
 };
 const pickOf = (key) => (v) => SETTING_CHOICES[key].includes(v);
 const isVol = (v) => isInt(v, 0, 100);
 const isBool = (v) => typeof v === 'boolean';
 const SETTING_CHECKS = {
   muted: isBool, lastSlot: (v) => isInt(v, 0, SLOT_COUNT - 1), autoAttack: isBool, lang: pickOf('lang'), effects: pickOf('effects'),
-  musicVol: isVol, sfxVol: isVol, view: pickOf('view'), sharp: pickOf('sharp'), showFps: isBool, shake: isBool, dmgNumbers: isBool, zoom: pickOf('zoom'),
+  musicVol: isVol, sfxVol: isVol, view: pickOf('view'), sharp: pickOf('sharp'), showFps: isBool, shake: isBool, dmgNumbers: isBool, zoom: pickOf('zoom'), camSens: pickOf('camSens'),
 };
 
 // Raw settings → current-version settings, or null when unusable (caller uses defaults).

@@ -441,8 +441,10 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 #ui .tmtxt{display:flex;flex-direction:column;min-width:0}
 #ui .tmtxt b{font-weight:600;color:var(--cq-gold-l)}
 #ui .tmtxt small{font-size:12px;color:#9a8f80}
-#ui .tmmark{flex:none;width:26px;text-align:center;font:900 20px Barlow,sans-serif;color:#ffd24a;text-shadow:0 0 8px rgba(255,200,80,.7)}
-#ui .tmmark.step{color:#ffe9a8}
+#ui .tmmark{flex:none;width:26px;text-align:center;font:900 20px Barlow,sans-serif;color:#8fdcff;text-shadow:0 0 8px rgba(110,200,255,.7)}
+#ui .tmmark.step{color:#d4f0ff}
+#ui .tmmark.main{color:#ffb21a;text-shadow:0 0 8px rgba(255,170,40,.8);background:rgba(60,30,4,.9);border:1.5px solid #ffd36a;border-radius:4px;transform:rotate(0)}
+#ui .tmmark.main.step{color:#ffd36a}
 @media (max-width:700px){#ui .tmlegend{grid-template-columns:1fr}}
 
 /* keyboard focus: the chamfer clip-path hides an outside outline, so it is drawn inside the frame */

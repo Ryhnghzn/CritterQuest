@@ -70,7 +70,7 @@ describe('openStore (IndexedDB)', () => {
     const idb = new IDBFactory();
     const store = await openStore(idb);
     expect(await store.loadSettings()).toBeNull();
-    const s = { version: 5, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite', musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far' };
+    const s = { version: 6, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite', musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal' };
     await store.saveSettings(s);
     expect(await (await openStore(idb)).loadSettings()).toEqual(s);
   });
@@ -78,7 +78,7 @@ describe('openStore (IndexedDB)', () => {
   it('pengaturan versi 1 dimigrasi saat dimuat', async () => {
     const store = await openStore(new IDBFactory());
     await store.saveSettings({ version: 1, muted: true, lastSlot: 1 });
-    expect(await store.loadSettings()).toEqual({ version: 5, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far' });
+    expect(await store.loadSettings()).toEqual({ version: 6, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal' });
   });
 });
 
@@ -100,7 +100,7 @@ describe('openStore (fallback memori)', () => {
     };
     const store = await openStore(failing);
     expect(store.persistent).toBe(false);
-    const s = { version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far' };
+    const s = { version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal' };
     await store.saveSettings(s);
     expect(await store.loadSettings()).toEqual(s);
   });

@@ -329,23 +329,28 @@ describe('readSlot', () => {
 });
 
 describe('readSettings', () => {
-  const V5 = { musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far' };
+  const V5 = { musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal' };
   it('menerima pengaturan versi terkini', () => {
     const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite',
-      musicVol: 30, sfxVol: 100, view: '2d', sharp: 'sharp', showFps: true, shake: false, dmgNumbers: false, zoom: 'near' };
+      musicVol: 30, sfxVol: 100, view: '2d', sharp: 'sharp', showFps: true, shake: false, dmgNumbers: false, zoom: 'near', camSens: 'fast' };
     expect(readSettings(s)).toEqual(s);
   });
-  it('memigrasi versi 1 → 5 (autoAttack mati, bahasa Inggris, efek otomatis)', () => {
+  it('memigrasi versi 1 → 6 (autoAttack mati, bahasa Inggris, efek otomatis)', () => {
     expect(readSettings({ version: 1, muted: true, lastSlot: 1 }))
-      .toEqual({ version: 5, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', ...V5 });
+      .toEqual({ version: 6, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', ...V5 });
   });
-  it('memigrasi versi 3 → 5 tanpa mengubah bahasa', () => {
+  it('memigrasi versi 3 → 6 tanpa mengubah bahasa', () => {
     expect(readSettings({ version: 3, muted: false, lastSlot: 0, autoAttack: true, lang: 'id' }))
-      .toEqual({ version: 5, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'auto', ...V5 });
+      .toEqual({ version: 6, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'auto', ...V5 });
+  });
+  it('memigrasi versi 5 → 6: sensitivitas kamera Normal', () => {
+    const v5 = { version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'lite', ...V5 };
+    delete v5.camSens;
+    expect(readSettings(v5)).toEqual({ ...v5, version: 6, camSens: 'normal' });
   });
   it('memigrasi versi 4 → 5: Penuh jadi Otomatis, Ringan tetap Ringan', () => {
     const v4 = { version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' };
-    expect(readSettings({ ...v4, effects: 'full' })).toEqual({ ...v4, version: 5, effects: 'auto', ...V5 });
+    expect(readSettings({ ...v4, effects: 'full' })).toEqual({ ...v4, version: 6, effects: 'auto', ...V5 });
     expect(readSettings({ ...v4, effects: 'lite' }).effects).toBe('lite');
   });
   it.each([
@@ -357,10 +362,11 @@ describe('readSettings', () => {
     [{ version: 3, muted: false, lastSlot: 0, autoAttack: false, lang: 'fr' }],
     [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' }],
     [{ version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'ultra' }],
-    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full' }],
-    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, musicVol: 120 }],
-    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, view: '3d' }],
-    [{ version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, shake: 1 }],
-    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5 }],
+    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full' }],
+    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, musicVol: 120 }],
+    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, view: '3d' }],
+    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, shake: 1 }],
+    [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, camSens: 'turbo' }],
+    [{ version: 7, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5 }],
   ])('menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); });
 });

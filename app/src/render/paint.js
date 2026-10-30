@@ -46,19 +46,33 @@ export function tag(g, n, x, y0, t, near, mark = null) {
   }
 }
 
-// gold "!" / "?" with a dark rim and a soft pulse
+// Quest mark colours (spec §26.3): the main story in amber over a golden diamond, side quests
+// in pale blue. mark: '!' | '?' | 'M!' | 'M?' (meta/quests.js)
+export const markStyle = (mark) => (mark && mark[0] === 'M'
+  ? { ch: mark[1], fill: mark[1] === '!' ? '#ffb21a' : '#ffd36a', glow: 'rgba(255,170,40,.95)', main: true }
+  : { ch: mark, fill: mark === '!' ? '#8fdcff' : '#d4f0ff', glow: 'rgba(110,200,255,.85)', main: false });
+
+// "!" / "?" with a dark rim and a soft pulse; the main story's stands on a golden diamond
 export function questMark(g, x, y, mark, t) {
+  const st = markStyle(mark);
   g.save();
   g.translate(x, y);
-  const k = 1 + Math.sin(t * 6) * 0.06;
+  const k = (st.main ? 1.12 : 0.95) * (1 + Math.sin(t * 6) * 0.06);
   g.scale(k, k);
-  g.shadowColor = 'rgba(255,200,80,.9)'; g.shadowBlur = 10;
-  g.font = '900 22px Barlow, system-ui, sans-serif';
+  if (st.main) {
+    g.save(); g.rotate(Math.PI / 4);
+    g.shadowColor = st.glow; g.shadowBlur = 14;
+    g.fillStyle = 'rgba(60,30,4,.92)'; g.fillRect(-11, -11, 22, 22);
+    g.shadowBlur = 0; g.lineWidth = 2; g.strokeStyle = '#ffd36a'; g.strokeRect(-11, -11, 22, 22);
+    g.restore();
+  }
+  g.shadowColor = st.glow; g.shadowBlur = 10;
+  g.font = `900 ${st.main ? 20 : 22}px Barlow, system-ui, sans-serif`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 4; g.strokeStyle = 'rgba(30,18,6,.95)';
-  g.strokeText(mark, 0, 0);
-  g.fillStyle = mark === '!' ? '#ffd24a' : '#ffe9a8';
-  g.fillText(mark, 0, 0);
+  g.lineWidth = 4; g.strokeStyle = st.main ? 'rgba(40,18,2,.95)' : 'rgba(6,18,34,.95)';
+  g.strokeText(st.ch, 0, 1);
+  g.fillStyle = st.fill;
+  g.fillText(st.ch, 0, 1);
   g.restore();
   g.textBaseline = 'alphabetic';
 }

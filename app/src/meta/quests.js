@@ -155,7 +155,7 @@ export function npcMarks(char, townId) {
   const out = {};
   for (const o of activeQuests(char)) {
     const s = o.step;
-    if ((s?.kind === 'talk' || s?.kind === 'give') && s.town === townId) out[s.npc] = o.state.step === 0 && out[s.npc] !== '?' ? '!' : '?';
+    if ((s?.kind === 'talk' || s?.kind === 'give') && s.town === townId) out[s.npc] = strongerMark(out[s.npc], `${o.def.main ? 'M' : ''}${o.state.step === 0 ? '!' : '?'}`);
   }
   for (const q of SIDE) {
     const s = q.steps[0];
@@ -163,6 +163,14 @@ export function npcMarks(char, townId) {
   }
   return out;
 }
+
+// Quest marks (spec §26.3): '!' a quest starts here, '?' a step to finish here; with 'M' in
+// front for the main story ('M!', 'M?'), drawn apart from the side quests'. When one person
+// has several, the stronger shows: a step outranks a new quest, the story outranks a side quest.
+const MARK_RANK = { '!': 1, 'M!': 2, '?': 3, 'M?': 4 };
+export const strongerMark = (a, b) => ((MARK_RANK[b] || 0) > (MARK_RANK[a] || 0) ? b : a || b || null);
+export const markChar = (m) => (m ? m[m.length - 1] : '');
+export const isMainMark = (m) => !!m && m[0] === 'M';
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 

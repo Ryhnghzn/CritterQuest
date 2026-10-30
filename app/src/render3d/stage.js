@@ -48,6 +48,7 @@ export class Stage {
     this.overlay = overlay;
     this.zoom = ZOOM.start;
     this.yaw = 0; this.yawGoal = 0;   // camera turn around the hero (0 = from the south)
+    this.turnSens = 1;                // Settings: camera turn speed (data/settings.js CAM_SENS)
     this.lite = false;
     this.shake = { x: 0, y: 0 };
     this.target = new THREE.Vector3();
@@ -74,7 +75,8 @@ export class Stage {
     this.raycaster = new THREE.Raycaster();
     this.ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     addEventListener('resize', () => this.resize());
-    addEventListener('wheel', (e) => { if (this.visible) this.setZoom(this.zoom + Math.sign(e.deltaY) * ZOOM.step); }, { passive: true });
+    // only over the world itself: a scroll inside a panel (gear, shop, map) scrolls the panel
+    addEventListener('wheel', (e) => { if (this.visible && e.target === this.overlay) this.setZoom(this.zoom + Math.sign(e.deltaY) * ZOOM.step); }, { passive: true });
     this.controls();
     this.resize();
   }
@@ -92,24 +94,29 @@ export class Stage {
     try { await this.renderer.compileAsync(scene, this.camera); } catch { /* older browsers: compiled on the first frame */ }
   }
 
-  // PC: right-drag turns, [ ] turn 45°, middle click resets; phone: two fingers twist to turn, pinch to zoom
+  // PC: right-drag turns, [ ] turn 45°, middle click resets; phone: two fingers twist or slide
+  // sideways to turn, pinch to zoom. Drags and twists go through turnSens.
   controls() {
     const turn = (d) => { this.yawGoal += d; };
+    const drag = (d) => { turn(d * this.turnSens); this.yaw = this.yawGoal; };
     addEventListener('contextmenu', (e) => { if (this.visible && e.target === this.overlay) e.preventDefault(); });
     addEventListener('mousedown', (e) => { if (this.visible && e.button === 1 && e.target === this.overlay) { e.preventDefault(); this.yawGoal = Math.round(this.yaw / (Math.PI * 2)) * Math.PI * 2; } });
-    addEventListener('mousemove', (e) => { if (this.visible && (e.buttons & 2)) { turn(-e.movementX * 0.008); this.yaw = this.yawGoal; } });
+    let rightDrag = false; // a right-drag that started on the world, not in a panel
+    addEventListener('mousedown', (e) => { if (e.button === 2) rightDrag = e.target === this.overlay; });
+    addEventListener('mousemove', (e) => { if (this.visible && rightDrag && (e.buttons & 2)) drag(-e.movementX * 0.008); });
     addEventListener('keydown', (e) => {
       if (!this.visible || e.repeat) return;
       if (e.code === 'BracketLeft') turn(Math.PI / 4);
       if (e.code === 'BracketRight') turn(-Math.PI / 4);
     });
     let pinch = null;
-    const pair = (t) => ({ d: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY), a: Math.atan2(t[1].clientY - t[0].clientY, t[1].clientX - t[0].clientX) });
-    addEventListener('touchstart', (e) => { if (this.visible && e.touches.length === 2) pinch = pair(e.touches); }, { passive: true });
+    const pair = (t) => ({ d: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY), a: Math.atan2(t[1].clientY - t[0].clientY, t[1].clientX - t[0].clientX), mx: (t[0].clientX + t[1].clientX) / 2 });
+    addEventListener('touchstart', (e) => { if (this.visible && e.touches.length === 2 && ![...e.touches].some((t) => t.target.closest?.('.screen, .modal'))) pinch = pair(e.touches); }, { passive: true });
     addEventListener('touchmove', (e) => {
       if (!this.visible || !pinch || e.touches.length !== 2) return;
       const p = pair(e.touches), da = Math.atan2(Math.sin(p.a - pinch.a), Math.cos(p.a - pinch.a));
-      if (Math.abs(da) < 0.5) { turn(-da); this.yaw = this.yawGoal; }
+      if (Math.abs(da) < 0.5) drag(-da);                           // twist
+      if (Math.abs(p.mx - pinch.mx) < 80) drag(-(p.mx - pinch.mx) * 0.008); // slide sideways
       if (pinch.d > 0) this.setZoom(this.zoom * (pinch.d / p.d));
       pinch = p;
     }, { passive: true });
