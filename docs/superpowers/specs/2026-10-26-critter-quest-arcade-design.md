@@ -1053,3 +1053,17 @@ Dua skill per kelas diganti bentuk geraknya (id, ikon, slot, biaya, dan jeda tet
 - **Bidik penuh:** garis cahaya menembus layar searah tembakan + hit-stop singkat.
 - **Eksekusi 5 Kombo:** layar sesaat hitam-putih, musuh terbelah tebasan merah.
 - Semua ikut tingkat efek (Penuh/Ringan) dan "kurangi gerakan" di pengaturan.
+
+## 32. Main Offline & Pasang di HP (permintaan pemilik 2026-10-29)
+
+Game bisa dipasang ke layar HP (PWA) dan dimainkan tanpa internet setelah dibuka sekali.
+
+- **Manifest** (`public/manifest.webmanifest`): nama Critter Quest, layar penuh, mendatar, warna latar `#0f0c12`. Ikon dibuat lewat kode (`pwa/icon.js`: gerhana emas dan pedang), dirender ke `public/icons/*.png` oleh `pwa/make-icons.mjs`.
+- **Service worker** (`pwa/sw.js` → `dist/sw.js` saat build, lewat plugin di `vite.config.js`): saat dipasang, semua file build disimpan di HP; font Google ikut disimpan. Halaman apa pun (dengan `?cheat`/`?2d`) dilayani dari `index.html` simpanan. Hanya aktif di build, tidak di `npm run dev`.
+- **Versi baru**: nama simpanan memakai sidik daftar file. Versi baru diunduh diam-diam saat online. Kalau terpasang saat game terbuka: di halaman judul langsung dimuat ulang, saat bermain muncul pesan "Versi baru terpasang. Muat ulang game untuk memakainya."
+- **Main di HP tanpa hosting (Android + Chrome)**: di laptop `npm run phone` (build + server di port 4173 untuk jaringan rumah). Di HP, buka `chrome://flags`, opsi *Insecure origins treated as secure*, isi `http://<IP laptop>:4173`, lalu Relaunch. Buka alamat itu sekali, pilih menu Chrome → *Add to Home screen / Install app*. Setelah itu game jalan offline tanpa laptop; untuk update, nyalakan `npm run phone` lagi dan buka game saat satu jaringan.
+- Save tetap di IndexedDB HP. Menghapus data situs/aplikasi di Chrome menghapus save juga (ekspor/impor save §6B masih ditunda).
+
+### 32.1 Tambahan 2026-10-29: tanda quest & sensitivitas kamera
+- **Tanda quest dibedakan** (melengkapi §26.3): cerita utama = "!"/"?" jingga-emas di atas lencana belah ketupat emas; quest sampingan = "!"/"?" biru muda tanpa lencana. Berlaku di atas kepala NPC, rumah, peta kota, peta wilayah, dan daftar quest peta kota. Bila satu orang punya beberapa: langkah mengalahkan quest baru, cerita utama mengalahkan sampingan (`meta/quests.js` `strongerMark`).
+- **Sensitivitas putar kamera** (Pengaturan → Permainan, pengaturan v6): Lambat / Normal / Cepat / Sangat cepat = ×1 / ×1,8 / ×2,6 / ×3,6 (`data/settings.js` `CAM_SENS`). Di HP kamera kini juga bisa diputar dengan **menggeser dua jari ke samping**, selain memutar dua jari.

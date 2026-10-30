@@ -16,7 +16,8 @@ Mulai setiap sesi dengan membaca spesifikasi + rencana kerja, lalu `git log --on
 - `app/` — Vite 7 + JavaScript murni (ES modules) + canvas 2D. Tanpa framework, tanpa file suara; gambar dibuat lewat kode, kecuali latar layar penuh (judul, loading, epilog) di `app/public/img/*.webp` — prompt di `docs/2026-10-29-prompt-gambar.md`, file asli di `art-src/` (tidak masuk git). Gambar dari kode tetap jadi cadangan.
 - Jalankan: `cd app && npm install --replace-registry-host=always && npm run dev`
   (`package-lock.json` menunjuk mirror `npm.mirrors.msh.team` yang tidak terjangkau; opsi itu mengalihkan ke registry npm resmi.)
-- Build: `npm run build` → `app/dist/`
+- Build: `npm run build` → `app/dist/` (ikut menulis `dist/sw.js` untuk main offline, spesifikasi §32)
+- Main di HP lewat jaringan rumah: `npm run phone` (build + server port 4173); langkah flag Chrome di §32
 - Tes: `npm test` (Vitest, lingkungan Node; file `src/**/*.test.js` di samping modulnya)
 - Panel cheat untuk uji manual: tombol CHEAT / <kbd>`</kbd> saat `npm run dev` (atau `?cheat` di build)
 - Saat menambah paket, sebutkan versinya (`npm i -D paket@x.y.z --replace-registry-host=always`); tanpa versi, npm 10.8 bisa gagal dengan `Cannot read properties of null (reading 'edgesOut')`.

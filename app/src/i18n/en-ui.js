@@ -477,4 +477,5 @@ export default {
   'Sangat cepat': 'Very fast',
   'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser.': 'Turn the camera: on a phone slide or twist two fingers, on a PC hold the right mouse button and drag.',
   'Cepat': 'Fast',
+  'Versi baru terpasang. Muat ulang game untuk memakainya.': 'A new version is installed. Reload the game to use it.',
 };

@@ -70,6 +70,7 @@ import { SHARDS, DROP_ITEMS } from './data/quests.js';
 import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker, updatePointsBadge } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
 import { FpsWatch, activeQuality } from './run/vfx.js';
+import { registerOffline } from './core/pwa.js';
 import { setRarity } from './art/auratier.js';
 import { QUALITY, PALETTES } from './data/fx.js';
 
@@ -1238,6 +1239,8 @@ window.__seek = (t) => {
   drawRunView(simT);
 };
 window.__play = () => { loop.resetClock(); };
+// a newer version was stored (spec §32): on the title screen just reload, in play only say so
+registerOffline(() => { if (screen === 'title') location.reload(); else toast(tr('Versi baru terpasang. Muat ulang game untuk memakainya.')); });
 const T_PARAM = new URLSearchParams(location.search).get('t');
 if (T_PARAM !== null) window.__seek(T_PARAM);
 window.__game = game;
