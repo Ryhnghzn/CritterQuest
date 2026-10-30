@@ -28,13 +28,21 @@ describe('serangan dasar', () => {
     expect(dealt(e)).toBe(0);
   });
 
-  it('ritme = interval / atkSpd selama ditahan', () => {
-    const { g, e } = arena('warrior'); // 0.55 s, atk 14
+  it('ritme = interval × TEMPO.attackInterval / atkSpd selama ditahan (spec §33.1)', () => {
+    const { g, e } = arena('warrior'); // 0.55 × 0.7 = 0.385 s, atk 14: swings at 0, 0.385, 0.77
     hold(g, 1);
-    expect(dealt(e)).toBeCloseTo(2 * 14);
-    const fast = arena('warrior', { stats: { atkSpd: 2 } }); // 0.275 s
+    expect(dealt(e)).toBeCloseTo(3 * 14);
+    const fast = arena('warrior', { stats: { atkSpd: 2 } }); // 0.1925 s: 6 swings in the first second
     hold(fast.g, 1);
-    expect(dealt(fast.e)).toBeCloseTo(4 * 14);
+    expect(dealt(fast.e)).toBeCloseTo(6 * 14);
+  });
+
+  it('proyektil serangan dasar ×TEMPO.projSpeed, jangkauan tetap', () => {
+    const { g } = arena('archer', { x: 300 });
+    hold(g, DT);
+    const p = g.hits.find((h) => h.kind === 'proj');
+    expect(Math.hypot(p.vx, p.vy)).toBeCloseTo(CLASSES.archer.attack.speed * 1.3);
+    expect(p.range).toBe(CLASSES.archer.attack.range);
   });
 
   it('kritis mengalikan damage dengan critDmg', () => {

@@ -41,7 +41,7 @@ export const HORDE = {
 
 ## Bagian 0 — Ukur dulu (tanpa commit)
 
-- [ ] **0.1** Tulis tes sementara `app/src/run/tempo.sim.test.js` (TIDAK di-commit) yang memainkan lantai 1–3 dungeon pertama untuk tiap kelas dan mencetak waktu per lantai, EXP, emas:
+- [x] **0.1** Tulis tes sementara `app/src/run/tempo.sim.test.js` (TIDAK di-commit) yang memainkan lantai 1–3 dungeon pertama untuk tiap kelas dan mencetak waktu per lantai, EXP, emas:
 ```js
 import { it } from 'vitest';
 import { Game, ST } from './run.js';
@@ -74,8 +74,8 @@ it('ukur tempo', () => {
 
 **File:** `data/balance.js`, `run/player.js`, `run/skills.js`, tes `run/player.test.js`, `run/skills.test.js`.
 
-- [ ] **A1. Data.** Tambahkan `TEMPO` (blok di atas) ke `data/balance.js`. Ubah `DODGE` jadi `{ distance: 180, duration: 0.18, invuln: 0.25, cooldown: 0.78 }` dengan komentar `// §33: 150 → 180 px, 1.2 → 0.78 s`.
-- [ ] **A2. Tes gerak** (`run/player.test.js`), gaya tes yang ada di file itu:
+- [x] **A1. Data.** Tambahkan `TEMPO` (blok di atas) ke `data/balance.js`. Ubah `DODGE` jadi `{ distance: 180, duration: 0.18, invuln: 0.25, cooldown: 0.78 }` dengan komentar `// §33: 150 → 180 px, 1.2 → 0.78 s`.
+- [x] **A2. Tes gerak** (`run/player.test.js`), gaya tes yang ada di file itu:
 ```js
 it('gerak memakai TEMPO.move (stat di layar tetap)', () => {
   const g = mk(); // pembuat Game yang sudah ada di file ini
@@ -84,11 +84,11 @@ it('gerak memakai TEMPO.move (stat di layar tetap)', () => {
   expect(g.px - x0).toBeCloseTo(g.stats.moveSpd * TEMPO.move, -1);
 });
 ```
-- [ ] **A3. Tes serangan & proyektil** (`run/skills.test.js`): pegang serang 3 dtk tanpa musuh, hitung serangan (`attackT` naik) → `≈ 3 / (interval × 0.7 / atkSpd)`; panah Archer `Math.hypot(p.vx, p.vy) === attack.speed × TEMPO.projSpeed` dan `range` tetap.
-- [ ] **A4. Jalankan** → gagal.
-- [ ] **A5. Terapkan:** `run/player.js` baris gerak: `const spd = run.stats.moveSpd * TEMPO.move * …`; `run/skills.js` `stepAttack`: `run.atkCd += a.interval * TEMPO.attackInterval / run.stats.atkSpd;` dan proyektil dasar `speed: a.speed * TEMPO.projSpeed`. Proyektil skill tidak berubah.
-- [ ] **A6.** `npm test` (perbarui tes lama yang memakai angka gerak/serangan mentah, mis. tes Kepanasan "slowed" tetap relatif) dan `npm run build`.
-- [ ] **A7. Berhenti → cek pemilik → commit** `Serba cepat A: tempo pemain (gerak, serangan, proyektil, menghindar)`.
+- [x] **A3. Tes serangan & proyektil** (`run/skills.test.js`): pegang serang 3 dtk tanpa musuh, hitung serangan (`attackT` naik) → `≈ 3 / (interval × 0.7 / atkSpd)`; panah Archer `Math.hypot(p.vx, p.vy) === attack.speed × TEMPO.projSpeed` dan `range` tetap.
+- [x] **A4. Jalankan** → gagal.
+- [x] **A5. Terapkan:** `run/player.js` baris gerak: `const spd = run.stats.moveSpd * TEMPO.move * …`; `run/skills.js` `stepAttack`: `run.atkCd += a.interval * TEMPO.attackInterval / run.stats.atkSpd;` dan proyektil dasar `speed: a.speed * TEMPO.projSpeed`. Proyektil skill tidak berubah.
+- [x] **A6.** `npm test` (perbarui tes lama yang memakai angka gerak/serangan mentah, mis. tes Kepanasan "slowed" tetap relatif) dan `npm run build`.
+- [x] **A7. Berhenti → cek pemilik → commit** `Serba cepat A: tempo pemain (gerak, serangan, proyektil, menghindar)`.
 
 ---
 

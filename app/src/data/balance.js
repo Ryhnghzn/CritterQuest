@@ -21,7 +21,10 @@ export const INVENTORY_MAX = 60;
 export const STASH_MAX = 120;      // Gudang in the big towns (spec §25.2)
 
 // Controls (spec §4.2 dodge, §5.1).
-export const DODGE = { distance: 150, duration: 0.18, invuln: 0.25, cooldown: 1.2 };
+export const DODGE = { distance: 180, duration: 0.18, invuln: 0.25, cooldown: 0.78 }; // §33: 150 → 180 px, 1.2 → 0.78 s
+// Hack-and-slash tempo (spec §33.1): player side only, applied where used (run/player.js,
+// run/skills.js), so the character screen still shows the plain stats.
+export const TEMPO = { move: 1.5, attackInterval: 0.7, projSpeed: 1.3 };
 export const AUTO_AIM_RANGE = 450;     // touch: aim at the nearest enemy within this range
 export const AUTO_ATTACK_MARGIN = 14;  // auto mode: melee swings once an enemy centre is within r + this
 export const CDR_MAX = 40;             // % (spec §4.1)

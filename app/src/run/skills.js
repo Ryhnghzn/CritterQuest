@@ -2,7 +2,7 @@
 // mode) whose hits fill energy, and the two skills Q / E that spend it (short
 // cooldowns, reduced by cdr).
 import { CLASSES } from '../data/classes.js';
-import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS } from '../data/balance.js';
+import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS, TEMPO } from '../data/balance.js';
 import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx, focusShotFx } from './skillfx.js';
@@ -27,7 +27,7 @@ export function stepAttack(run, intent, dt) {
   const want = intent.attack || (intent.auto && run.nearestEnemy(attackReach(a)) !== null);
   if (!want) return;
 
-  run.atkCd += a.interval / run.stats.atkSpd;
+  run.atkCd += a.interval * TEMPO.attackInterval / run.stats.atkSpd; // spec §33.1
   run.attackT = ATTACK_POSE;
   const angle = Math.atan2(run.aimY, run.aimX);
   if (a.kind === 'arc') {
@@ -44,7 +44,7 @@ export function stepAttack(run, intent, dt) {
     const shot = focus ? CLASSES[run.classId].trait.shot : null;
     const proj = makeProjectile({
       x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
-      speed: a.speed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
+      speed: a.speed * TEMPO.projSpeed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
       pierce: shot ? shot.pierce : a.pierce, explode: a.explode, fx: a.fx,
     });
     if (focus) { proj.crit = true; focusShotFx(run, angle); }

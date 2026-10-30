@@ -2,7 +2,7 @@
 // `intent` comes from the input layer once per fixed step:
 //   { move: {x, y} (length ≤ 1), aimAt: {x, y} world point | null (auto-aim), dodge: bool, … }
 // Also keeps run.aimPX/aimPY: the world point skills target (mouse, auto target, or ahead).
-import { DODGE, AUTO_AIM_RANGE } from '../data/balance.js';
+import { DODGE, AUTO_AIM_RANGE, TEMPO } from '../data/balance.js';
 import { confinePlayer } from './dungeon.js';
 import { confineFieldPlayer } from './field.js';
 import { sfx } from '../core/audio.js';
@@ -51,7 +51,7 @@ export function stepPlayer(run, intent, dt) {
     run.py += run.dodgeY * run.dashSpeed * step;
     run.dodgeT -= dt;
   } else {
-    const spd = run.stats.moveSpd * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow); // frost slows (spec §25.4), Kepanasan too (§31.3)
+    const spd = run.stats.moveSpd * TEMPO.move * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow); // frost slows (spec §25.4), Kepanasan too (§31.3)
     run.px += mx * spd * dt;
     run.py += my * spd * dt;
   }

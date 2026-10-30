@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Game } from './run.js';
 import { stepPlayer } from './player.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { DODGE, AUTO_AIM_RANGE } from '../data/balance.js';
+import { DODGE, AUTO_AIM_RANGE, TEMPO } from '../data/balance.js';
 import { ROOM } from '../data/dungeon.js';
 
 const STATS = { ...CLASS_BASE, ...CLASSES.archer.stats }; // moveSpd 115
@@ -20,10 +20,12 @@ function hold(g, seconds, it = intent()) {
 }
 
 describe('gerak', () => {
-  it('kecepatan = moveSpd', () => {
+  it('kecepatan = moveSpd × TEMPO.move (spec §33.1); stat di layar tetap', () => {
     const g = fresh();
     stepPlayer(g, intent({ move: { x: 1, y: 0 } }), 0.5);
-    expect(g.px).toBeCloseTo(57.5);
+    expect(TEMPO.move).toBe(1.5);
+    expect(g.px).toBeCloseTo(115 * 1.5 * 0.5);
+    expect(g.stats.moveSpd).toBe(115);
   });
 
   it('tidak menembus dinding ruangan', () => {
@@ -35,7 +37,8 @@ describe('gerak', () => {
 });
 
 describe('dodge', () => {
-  it('melesat 150 px dalam 0,18 s ke arah gerak, mengabaikan input selama melesat', () => {
+  it('melesat 180 px dalam 0,18 s ke arah gerak, mengabaikan input selama melesat', () => {
+    expect(DODGE.distance).toBe(180);
     const g = fresh();
     stepPlayer(g, intent({ move: { x: 0, y: 1 }, dodge: true }), DT);
     hold(g, DODGE.duration, intent({ move: { x: 1, y: 0 } }));
@@ -58,7 +61,8 @@ describe('dodge', () => {
     expect(g.dodgeInv).toBeLessThanOrEqual(0);
   });
 
-  it('cooldown 1,2 s', () => {
+  it('cooldown 0,78 s', () => {
+    expect(DODGE.cooldown).toBe(0.78);
     const g = fresh();
     g.aimX = 1; g.aimY = 0;
     stepPlayer(g, intent({ dodge: true }), DT);

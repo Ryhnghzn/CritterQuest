@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { expToNext } from '../meta/character.js';
+import { TEMPO } from '../data/balance.js';
 
 const setup = (classId) => ({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats } });
 const CLASS_IDS = Object.keys(CLASSES);
@@ -11,7 +12,8 @@ function simulate(classId, seconds) {
   const g = new Game();
   g.start(setup(classId));
   for (let i = 0; i < seconds * 60 && g.state !== ST.OVER; i++) {
-    g.intent = { move: { x: Math.cos(g.time * 0.9), y: Math.sin(g.time * 0.9) }, aimAt: null, dodge: false, attack: true };
+    const k = 1 / TEMPO.move; // the same circle as before the tempo pass (spec §33.1)
+    g.intent = { move: { x: Math.cos(g.time * 0.9) * k, y: Math.sin(g.time * 0.9) * k }, aimAt: null, dodge: false, attack: true };
     g.step(1 / 60);
   }
   return g;
@@ -45,7 +47,8 @@ describe('hasil ronde', () => {
     for (let l = 1; l < g.level; l++) total += expToNext(l);
     const r = g.result();
     expect(r.exp).toBe(total);
-    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, killsBy: { slink: 2 }, elites: 0, elitesBy: {}, floorsCleared: 0, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
+    expect(Object.values(r.killsBy).reduce((a, b) => a + b, 0)).toBe(g.kills);
+    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: [], bossKills: 0, killsBy: g.killsBy, elites: 0, elitesBy: {}, floorsCleared: 0, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
   });
 
   it('menghitung bos yang dikalahkan', () => {
