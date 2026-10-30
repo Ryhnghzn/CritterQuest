@@ -1067,3 +1067,42 @@ Game bisa dipasang ke layar HP (PWA) dan dimainkan tanpa internet setelah dibuka
 ### 32.1 Tambahan 2026-10-29: tanda quest & sensitivitas kamera
 - **Tanda quest dibedakan** (melengkapi §26.3): cerita utama = "!"/"?" jingga-emas di atas lencana belah ketupat emas; quest sampingan = "!"/"?" biru muda tanpa lencana. Berlaku di atas kepala NPC, rumah, peta kota, peta wilayah, dan daftar quest peta kota. Bila satu orang punya beberapa: langkah mengalahkan quest baru, cerita utama mengalahkan sampingan (`meta/quests.js` `strongerMark`).
 - **Sensitivitas putar kamera** (Pengaturan → Permainan, pengaturan v6): Lambat / Normal / Cepat / Sangat cepat = ×1 / ×1,8 / ×2,6 / ×3,6 (`data/settings.js` `CAM_SENS`). Di HP kamera kini juga bisa diputar dengan **menggeser dua jari ke samping**, selain memutar dua jari.
+
+## 33. Hack and Slash Serba Cepat (permintaan pemilik 2026-10-29, dirancang 2026-10-30)
+
+Pemilik ingin game terasa hack and slash. Yang terasa lambat: **gerak & serangan** dan **menunggu** (musuh berjalan jauh dari lorong, jeda gelombang, jalan jauh di wilayah). Keputusan pemilik: tempo naik **sedang (±1,5×)**; supaya tidak jadi gampang, musuh **lebih banyak & datang cepat** (bukan lebih cepat/agresif); jalan jauh di wilayah diatasi dengan **mount** (§34, dikerjakan setelah bagian ini); tingkat kesulitan & Celah tanpa batas (9E) dirancang **setelah** tempo baru, di atas angka baru.
+
+Pendekatan: sisi pemain lewat satu blok pengali `TEMPO`, sisi musuh lewat aturan kedatangan `HORDE`; keduanya di `data/balance.js`, dipakai di `run/` di titik pemakaiannya (stat yang tampil di layar karakter tidak berubah). Kecepatan, telegraf, peluru musuh, dan pola bos **tidak** dipercepat: bahayanya datang dari jumlah.
+
+### 33.1 Tempo pemain (`TEMPO`)
+- Gerak ×1,5 (Warrior 112 → 168), dipakai di `run/player.js` setelah semua bonus (gear, AGI, ramuan, lambat).
+- Jeda serangan dasar ×0,7 (`run/skills.js`, `a.interval / atkSpd × 0,7`).
+- Kecepatan proyektil serangan dasar pemain ×1,3 (panah, bola api); jangkauan tetap.
+- Menghindar: jarak ×1,2 (150 → 180 px), jeda ×0,65 (1,2 → 0,78 dtk); lama & kebal tetap.
+- Skill, jeda skill, dan energi tidak diubah di sini (musuh yang lebih banyak sudah mengisi energi lebih cepat).
+
+### 33.2 Kedatangan musuh di dungeon (`HORDE`)
+- **Berkelompok:** antrean gelombang keluar per kelompok 3–6 musuh sekaligus dari satu lorong (bos selalu sendiri dan pertama). Jeda antarkelompok = `every × 2,5` dari data gelombang.
+- **Lebih dekat:** lorong 240 → 140 px; musuh muncul di separuh dalam lorong.
+- **Tumpang tindih:** gelombang berikutnya mulai saat gelombang sekarang sudah keluar semua dan musuh hidup ≤ 40% jumlah gelombang itu (bukan lagi ≤ 2), setelah jeda 0,6 dtk (dari 1,5).
+- **Jumlah ×1,6, HP ×0,8** untuk musuh biasa (dibulatkan per jenis, minimal 1; bos & mini bos tidak berubah). Elite: peluang per musuh ×0,75 supaya jumlah elite per lantai tidak melonjak.
+- **Batas hidup 45 musuh** di dungeon (kelompok berikutnya menunggu) supaya HP tetap ≥ 40 FPS.
+- Lantai bersih: semua permata EXP & koin di lantai **terbang sendiri** ke pemain; portal aktif setelah 0,4 dtk (dari 1).
+
+### 33.3 Wilayah
+- Kawanan 3–6 → 5–10, muncul tiap 3 dtk (malam 2) dari 4,2 (2,8); batas hidup 25 → 40.
+- HP ×0,8 sama seperti dungeon (bukan mini bos). Mini bos, harta, dan gerbang tidak berubah.
+
+### 33.4 Hadiah tetap seimbang
+Musuh ×1,6 berarti hadiah per menit naik; itu disengaja (hack and slash terasa memuaskan), tapi tidak boleh meledak:
+- EXP, peluang koin, peluang gear, dan peluang barang quest per musuh biasa ×0,65 (EXP tidak lagi dibulatkan ke bilangan bulat per musuh, permata kecil digabung saat jatuh berdekatan).
+- Isi ultimate per bunuh 3 → 2. Elite, bos, peti lantai, dan material per lantai tidak berubah.
+- Sasaran: EXP dan emas per lantai ±20% dari sebelumnya, waktu per lantai turun ±35%.
+
+### 33.5 Uji
+- Tes Vitest di `run/` untuk tiap aturan (pengali gerak/serangan/menghindar, kelompok & batas hidup, ambang gelombang, sedot permata, angka hadiah). Tes lama yang memakai angka mentah diperbarui ke angka baru.
+- Simulasi tanpa layar (seperti `simulate()` di `run.test.js`) mencatat waktu per lantai, EXP, dan emas sebelum/sesudah untuk tiap kelas; hasilnya ditulis di laporan bagian.
+- Cek manual pemilik di PC & HP: rasa cepat, FPS di HP dengan 40+ musuh, pola bos masih terbaca.
+
+### 33.6 Di luar bagian ini
+Mount (§34), tingkat kesulitan & Celah tanpa batas (9E), pet. Angka di §33 bisa disetel ulang saat 9E.
