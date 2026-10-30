@@ -225,5 +225,5 @@ Semua visual, tanpa logika simulasi baru; membaca `run.trait`.
 ---
 
 ## Penutup
-- [ ] Perbarui status di `CLAUDE.md` (Kelas Lebih Hidup selesai; berikutnya brainstorming Job Lanjutan atau 9E).
-- [ ] Rapikan centang 9F-4b di `2026-10-27-langkah-9-grind.md` (sudah dikerjakan di `102ee65`).
+- [x] Perbarui status di `CLAUDE.md` (Kelas Lebih Hidup selesai; berikutnya brainstorming Job Lanjutan atau 9E).
+- [x] Rapikan centang 9F-4b di `2026-10-27-langkah-9-grind.md` (sudah dikerjakan di `102ee65`).

@@ -111,6 +111,6 @@ Keputusan pemilik (2026-10-28):
 - [x] Wilayah Tanah Gerhana (terbuka setelah 5 pecahan), 4 varian + Hantu Gerhana (AI menghilang), save v18 — tes
 - [x] Gambar biome & 5 musuh; kamus EN; verifikasi
 ##### 9F-4b — Menara Gerhana & akhir cerita
-- [ ] Dungeon Menara Gerhana, Sang Gerhana 3 fase, bab 6, epilog, save v19 — tes
-- [ ] Gambar & kamus EN; verifikasi
+- [x] Dungeon Menara Gerhana, Sang Gerhana 3 fase, bab 6, epilog, save v19 — tes
+- [x] Gambar & kamus EN; verifikasi
 ## 9E — Tingkat kesulitan & Celah tanpa batas
