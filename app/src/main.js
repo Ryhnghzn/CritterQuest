@@ -73,6 +73,8 @@ import { FpsWatch, activeQuality } from './run/vfx.js';
 import { registerOffline } from './core/pwa.js';
 import { setRarity } from './art/auratier.js';
 import { QUALITY, PALETTES } from './data/fx.js';
+import { pinPage } from './core/pinpage.js';
+import { setTouchDots } from './core/touchdot.js';
 
 const $ = (id) => document.getElementById(id);
 const view = new View($('game'));
@@ -160,7 +162,7 @@ function applySettings() {
   renderAuto();
   applyEffects();
   R.numbersOn = settings.dmgNumbers;
-  fpsShown = settings.showFps; fpsMeter.reset();
+  fpsShown = settings.showFps; fpsMeter.reset(); setTouchDots(fpsShown);
   $('fps').classList.toggle('hidden', !fpsShown);
   setSharpScale(SHARP_SCALE[settings.sharp]);
   STAGE.turnSens = CAM_SENS[settings.camSens];
@@ -169,6 +171,7 @@ function applySettings() {
   if (flat !== FLAT) { FLAT = flat; T3.hide(); R3.hide(); R4.hide(); }
 }
 applySettings();
+pinPage();
 STAGE.setZoom(ZOOM_START[settings.zoom]);
 
 function changeSetting(key, value) {
@@ -993,7 +996,7 @@ const cheatActions = {
   }, 'Semua item unik masuk tas'),
   clearBag: () => cheatChar((c) => { c.inventory = []; for (const k in c.equipped) c.equipped[k] = null; }, 'Tas dikosongkan'),
   god: () => { game.god = !game.god; drawCheat(); },
-  fps: () => { fpsShown = !fpsShown; fpsMeter.reset(); $('fps').classList.toggle('hidden', !fpsShown); drawCheat(); },
+  fps: () => { fpsShown = !fpsShown; fpsMeter.reset(); setTouchDots(fpsShown); $('fps').classList.toggle('hidden', !fpsShown); drawCheat(); },
   // effects test bench (plan "Efek Lebay" §A); runs at the player
   fxTest: (kind) => {
     const v = game.vfx, x = game.px, y = game.py;
