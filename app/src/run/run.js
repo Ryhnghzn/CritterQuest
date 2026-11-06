@@ -2,8 +2,9 @@
 // (entities live in reused objects and are swap-removed when they die).
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
-import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE } from '../data/balance.js';
 import { expToNext, autoEquip } from '../meta/character.js';
+import { ultimateOf } from '../meta/talents.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -202,6 +203,13 @@ export class Game {
     this.showBanner(got.map((g) => t('Skill baru: {name} (tombol {n})', { name: this.skillDefs[g.slot].name, n: g.slot + 1 })).join(' · '));
   }
 
+  // The class ultimate opens as soon as its level is reached, mid-trip too (spec §22).
+  unlockUlt(level) {
+    if (this.ult) return;
+    this.ult = ultimateOf({ classId: this.classId, level });
+    if (this.ult) this.showBanner(t('Ultimate terbuka: {name} (tombol 5)', { name: this.ult.name }));
+  }
+
   // stats = base stats × active potion buffs
   applyBuffs() {
     for (const k of BUFFED) this.stats[k] = this.baseStats[k];
@@ -285,7 +293,7 @@ export class Game {
     this.exit = null;
     for (const g of this.gems) this.pickup(g);
     this.gems.length = 0;
-    sfx.levelup();
+    sfx.chime();
     if (this.field) { this.exitTo = kind; this.returned = true; this.state = ST.OVER; } else if (kind === 'down') startFloor(this, this.floor + 1);
     else { this.returned = true; this.state = ST.OVER; }
   }
@@ -383,7 +391,7 @@ export class Game {
     this.addFloater(e.x + rrange(-4, 4), e.y - e.r, String(Math.round(dmg)), color, kind, true);
     impactFx(this, h, e, crit);
     if (crit) this.addHitStop('crit');
-    sfx.hit();
+    sfx.hit(crit ? 'hitCrit' : e.boss || e.elite ? 'hitHard' : 'hit');
   }
 
   // chain lightning from a struck enemy to its nearest neighbour
@@ -496,8 +504,12 @@ export class Game {
       this.vfx.flash('#f0d8ff', 0.35, 0.2);
       return;
     }
-    // xp gem
-    if (e.xp > 0) this.gems.push({ x: e.x, y: e.y, v: e.xp, mag: false, big: e.xp >= 5, t: rand() * 6 });
+    // xp gem: a normal enemy's is × HORDE.reward (spec §33.4) and joins a resting gem nearby
+    if (e.xp > 0) {
+      const v = e.elite ? e.xp : e.xp * HORDE.reward, m2 = HORDE.merge * HORDE.merge;
+      const near = this.gems.find((g) => !g.mag && !g.coin && !g.gear && !g.heart && (g.x - e.x) ** 2 + (g.y - e.y) ** 2 < m2);
+      if (near) { near.v += v; near.big = near.v >= 5; } else this.gems.push({ x: e.x, y: e.y, v, mag: false, big: v >= 5, t: rand() * 6 });
+    }
     // rare heart drop
     if (rand() < 0.018) this.gems.push({ x: e.x, y: e.y, v: 0, mag: false, big: false, heart: true, t: 0 });
   }
@@ -550,6 +562,7 @@ export class Game {
         this.addFloater(this.px, this.py - 44, t('+{n} poin', { n: POINTS_PER_LEVEL }), '#8fffc0');
         sfx.levelup();
         this.autoEquipSkills(this.level);
+        this.unlockUlt(this.level);
       }
     }
   }
@@ -562,7 +575,7 @@ export class Game {
       this.invuln = FX.phoenixInvuln;
       this.showBanner(tr('Bangkit dari abu!'));
       phoenixRise(this);
-      sfx.levelup();
+      sfx.chime();
       return;
     }
     this.stats.hp = 0;

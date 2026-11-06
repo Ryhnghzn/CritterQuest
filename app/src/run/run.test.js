@@ -46,9 +46,9 @@ describe('hasil ronde', () => {
     let total = g.xp;
     for (let l = 1; l < g.level; l++) total += expToNext(l);
     const r = g.result();
-    expect(r.exp).toBe(total);
+    expect(r.exp).toBe(Math.floor(total + 1e-9)); // per-enemy EXP is fractional since §33.4
     expect(Object.values(r.killsBy).reduce((a, b) => a + b, 0)).toBe(g.kills);
-    expect(r).toEqual({ time: g.time, kills: g.kills, exp: total, gold: g.gold, items: g.loot, bossKills: g.bossKills, killsBy: g.killsBy, elites: g.elites, elitesBy: g.elitesBy, floorsCleared: g.floorsCleared, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
+    expect(r).toEqual({ time: g.time, kills: g.kills, exp: r.exp, gold: g.gold, items: g.loot, bossKills: g.bossKills, killsBy: g.killsBy, elites: g.elites, elitesBy: g.elitesBy, floorsCleared: g.floorsCleared, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
   });
 
   it('menghitung bos yang dikalahkan', () => {
@@ -311,6 +311,17 @@ describe('efek item unik', () => {
     g.step(1 / 60);
     expect(g.level).toBe(5);
     expect(g.skillDefs[2]?.id).toBe('quake');
+    expect(g.bannerT).toBeGreaterThan(0);
+  });
+
+  it('naik ke level ultimate di dalam run langsung membuka ultimate', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 24 });
+    expect(g.ult).toBeNull();
+    g.gems.push({ x: g.px, y: g.py, v: expToNext(24) + 1 });
+    g.step(1 / 60);
+    expect(g.level).toBe(25);
+    expect(g.ult?.id).toBe('bladestorm');
     expect(g.bannerT).toBeGreaterThan(0);
   });
 

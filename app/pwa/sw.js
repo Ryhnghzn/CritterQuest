@@ -32,6 +32,18 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
+// the piece of a stored file an <audio> element asks for
+async function partial(req) {
+  const stored = await caches.match(req, { ignoreSearch: true });
+  if (!stored) return fetch(req);
+  const data = await stored.arrayBuffer(), [, from, to] = /bytes=(\d+)-(\d*)/.exec(req.headers.get('range'));
+  const a = Number(from), b = to ? Number(to) : data.byteLength - 1;
+  return new Response(data.slice(a, b + 1), { status: 206, headers: {
+    'Content-Type': stored.headers.get('Content-Type') || 'audio/mpeg', 'Accept-Ranges': 'bytes',
+    'Content-Range': `bytes ${a}-${b}/${data.byteLength}`, 'Content-Length': String(b - a + 1),
+  } });
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -46,5 +58,6 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(caches.match('./index.html', { cacheName: CACHE }).then((r) => r || fetch(req)));
     return;
   }
+  if (req.headers.has('range')) { e.respondWith(partial(req)); return; } // music streams in pieces
   e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req)));
 });

@@ -77,6 +77,12 @@ export function updateActions(game) {
   const skills = game.skillDefs;
   for (let i = 0; i < 4; i++) {
     const b = $(`act-s${i + 1}`), sk = skills[i];
+    if (b.dataset.skill !== (sk?.name ?? '')) { // a slot can fill mid-trip (level up, Skill tab)
+      b.dataset.skill = sk?.name ?? '';
+      b.classList.toggle('none', !sk);
+      b.querySelector('.ic').replaceChildren(...(sk ? [iconCanvas(sk.icon || sk.id, 30)] : []));
+      b.title = sk ? `${sk.name} (${i + 1})` : t('Slot {n} kosong', { n: i + 1 });
+    }
     b.querySelector('.cost').textContent = sk ? sk.cost : '';
     b.classList.toggle('noen', !!sk && game.energy < sk.cost);
     b.classList.toggle('locked', !!sk && !!game.trait && game.trait.lock > 0); // Kepanasan
@@ -85,6 +91,12 @@ export function updateActions(game) {
   }
   // ultimate: gold ring fills with its charge (spec §22)
   const u = $('act-ult');
+  if (u.dataset.skill !== (game.ult?.name ?? '')) { // it can open mid-trip
+    u.dataset.skill = game.ult?.name ?? '';
+    u.classList.toggle('locked', !game.ult);
+    u.querySelector('.ic').replaceChildren(...(game.ult ? [iconCanvas(game.ult.icon, 30)] : []));
+    u.title = game.ult ? `${game.ult.name} (5)` : '';
+  }
   if (game.ult) {
     u.style.setProperty('--u', (game.ultCharge / ULT.max).toFixed(3));
     u.classList.toggle('ready', game.ultCharge >= ULT.max);

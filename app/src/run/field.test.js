@@ -4,7 +4,9 @@ import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { REGIONS, FIELD, regionById } from '../data/world.js';
 import { buildFieldMap, blocked, sample } from './fieldmap.js';
-import { fieldLevel, fieldScale, spawnPack } from './field.js';
+import { fieldLevel, fieldScale, spawnPack, spawnGuardian, questDrop } from './field.js';
+import { HORDE } from '../data/balance.js';
+import { TREASURE } from '../data/world.js';
 import { fogSize } from '../meta/world.js';
 
 const forest = regionById('forest');
@@ -55,6 +57,37 @@ describe('mode wilayah', () => {
       expect(Math.hypot(e.x - g.px, e.y - g.py)).toBeGreaterThan(FIELD.spawnMin - 120);
       expect(e.level).toBeGreaterThanOrEqual(1);
     }
+  });
+  it('kawanan 5–10, HP × HORDE.hp (spec §33.3)', () => {
+    const g = new Game();
+    g.explore(setup());
+    g.px = 6000; g.py = g.fmap.paths[0][5][1];
+    let n = 0;
+    for (let i = 0; i < 20 && !n; i++) n = spawnPack(g);
+    expect(n).toBeGreaterThanOrEqual(FIELD.pack[0]);
+    expect(n).toBeLessThanOrEqual(FIELD.pack[1]);
+    expect(FIELD.pack).toEqual([5, 10]);
+    const e = g.enemies.find((m) => !m.elite);
+    const plain = g.spawnEnemy(e.type).maxHp;
+    expect(e.maxHp).toBeCloseTo(plain * fieldScale(e.level).hp * HORDE.hp);
+  });
+  it('penjaga harta tidak dilemahkan HORDE.hp, pengawalnya iya', () => {
+    const g = new Game();
+    g.explore(setup());
+    g.enemies.length = 0;
+    spawnGuardian(g, { x: 6000, y: g.fmap.paths[0][5][1], lord: false });
+    const [guard, ...escort] = g.enemies;
+    const plain = g.spawnEnemy(guard.type).maxHp, sc = fieldScale(guard.level);
+    expect(guard.maxHp).toBeCloseTo(plain * sc.hp * TREASURE.guard.hp);
+    for (const e of escort) if (!e.elite) expect(e.maxHp).toBeCloseTo(plain * sc.hp * HORDE.hp);
+  });
+  it('barang quest jatuh dengan peluang × HORDE.reward', () => {
+    const g = new Game();
+    g.explore(setup());
+    g.questDrops = [{ item: 'goo', enemy: '*', chance: 1 }];
+    const e = g.spawnEnemy('slink');
+    for (let i = 0; i < 2000; i++) questDrop(g, e, 'slink');
+    expect(g.questItems.goo / 2000).toBeCloseTo(HORDE.reward, 1);
   });
   it('musuh yang tertinggal jauh hilang', () => {
     const g = new Game();

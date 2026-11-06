@@ -7,6 +7,7 @@ import { S, toon, glowMat, sharp, SHARP } from './stage.js';
 import { Actors } from './actors.js';
 import { wallCells } from './roomgrid.js';
 import { drawRoom, flagTile, decorLights, dress } from '../render/dungeonroom.js';
+import { portalLabel } from '../render/world.js';
 import { SHAKE_PX } from '../data/fx.js';
 
 const PORTAL_RGB = { down: '90,170,255', home: '255,200,90' };
@@ -177,6 +178,24 @@ export class Dungeon25 {
     this.animate(game, t);
     st.render(this.scene);
     this.actors.overlay(game, playing, playing ? 1 - game.floorT * 2.5 : 0);
+    if (playing) this.labels(game);
+  }
+
+  // what each portal does, on the floor below its ring (over the beam it can slide under the HUD)
+  labels(game) {
+    const g = this.view.ctx, dpr = this.view.c.width / innerWidth;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.font = '700 15px Barlow, system-ui, sans-serif'; g.textAlign = 'center';
+    for (const q of game.portals) {
+      const p = this.stage.project(q.x, q.y + 62);
+      if (!p) continue;
+      const name = portalLabel(q.kind, game.floor);
+      g.globalAlpha = q.armed ? 1 : 0.5;
+      g.lineWidth = 4; g.strokeStyle = 'rgba(10,8,20,.9)'; g.strokeText(name, p.x, p.y);
+      g.fillStyle = `rgb(${PORTAL_RGB[q.kind]})`; g.fillText(name, p.x, p.y);
+    }
+    g.globalAlpha = 1;
+    g.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   lights(game, t, playing) {

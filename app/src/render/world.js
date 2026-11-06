@@ -2,7 +2,7 @@
 // theme (render/dungeonroom.js), actors, portals once a floor is clear. Camera
 // follows the player; darkness with light holes comes from render/light.js and
 // emissive effects (attacks, flames, portals) are drawn over it.
-import { tr } from '../i18n.js';
+import { tr, t as tf } from '../i18n.js';
 import { PORTAL } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
@@ -28,7 +28,7 @@ const ATTACK_ANIM = 0.45;  // seconds of the keyframed swing (style-D heroes)
 const TAU = Math.PI * 2;
 const ENEMY_R = Object.fromEntries(Object.entries(ENEMIES).map(([k, e]) => [k, e.r]));
 const PORTAL_RGB = { down: '90,170,255', home: '255,200,90' };
-const PORTAL_LABEL = { down: 'Turun', home: 'Pulang' };
+export const portalLabel = (kind, floor) => (kind === 'down' ? tf('Turun ke Lantai {n}', { n: floor + 1 }) : tr('Pulang'));
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
 const RARITY_RGB = RARITIES.map((r) => hexRgb(r.color));
 
@@ -320,7 +320,7 @@ function roomGlow(g, game, t) {
   for (const p of game.portals || []) {
     g.globalAlpha = p.armed ? 1 : 0.45;
     g.lineWidth = 3; g.strokeStyle = 'rgba(20,14,40,.9)';
-    const label = tr(PORTAL_LABEL[p.kind]);
+    const label = portalLabel(p.kind, game.floor);
     g.strokeText(label, p.x, p.y - 48);
     g.fillStyle = '#fff'; g.fillText(label, p.x, p.y - 48);
   }

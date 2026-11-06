@@ -3,6 +3,7 @@
 // cleared floor opens portals in the centre (blue = down, gold = home). Pure
 // logic on the run state (run/run.js); the run decides what an exit means.
 import { tr, t } from '../i18n.js';
+import { sfx } from '../core/audio.js';
 import { rand, rrange, rint } from '../core/rng.js';
 import { ROOM, WAVE, PORTAL, COINS, FLOOR_HP_STEP } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
@@ -148,6 +149,7 @@ function clearFloor(run) {
   run.floorClear = true;
   run.clearT = 0;
   run.floorsCleared += 1;
+  sfx.clear();
   const bonus = COINS.floorBonus * run.floor;
   run.addGold(bonus);
   addMats(run, { dust: MAT_DROPS.floor.dust * run.floor }, 0, -60);
@@ -223,9 +225,12 @@ export function dropLoot(run, e) {
   } else if (e.elite) {
     dropGear(run, 'elite', e.x, e.y);
     if (rand() < MAT_DROPS.eliteDustChance) addMats(run, { dust: 1 + Math.floor(rand() * 3) });
-  } else if (rand() < DROP.enemyChance) dropGear(run, 'enemy', e.x, e.y);
+  } else if (rand() < normalChance(DROP.enemyChance)) dropGear(run, 'enemy', e.x, e.y);
   dropCoins(run, e);
 }
+
+// Chance of a reward from a normal enemy (spec §33.4): there are HORDE.count times as many.
+export const normalChance = (base) => base * HORDE.reward;
 
 // Coins from a defeated enemy: bosses and elites always pay, others sometimes drop a pickup.
 export function dropCoins(run, e) {
@@ -235,7 +240,7 @@ export function dropCoins(run, e) {
     run.addFloater(e.x, e.y - e.r - 10, t('+{n} koin', { n: v }), '#ffd166');
     return;
   }
-  if (rand() >= COINS.chance) return;
+  if (rand() >= normalChance(COINS.chance)) return;
   const v = COINS.min + Math.floor(rand() * (COINS.max - COINS.min + 1));
   run.gems.push({ x: e.x + rrange(-6, 6), y: e.y + rrange(-6, 6), v, mag: false, big: false, coin: true, t: rand() * 6 });
 }

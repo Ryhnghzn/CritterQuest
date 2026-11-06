@@ -16,7 +16,7 @@ export default {
   'Bangkit dari abu!': 'Risen from the ashes!',
 
   // canvas labels (render/)
-  Turun: 'Descend',
+  'Turun ke Lantai {n}': 'Descend to Floor {n}',
   Pulang: 'Return',
   Keluar: 'Exit',
 

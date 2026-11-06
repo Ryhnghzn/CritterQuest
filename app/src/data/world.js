@@ -74,8 +74,8 @@ export const FIELD = {
   exitHalf: 110,           // …but only at the road's end: within this far of its y (elsewhere the edge is a wall)
   gateWall: 460,           // the town gate there: its palisade reaches this far up and down the edge from the road
   spawnMin: 560, spawnMax: 760, despawn: 1500,
-  maxEnemies: 25, pack: [3, 6],
-  packEvery: 4.2, nightPackEvery: 2.8, // seconds between packs
+  maxEnemies: 40, pack: [5, 10], // §33: 25 → 40, packs 3–6 → 5–10
+  packEvery: 3, nightPackEvery: 2, // seconds between packs (§33: 4.2 / 2.8 → 3 / 2)
   pathAvoid: 0.65,         // chance a pack rolled near the path is moved away
   eliteChance: 0.05,
   fogCell: 150, fogRadius: 350,

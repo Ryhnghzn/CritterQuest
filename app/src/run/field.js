@@ -12,6 +12,7 @@ import { makeElite, addMats, dropGear } from './dungeon.js';
 import { revealFog, treasureSpots } from '../meta/world.js';
 import { GEM_IDS, GEMS } from '../data/forge.js';
 import { HIDDEN_R, REACH_R, DROP_ITEMS } from '../data/quests.js';
+import { HORDE } from '../data/balance.js';
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
@@ -80,13 +81,13 @@ export function spawnPack(run) {
   const n = Math.min(rint(FIELD.pack[0], FIELD.pack[1]), FIELD.maxEnemies - run.enemies.length);
   for (let i = 0; i < n; i++) {
     const e = run.spawnEnemy(type);
-    e.hp *= sc.hp; e.maxHp *= sc.hp; e.dmg *= sc.dmg;
+    e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // §33.3: the horde, weaker one by one
     e.xp = Math.round(ENEMIES[type].xp * sc.reward);
     e.level = level;
     const a = rand() * Math.PI * 2;
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
     pushOut(map, e, e.r);
-    if (rand() < FIELD.eliteChance) makeElite(e);
+    if (rand() < FIELD.eliteChance * HORDE.eliteMul) makeElite(e);
   }
   return n;
 }
@@ -171,7 +172,7 @@ export function spawnGuardian(run, tr) {
   pushOut(run.fmap, g, g.r);
   for (let i = 0; i < rule.escort; i++) {
     const e = run.spawnEnemy(type);
-    e.hp *= sc.hp; e.maxHp *= sc.hp; e.dmg *= sc.dmg;
+    e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // escorts are horde (§33.3)
     e.xp = Math.round(ENEMIES[type].xp * sc.reward); e.level = level;
     const a = (i / rule.escort) * Math.PI * 2;
     e.x = tr.x + Math.cos(a) * 90; e.y = tr.y + Math.sin(a) * 90;
@@ -235,7 +236,7 @@ export function stepQuestPlaces(run) {
 export function questDrop(run, e, kin) {
   for (const d of run.questDrops) {
     if (d.enemy !== '*' && d.enemy !== e.type && d.enemy !== kin) continue;
-    if ((d.night && !run.night) || rand() >= d.chance) continue;
+    if ((d.night && !run.night) || rand() >= d.chance * HORDE.reward) continue; // §33.4
     run.questItems[d.item] = (run.questItems[d.item] || 0) + 1;
     run.addFloater(e.x, e.y - 30, `+1 ${DROP_ITEMS[d.item].name}`, DROP_ITEMS[d.item].color);
   }

@@ -464,7 +464,7 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:540px){
   #ui .screen :is(.btn,.tab,.chip){min-height:61px}
   #ui .screen .btn.plus{min-width:61px}
-  #ui .screen input.name{min-height:61px}
+  #ui .screen input.name{min-height:61px;font-size:23px} /* 16px+ after the .72 zoom: iPhone zooms the page into smaller fields */
   #ui .screen .tmrow{min-height:61px}
   #settings .btn{min-height:55px}
   #settings :is(.stab,.seg button){min-height:55px}

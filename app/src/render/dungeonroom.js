@@ -11,35 +11,32 @@ import { outline, inside } from '../run/room.js';
 const TAU = Math.PI * 2;
 const cache = new WeakMap(); // room → decor
 
-// Floor slabs in the theme's two colours.
+// Worn stone in the theme's two colours: soft patches and a few cracks, no joints between
+// slabs (dark joints read as a grid over the whole room).
 export function flagTile(scale, [c0, c1]) {
-  const T = 128;
+  const T = 256;
   const c = document.createElement('canvas');
   c.width = c.height = Math.ceil(T * scale);
   const g = c.getContext('2d');
   g.scale(c.width / T, c.height / T);
-  g.fillStyle = c1; g.fillRect(0, 0, T, T);
+  g.fillStyle = c0; g.fillRect(0, 0, T, T);
   let s = 31;
   const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  for (let row = 0; row < 4; row++) {
-    const y = row * 32, shift = row % 2 ? 20 : 0;
-    let x = 0;
-    while (x < T) {
-      const w = Math.min(T - x, 26 + Math.floor(r() * 18));
-      const k = 0.85 + r() * 0.3;
-      for (const ox of [shift, shift - T]) {
-        g.beginPath(); g.roundRect(x + ox + 1.2, y + 1.2, w - 2.4, 29.6, 5);
-        g.fillStyle = c0; g.globalAlpha = k; g.fill(); g.globalAlpha = 1;
-        g.beginPath(); g.roundRect(x + ox + 3, y + 2.5, w - 7, 4, 2);
-        g.fillStyle = 'rgba(255,255,255,.05)'; g.fill();
-      }
-      if (r() < 0.3) {
-        const cx = x + shift + 6 + r() * (w - 12), cy = y + 6 + r() * 20;
-        g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + 5, cy + 4); g.lineTo(cx + 3, cy + 9);
-        g.lineWidth = 0.8; g.strokeStyle = 'rgba(0,0,0,.45)'; g.stroke();
-      }
-      x += w;
-    }
+  const wrap = (fn) => { for (const ox of [-T, 0, T]) for (const oy of [-T, 0, T]) { g.save(); g.translate(ox, oy); fn(); g.restore(); } };
+  for (let i = 0; i < 26; i++) { // patches of the darker colour
+    const x = r() * T, y = r() * T, rad = 14 + r() * 34, a = 0.15 + r() * 0.3, rot = r() * 3;
+    wrap(() => { g.beginPath(); g.ellipse(x, y, rad, rad * 0.65, rot, 0, TAU); g.fillStyle = c1; g.globalAlpha = a; g.fill(); g.globalAlpha = 1; });
+  }
+  for (let i = 0; i < 12; i++) { // faint highlights
+    const x = r() * T, y = r() * T, rad = 8 + r() * 18;
+    wrap(() => { g.beginPath(); g.ellipse(x, y, rad, rad * 0.6, 0, 0, TAU); g.fillStyle = 'rgba(255,255,255,.025)'; g.fill(); });
+  }
+  for (let i = 0; i < 9; i++) { // cracks
+    const x = r() * T, y = r() * T, dx = 4 + r() * 5, dy = 3 + r() * 5;
+    wrap(() => {
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + dx, y + dy); g.lineTo(x + dx - 2, y + dy * 2);
+      g.lineWidth = 0.8; g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke();
+    });
   }
   return { canvas: c, T };
 }

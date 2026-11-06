@@ -979,8 +979,10 @@ Konsep dipilih pemilik dari `app/masuk.html`: **A. Api Unggun** + menu Pengatura
   - `migrate()` v4 → v5: `effects` 'full' → 'auto', volume 80/80, `view` '25d', `sharp` 'normal', `zoom` 'far', `shake`/`dmgNumbers` aktif, `showFps` mati.
 
 ## 27. HP Hanya Landscape (permintaan pemilik 2026-10-28)
-- Di HP (layar sentuh, lebar ≤ 900 px) game **hanya bisa dimainkan mendatar**. Dalam posisi tegak muncul kartu "Putar HP-mu ke posisi mendatar". Perjalanan yang sedang berlangsung dijeda saat HP diputar tegak. Di Android, sentuhan pertama mencoba layar penuh + kunci landscape.
+- Di HP (layar sentuh, lebar ≤ 900 px) game **hanya bisa dimainkan mendatar**. Dalam posisi tegak muncul kartu "Putar HP-mu ke posisi mendatar". Perjalanan yang sedang berlangsung dijeda saat HP diputar tegak. Di Android, sentuhan yang selesai (jari diangkat) mencoba layar penuh + kunci landscape; kalau ditolak, sentuhan berikutnya mencoba lagi sampai berhasil sekali. iPhone tidak punya layar penuh untuk halaman web, jadi di sana game mengikuti ukuran jendela browser.
+- Di itch.io game berjalan dalam iframe seukuran embed, dan game tidak bisa mengubah ukuran iframe itu dari dalam. Supaya pas di HP, halaman itch memakai "Click to launch in fullscreen". Di layar sentuh joystick hanya mulai dari kanvas `#game`; sentuhan pada elemen lain dibiarkan menjadi `click`.
 - Layar pendek (HP mendatar, tinggi ≤ 540 px): HUD, pelacak quest, tombol atas, tombol aksi, sabuk ramuan, joystick, dan isi panel diperkecil (CSS `zoom`). Peta mini lebih kecil.
+- Kolom isian di layar pendek tetap berukuran teks minimal 16 px setelah `zoom`, karena iPhone memperbesar halaman untuk kolom yang lebih kecil. Saat keyboard ditutup, halaman dikembalikan ke posisi awal.
 - Tampilan dunia di layar pendek memperlihatkan ±440 satuan pada sisi pendek (bukan 360), jadi musuh terlihat lebih awal.
 
 ## 30. Peta Kota (permintaan pemilik 2026-10-29)
@@ -1070,7 +1072,7 @@ Game bisa dipasang ke layar HP (PWA) dan dimainkan tanpa internet setelah dibuka
 
 ## 33. Hack and Slash Serba Cepat (permintaan pemilik 2026-10-29, dirancang 2026-10-30)
 
-Pemilik ingin game terasa hack and slash. Yang terasa lambat: **gerak & serangan** dan **menunggu** (musuh berjalan jauh dari lorong, jeda gelombang, jalan jauh di wilayah). Keputusan pemilik: tempo naik **sedang (±1,5×)**; supaya tidak jadi gampang, musuh **lebih banyak & datang cepat** (bukan lebih cepat/agresif); jalan jauh di wilayah diatasi dengan **mount** (§34, dikerjakan setelah bagian ini); tingkat kesulitan & Celah tanpa batas (9E) dirancang **setelah** tempo baru, di atas angka baru.
+Pemilik ingin game terasa hack and slash. Yang terasa lambat: **gerak & serangan** dan **menunggu** (musuh berjalan jauh dari lorong, jeda gelombang, jalan jauh di wilayah). Keputusan pemilik: tempo naik **sedang (±1,5×)**; supaya tidak jadi gampang, musuh **lebih banyak & datang cepat** (bukan lebih cepat/agresif); jalan jauh di wilayah diatasi dengan **mount** (§35, dikerjakan setelah bagian ini); tingkat kesulitan & Celah tanpa batas (9E) dirancang **setelah** tempo baru, di atas angka baru.
 
 Pendekatan: sisi pemain lewat satu blok pengali `TEMPO`, sisi musuh lewat aturan kedatangan `HORDE`; keduanya di `data/balance.js`, dipakai di `run/` di titik pemakaiannya (stat yang tampil di layar karakter tidak berubah). Kecepatan, telegraf, peluru musuh, dan pola bos **tidak** dipercepat: bahayanya datang dari jumlah.
 
@@ -1104,5 +1106,77 @@ Musuh ×1,6 berarti hadiah per menit naik; itu disengaja (hack and slash terasa 
 - Simulasi tanpa layar (seperti `simulate()` di `run.test.js`) mencatat waktu per lantai, EXP, dan emas sebelum/sesudah untuk tiap kelas; hasilnya ditulis di laporan bagian.
 - Cek manual pemilik di PC & HP: rasa cepat, FPS di HP dengan 40+ musuh, pola bos masih terbaca.
 
+### 33.5b Hasil ukur (2026-10-30, simulasi lantai 1–3 dungeon pertama, LV 8)
+| Kelas | Detik/lantai | EXP/lantai | Emas/lantai |
+|---|---|---|---|
+| Warrior | 60 → 34 (−44%) | 77 → 79 (+3%) | 52 → 64 (+23%) |
+| Archer | 55 → 39 (−30%) | 71 → 79 (+11%) | 60 → 66 (+10%) |
+| Mage | 125 → 58 (−54%) | 77 → 76 (−1%) | 58 → 66 (+14%) |
+| Assassin | 66 → 36 (−45%) | 65 → 73 (+13%) | 48 → 55 (+14%) |
+
+Emas sedikit di atas sasaran karena bonus koin per lantai tetap dan elite per lantai ±1,2× lebih banyak; dibiarkan, disetel ulang di 9E bila perlu.
+
 ### 33.6 Di luar bagian ini
-Mount (§34), tingkat kesulitan & Celah tanpa batas (9E), pet. Angka di §33 bisa disetel ulang saat 9E.
+Mount (§35), tingkat kesulitan & Celah tanpa batas (9E), pet. Angka di §33 bisa disetel ulang saat 9E.
+
+## 34. Musik & Efek Suara dari File (permintaan pemilik 2026-10-31)
+
+- **Sumber:** file asli di `art-src/audio/` (tidak masuk git), `npm run audio` (`app/scripts/audio.mjs`, perlu ffmpeg) menghasilkan `app/public/audio/*.mp3`: musik diratakan kerasnya, 96 kbps; jingle dipotong 3–5 detik; efek suara mono, hening awal dibuang, dipotong 0,4–1 detik.
+- **Daftar:** `app/src/data/audio.js`. Beberapa file di satu nama dipilih acak. Yang belum punya file tetap memakai suara sintetis `core/audio.js`; musik yang gagal dimuat jatuh ke lagu chiptune lama.
+- **Musik:** judul (menu), kota, wilayah (dua lagu acak, tidak sama berturut-turut), dungeon, bos (selama ada bos hidup), epilog. Hening di layar Hasil Perjalanan. Dua elemen `<audio>` streaming, crossfade 2 detik antar-adegan dan menjelang akhir lagu. Service worker melayani permintaan Range supaya tetap jalan offline.
+- **Efek suara:** didekode sekali saat gestur pertama; jeda minimum dan batas suara per nama supaya pertarungan ramai tidak menumpuk; nada diacak ±8% (`Math.random`, bukan RNG simulasi). Jingle: naik level, lantai bersih, kalah. Portal dan Bangkit dari abu memakai bunyi pendek `chime`.
+
+## 35. Mount (permintaan pemilik 2026-10-29, dirancang 2026-11-05)
+
+Wilayah 20.000 × 12.000 px masih terasa jauh walau tempo §33 sudah naik. Mount mempercepat perjalanan di wilayah terbuka dan menjadi koleksi. Gambar 9 mount sudah ada di `art/companions.js` (halaman konsep `pet.html`). Keputusan pemilik: koleksi bertahap; naik lewat tombol, turun otomatis; mount terbang boleh menyeberang air; tiap mount punya kecepatan per rarity + satu bonus kecil.
+
+### 35.1 Cara main
+- **Hanya di wilayah terbuka.** Tidak di kota, dungeon, interior. Masuk kota/dungeon/interior/portal → turun tanpa jeda.
+- **Panggil:** tombol <kbd>M</kbd> (PC) / ikon kuda dekat tombol skill (HP). Waktu panggil **1 dtk** (bar kecil di atas kepala); boleh berjalan selama memanggil; batal bila menyerang, memakai skill, menghindar, atau kena pukul. Belum punya mount → pesan singkat "Belum punya mount".
+- **Kecepatan menunggang** (pengali dari kecepatan jalan sesudah §33): Biasa ×1,6 · Bagus ×1,65 · Langka ×1,7 · Epik ×1,8 · Legendaris ×1,9 · Mitos ×2,0.
+- **Mount terbang** (Griffin, Naga, Paus Langit): menyeberang sungai & danau (solid `water`/`lake`). Pohon, batu, pagar, pondok, dan batas wilayah tetap menghalangi. Keluar wilayah tetap hanya di ujung jalan setapak.
+- **Musuh tetap mengejar dan menyerang** pemain yang menunggang. Mount untuk menghindari pertarungan, bukan untuk kebal.
+- **Turun otomatis:**
+  - Tekan serang / skill / ultimate / menghindar → turun, dan aksi itu langsung dijalankan di langkah yang sama (input tidak hilang).
+  - Kena pukul → jatuh, tombol M terkunci **3 dtk** (cincin jeda di ikon).
+  - Turun di atas air (mount terbang) → didorong ke tepi daratan terdekat.
+- Ramuan bisa diminum tanpa turun.
+
+### 35.2 Koleksi, sumber, bonus
+Koleksi per slot save (per karakter). Bonus hanya dari **mount aktif**, berlaku juga saat tidak menunggang. Bonus tidak pernah menambah damage.
+
+| Mount (id) | Rarity | Sumber | Bonus |
+|---|---|---|---|
+| Kuda Perang (`horse`) | Biasa | Hadiah bab 1 (mount pertama; membuka tombol M) | +5% emas |
+| Serigala Raksasa (`snowwolf`) | Langka | Kandang, emas | +15% jangkauan magnet permata |
+| Jamur Berjalan (`shroom`) | Langka | Kandang, emas | +10% pemulihan ramuan |
+| Kura Raksasa (`turtle`) | Epik | Toko Lencana Kapten Vera | +5% HP maks |
+| Basilisk (`basilisk`) | Epik | Jatuh dari bos dungeon & mini bos wilayah (peluang kecil) | +5% material tempa |
+| Kuda Mimpi Buruk (`nightmare`) | Legendaris | Jatuh dari bos & mini bos Tanah Gerhana (peluang kecil) | +5% EXP |
+| Griffin (`griffin`) | Legendaris | Quest sampingan berantai "Bintang Jatuh" (`s_salju`) | +5% peluang gear |
+| Naga (`dragon`) | Mitos | Mengalahkan Sang Gerhana (epilog) | +5% EXP, +5% emas |
+| Paus Langit (`skywhale`) | Mitos | Menyelesaikan semua quest sampingan | +10% magnet, +5% material |
+
+- **Jaminan jatuh:** peluang Basilisk & Mimpi Buruk naik sedikit tiap bos yang kalah tanpa hasil; dijamin pada bos ke-25. Hitungan terpisah per mount, direset saat mount itu jatuh.
+- **Varian warna** (dari `skins` tiap mount): warna pertama gratis saat mount didapat. Warna lain dibeli di Kandang dengan emas, atau didapat acak bila mount yang sudah dimiliki jatuh lagi dari bos.
+- **Penjaga Kandang:** NPC baru di Kota Awal. Tab **Beli** (Serigala, Jamur, warna) dan tab **Kandang** (pilih mount aktif & warna, pratinjau mount bergerak).
+- **Panel Karakter:** tab **Mount** (lihat koleksi; ganti mount aktif & warna saat di kota). Tab Koleksi mendapat baris "Mount n/9".
+- **Ditunda:** pelana, jejak, aura, topi dari halaman konsep; pet.
+
+### 35.3 Teknis
+- **`data/mounts.js`:** kecepatan per rarity, waktu panggil, jeda jatuh, harga mount & warna, peluang jatuh dasar & kenaikan, jaminan 25, bonus tiap mount. Daftar id dicocokkan dengan `MOUNTS` di `art/companions.js` (tes).
+- **`run/mount.js`** (logika murni + tes): keadaan `none → summoning → riding`; `startSummon`, `stepMount`, `dismount(reason)`, `mountSpeed()`, `canCrossWater()`. Dipanggil dari `run/run.js` (gerak, aksi, kena pukul) dan `run/field.js`.
+- **`run/fieldmap.js`:** `pushOut(map, o, r, { fly })` melewatkan solid `water`/`lake` bila `fly`; fungsi tepi daratan terdekat untuk turun di atas air.
+- **`meta/stable.js`** (logika murni + tes): beli mount/warna, pilih aktif, `mountBonus(char)`, hadiah quest & jatuhan bos dengan jaminan. Jatuhan bos lewat `applyTrip`; hadiah quest lewat alur quest yang sudah ada. Bonus disuntikkan ke perhitungan yang sudah ada (emas, EXP, magnet, ramuan, material, peluang gear, HP maks).
+- **Save v21:** `char.mounts = { owned: { horse: [0] }, active: 'horse', skin: { horse: 0 }, pity: { basilisk: 0, nightmare: 0 } }` (`owned`: id → daftar indeks warna). `migrate()` v20→v21: isi kosong, lalu berikan mount yang haknya sudah didapat (bab 1 selesai → Kuda; Sang Gerhana kalah → Naga; `s_salju` selesai → Griffin; semua quest sampingan → Paus Langit). Tes migrasi & validasi.
+- **Gambar:** `render3d/actors.js` `drawHero` memakai `drawRidden` saat menunggang; kanvas billboard pemain diperbesar hanya selama menunggang; mount terbang melayang dengan bayangan di tanah. Bar panggil di atas kepala; debu saat naik/turun (RNG efek sendiri, bukan RNG simulasi). Tampilan 2D lama (`?2d`) ikut memakai `drawRidden`.
+- **Input & HUD:** <kbd>M</kbd> di `core/input.js`; ikon kuda + cincin jeda di HUD HP; tombol tersembunyi sampai mount pertama didapat.
+- **Teks:** semua dibungkus `tr()`/`t()`, kamus EN di `src/i18n/`.
+- **Suara:** `chime` saat naik; langkah kaki kuda menyusul lewat `data/audio.js`.
+- **Cheat:** +Kuda, +semua mount.
+
+### 35.4 Urutan kerja (berhenti untuk cek pemilik tiap bagian)
+- **A** Naik/turun & kecepatan dengan Kuda lewat cheat: `data/mounts.js`, `run/mount.js` + tes, gambar menunggang, tombol M & ikon HP.
+- **B** Mount terbang menyeberang air + gambar melayang.
+- **C** Koleksi: save v21, `meta/stable.js`, Penjaga Kandang, tab Mount, bonus.
+- **D** Sumber hadiah (bab 1, quest, bos dengan jaminan, Lencana), Koleksi, kamus EN.

@@ -230,7 +230,7 @@ export class Field25 {
 
   // ground tiles
   paintTile(tl, game, t) {
-    const k = this.tileK, x0 = tl.ix * TS, y0 = tl.iy * TS, g = tl.c.getContext('2d');
+    const k = tl.c.width / TS, x0 = tl.ix * TS, y0 = tl.iy * TS, g = tl.c.getContext('2d'); // the side is rounded up: k from it, or the last row stays dark
     g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
     g.lineJoin = 'round';
     const r = this.rect; r.x0 = x0; r.y0 = y0; r.x1 = x0 + TS; r.y1 = y0 + TS;

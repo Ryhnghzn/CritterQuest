@@ -123,8 +123,8 @@ it('peluang elite ×HORDE.eliteMul', () => { /* rata-rata 4000 spawnFromLane di 
   - `spawnFromLane(run, type, lane = null)`: pakai `lane` bila diberi; HP `×HORDE.hp` bila bukan bos (sebelum `makeElite`); elite `rand() < ELITE.chance[f] * HORDE.eliteMul`.
   - `stepDungeon` saat antrean belum habis dan `spawnT <= 0`: bila jenis berikut bos → spawn sendiri; selain itu `k = min(rint(HORDE.pack[0], HORDE.pack[1]), sisa antrean non-bos berturut-turut, HORDE.liveCap − hidup)`; bila `k <= 0` → `spawnT = 0.2` (coba lagi); selain itu pilih satu lorong `rand()`, spawn `k` musuh di lorong itu, `spawnT = every × HORDE.packGap`.
   - Ambang gelombang: `run.enemies.length <= Math.ceil(run.queue.length * HORDE.nextAt)`.
-- [ ] **B5.** `npm test`, `npm run build`. Main 1 dungeon tiap kelas di cheat panel, periksa FPS di HP (≥ 40) dengan 45 musuh.
-- [ ] **B6. Berhenti → cek pemilik → commit** `Serba cepat B: musuh berkelompok di dungeon, lorong pendek, gelombang tumpang tindih`.
+- [x] **B5.** `npm test`, `npm run build`. Main 1 dungeon tiap kelas di cheat panel, periksa FPS di HP (≥ 40) dengan 45 musuh.
+- [x] **B6. Berhenti → cek pemilik → commit** `Serba cepat B: musuh berkelompok di dungeon, lorong pendek, gelombang tumpang tindih`.
 
 ---
 
@@ -132,18 +132,18 @@ it('peluang elite ×HORDE.eliteMul', () => { /* rata-rata 4000 spawnFromLane di 
 
 **File:** `data/world.js`, `data/balance.js` (`ULT.kill`), `run/field.js`, `run/dungeon.js`, `run/run.js`, tes `run/field.test.js`, `run/run.test.js`.
 
-- [ ] **C1. Data.** `FIELD.pack: [5, 10]`, `packEvery: 3`, `nightPackEvery: 2`, `maxEnemies: 40`; `ULT.kill: 2`; komentar `§33`.
-- [ ] **C2. Tes:**
+- [x] **C1. Data.** `FIELD.pack: [5, 10]`, `packEvery: 3`, `nightPackEvery: 2`, `maxEnemies: 40`; `ULT.kill: 2`; komentar `§33`.
+- [x] **C2. Tes:**
   - `field.test.js`: `spawnPack` → jumlah dalam `[5, 10]` (dibatasi `maxEnemies`), HP tiap musuh `≈ ENEMIES[type].hp × fieldScale(level).hp × HORDE.hp` (bukan elite); `spawnGuardian` HP sang penjaga tidak memakai `HORDE.hp`.
   - `run.test.js`: bunuh musuh biasa dengan `e.xp = 10` → permata `v === 10 × HORDE.reward`; elite/bos → tidak dikali. Dua bunuhan di titik sama → satu permata `v = 2 × 6.5`. Peluang koin & gear: ganti `rand` tidak bisa, jadi uji fungsi kecil `normalChance(base)` = `base × HORDE.reward` dan pastikan `dropCoins`/`dropLoot`/`questDrop` memakainya (tes rata-rata 4000 bunuhan koin ≈ `COINS.chance × 0.65 ± 0.02`).
-- [ ] **C3. Jalankan** → gagal.
-- [ ] **C4. Terapkan:**
+- [x] **C3. Jalankan** → gagal.
+- [x] **C4. Terapkan:**
   - `run/field.js` `spawnPack` & pengawal di `spawnGuardian`: HP `×HORDE.hp`; `FIELD.eliteChance × HORDE.eliteMul`; `questDrop`: `rand() >= d.chance * HORDE.reward`.
   - `run/dungeon.js`: ekspor `normalChance(base) => base * HORDE.reward`; `dropCoins` `rand() >= normalChance(COINS.chance)`; `dropLoot` `rand() < normalChance(DROP.enemyChance)`.
   - `run/run.js` `killEnemy`: `const v = e.elite ? e.xp : e.xp * HORDE.reward;` lalu cari permata EXP diam (`!g.mag && !g.coin && !g.gear && !g.heart`) dalam `HORDE.merge` px → `g.v += v; g.big = g.v >= 5`, selain itu push permata baru seperti sekarang.
-- [ ] **C5. Ukur sesudah:** jalankan lagi `tempo.sim.test.js` dari Bagian 0, bandingkan dengan **sebelum**. Sasaran: waktu per lantai turun ±35%, EXP & emas per lantai dalam ±20%. Bila meleset, setel `HORDE.reward`/`count` (hanya angka di data) dan catat angka akhir di spesifikasi §33. Hapus `tempo.sim.test.js`.
-- [ ] **C6.** `npm test`, `npm run build`. Tulis tabel sebelum/sesudah di laporan.
-- [ ] **C7. Berhenti → cek pemilik → commit** `Serba cepat C: kawanan wilayah lebih besar, hadiah per musuh disetel`.
+- [x] **C5. Ukur sesudah:** jalankan lagi `tempo.sim.test.js` dari Bagian 0, bandingkan dengan **sebelum**. Sasaran: waktu per lantai turun ±35%, EXP & emas per lantai dalam ±20%. Bila meleset, setel `HORDE.reward`/`count` (hanya angka di data) dan catat angka akhir di spesifikasi §33. Hapus `tempo.sim.test.js`.
+- [x] **C6.** `npm test`, `npm run build`. Tulis tabel sebelum/sesudah di laporan.
+- [x] **C7. Berhenti → cek pemilik → commit** `Serba cepat C: kawanan wilayah lebih besar, hadiah per musuh disetel`.
 
 ## Penutup
 - [ ] Perbarui status di `CLAUDE.md` (§33 selesai; berikutnya §34 Mount, lalu 9E).

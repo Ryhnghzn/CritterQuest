@@ -36,6 +36,7 @@ addEventListener('keydown', (e) => {
   for (const cb of input.onAction) cb(e.code);
 });
 addEventListener('keyup', (e) => input.keys.delete(e.code));
+addEventListener('focusout', (e) => { if (e.target.matches('input, textarea')) scrollTo(0, 0); }); // iPhone leaves the page shifted after its keyboard closes
 addEventListener('blur', () => { input.keys.clear(); input.mouse.down = false; input.attackHeld = false; input.joy = null; });
 
 addEventListener('mousemove', (e) => {
@@ -56,7 +57,7 @@ function setTouchMode() {
 
 addEventListener('touchstart', (e) => {
   setTouchMode();
-  if (e.target.closest('.screen, .modal, #mute, .touchbtn, #cheat, #cheatbtn')) return;
+  if (e.target.id !== 'game') return; // the stick starts on the play field; anything else keeps its tap
   for (const t of e.changedTouches) {
     if (input.joy || t.clientX > innerWidth / 2) continue; // stick lives on the left half
     input.joy = { id: t.identifier, ox: t.clientX, oy: t.clientY, dx: 0, dy: 0 };

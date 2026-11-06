@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
-import { waveQueue, FLOOR_COUNT, makeElite, spawnFromLane, stepDungeon, hpMul } from './dungeon.js';
+import { waveQueue, FLOOR_COUNT, makeElite, spawnFromLane, stepDungeon, hpMul, normalChance } from './dungeon.js';
 import { HORDE } from '../data/balance.js';
 import { inside } from './room.js';
 import { DUNGEONS } from '../data/dungeons.js';
@@ -209,7 +209,28 @@ describe('koin', () => {
     expect(g.gold).toBe(COINS.boss);
   });
 
-  it('sekitar 30% musuh biasa menjatuhkan 1–3 koin yang bisa dipungut', () => {
+  it('peluang hadiah musuh biasa × HORDE.reward (spec §33.4)', () => {
+    expect(normalChance(0.3)).toBeCloseTo(0.3 * HORDE.reward);
+  });
+
+  it('EXP musuh biasa × HORDE.reward, elite tidak; permata berdekatan bergabung', () => {
+    const g = start();
+    g.spawnT = 1e9;
+    const a = g.spawnEnemy('slink'); Object.assign(a, { x: 300, y: 0, xp: 10, hp: 0 });
+    step(g);
+    const gems = () => g.gems.filter((x) => !x.coin && !x.gear && !x.heart);
+    expect(gems()).toHaveLength(1);
+    expect(gems()[0].v).toBeCloseTo(10 * HORDE.reward);
+    const b = g.spawnEnemy('slink'); Object.assign(b, { x: 305, y: 0, xp: 10, hp: 0 });
+    step(g);
+    expect(gems()).toHaveLength(1); // merged into the resting gem
+    expect(gems()[0].v).toBeCloseTo(20 * HORDE.reward);
+    const el = g.spawnEnemy('slink'); makeElite(el); Object.assign(el, { x: -300, y: 0, xp: 10, hp: 0 });
+    step(g);
+    expect(gems().find((x) => x.x < 0).v).toBe(10);
+  });
+
+  it('sekitar 30% × HORDE.reward musuh biasa menjatuhkan 1–3 koin yang bisa dipungut', () => {
     const g = start();
     g.spawnT = 1e9;
     for (let i = 0; i < 400; i++) {
@@ -219,8 +240,8 @@ describe('koin', () => {
     step(g);
     const coins = g.gems.filter((c) => c.coin);
     for (const c of coins) c.mag = true;
-    expect(coins.length).toBeGreaterThan(400 * 0.2);
-    expect(coins.length).toBeLessThan(400 * 0.4);
+    expect(coins.length).toBeGreaterThan(400 * 0.12);
+    expect(coins.length).toBeLessThan(400 * 0.28);
     for (const c of coins) expect(c.v).toBeGreaterThanOrEqual(COINS.min), expect(c.v).toBeLessThanOrEqual(COINS.max);
     const sum = coins.reduce((n, c) => n + c.v, 0);
     for (let i = 0; i < 60 * 5; i++) step(g);

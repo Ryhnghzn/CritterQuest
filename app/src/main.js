@@ -18,9 +18,8 @@ import { SHARP_SCALE, ZOOM_START, CAM_SENS } from './data/settings.js';
 import { renderSettings } from './ui/settings.js';
 import { freshSettings } from './meta/schema.js';
 import { CLASSES, CLASS_BASE } from './data/classes.js';
-import { iconCanvas } from './art/sprites.js';
 import { input, pollMove, consumePressed } from './core/input.js';
-import { ensureAudio, startMusic, stopMusic, toggleMuted, setMuted, setVolumes, sfx } from './core/audio.js';
+import { ensureAudio, playMusic, stopMusic, toggleMuted, setMuted, setVolumes, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate, spentPoints } from './meta/character.js';
@@ -28,7 +27,7 @@ import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, r
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
 import { codexFx } from './meta/collection.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
-import { equipSkill, allocateTalents, wornSkills, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
+import { equipSkill, allocateTalents, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
@@ -247,7 +246,7 @@ function showTownOverlay(id) {
 
 // menus
 async function toSlots() {
-  stopMusic();
+  playMusic('judul');
   if (scene === 'town') { syncHp(); await saveCurrent(); }
   if (scene === 'run' && game.field) await commitField();
   slots = await store.loadSlots();
@@ -313,7 +312,7 @@ function enterTown(char, at) {
   worldClock = char.clock;
   settings.lastSlot = char.slot;
   saveSettings();
-  stopMusic();
+  playMusic('kota');
   const s = finalStats(char);
   town = createTown({ id: char.location, moveSpd: s.moveSpd, hp: currentHp(char), maxHp: s.maxHp, at });
   town.marks = npcMarks(current, town.id);
@@ -626,7 +625,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   await saveCurrent();
   townNpc = null;
   scene = 'run';
-  ensureAudio(); startMusic();
+  ensureAudio(); playMusic('dungeon');
   const stats = finalStats(current);
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
@@ -638,17 +637,8 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   await loadWorld(R3.needsWarm(game), (step) => R3.warm(game, step), 'foes', dungeon);
 }
 
-// Skill / ultimate buttons, the avatar and the pause menu for a dungeon trip or a region.
+// The avatar and the pause menu for a dungeon trip or a region.
 function setupRunUI() {
-  wornSkills(current).forEach((sk, i) => {
-    const btn = $(`act-s${i + 1}`);
-    btn.classList.toggle('none', !sk);
-    btn.querySelector('.ic').replaceChildren(...(sk ? [iconCanvas(sk.icon || sk.id, 30)] : []));
-    btn.title = sk ? `${sk.name} (${i + 1})` : t('Slot {n} kosong', { n: i + 1 });
-  });
-  const ult = ultimateOf(current);
-  $('act-ult').classList.toggle('locked', !ult);
-  if (ult) { $('act-ult').querySelector('.ic').replaceChildren(iconCanvas(ult.icon, 30)); $('act-ult').title = `${ult.name} (5)`; }
   R.avatar = avatarOf(current);
   game.weaponRarity = R.avatar.look.gear.weapon?.rarity ?? 0; // attack sparks (run/skillfx.js)
   // regions save as you go: no giving up, but back to the slots is fine (spec §25.1)
@@ -664,7 +654,7 @@ async function explore(regionId, at = 'west') {
   await saveCurrent();
   townNpc = null;
   scene = 'run';
-  ensureAudio(); startMusic();
+  ensureAudio(); playMusic('wilayah');
   const region = regionById(regionId);
   if (!current.regions[regionId]) { // first steps in a region count at once (a quest may wait for it)
     const before = current;
@@ -881,7 +871,7 @@ async function endRun(died) {
   dungeonReturn = null;
   const go = () => (back ? explore(back.region, { x: back.x, y: back.y }) : enterTown(current, 'gate'));
   renderResults($('results'), { ...applied, trip, newRecord, saveError },
-    { onContinue: applied.ending ? () => { renderEnding($('ending'), current, go); showMenu('ending'); } : go,
+    { onContinue: applied.ending ? () => { playMusic('epilog'); renderEnding($('ending'), current, go); showMenu('ending'); } : go,
       continueLabel: back ? t('Kembali ke {r}', { r: regionById(back.region).name }) : null });
   showMenu('results');
 }
@@ -1057,10 +1047,14 @@ if (CHEAT_ON) {
 // Turning to portrait pauses a run (a card asks to turn back); Android can also lock it.
 const portrait = matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 900px)');
 portrait.addEventListener('change', () => { if (portrait.matches && scene === 'run' && game.state === ST.PLAY) pause(); });
-addEventListener('pointerdown', function lockLandscape() {
-  removeEventListener('pointerdown', lockLandscape);
-  if (!matchMedia('(pointer: coarse)').matches || !window.screen.orientation?.lock) return;
-  document.documentElement.requestFullscreen?.().then(() => window.screen.orientation.lock('landscape')).catch(() => { /* not supported: the card does the job */ });
+// pointerup, not pointerdown: a touch only counts as a user gesture once the finger lifts
+addEventListener('pointerup', function lockLandscape() {
+  const root = document.documentElement;
+  if (!matchMedia('(pointer: coarse)').matches || !window.screen.orientation?.lock || !root.requestFullscreen) { removeEventListener('pointerup', lockLandscape); return; } // iPhone has no fullscreen: the card does the job
+  root.requestFullscreen().then(() => {
+    removeEventListener('pointerup', lockLandscape);
+    return window.screen.orientation.lock('landscape');
+  }).catch(() => { /* refused this time: the next tap tries again */ });
 });
 
 // keyboard shortcuts
@@ -1173,6 +1167,7 @@ function frame(dt) {
     drawRunView(simT);
     if (hudT > 0.12 && game.state !== ST.TITLE) { hudT = 0; updateHUD(game); updateClock(worldClock); updateQuestTracker(current, game.state === ST.PLAY); checkPoints(); }
     if (game.state === ST.PLAY) updateActions(game);
+    if (game.state === ST.PLAY) playMusic(game.enemies.some((e) => e.boss) ? 'bos' : game.field ? 'wilayah' : 'dungeon');
     if (game.field && game.state === ST.PLAY && (minimapT += dt) > 0.25) { minimapT = 0; drawMinimap(); }
     const gate = game.field && game.state === ST.PLAY ? game.nearGate : null;
     const who = game.field && game.state === ST.PLAY && !gate ? game.nearHidden : null;
@@ -1216,7 +1211,11 @@ function showTitle() {
     onLang: switchLang,
   });
   showMenu('title');
+  playMusic('judul');
 }
+// browsers only let sound start from a gesture: the title's music begins with the first one
+addEventListener('pointerup', ensureAudio, { once: true });
+addEventListener('keydown', ensureAudio, { once: true });
 
 slots = await store.loadSlots();
 showTitle();

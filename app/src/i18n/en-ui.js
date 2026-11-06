@@ -130,6 +130,7 @@ export default {
   '1 poin bakat tiap 2 level. Atur ulang di Pelatih.': '1 talent point every 2 levels. Reset at the Trainer.',
   'Bakat hanya bisa diatur di kota.': 'Talents can only be set in town.',
   'Skill baru: {name} (tombol {n})': 'New skill: {name} (key {n})',
+  'Ultimate terbuka: {name} (tombol 5)': 'Ultimate unlocked: {name} (key 5)',
   'Kosong': 'Empty',
   'Ketuk satu slot lalu satu skill untuk memasang.': 'Tap a slot, then a skill, to equip it.',
 
