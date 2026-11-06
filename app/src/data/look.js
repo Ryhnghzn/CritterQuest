@@ -13,11 +13,12 @@ const MATANG = {
   ambient: 0.5,       // multipliers on each scene's hemisphere light …
   key: 1.3,           // … sun / moon …
   points: 1.7,        // … and torches, lanterns, windows: contrast and a sense of where light comes from
+  spells: true,       // spell effects standing in the world (render3d/spell3d.js); false = the old flat glows
 };
 // the look before §36, for comparing side by side
 const LAMA = {
   saturation: 1, detail: 0, exposure: 1, bloom: { strength: 0.7, radius: 0.45, threshold: 0.82 }, bloomScale: 1,
-  bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1,
+  bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1, spells: false,
 };
 const old = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lama');
 export const LOOK = old ? LAMA : MATANG;

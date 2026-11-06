@@ -15,6 +15,7 @@ import { moveDuration } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DODGE } from '../data/balance.js';
 import { ATTACK_POSE } from '../run/skills.js';
+import { Spell3D } from './spell3d.js';
 
 const DOLL_SCALE = 0.82, ATTACK_ANIM = 0.45;
 // lifted into 3D (the rest of the effects stay on the ground decal)
@@ -79,6 +80,7 @@ export class Actors {
     this.sprites = [];
     this.fxLight = new THREE.PointLight(0xffa050, 0, 12, 1.6); scene.add(this.fxLight);
     this.groundVfx = { particles: { n: 0, items: [] } };
+    this.spells = LOOK.spells ? new Spell3D(scene) : null; // upright spell effects (spec §36, plan B)
   }
 
   sprite(i) { // pooled additive glow sprite
@@ -108,6 +110,7 @@ export class Actors {
           continue;
         }
         if (h.kind !== 'proj' || h.dead || (h.delay > 0 && !h.hover)) continue; // a delayed arrow is still being drawn back
+        if (this.spells && h.fx === 'fireball') continue; // a real flame billboard (spell3d.js)
         if (h.delay > 0) { // a dagger floating in the Dagger Circle: it pulses
           const pu = 0.5 + 0.5 * Math.sin(game.time * 14 + h.angle * 3);
           put(h.x, h.y, PROJ_H, 12 + pu * 8, PROJ_COLOR.dagger, 0.6 + 0.4 * pu);
@@ -126,6 +129,7 @@ export class Actors {
       }
     }
     for (let i = ns; i < this.sprites.length; i++) this.sprites[i].visible = false;
+    this.spells?.update(game, t, playing, this.stage.yaw, game.vfx?.mul ?? 1);
     // particles: lift the glowing kinds; their height rises a little over their life
     const P = game.vfx?.particles, ground = this.groundVfx.particles;
     let np = 0, ng = 0;

@@ -51,8 +51,12 @@
 - [x] **A5.3** Kota: pinus, oak, pinus salju memakai flora.js (varian per pohon).
 - [x] **A5.4** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A5: pohon, semak, batu berlapis`.
 
-## Bagian A6 — Efek & glow
-- [ ] Glow efek skill/aura diselaraskan dengan cahaya baru; cek tidak silau di malam hari.
+## Bagian B — Efek skill gaya prototipe (menggantikan A6)
+Efek berdiri di dunia 3D seperti prototipe A (`app/pixel`): gambar dari `art/spell/` (PixelSprite, k = 3), dipasang `render3d/spell3d.js` (billboard beranimasi, bekas di tanah, lampu, percikan 3D bergravitasi). Simulasi tidak disentuh; lapisan tanah 2D (cincin, retakan) tetap. `?lama` = efek lama. Angka di `data/spell3d.js`.
+- [x] **B1** Api Penyihir: bola api terbang (serangan dasar, Matahari Kecil) dengan nyala menghadap arah terbang, jejak percikan dan cahaya ikut; ledakan (api → asap) + bekas hangus + kilat cahaya; Meteor jatuh dari langit lalu meledak; Hujan Meteor: tiap meteor jatuh satu per satu. Cek pemilik → commit.
+- [ ] **B2** Es: Nova Es = cincin es di tanah + kristal tumbuh–retak–runtuh, debu es.
+- [ ] **B3** Petir & sihir: Badai Petir = sambaran dari langit + bekas; Teleportasi & Perisai Mana.
+- [ ] **B4** Kelas lain (dibahas setelah Penyihir); cek silau malam hari.
 
 ## Penutup
 - [ ] Perbarui status di `CLAUDE.md`.
