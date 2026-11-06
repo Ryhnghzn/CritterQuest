@@ -3,6 +3,7 @@ import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { expToNext } from '../meta/character.js';
 import { TEMPO } from '../data/balance.js';
+import { MOUNT } from '../data/mounts.js';
 
 const setup = (classId) => ({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats } });
 const CLASS_IDS = Object.keys(CLASSES);
@@ -490,5 +491,47 @@ describe('Mage Panas, Archer Bidik, Assassin Kombo (wiring)', () => {
     g.step(1 / 60);
     expect(g.trait.focus).toBe(false);
     expect(g.trait.v).toBe(0);
+  });
+});
+
+const exploreGame = (extra = {}) => { const g = new Game(); g.explore({ ...setup('warrior'), region: 'forest', ...extra }); return g; };
+
+// tingkat modul: dipakai juga oleh tes Bagian B (impor ke field.test.js atau salin)
+const HORSE = { id: 'horse', rarity: 0, fly: false, skin: 0 };
+// panggil lalu tunggu 70 langkah; musuh dibersihkan tiap langkah supaya tidak ada pukulan yang menjatuhkan
+export const rideNow = (g) => {
+  g.intent = { ...g.intent, mount: true }; g.enemies.length = 0; g.step(1 / 60);
+  g.intent = { ...g.intent, mount: false };
+  for (let i = 0; i < 70; i++) { g.enemies.length = 0; g.step(1 / 60); }
+};
+describe('mount di wilayah (§35.1)', () => {
+  it('tanpa setup.mount: tombol mount tidak berbuat apa-apa', () => {
+    const g = exploreGame(); rideNow(g);
+    expect(g.mount.state).toBe('none');
+  });
+  it('menunggang: lebih cepat ×MOUNT.speed', () => {
+    const a = exploreGame({ mount: HORSE }), b = exploreGame({ mount: HORSE });
+    rideNow(a); a.enemies.length = 0; b.enemies.length = 0;
+    const ax = a.px, bx = b.px;
+    a.intent = { ...a.intent, move: { x: 1, y: 0 } }; b.intent = { ...b.intent, move: { x: 1, y: 0 } };
+    a.step(1 / 60); b.step(1 / 60);
+    expect((a.px - ax) / (b.px - bx)).toBeCloseTo(MOUNT.speed[0], 1);
+  });
+  it('menekan menghindar saat menunggang: turun dan menghindar di langkah yang sama', () => {
+    const g = exploreGame({ mount: HORSE }); rideNow(g); g.enemies.length = 0;
+    g.intent = { ...g.intent, dodge: true }; g.step(1 / 60);
+    expect(g.mount.state).toBe('none');
+    expect(g.dodgeT).toBeGreaterThan(0);
+  });
+  it('kena pukul saat menunggang: jatuh dan terkunci', () => {
+    const g = exploreGame({ mount: HORSE }); rideNow(g);
+    g.invuln = 0; g.dodgeInv = 0;
+    expect(g.hurtPlayer(5)).toBe(true);
+    expect(g.mount.state).toBe('none');
+    expect(g.mount.lock).toBeGreaterThan(0);
+  });
+  it('dungeon: mount tidak pernah aktif', () => {
+    const g = new Game(); g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, mount: HORSE });
+    expect(g.mount.id).toBe(null);
   });
 });

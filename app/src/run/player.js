@@ -7,6 +7,9 @@ import { confinePlayer } from './dungeon.js';
 import { confineFieldPlayer } from './field.js';
 import { sfx } from '../core/audio.js';
 import { traitMods } from './traits.js';
+import { freshMount, mountSpeedMul } from './mount.js';
+
+const NONE = freshMount(null); // runs built without reset() (tests)
 
 const DODGE_SPEED = DODGE.distance / DODGE.duration;
 const AIM_AHEAD = 120; // skill target point when there is nothing to aim at
@@ -51,7 +54,7 @@ export function stepPlayer(run, intent, dt) {
     run.py += run.dodgeY * run.dashSpeed * step;
     run.dodgeT -= dt;
   } else {
-    const spd = run.stats.moveSpd * TEMPO.move * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow); // frost slows (spec §25.4), Kepanasan too (§31.3)
+    const spd = run.stats.moveSpd * TEMPO.move * mountSpeedMul(run.mount ?? NONE) * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow); // frost slows (spec §25.4), Kepanasan too (§31.3)
     run.px += mx * spd * dt;
     run.py += my * spd * dt;
   }

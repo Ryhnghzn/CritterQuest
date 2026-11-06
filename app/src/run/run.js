@@ -10,7 +10,7 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
-import { stepAttack, stepSkills, skillCooldown, chargeUlt } from './skills.js';
+import { stepAttack, stepSkills, skillCooldown, chargeUlt, attackWanted } from './skills.js';
 import { stepHits } from './hits.js';
 import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods } from './traits.js';
 import { FX } from '../data/dungeon.js';
@@ -18,6 +18,7 @@ import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
+import { freshMount, startSummon, stepMount, dismount, wantsAction } from './mount.js';
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
 import { Vfx } from './vfx.js';
@@ -35,7 +36,7 @@ const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.w
 // hits from basic attacks fill energy (spec §18.2)
 const BASIC_FX = new Set(['slash', 'stab', 'arrow', 'fireball', 'boom']);
 // potion: belt slot to drink from this step (0–3), or -1
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false, potion: -1 };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false, mount: false, potion: -1 };
 const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
 // potion buffs: stat → multiplier field on the potion (spec §15.2)
 const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
@@ -77,6 +78,7 @@ export class Game {
 
   // Pause → Menyerah: ends the trip; the caller treats it like dying (spec §13.4).
   surrender() {
+    dismount(this.mount, 'leave');
     this.state = ST.OVER;
   }
 
@@ -87,6 +89,7 @@ export class Game {
   reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null }) {
     resetRng();
     this.classId = classId;
+    this.mount = freshMount(null); this.mountFxT = 0; // mount (spec §35); regions set it in explore()
     this.enemies.length = 0; this.hits.length = 0;
     this.shots.length = 0; this.hazards.length = 0; this.pulses.length = 0;
     this.dark = false; // Sang Gerhana's eclipse phases darken the room (spec §26.7)
@@ -146,6 +149,7 @@ export class Game {
   // setup.region: region id; setup.at: 'west' | 'east'; setup.fog: Uint8Array (revealed in place)
   explore(setup) {
     this.reset(setup);
+    this.mount = freshMount(setup.mount || null);
     this.fog = setup.fog || null;
     startField(this, setup.region, setup.at, setup.gates, setup.target, setup.opened);
     this.state = ST.PLAY;
@@ -250,6 +254,13 @@ export class Game {
   step(dt) {
     if (this.state !== ST.PLAY) return;
     this.time += dt;
+    if (this.mountFxT > 0) this.mountFxT = Math.max(0, this.mountFxT - dt);
+    if (this.field) { // mount (spec §35.1): knocked off before the action so the press is not lost
+      const m = this.mount, it = this.intent;
+      if (m.state !== 'none' && wantsAction(it, attackWanted(this, it))) dismount(m, 'action');
+      if (it.mount && m.state === 'none') startSummon(m);
+      if (stepMount(m, dt) === 'rode') { this.mountFxT = 0.4; sfx.chime(); }
+    }
     stepPlayer(this, this.intent, dt);
 
     if (this.invuln > 0) this.invuln -= dt;
@@ -294,6 +305,7 @@ export class Game {
     for (const g of this.gems) this.pickup(g);
     this.gems.length = 0;
     sfx.chime();
+    dismount(this.mount, 'leave');
     if (this.field) { this.exitTo = kind; this.returned = true; this.state = ST.OVER; } else if (kind === 'down') startFloor(this, this.floor + 1);
     else { this.returned = true; this.state = ST.OVER; }
   }
@@ -465,6 +477,7 @@ export class Game {
     if (dot) { this.dotKind = dot; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }
     if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; shieldFlash(this); }
     this.stats.hp -= dmg;
+    if (dismount(this.mount, 'hit')) this.mountFxT = 0.4;
     traitHurt(this, dmg);
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
     this.invuln = 0.7; this.flash = 0.25; this.addShake('medium');
@@ -579,6 +592,7 @@ export class Game {
       return;
     }
     this.stats.hp = 0;
+    dismount(this.mount, 'leave');
     this.state = ST.OVER;
     sfx.gameover();
     this.spawnBurst(this.px, this.py, '#ff5a6e', 30);

@@ -18,14 +18,16 @@ export function skillCooldown(stats, skill) {
   return skill.cd * (1 - Math.min(stats.cdr, CDR_MAX) / 100);
 }
 
+// the basic attack would really fire this step (also asked by the mount, run/run.js)
+export const attackWanted = (run, intent) => intent.attack || (intent.auto && run.nearestEnemy(attackReach(CLASSES[run.classId].attack)) !== null);
+
 export function stepAttack(run, intent, dt) {
   if (run.attackT > 0) run.attackT -= dt;
   // only counts down to just below zero, so holding the button keeps an exact cadence
   if (run.atkCd > 0) run.atkCd -= dt;
   if (run.atkCd > 0) return;
   const a = CLASSES[run.classId].attack;
-  const want = intent.attack || (intent.auto && run.nearestEnemy(attackReach(a)) !== null);
-  if (!want) return;
+  if (!attackWanted(run, intent)) return;
 
   run.atkCd += a.interval * TEMPO.attackInterval / run.stats.atkSpd; // spec §33.1
   run.attackT = ATTACK_POSE;
