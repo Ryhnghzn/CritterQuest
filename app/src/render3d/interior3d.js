@@ -3,7 +3,7 @@
 // camera-side panels sink (a doll's house), furniture as simple shapes merged per
 // material, and the warm glows of fireplaces, forges, cauldrons and candles.
 import * as THREE from 'three';
-import { S, toon } from './stage.js';
+import { S, toon, muted } from './stage.js';
 import { GEO, glow, Batch, tileTexture, rnd, rgbCol } from './kit3d.js';
 import { mountOf, roomPanels } from './townkit.js';
 
@@ -43,7 +43,7 @@ export function buildRoom(r, mats) {
   const out = { r, root, panels: [], lights: [], flames: [], embers: [], doors: [] };
   // floor (under the walls too, so no gap shows at the edges)
   const tex = floorTile(r.floor).clone(); tex.repeat.set(r.w / 96, r.h / 96); tex.needsUpdate = true;
-  const floor = new THREE.Mesh(GEO.plane, new THREE.MeshLambertMaterial({ map: tex }));
+  const floor = new THREE.Mesh(GEO.plane, muted(new THREE.MeshLambertMaterial({ map: tex })));
   floor.rotation.x = -Math.PI / 2; floor.scale.set(r.w * S, (r.h - r.back + 20) * S, 1); floor.position.set(r.w / 2 * S, 0, (r.back - 20 + (r.h - r.back + 20) / 2) * S);
   root.add(floor);
   // the night outside the door

@@ -5,7 +5,7 @@
 // Static parts are merged per material; walls and trees are instanced so they can sink
 // for the cutaway; houses and tall landmarks are occluders that turn see-through.
 import * as THREE from 'three';
-import { S, toon } from './stage.js';
+import { S, toon, muted } from './stage.js';
 import { GEO, glow, Batch, SinkSet, occluder, matrixOf, col, rgbCol, signTexture, tileTexture, rnd, wrapped } from './kit3d.js';
 import { wallCells, treesOf } from './townkit.js';
 import { drawIcon } from '../art/sprites.js';
@@ -129,14 +129,14 @@ export function buildTown(def, mats) {
   // ground: the town inside the walls, darker land outside
   const tile = groundTile(key, def), TS = { home: 96, forest: 160, ice: 128, desert: 160, volcano: 200 }[key];
   const tIn = tile.clone(); tIn.repeat.set(def.w / TS, def.h / TS); tIn.needsUpdate = true;
-  const floor = new THREE.Mesh(GEO.plane, new THREE.MeshLambertMaterial({ map: tIn }));
+  const floor = new THREE.Mesh(GEO.plane, muted(new THREE.MeshLambertMaterial({ map: tIn })));
   floor.rotation.x = -Math.PI / 2; floor.scale.set(def.w * S, def.h * S, 1); floor.position.set(def.w / 2 * S, 0, def.h / 2 * S);
   root.add(floor);
   const M = 1400, tOut = tile.clone(); tOut.repeat.set((def.w + M * 2) / TS, (def.h + M * 2) / TS); tOut.needsUpdate = true;
-  const land = new THREE.Mesh(GEO.plane, new THREE.MeshLambertMaterial({ map: tOut, color: col(0x8a8a8a).lerp(col(st.outside), 0.5) }));
+  const land = new THREE.Mesh(GEO.plane, muted(new THREE.MeshLambertMaterial({ map: tOut, color: col(0x8a8a8a).lerp(col(st.outside), 0.5) })));
   land.rotation.x = -Math.PI / 2; land.scale.set((def.w + M * 2) * S, (def.h + M * 2) * S, 1); land.position.set(def.w / 2 * S, -0.03, def.h / 2 * S);
   root.add(land);
-  const paths = new THREE.Mesh(GEO.plane, new THREE.MeshLambertMaterial({ map: pathsTexture(key, def, heart, gate, houses), transparent: true, depthWrite: false }));
+  const paths = new THREE.Mesh(GEO.plane, muted(new THREE.MeshLambertMaterial({ map: pathsTexture(key, def, heart, gate, houses), transparent: true, depthWrite: false })));
   paths.rotation.x = -Math.PI / 2; paths.scale.copy(floor.scale); paths.position.set(def.w / 2 * S, 0.012, def.h / 2 * S); paths.renderOrder = 1;
   root.add(paths);
   if (key === 'home') cobbles(root, def);

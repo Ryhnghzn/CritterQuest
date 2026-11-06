@@ -30,7 +30,7 @@ export function vtoon(rim = 0, flat = true) {
   if (VTOON.has(key)) return VTOON.get(key);
   const base = toon(0xffffff, rim), m = base.clone();
   m.vertexColors = true; m.flatShading = flat;
-  m.onBeforeCompile = base.onBeforeCompile;
+  m.onBeforeCompile = base.onBeforeCompile; m.customProgramCacheKey = base.customProgramCacheKey;
   m.userData.shared = true;
   VTOON.set(key, m);
   return m;

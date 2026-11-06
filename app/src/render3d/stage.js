@@ -6,6 +6,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { LOOK } from '../data/look.js';
 
 export const S = 1 / 22;          // game units → metres (a hero ≈ 1.7 m)
 export const ZOOM = { min: 0.85, max: 1.6, start: 1.35, step: 0.08 }; // starts far out; close-ups stop before textures go soft
@@ -19,6 +20,21 @@ let sharpScale = 1; // Settings → Ketajaman (data/settings.js SHARP_SCALE)
 export const setSharpScale = (k) => { sharpScale = k; };
 export const sharp = (key, lite) => SHARP[key][lite ? 1 : 0] * sharpScale;
 const CAM = { dist: 10.5, height: 11.5, fov: 40 }; // at zoom 1 the short screen side shows about the 2D view
+
+// Tampilan Matang (§36): world materials lose some saturation (after map + vertex colours, and
+// on their self light), so characters, effects and fire stand out. Chains any earlier hook.
+const SAT = LOOK.saturation.toFixed(3), LUMA = 'vec3(0.299, 0.587, 0.114)';
+export function muted(m) {
+  const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey();
+  m.onBeforeCompile = (sh, r) => {
+    prev.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <color_fragment>', `#include <color_fragment>\ndiffuseColor.rgb = mix(vec3(dot(diffuseColor.rgb, ${LUMA})), diffuseColor.rgb, ${SAT});`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance = mix(vec3(dot(totalEmissiveRadiance, ${LUMA})), totalEmissiveRadiance, ${SAT});`);
+  };
+  m.customProgramCacheKey = () => `muted|${prevKey}`;
+  return m;
+}
 
 const steps = new Uint8Array([70, 70, 70, 255, 150, 150, 150, 255, 255, 255, 255, 255]);
 let gradientMap = null;
@@ -37,6 +53,8 @@ export function toon(color, rim = 0) {
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 rimColor;')
       .replace('#include <opaque_fragment>', 'float rimF = 1.0 - max(dot(normal, normalize(vViewPosition)), 0.0);\noutgoingLight += rimColor * smoothstep(0.6, 0.95, rimF) * 0.6;\n#include <opaque_fragment>');
   };
+  m.customProgramCacheKey = () => `toon|${rim ? 1 : 0}`; // rim and plain toons compile apart
+  muted(m);
   TOON.set(key, m);
   return m;
 }
@@ -59,7 +77,7 @@ export class Stage {
     if (this.ready) return;
     this.ready = true;
     const r = this.renderer = new THREE.WebGLRenderer({ antialias: !this.lite, powerPreference: 'high-performance' });
-    r.toneMapping = THREE.ACESFilmicToneMapping;
+    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = LOOK.exposure;
     r.outputColorSpace = THREE.SRGBColorSpace;
     const c = r.domElement;
     c.id = 'game3d';
@@ -69,7 +87,7 @@ export class Stage {
     this.composer = new EffectComposer(r);
     this.pass = new RenderPass(null, this.camera); // each scene (dungeon, town, region) hands its own THREE.Scene
     this.composer.addPass(this.pass);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.7, 0.45, 0.82);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), LOOK.bloom.strength, LOOK.bloom.radius, LOOK.bloom.threshold);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
     this.raycaster = new THREE.Raycaster();

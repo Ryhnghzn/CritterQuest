@@ -3,7 +3,8 @@
 // drawRoom and becomes a texture; walls and pillars are 3D blocks; lamps light the room.
 // The hero, monsters, ground effects and numbers come from Actors (actors.js).
 import * as THREE from 'three';
-import { S, toon, glowMat, sharp, SHARP } from './stage.js';
+import { S, toon, glowMat, sharp, SHARP, muted } from './stage.js';
+import { LOOK } from '../data/look.js';
 import { Actors } from './actors.js';
 import { wallCells } from './roomgrid.js';
 import { drawRoom, flagTile, decorLights, dress } from '../render/dungeonroom.js';
@@ -63,7 +64,7 @@ export class Dungeon25 {
     g.lineJoin = 'round';
     drawRoom(g, room, theme, pat, 0, () => true);
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = SHARP.aniso;
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(side * S, side * S), new THREE.MeshLambertMaterial({ map: tex }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(side * S, side * S), muted(new THREE.MeshLambertMaterial({ map: tex })));
     floor.rotation.x = -Math.PI / 2; G.add(floor);
     // walls: chunky stone blocks around the floor
     const wallMat = toon(theme.wall, 0x3a2a5a), capMat = toon(new THREE.Color(theme.wall).multiplyScalar(0.7).getHex());
@@ -208,11 +209,11 @@ export class Dungeon25 {
     this.pool.forEach((L, i) => {
       const l = i < n ? list[i] : null;
       if (!l) { L.intensity = 0; return; }
-      L.position.set(l.x * S, 2, l.y * S); L.color.copy(rgbColor(l.rgb)); L.distance = l.r * S * 2; L.intensity = 110 * l.tint;
+      L.position.set(l.x * S, 2, l.y * S); L.color.copy(rgbColor(l.rgb)); L.distance = l.r * S * 2; L.intensity = 110 * l.tint * LOOK.points;
     });
     const dark = game.dark;
-    this.hemi.intensity = dark ? 0.35 : 2.4;
-    this.moon.intensity = dark ? 0.1 : 1.1;
+    this.hemi.intensity = (dark ? 0.35 : 2.4) * LOOK.ambient;
+    this.moon.intensity = (dark ? 0.1 : 1.1) * LOOK.key;
     this.heroLight.position.set(game.px * S, 2.4, game.py * S);
     this.heroLight.intensity = playing ? (dark ? 12 : 7) : 0;
   }

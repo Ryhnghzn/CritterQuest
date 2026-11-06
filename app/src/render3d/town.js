@@ -5,6 +5,7 @@
 // names, quest marks, shop plates and the door fade are drawn on the 2D canvas on top.
 import * as THREE from 'three';
 import { S, sharp } from './stage.js';
+import { LOOK } from '../data/look.js';
 import { billMat, canvasTexture } from './actors.js';
 import { NightMats, setGhost, GEO } from './kit3d.js';
 import { occludes, nearest, facesCamera } from './townkit.js';
@@ -190,16 +191,16 @@ export class Town25 {
   sky(place, sky, lite) {
     const n = sky.night, sc = this.scene, st = this.stage;
     if (place.room) {
-      this.hemi.color.set(0x8a7aa8); this.hemi.groundColor.set(0x1a1018); this.hemi.intensity = 1.1;
-      this.sun.color.set(0xffe0c0); this.sun.intensity = 0.35;
+      this.hemi.color.set(0x8a7aa8); this.hemi.groundColor.set(0x1a1018); this.hemi.intensity = 1.1 * LOOK.ambient;
+      this.sun.color.set(0xffe0c0); this.sun.intensity = 0.35 * LOOK.key;
       this.sun.position.set(this.camX * S, 20, this.camY * S + 12); this.sun.target.position.set(this.camX * S, 0, this.camY * S);
       sc.background = this.bgRoom || (this.bgRoom = new THREE.Color(0x07050f)); sc.fog = null;
     } else {
       const s = place.st;
       this.hemi.color.copy(cDay).lerp(cNight, n); this.hemi.groundColor.copy(gDay).lerp(gNight, n);
-      this.hemi.intensity = 1.5 + 0.2 * n;
+      this.hemi.intensity = (1.5 + 0.2 * n) * LOOK.ambient;
       this.sun.color.copy(sDay).lerp(sNight, n).lerp(sWarm, Math.min(0.6, sky.warm * 3));
-      this.sun.intensity = 2.4 - 1.3 * n;
+      this.sun.intensity = (2.4 - 1.3 * n) * LOOK.key;
       this.sun.position.set(this.camX * S - 15, 30, this.camY * S - 10); this.sun.target.position.set(this.camX * S, 0, this.camY * S);
       const bg = place.bg || (place.bg = new THREE.Color());
       bg.set(s.day).lerp(place.nightBg || (place.nightBg = new THREE.Color(s.sky)), n);
@@ -211,7 +212,7 @@ export class Town25 {
     this.mats.roomWin.color.set(n > 0.5 ? 0x1c2a5a : 0xbfe4ff);
     if (!lite && st.bloom) {
       if (this.bloomBase == null) this.bloomBase = st.bloom.strength;
-      st.bloom.strength = place.room ? 0.55 : 0.28 + 0.5 * n;
+      st.bloom.strength = (place.room ? 0.55 : 0.28 + 0.5 * n) * LOOK.bloomScale;
     }
     this.night = n;
   }
@@ -229,7 +230,7 @@ export class Town25 {
       L.visible = i < n; // fewer lights in Ringan (a shader change only when the setting flips)
       if (i >= cnt) { L.intensity = 0; continue; }
       const l = act[this._near[i]], fl = 1 + Math.sin(t * 11 + l.ph) * 0.07 + Math.sin(t * 23 + l.ph) * 0.04;
-      L.position.set(l.x * S, l.h * S, l.y * S); L.color.copy(l.color); L.distance = l.dist; L.intensity = l.int * l.f * fl;
+      L.position.set(l.x * S, l.h * S, l.y * S); L.color.copy(l.color); L.distance = l.dist; L.intensity = l.int * l.f * fl * LOOK.points;
     }
     const H = this.heroLight;
     H.position.set(hx * S, 2.2, (hy + 10) * S);

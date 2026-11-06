@@ -3,6 +3,7 @@
 // "decal" layer painted by the 2D renderer (hazards, pickups, attacks, telegraphs, ground
 // auras), and the 2D overlay on top (HP bars, damage numbers, flashes, fades).
 import * as THREE from 'three';
+import { LOOK } from '../data/look.js';
 import { S, sharp } from './stage.js';
 import { Renderer } from '../render/world.js';
 import { drawFlashes, drawFloaters } from '../render/fxkit.js';
@@ -43,9 +44,9 @@ function colorOf(css) { // parsed once per colour string (rgba alpha is ignored)
 // hero billboard box around the feet, game units: x ∈ [−HX, HX], y ∈ [−HT, HB]
 const HX = 58, HT = 100, HB = 14;
 
-// lit, cut-out billboard material (emissive keeps it readable in the dark)
-export function billMat(map) {
-  return new THREE.MeshLambertMaterial({ map, transparent: true, alphaTest: 0.04, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.42, side: THREE.DoubleSide });
+// lit, cut-out billboard material; a little self light keeps it readable in the dark (LOOK.bill)
+export function billMat(map, self = LOOK.bill) {
+  return new THREE.MeshLambertMaterial({ map, transparent: true, alphaTest: 0.04, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: self, side: THREE.DoubleSide });
 }
 export function canvasTexture(c) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 
@@ -66,7 +67,7 @@ export class Actors {
     this.decalMesh.rotation.x = -Math.PI / 2; this.decalMesh.renderOrder = 1; scene.add(this.decalMesh);
     this.heroCanvas = document.createElement('canvas');
     this.heroTex = canvasTexture(this.heroCanvas);
-    this.hero = new THREE.Mesh(new THREE.PlaneGeometry((HX * 2) * S, (HT + HB) * S), billMat(this.heroTex));
+    this.hero = new THREE.Mesh(new THREE.PlaneGeometry((HX * 2) * S, (HT + HB) * S), billMat(this.heroTex, LOOK.heroBill));
     this.hero.renderOrder = 2; scene.add(this.hero);
     this.enemies = new THREE.Group(); scene.add(this.enemies);
     // 3D effects: glowing points for sparks/embers, sprites for projectiles, one light for blasts

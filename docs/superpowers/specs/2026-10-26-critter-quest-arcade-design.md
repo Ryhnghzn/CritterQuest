@@ -1180,3 +1180,17 @@ Koleksi per slot save (per karakter). Bonus hanya dari **mount aktif**, berlaku 
 - **B** Mount terbang menyeberang air + gambar melayang.
 - **C** Koleksi: save v21, `meta/stable.js`, Penjaga Kandang, tab Mount, bonus.
 - **D** Sumber hadiah (bab 1, quest, bos dengan jaminan, Lencana), Koleksi, kamus EN.
+
+## 36. Tampilan Matang — arah A (permintaan pemilik 2026-11-06)
+
+Pemilik menilai visual sekarang terlalu "childish" (warna terlalu terang & jenuh, cahaya datar, semua objek sama terangnya, lingkungan dari bentuk polos). Dua arah diuji di prototipe `app/pixel.html` (tidak masuk game): **A · Matang** (tetap vektor/3D halus) dan **B · Pixel HD-2D**. Pemilik memilih **A dulu** (B ±4–5× lebih berat: semua karakter, gear, monster, efek harus digambar ulang).
+
+**Yang tetap:** gameplay, `run/`, `meta/`, angka keseimbangan, save (tanpa naik versi), karakter/monster/gear gaya D, UI gelap yang sudah disetujui, efek lebay (hanya glow-nya disesuaikan).
+
+**Yang berubah (lapisan gambar 2.5D saja):**
+1. **Cahaya & palet terpusat** (`data/look.js`): material dunia (toon, tanah) diredam saturasinya; cahaya ambien lebih rendah, cahaya utama (matahari/bulan) dan titik cahaya (obor, lentera, jendela) lebih kuat → kontras & arah cahaya terasa; billboard karakter tidak lagi "bersinar sendiri" sekuat dulu (pemain sedikit lebih terang dari NPC/musuh); bloom lebih halus (ambang lebih tinggi, kekuatan lebih rendah). Karakter, efek skill, dan api tetap berwarna penuh supaya menonjol dari lingkungan.
+2. **Material lingkungan**: warna rata diganti tekstur buatan kode (plester, kayu, batu, genteng, tanah, rumput) — kota, wilayah, dungeon, interior.
+3. **Vegetasi & props halus**: pohon, semak, batu dirancang ulang dengan siluet berlapis, bukan bola/kerucut polos.
+4. **Efek & glow** diselaraskan dengan cahaya baru (tidak silau).
+
+Rencana: `docs/superpowers/plans/2026-11-06-tampilan-matang.md`.

@@ -8,7 +8,8 @@
 // monsters, ground effects and numbers come from Actors (actors.js). Light follows the
 // in-game clock; Tanah Gerhana is always dusk-violet.
 import * as THREE from 'three';
-import { S, sharp, SHARP } from './stage.js';
+import { S, sharp, SHARP, muted } from './stage.js';
+import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
 import { buildProps, indexProps, gatherNear, inCutaway, bridgeSpots, tilesAround } from './fieldprops.js';
@@ -77,7 +78,7 @@ export class Field25 {
     for (let i = 0; i < 16; i++) {
       const c = document.createElement('canvas'), tex = canvasTexture(c);
       tex.anisotropy = SHARP.aniso;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(TS * S, TS * S), new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(TS * S, TS * S), muted(new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 })));
       m.rotation.x = -Math.PI / 2; m.visible = false; sc.add(m);
       this.tiles.push({ ix: 0, iy: 0, used: false, ready: false, c, tex, mesh: m, pat: null });
     }
@@ -369,8 +370,8 @@ export class Field25 {
   tint(game) {
     const sc = this.scene, fog = sc.fog;
     if (this.biome === 'eclipse') {
-      this.hemi.color.set(0x8a6ac8); this.hemi.groundColor.set(0x1a0c24); this.hemi.intensity = 2.6;
-      this.sun.color.set(0xb88cff); this.sun.intensity = 1.1;
+      this.hemi.color.set(0x8a6ac8); this.hemi.groundColor.set(0x1a0c24); this.hemi.intensity = 2.6 * LOOK.ambient;
+      this.sun.color.set(0xb88cff); this.sun.intensity = 1.1 * LOOK.key;
       fog.color.set(FOG_DAY.eclipse);
       this.groundGlow(0.36);
     } else {
@@ -378,9 +379,9 @@ export class Field25 {
       this.hemi.color.set(0xb8c4d8).lerp(_c.set(0x3a3e80), n);
       this.hemi.groundColor.set(0x4a3a2a).lerp(_c.set(0x100c1c), n);
       const lk = LIGHT_K[this.biome] || 1;
-      this.hemi.intensity = (3.2 - 1.8 * n) * lk;
+      this.hemi.intensity = (3.2 - 1.8 * n) * lk * LOOK.ambient;
       this.sun.color.set(0xfff0d0).lerp(_c.set(0x8a9aff), n).lerp(_c.set(0xff8040), Math.min(1, w * 4));
-      this.sun.intensity = (2.4 - 1.9 * n) * lk;
+      this.sun.intensity = (2.4 - 1.9 * n) * lk * LOOK.key;
       this.groundGlow((0.55 - 0.35 * n) * lk);
       fog.color.set(FOG_DAY[this.biome] || FOG_DAY.forest).lerp(_c2.set(FOG_NIGHT), n);
       for (const m of this.fogLayers || []) m.material.color.set(FOG_BANK[this.biome] || FOG_BANK.forest).lerp(_c2.set(FOG_BANK_NIGHT), n * 0.8);
@@ -394,7 +395,7 @@ export class Field25 {
 
   // the ground keeps its painted colours (as in 2D) by day, sinks into the dark by night
   groundGlow(k) {
-    for (const tl of this.tiles) tl.mesh.material.emissiveIntensity = k;
+    for (const tl of this.tiles) tl.mesh.material.emissiveIntensity = k * LOOK.groundGlow;
   }
 
   lights(game, t, playing) {
@@ -407,7 +408,7 @@ export class Field25 {
     for (let i = 0; i < this.pool.length; i++) {
       const L = this.pool[i], l = i < n ? list[i] : null;
       if (!l) { L.intensity = 0; continue; }
-      L.position.set(l.x * S, 2, l.y * S); L.color.copy(rgbOf(l.rgb)); L.distance = l.r * S * 2; L.intensity = 110 * l.tint;
+      L.position.set(l.x * S, 2, l.y * S); L.color.copy(rgbOf(l.rgb)); L.distance = l.r * S * 2; L.intensity = 110 * l.tint * LOOK.points;
     }
     const night = this.biome === 'eclipse' ? 0.7 : skyAt(game.clock ?? 12 * 60).night;
     this.heroLight.position.set(game.px * S, 2.4, game.py * S);
