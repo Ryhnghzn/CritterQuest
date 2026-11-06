@@ -61,7 +61,7 @@ Efek berdiri di dunia 3D seperti prototipe A (`app/pixel`): gambar dari `art/spe
 ## Bagian C — Dunia seperti prototipe A (permintaan pemilik 2026-11-06: "masih jauh dari pixel.html A")
 Selisih terbesar dengan prototipe: tidak ada bayangan, props berupa bentuk 3D polos (bukan ilustrasi), tanah berupa ubin, cahaya netral. Dikerjakan berurutan, cek pemilik di tiap bagian.
 - [x] **C1** Bayangan matahari nyata (Penuh saja; Ringan tanpa bayangan) untuk bangunan, props, dinding dungeon, dan billboard karakter (lewat alpha gambarnya); matahari rendah barat-barat daya mengikuti kamera (target menempel grid texel → bayangan tidak merayap); suasana senja: cahaya langit, pantulan tanah, matahari, kabut condong ke warna hangat prototipe di siang hari. `LOOK.shadows`, `LOOK.mood`, `stage.js` `sunAt` / `dusk` / `shade`.
-- [ ] **C2** Tanah dilukis: jalan setapak bertepi, teduh di bawah pohon, rumput & bunga kecil (Kota Awal + Rimbawana dulu).
+- [x] **C2** Tanah dilukis (`art/groundart.js` + tes, `render3d/paintground.js`): rumput berpetak dengan rumpun bilah + bayangan kaki + bunga, jalan tanah berkerikil, batu jalan Voronoi; warna palet prototipe (saturasi dunia dibatalkan di piksel). Wilayah hutan: rumput + jalan tanah + teduh di bawah pohon/batu/semak (bulatan bayangan lama disembunyikan bila ada bayangan nyata). Kota Awal: rumput dengan alun-alun & jalan berbatu (kotak batu 3D lama tidak dipakai); Rimbawana: rumput dengan batu pijakan. `LOOK.paintGround`.
 - [ ] **C3** Props ilustrasi: pohon, batu, semak, rumput sebagai gambar bergaya prototipe (PixelSprite k = 3) menggantikan bentuk A5.
 
 ## Penutup

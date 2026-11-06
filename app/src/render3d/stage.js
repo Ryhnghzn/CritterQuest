@@ -126,7 +126,7 @@ function shadowRole(o) {
   const m = Array.isArray(o.material) ? o.material[0] : o.material;
   if (!m || m.isMeshBasicMaterial || m.isPointsMaterial || m.isSpriteMaterial) return 'none';
   if (m.transparent && m.map && m.alphaTest > 0) return 'card';
-  if (m.transparent) return 'none';
+  if (m.transparent) return o.geometry?.type === 'PlaneGeometry' ? 'floor' : 'none'; // painted overlays (roads) still catch shadows
   return o.geometry?.type === 'PlaneGeometry' ? 'floor' : 'solid';
 }
 function shade(scene, on) {

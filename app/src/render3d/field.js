@@ -9,6 +9,7 @@
 // in-game clock; Tanah Gerhana is always dusk-violet.
 import * as THREE from 'three';
 import { S, sharp, SHARP, muted, detailed, setDetail, sunAt, dusk } from './stage.js';
+import { groundCanvas, groundPattern, GROUND_P } from './paintground.js';
 import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
@@ -96,16 +97,22 @@ export class Field25 {
     if (this.regionGroup) { sc.remove(this.regionGroup); dispose(this.regionGroup); for (const k of this.kinds.values()) k.mesh.geometry.dispose(); }
     const G = this.regionGroup = new THREE.Group(); sc.add(G);
     this.mapRef = map; this.biome = biome;
-    if (LOOK.detail > 0) for (const tl of this.tiles) setDetail(tl.mesh.material, GROUND_KIND[biome] || 'soil');
+    const painted = !!LOOK.paintGround?.biomes.includes(biome); // plan C2: the prototype's grass and dirt
+    this.painted = painted;
+    if (LOOK.detail > 0) for (const tl of this.tiles) setDetail(tl.mesh.material, painted ? 'none' : GROUND_KIND[biome] || 'soil');
     this.base.material.color.set(EDGE[biome] || EDGE.forest);
     // the 2D ground painter sees a map with no solids, gates, homes or signposts: those stand up in 3D
     this.ghost = {
       fmap: Object.assign(Object.create(map), { cols: 1, rows: 1, grid: [[]], start: { x: -1e6, y: -1e6 }, end: { x: -1e6, y: -1e6 } }),
       gates: [], treasures: [], hidden: [], questSpots: [],
     };
+    if (painted) { // the paths are dug in dirt with pebbles
+      const theme = Object.assign(Object.create(region.theme), { path: groundPattern(this.tiles[0].c.getContext('2d'), 'dirt', 1) });
+      this.ghost.fmap.region = Object.assign(Object.create(region), { theme });
+    }
     const lite = this.stage.lite;
     this.tileK = sharp('ground', lite);
-    const tile = groundTile(this.tileK, region.theme.ground, biome);
+    const tile = painted ? { canvas: groundCanvas('grass', 1), T: GROUND_P } : groundTile(this.tileK, region.theme.ground, biome);
     for (const tl of this.tiles) {
       tl.used = tl.ready = false; tl.mesh.visible = false;
       const side = Math.ceil(TS * this.tileK);
@@ -243,9 +250,23 @@ export class Field25 {
     g.lineJoin = 'round';
     const r = this.rect; r.x0 = x0; r.y0 = y0; r.x1 = x0 + TS; r.y1 = y0 + TS;
     drawField(g, this.ghost, tl.pat, t, r);
+    if (this.painted) this.groundShade(g, r);
     tl.tex.needsUpdate = true; tl.ready = true;
     tl.mesh.position.set((x0 + TS / 2) * S, 0, (y0 + TS / 2) * S);
     tl.mesh.visible = true;
+  }
+  // soft dark under every tree, rock and bush, a little toward the front (the prototype's ground AO)
+  groundShade(g, r) {
+    const k = LOOK.paintGround.ao;
+    for (const p of this.props) {
+      const R = p.r * (p.kind === 'bush' ? 1.5 : 1.9);
+      if (p.x < r.x0 - R || p.x > r.x1 + R || p.y < r.y0 - R || p.y > r.y1 + R) continue;
+      const cy = p.y + p.r * 0.25, gr = g.createRadialGradient(p.x, cy, 0, p.x, cy, R);
+      gr.addColorStop(0, `rgba(6,8,6,${(k * (p.kind === 'bush' ? 0.6 : 1)).toFixed(2)})`); gr.addColorStop(0.55, `rgba(6,8,6,${(k * 0.45).toFixed(2)})`); gr.addColorStop(1, 'rgba(6,8,6,0)');
+      g.save(); g.translate(p.x, cy); g.scale(1, 0.72); g.translate(-p.x, -cy);
+      g.fillStyle = gr; g.beginPath(); g.arc(p.x, cy, R, 0, Math.PI * 2); g.fill();
+      g.restore();
+    }
   }
   tilesFor(game, t, all) {
     const need = this.tileNeed, n = tilesAround(this.camX, this.camY, TILE_R, TS, need);
@@ -285,6 +306,7 @@ export class Field25 {
       }
     }
     this.shadows.count = ns; this.shadows.instanceMatrix.needsUpdate = true;
+    this.shadows.visible = !this.painted && !(LOOK.shadows && !this.stage.lite); // real shadows / painted shade replace the round blobs
     for (const K of this.kinds.values()) { K.mesh.count = K.n; if (K.mesh.instanceColor) K.mesh.instanceColor.needsUpdate = true; }
   }
   // props between the hero and the camera sink to stumps (and grow back), so nothing hides the fight

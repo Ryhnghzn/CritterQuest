@@ -11,6 +11,8 @@ import { wallCells, treesOf } from './townkit.js';
 import { drawIcon } from '../art/sprites.js';
 import * as FLORA from './flora.js';
 import { vtoon } from './fieldkit.js';
+import { groundTexture, groundPattern, GROUND_P } from './paintground.js';
+import { LOOK } from '../data/look.js';
 
 const TAU = Math.PI * 2;
 const WARM = 0xffa050;
@@ -33,8 +35,10 @@ const PB = (B, geo, mat, cx, cy, y0, w, h, d, ry = 0) => B.add(geo, mat, cx * S,
 const light = (out, x, y, h, color, int, dist, night = false) => out.push({ x, y, h, color: typeof color === 'string' ? rgbCol(color) : col(color), int, dist, night, ph: (x * 0.37 + y * 0.11) % 9 });
 
 // ground tiles
+const paintedTown = (key) => !!LOOK.paintGround?.towns.includes(key); // plan C2
 function groundTile(key, def) {
   const theme = def.theme || {};
+  if (paintedTown(key)) return groundTexture('grass', 1.5);
   if (key === 'forest') return tileTexture(160, 256, (g, T) => {
     const r = rnd(311);
     g.fillStyle = '#2a2318'; g.fillRect(0, 0, T, T);
@@ -100,11 +104,20 @@ function pathsTexture(key, def, heart, gate, houses) {
     for (let y = heart.y + 190; y < gate.y + 20; y += 30) stone(gx + Math.sin(y * 0.02) * 14, y);
     for (const b of houses) for (let i = 0; i < 2; i++) stone(b.x + b.w / 2 + (r() - 0.5) * 10, b.y + b.h + 14 + i * 22);
   } else {
-    g.fillStyle = PAVE;
-    g.beginPath(); g.ellipse(heart.x, heart.y + 30, key === 'home' ? 200 : 260, key === 'home' ? 140 : 180, 0, 0, TAU); g.fill();
-    if (key === 'home') { g.lineWidth = 3; g.strokeStyle = 'rgba(170,160,210,.2)'; g.stroke(); }
-    g.fillRect(gx - 60, heart.y, 120, gate.y + 30 - heart.y);
-    for (const b of houses) g.fillRect(b.x + b.w / 2 - 34, b.y + b.h, 68, 40);
+    const plaza = () => { g.beginPath(); g.ellipse(heart.x, heart.y + 30, key === 'home' ? 200 : 260, key === 'home' ? 140 : 180, 0, 0, TAU); };
+    const roads = [[gx - 60, heart.y, 120, gate.y + 30 - heart.y], ...houses.map((b) => [b.x + b.w / 2 - 34, b.y + b.h, 68, 40])];
+    if (paintedTown(key)) { // cobbled plaza and roads laid into the grass, a dark worn verge round them
+      g.fillStyle = 'rgba(12,10,8,.45)'; plaza(); g.lineWidth = 16; g.strokeStyle = 'rgba(12,10,8,.35)'; g.stroke();
+      for (const [x, y, w, h] of roads) { g.strokeRect(x, y, w, h); }
+      g.fillStyle = groundPattern(g, 'cobble', 1, { cell: 14 });
+      plaza(); g.fill();
+      for (const [x, y, w, h] of roads) g.fillRect(x, y, w, h);
+    } else {
+      g.fillStyle = PAVE;
+      plaza(); g.fill();
+      if (key === 'home') { g.lineWidth = 3; g.strokeStyle = 'rgba(170,160,210,.2)'; g.stroke(); }
+      for (const [x, y, w, h] of roads) g.fillRect(x, y, w, h);
+    }
     if (key !== 'home') { // joints between the slabs
       g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 1.5;
       for (let y = heart.y + 20; y < gate.y + 30; y += 34) { g.beginPath(); g.moveTo(gx - 60, y); g.lineTo(gx + 60, y); g.stroke(); }
@@ -129,7 +142,7 @@ export function buildTown(def, mats) {
   out.heart = heart;
 
   // ground: the town inside the walls, darker land outside
-  const tile = groundTile(key, def), TS = { home: 96, forest: 160, ice: 128, desert: 160, volcano: 200 }[key];
+  const tile = groundTile(key, def), TS = paintedTown(key) ? GROUND_P : { home: 96, forest: 160, ice: 128, desert: 160, volcano: 200 }[key];
   const tIn = tile.clone(); tIn.repeat.set(def.w / TS, def.h / TS); tIn.needsUpdate = true;
   const floor = new THREE.Mesh(GEO.plane, muted(new THREE.MeshLambertMaterial({ map: tIn })));
   floor.rotation.x = -Math.PI / 2; floor.scale.set(def.w * S, def.h * S, 1); floor.position.set(def.w / 2 * S, 0, def.h / 2 * S);
@@ -141,7 +154,7 @@ export function buildTown(def, mats) {
   const paths = new THREE.Mesh(GEO.plane, muted(new THREE.MeshLambertMaterial({ map: pathsTexture(key, def, heart, gate, houses), transparent: true, depthWrite: false })));
   paths.rotation.x = -Math.PI / 2; paths.scale.copy(floor.scale); paths.position.set(def.w / 2 * S, 0.012, def.h / 2 * S); paths.renderOrder = 1;
   root.add(paths);
-  if (key === 'home') cobbles(root, def);
+  if (key === 'home' && !paintedTown(key)) cobbles(root, def); // painted: grass with cobbled roads instead
 
   walls(root, def, st, out);
   trees(root, def, key, out);

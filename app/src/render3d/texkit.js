@@ -5,7 +5,7 @@
 
 export const DETAIL_SIZE = 128;
 // metres per tile repeat (the shader samples by world position)
-export const DETAIL_SCALE = { plaster: 3.2, stone: 2.4, wood: 1.6, roof: 1.8, log: 1.6, thatch: 1.4, rock: 2.2, soil: 5, sand: 6, snow: 5, ash: 4.5, slab: 4 };
+export const DETAIL_SCALE = { none: 4, plaster: 3.2, stone: 2.4, wood: 1.6, roof: 1.8, log: 1.6, thatch: 1.4, rock: 2.2, soil: 5, sand: 6, snow: 5, ash: 4.5, slab: 4 };
 
 function hash(x, y, s) { let h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // value noise that repeats every px cells across and py cells up (so the tile wraps)
@@ -102,6 +102,7 @@ const PATTERNS = {
     if (d2 - d1 < 0.05) return 0.68;
     return 0.93 + hash(id, 0, 123) * 0.14 + (fbm(u, v, 124, 4) - 0.5) * 0.16 + (d2 - d1 < 0.12 ? 0.06 : 0);
   },
+  none() { return 1; }, // a painted surface that brings its own detail (plan C2)
   ash(u, v) { // cracked crust: dark seams between plates
     let k = 1 + (fbm(u, v, 111, 4) - 0.5) * 0.28;
     const seam = Math.min(Math.abs(fbm(u, v, 112, 3) - 0.5), Math.abs(fbm(u, v, 113, 4) - 0.5));
