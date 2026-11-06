@@ -10,13 +10,20 @@ import { LOOK } from '../data/look.js';
 
 const K = 3; // texels per design pixel
 // per kind: the three variants (design, ground rows under the feet) and the height in radius units
-const BIOME_ROCK_CAP = { forest: 'leaf', ice: 'snow' };
+const BIOME_ROCK_CAP = { forest: 'leaf', ice: 'snow', eclipse: null, desert: null, volcano: null };
 const DESIGNS = {
   oak: { h: 3.4, foot: 3, v: [() => P.oak('m', 1, K), () => P.oak('l', 2, K), () => P.oak('m', 4, K, 'leafOld')] },
   pine: { h: 3.6, foot: 3, v: [() => P.pine('m', 1, K), () => P.pine('l', 2, K), () => P.pine('m', 5, K)] },
   snowpine: { h: 3.6, foot: 3, v: [() => P.pine('m', 1, K, true), () => P.pine('l', 2, K, true), () => P.pine('m', 5, K, true)] },
   bush: { h: 1.25, foot: 1, v: [() => P.bush(1, K), () => P.bush(2, K, 'leaf', 'flowerV'), () => P.bush(3, K, 'leaf', 'flowerY')] },
   tuft: { h: 1.1, foot: 1, v: [() => P.grassTuft(1, K), () => P.grassTuft(2, K, 'flowerV'), () => P.grassTuft(3, K, 'flowerY')] },
+  // plan C5
+  palm: { h: 4.2, foot: 3, v: [() => P.palm(1, K), () => P.palm(2, K), () => P.palm(3, K)] },
+  cactus: { h: 2.8, foot: 2, v: [() => P.cactus(1, K), () => P.cactus(2, K), () => P.cactus(3, K)] },
+  deadtree: { h: 3.4, foot: 2, v: [() => P.deadTree(2, K, 'charred'), () => P.deadTree(3, K, 'charred'), () => P.deadTree(5, K, 'charred')] },
+  crystal: { h: 2.2, foot: 2, v: [() => P.crystal(1, K), () => P.crystal(2, K), () => P.crystal(3, K)] },
+  spire: { h: 3.8, foot: 2, v: [() => P.crystal(1, K, 'obsidian'), () => P.crystal(2, K, 'obsidian'), () => P.crystal(3, K, 'obsidian')] },
+  icerock: { h: 1.5, foot: 1, v: [() => P.rock('l', 1, K, 'snow', 'iceStone'), () => P.rock('m', 2, K, 'snow', 'iceStone'), () => P.rock('l', 3, K, 'snow', 'iceStone')] },
   rock: { h: 1.5, foot: 1, v: [(cap) => P.rock('l', 1, K, cap), (cap) => P.rock('m', 2, K, cap), (cap) => P.rock('l', 3, K, cap)] },
 };
 export const ILLUSTRATED = new Set(Object.keys(DESIGNS));
@@ -28,7 +35,7 @@ function build(kind, v, biome) {
   const D = DESIGNS[kind], cap = kind === 'rock' ? BIOME_ROCK_CAP[biome] ?? null : undefined, key = `${kind}:${v}:${cap}`;
   let b = BUILT.get(key);
   if (b) return b;
-  const sp = D.v[v % D.v.length](cap), w = sp.w / sp.k, h = sp.h / sp.k;
+  const sp = D.v[(v || 0) % D.v.length](cap), w = sp.w / sp.k, h = sp.h / sp.k;
   const map = new THREE.DataTexture(flipRows(sp.rgba(), sp.w, sp.h), sp.w, sp.h);
   map.colorSpace = THREE.SRGBColorSpace; map.magFilter = THREE.LinearFilter; map.minFilter = THREE.LinearMipmapLinearFilter;
   map.generateMipmaps = true; map.anisotropy = 4; map.needsUpdate = true;

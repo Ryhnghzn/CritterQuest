@@ -5,6 +5,16 @@ import { groundPixels, GROUND_P } from '../art/groundart.js';
 import { LOOK } from '../data/look.js';
 
 export { GROUND_P };
+// plan C5: per biome the ground's pattern and the paths' [pattern, options]
+export const BIOME_GROUND = {
+  forest: { ground: 'grass', path: ['dirt', {}] },
+  ice: { ground: 'snow', path: ['dirt', { ramp: 'mud' }] },
+  desert: { ground: 'sand', path: ['dirt', { ramp: 'sandPath' }] },
+  volcano: { ground: 'ash', path: ['dirt', { ramp: 'mud' }] },
+  eclipse: { ground: 'void', path: ['dirt', { ramp: 'mud' }] },
+};
+// the town styles (townbuild.js keys) → the biome whose ground they stand on
+export const TOWN_BIOME = { home: 'forest', forest: 'forest', ice: 'ice', desert: 'desert', volcano: 'volcano' };
 const CANVAS = new Map();
 // kind: grass | dirt | cobble; k texels per game unit; o: groundPixels options (cell, flowers, tint)
 export function groundCanvas(kind, k = 1, o = {}) {

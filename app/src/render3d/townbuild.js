@@ -11,7 +11,7 @@ import { wallCells, treesOf } from './townkit.js';
 import { drawIcon } from '../art/sprites.js';
 import * as FLORA from './flora.js';
 import { vtoon } from './fieldkit.js';
-import { groundTexture, groundPattern, GROUND_P } from './paintground.js';
+import { groundTexture, groundPattern, GROUND_P, BIOME_GROUND, TOWN_BIOME } from './paintground.js';
 import { ILLUSTRATED, illustrated, flameSet } from './billprops.js';
 import { LOOK } from '../data/look.js';
 
@@ -39,7 +39,7 @@ const light = (out, x, y, h, color, int, dist, night = false) => out.push({ x, y
 const paintedTown = (key) => !!LOOK.paintGround?.towns.includes(key); // plan C2
 function groundTile(key, def) {
   const theme = def.theme || {};
-  if (paintedTown(key)) return groundTexture('grass', 1.5);
+  if (paintedTown(key)) return groundTexture(BIOME_GROUND[TOWN_BIOME[key]].ground, 1.5);
   if (key === 'forest') return tileTexture(160, 256, (g, T) => {
     const r = rnd(311);
     g.fillStyle = '#2a2318'; g.fillRect(0, 0, T, T);
@@ -236,22 +236,25 @@ const TREE_PARTS = {
   charred: () => [[GEO.cyl6, 0x1a1210, 0, 28, 0, 9, 56, 9], [GEO.cyl6, 0x1a1210, -9, 46, 0, 4, 28, 4, 0, 0, 0.8], [GEO.cyl6, 0x1a1210, 9, 54, 0, 4, 28, 4, 0, 0, -0.7], [GEO.cyl6, 0x1a1210, -4, 62, 0, 3, 22, 3, 0.3, 0, 0.3]],
   rock: () => [[GEO.blob, 0x261a16, 0, 10, 0, 44, 26, 36], [GEO.box, 'ember', 0, 14, 16, 20, 2, 3, 0, 0.3, 0]],
 };
+// town tree kinds drawn as illustrated props (plan C5) besides the flora.js ones
+const ILL_TOWN = { palm: 'palm', cactus: 'cactus', charred: 'deadtree' };
 function trees(root, def, key, out) {
   const kind = STYLE[key].tree, groups = new Map();
   for (const p of treesOf(def)) {
     let k = kind;
     if (kind === 'palm' && p.v < 0.35) k = 'cactus';
     if (kind === 'charred' && p.v < 0.3) { k = 'rock'; light(out.lights, p.x, p.y, 20, '255,110,40', 4, 3.5); }
-    if (FLORA_TREE[k]) k = `${k}~${Math.floor(p.v * 7) % FLORA.VARIANTS}`; // flora.js variants (plan A5)
+    if (FLORA_TREE[k] || (LOOK.illustrated?.towns && ILL_TOWN[k])) k = `${k}~${Math.floor(p.v * 7) % FLORA.VARIANTS}`; // flora.js / illustrated variants
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push({ x: p.x, y: p.y, s: p.s, ry: p.v * TAU });
   }
   for (const [k, items] of groups) {
-    const [base, variant] = k.split('~'), F = FLORA_TREE[base];
+    const [base, variant] = k.split('~'), F = FLORA_TREE[base] || (ILL_TOWN[base] && LOOK.illustrated?.towns ? { r: 30 } : null);
     if (F) {
       const m = matrixOf(0, 0, 0, F.r * S, F.r * S, F.r * S, 0, 0, 0, new THREE.Matrix4());
-      if (LOOK.illustrated?.towns && ILLUSTRATED.has(base)) { // plan C3: the prototype's painted trees
-        const ill = illustrated(base, base === 'snowpine' ? 'ice' : 'forest', Number(variant));
+      const ik = ILL_TOWN[base] || base;
+      if (LOOK.illustrated?.towns && ILLUSTRATED.has(ik)) { // plan C3 / C5: the prototype's painted trees
+        const ill = illustrated(ik, TOWN_BIOME[key] || 'forest', Number(variant));
         const set = new SinkSet(root, items, [{ geo: ill.geo, mat: ill.mat, m }], 'all', 520);
         set.parts[0].im.customDepthMaterial = ill.depth;
         out.sinks.push(set);

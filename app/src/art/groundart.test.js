@@ -1,18 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { groundPixels, GROUND, GROUND_P } from './groundart.js';
 
-const lum = (a, i) => a[i] * 0.3 + a[i + 1] * 0.59 + a[i + 2] * 0.11;
 describe('painted ground (plan C2)', () => {
   for (const kind of Object.keys(GROUND)) {
-    it(`${kind}: tiles without a seam`, () => {
-      const { rgba, size: N } = groundPixels(kind, 1);
-      let edge = 0, inner = 0;
-      for (let y = 0; y < N; y++) { // left/right edge vs two neighbouring columns inside
-        edge += Math.abs(lum(rgba, (y * N) * 4) - lum(rgba, (y * N + N - 1) * 4));
-        inner += Math.abs(lum(rgba, (y * N + 10) * 4) - lum(rgba, (y * N + 11) * 4));
+    it(`${kind}: repeats exactly every GROUND_P (no seam)`, () => {
+      for (let t = 0.3; t < GROUND_P; t += 1.7) {
+        for (const [a, b] of [[GROUND[kind](GROUND_P + 0.4, t), GROUND[kind](0.4, t)], [GROUND[kind](t, GROUND_P + 0.4), GROUND[kind](t, 0.4)]]) {
+          expect(a[0]).toBe(b[0]); expect(a[1]).toBeCloseTo(b[1], 6);
+        }
       }
-      expect(edge).toBeLessThan(inner * 1.6 + N);
-      for (let x = 0; x < N; x += 7) expect(Math.abs(lum(rgba, x * 4) - lum(rgba, ((N - 1) * N + x) * 4))).toBeLessThan(90);
     });
   }
   it('grass has tufts (light blades) and dark shadows, and a few flowers', () => {

@@ -23,13 +23,16 @@ const MATANG = {
   // painted ground like the prototype (plan C2): regions of these biomes and these towns get
   // grass with tufts and flowers, dirt paths with pebbles (towns: cobbled roads); ao = how dark
   // the ground gets under a tree or rock
-  paintGround: { biomes: ['forest'], towns: ['home', 'forest'], ao: 0.42 },
+  paintGround: { biomes: ['forest', 'ice', 'desert', 'volcano', 'eclipse'], towns: ['home', 'forest', 'ice', 'desert', 'volcano'], ao: 0.42 },
+  // illustrated props (plan C3): trees, rocks and bushes as the prototype's painted pictures in
+  // regions of these biomes, and as town trees
+  illustrated: { biomes: ['forest', 'ice', 'desert', 'volcano', 'eclipse'], towns: true },
   mood: { warm: 0.55, hemi: 0xb4927e, ground: 0x2c1f1a, sun: 0xffb070, fog: 0x2a1c1c, sunDir: [-11, 8, 7], sunDist: 24 },
 };
 // the look before §36, for comparing side by side
 const LAMA = {
   saturation: 1, detail: 0, exposure: 1, bloom: { strength: 0.7, radius: 0.45, threshold: 0.82 }, bloomScale: 1,
-  bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1, spells: false, shadows: null, mood: null, paintGround: null,
+  bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1, spells: false, shadows: null, mood: null, paintGround: null, illustrated: null,
 };
 const old = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lama');
 export const LOOK = old ? LAMA : MATANG;

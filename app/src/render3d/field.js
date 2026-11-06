@@ -9,7 +9,7 @@
 // in-game clock; Tanah Gerhana is always dusk-violet.
 import * as THREE from 'three';
 import { S, sharp, SHARP, muted, detailed, setDetail, sunAt, dusk } from './stage.js';
-import { groundCanvas, groundPattern, GROUND_P } from './paintground.js';
+import { groundCanvas, groundPattern, GROUND_P, BIOME_GROUND } from './paintground.js';
 import { ILLUSTRATED, illustratedIn, illustrated } from './billprops.js';
 import { Fireflies } from './fireflies.js';
 import { drawFrame } from './frame.js';
@@ -111,12 +111,12 @@ export class Field25 {
       gates: [], treasures: [], hidden: [], questSpots: [],
     };
     if (painted) { // the paths are dug in dirt with pebbles
-      const theme = Object.assign(Object.create(region.theme), { path: groundPattern(this.tiles[0].c.getContext('2d'), 'dirt', 1) });
+      const theme = Object.assign(Object.create(region.theme), { path: groundPattern(this.tiles[0].c.getContext('2d'), BIOME_GROUND[biome].path[0], 1, BIOME_GROUND[biome].path[1]) });
       this.ghost.fmap.region = Object.assign(Object.create(region), { theme });
     }
     const lite = this.stage.lite;
     this.tileK = sharp('ground', lite);
-    const tile = painted ? { canvas: groundCanvas('grass', 1), T: GROUND_P } : groundTile(this.tileK, region.theme.ground, biome);
+    const tile = painted ? { canvas: groundCanvas(BIOME_GROUND[biome].ground, 1), T: GROUND_P } : groundTile(this.tileK, region.theme.ground, biome);
     for (const tl of this.tiles) {
       tl.used = tl.ready = false; tl.mesh.visible = false;
       const side = Math.ceil(TS * this.tileK);

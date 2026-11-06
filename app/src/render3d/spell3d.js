@@ -4,8 +4,8 @@
 // and 3D sparks with gravity. The flat ground layer (rings, cracks, glows) keeps drawing on the
 // decal (actors.js). Sparks use Math.random: they are purely visual and never touch the sim.
 import * as THREE from 'three';
-import * as FX from '../art/spell/fx.js';
-import { RAMPS } from '../art/spell/palette.js';
+import * as FX from '../art/pix/fx.js';
+import { RAMPS } from '../art/pix/palette.js';
 import { SPELL3D as C } from '../data/spell3d.js';
 import { S } from './stage.js';
 

@@ -65,7 +65,7 @@ Selisih terbesar dengan prototipe: tidak ada bayangan, props berupa bentuk 3D po
 - [x] **C3** Props ilustrasi (`art/pix/props.js` dari prototipe + pinus bersalju & tutup batu salju, `render3d/billprops.js`): oak (3 varian, satu daun musim gugur), pinus, pinus salju, batu berlumut/bersalju, semak berbunga sebagai gambar berdiri; shader memutar bidang ke kamera (posisi + skala instance saja), salinan bayangannya ke arah matahari (bayangan selalu utuh). Wilayah hutan & es + pohon semua kota; bioma lain tetap 3D. `LOOK.illustrated`. (Folder `art/spell` → `art/pix`.) Rumput 3D berdiri belum (rumpun sudah dilukis di tanah).
 
 - [x] **C4** Pernak-pernik: api bergambar 4 frame (prototipe) berdiri menghadap kamera, tiap api mulai dari fase sendiri (`flameSet`) — api unggun kota (3 nyala), cerobong tungku, obor dungeon (kristal tetap); kunang-kunang malam di wilayah hutan & Kota Awal/Rimbawana (`fireflies.js`); ranting gelap di sudut atas layar di tempat hijau (`frame.js`); rumput berdiri 3 rumpun di kaki tiap pohon hutan (`tuft`, ilustrasi).
-- [ ] **C5** Bioma lain: tanah & props gurun, vulkanik, es, Tanah Gerhana gaya lukisan.
+- [x] **C5** Bioma lain: tanah salju (hanyutan, kerak berkilau, es licin beretak), pasir (riak 21 per ubin, semak kering, kerikil), abu (lempeng retak, bara di sebagian celah), Gerhana (ungu gelap, urat bercahaya, debu bintang); jalan per bioma (`BIOME_GROUND`); semua pola diuji berulang persis tiap 320 (sekalian membetulkan kerikil jalan tanah C2). Props ilustrasi: palem, kaktus, pohon hangus, kristal es, menara obsidian berurat ungu, batu es bersalju; kota es/gurun/vulkanik ikut (tanah + pohon). Tetap 3D: batu melayang, tiang & batu reruntuhan.
 
 ## Penutup
 - [ ] Perbarui status di `CLAUDE.md`.

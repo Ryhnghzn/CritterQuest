@@ -1,9 +1,22 @@
-// Ramps for the spell frames (from the look prototype app/pixel). A ramp has five steps:
+// Ramps for the prototype-style pictures: spell frames and illustrated props (app/pixel). A ramp has five steps:
 // [shadow, dark, base, light, highlight]. Pure data.
 export const INK = '#0c0a0f';
 
 export const RAMPS = {
   stone:   ['#141519', '#23252b', '#373941', '#52545b', '#76767a'],
+  grass:   ['#121a15', '#1c281d', '#2b3a27', '#415234', '#5e6c45'],
+  leaf:    ['#0e150f', '#182619', '#263a22', '#3a542d', '#56713b'],
+  leafOld: ['#18130f', '#2a2016', '#43321f', '#61482a', '#806339'],
+  wood:    ['#180f0b', '#2b1c13', '#45301f', '#634630', '#836140'],
+  flowerV: ['#1a1520', '#2f2638', '#4c3d5a', '#6f5c80', '#9584a6'],
+  flowerY: ['#221b0e', '#3e3217', '#655025', '#8d7437', '#b49a55'],
+  snow:    ['#3a4658', '#6a7a90', '#a4b4c8', '#d4e0ee', '#f4f8ff'],
+  palm:    ['#1e140c', '#3a2818', '#5c4228', '#7e6038', '#a07e4c'],
+  cactus:  ['#0e1a12', '#1a3020', '#2a4a30', '#3e6a40', '#5a8a52'],
+  ice:     ['#0e1a2a', '#24425e', '#4a7aa0', '#8ec0e0', '#e0f4ff'],
+  iceStone:['#1a2230', '#2e3a4c', '#4a5a70', '#6e8098', '#98aac0'],
+  obsidian:['#08060c', '#141020', '#221a30', '#342848', '#4a3a66'],
+  charred: ['#181210', '#2c201b', '#42322a', '#5e4838', '#7c624c'],
   torch:   ['#4a1e0c', '#8a3c16', '#d0762a', '#f0b456', '#fff0b8'],
   ember:   ['#3a0e08', '#7a1e0e', '#c0401a', '#e8742a', '#ffb060'],
   smear:   ['#3a3632', '#6a645c', '#a29a8e', '#cec6b6', '#efe8da'],

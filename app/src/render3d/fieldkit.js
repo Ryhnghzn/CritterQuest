@@ -50,7 +50,7 @@ const STONE = { forest: '#4b4a5c', ice: '#566373', desert: '#8a6448', volcano: '
 const RUNE = { volcano: '#ff8a3c', eclipse: '#c79bff' };
 
 // kinds drawn by flora.js (plan A5): three variants each, soft shading (smooth: true)
-export const VARIED = new Set(['pine', 'oak', 'snowpine', 'rock', 'bush', 'tuft']);
+export const VARIED = new Set(['pine', 'oak', 'snowpine', 'rock', 'bush', 'tuft', 'palm', 'cactus', 'deadtree', 'crystal', 'spire', 'icerock']);
 const ROCK_TOP = { forest: '#3d5a33', ice: '#c4d2e4' };
 
 // prop kind → { geo, rim, smooth? } for a biome (variant: 0..FLORA.VARIANTS-1 for VARIED kinds)

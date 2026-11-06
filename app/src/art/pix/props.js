@@ -57,15 +57,15 @@ export function pine(size, seed, k = 1, snowy = false) {
 }
 
 // a bare, twisted tree (dark fantasy accent)
-export function deadTree(seed, k = 1) {
+export function deadTree(seed, k = 1, bark = 'wood') {
   const r = rng(seed), s = new PixelSprite(48, 64, k);
   const branch = (x, y, a, len, rad, depth) => {
     const x2 = x + Math.sin(a) * len, y2 = y - Math.cos(a) * len;
-    s.paint(capsule(x, y, x2, y2, rad, rad * 0.65), 'wood', { bias: depth > 1 ? -1 : 0 });
+    s.paint(capsule(x, y, x2, y2, rad, rad * 0.65), bark, { bias: depth > 1 ? -1 : 0 });
     if (depth < 3) for (const d of [-1, 1]) if (r() < 0.85) branch(x2, y2, a + d * (0.35 + r() * 0.45), len * (0.6 + r() * 0.15), rad * 0.62, depth + 1);
   };
-  s.paint(capsule(17, 62, 24, 57, 1.2, 1.8), 'wood', { bias: -1 });
-  s.paint(capsule(31, 62, 24, 57, 1.2, 1.8), 'wood');
+  s.paint(capsule(17, 62, 24, 57, 1.2, 1.8), bark, { bias: -1 });
+  s.paint(capsule(31, 62, 24, 57, 1.2, 1.8), bark);
   branch(24, 62, -0.08, 22, 3.2, 0);
   return s.outline();
 }
@@ -80,20 +80,20 @@ export function bush(seed, k = 1, leaf = 'leaf', flowers = null) {
 }
 
 // faceted rock with a crack and a cap of moss
-export function rock(size, seed, k = 1, cap = 'leaf') {
+export function rock(size, seed, k = 1, cap = 'leaf', ramp = 'stone') {
   const [w, h] = { s: [14, 10], m: [22, 15], l: [32, 22] }[size];
-  const r = rng(seed), s = new PixelSprite(w, h, k), cx = w / 2, cy = h * 0.6, n = 7;
+  const r = rng(seed), s = new PixelSprite(w, h, k), cx = w / 2, cy = h * 0.6, n = 7, BODY = ramp;
   const pts = Array.from({ length: n }, (_, i) => {
     const a = (i / n) * Math.PI * 2 + r() * 0.4, rr = 0.82 + r() * 0.18;
     return [cx + Math.cos(a) * (w / 2 - 1.2) * rr, Math.min(h - 1.5, cy + Math.sin(a) * (h * 0.52) * rr)];
   });
   const body = poly(pts, { cx: cx - w * 0.12, cy: cy - h * 0.2, rx: w * 0.55, ry: h * 0.6, flatY: 1 });
-  s.paint(body, 'stone');
+  s.paint(body, BODY);
   // flat top facet catches the moonlight
-  s.paint(clip(body, (x, y) => y < cy - h * 0.18 + (x - cx) * 0.18), 'stone', { level: 3, edge: false });
+  s.paint(clip(body, (x, y) => y < cy - h * 0.18 + (x - cx) * 0.18), BODY, { level: 3, edge: false });
   if (cap) s.paint(clip(body, (x, y) => y < cy - h * 0.3 + Math.sin(x * 1.3) * 0.8), cap, { level: cap === 'snow' ? 3 : 2, edge: false });
   let x = cx + w * 0.1, y = cy - h * 0.15;
-  for (let i = 0; i < h * 0.4; i++) { s.dot(Math.round(x), Math.round(y), 'stone', 0); x += r() < 0.5 ? 1 : 0; y += 1; }
+  for (let i = 0; i < h * 0.4; i++) { s.dot(Math.round(x), Math.round(y), BODY, 0); x += r() < 0.5 ? 1 : 0; y += 1; }
   return s.outline();
 }
 
@@ -128,4 +128,61 @@ export function frameBranch(seed, k = 1) {
     s.paint(ellipse(x, y, 4 + r() * 4, 2.5 + r() * 2.5), 'leaf', { level: r() < 0.25 ? 1 : 0, edge: false });
   }
   return s;
+}
+
+// ---- plan C5: the other biomes ------------------------------------------------------------
+// a leaning palm: ringed trunk along a curve, drooping fronds, a few coconuts
+export function palm(seed, k = 1) {
+  const r = rng(seed), w = 60, h = 86, s = new PixelSprite(w, h, k), bx = w / 2, by = h - 3, lean = (r() - 0.5) * 14, tx = bx + lean, ty = 22;
+  const at = (t) => [bx + lean * t * t, by - (by - ty) * t]; // the trunk's curve
+  for (let i = 0; i < 9; i++) {
+    const [ax, ay] = at(i / 9), [bx2, by2] = at((i + 1) / 9);
+    s.paint(capsule(ax, ay, bx2, by2, 3.2 - i * 0.15, 3.1 - i * 0.15), 'palm', { bias: i % 2 ? 0 : -0.4 });
+  }
+  const fronds = 7;
+  for (let pass = 0; pass < 2; pass++) for (let i = 0; i < fronds; i++) { // back fronds dark, front lit
+    const a = (i / fronds) * Math.PI * 2 + r() * 0.3, front = Math.sin(a) > 0;
+    if ((pass === 0) === front) continue;
+    const dx = Math.cos(a), len = 20 + r() * 6;
+    let px = tx, py = ty;
+    for (let j = 1; j <= 6; j++) {
+      const t = j / 6, nx = tx + dx * len * t, ny = ty - 6 * Math.sin(t * Math.PI * 0.8) + t * t * 14 + Math.sin(a) * 4 * t;
+      s.paint(capsule(px, py, nx, ny, 2.6 - t * 1.6, 2.4 - t * 1.8), 'leaf', { bias: front ? 0.2 : -1, edge: false });
+      px = nx; py = ny;
+    }
+  }
+  for (let i = 0; i < 3; i++) s.paint(ellipse(tx - 2.5 + i * 2.5, ty + 3 + (i % 2), 1.8, 1.8), 'palm', { bias: -0.6 });
+  return s.outline();
+}
+
+// a saguaro: a ribbed column with one or two bent arms
+export function cactus(seed, k = 1) {
+  const r = rng(seed), w = 36, h = 54, s = new PixelSprite(w, h, k), bx = w / 2, by = h - 2;
+  const arm = (side, y0, up) => {
+    const ex = bx + side * 10;
+    s.paint(capsule(bx, y0, ex, y0, 2.6), 'cactus', { bias: -0.3 });
+    s.paint(capsule(ex, y0, ex, y0 - up, 2.6, 2.3), 'cactus');
+  };
+  arm(-1, 30 + r() * 6, 10 + r() * 6);
+  if (r() < 0.75) arm(1, 24 + r() * 6, 8 + r() * 6);
+  s.paint(capsule(bx, by, bx, 7, 5, 4.4), 'cactus');
+  for (const dx of [-2.5, 0, 2.5]) for (let y = 9; y < by - 2; y += 2) s.dot(Math.round(bx + dx), y, 'cactus', dx < 0 ? 3 : 1); // ribs
+  if (r() < 0.6) s.paint(ellipse(bx + 1, 6, 1.8, 1.4), 'flowerV', { level: 3, edge: false });
+  return s.outline();
+}
+
+// a cluster of prisms: ice crystals (ramp 'ice'), or one tall obsidian spire with glowing veins
+export function crystal(seed, k = 1, ramp = 'ice') {
+  const r = rng(seed), spire = ramp === 'obsidian', w = spire ? 30 : 38, h = spire ? 70 : 46, s = new PixelSprite(w, h, k), by = h - 2;
+  const list = spire ? [[w / 2, h - 6, 6.5], [w / 2 - 8, 26, 3.5], [w / 2 + 8, 20, 3]] : [[w / 2, 36, 6], [w / 2 - 9, 24, 4.2], [w / 2 + 9, 28, 4.5], [w / 2 + 3, 16, 3]];
+  list.sort((a, b) => a[1] - b[1]);
+  for (const [x0, tall, hw] of list) {
+    const x = x0 + (r() - 0.5) * 2, top = by - tall, tilt = (r() - 0.5) * 4;
+    const pts = [[x - hw, by], [x - hw + tilt * 0.3, top + hw], [x + tilt, top], [x + hw + tilt * 0.3, top + hw], [x + hw, by]];
+    const body = poly(pts, { cx: x - hw * 0.4, cy: top + tall * 0.4, rx: hw * 1.4, ry: tall * 0.7 });
+    s.paint(body, ramp);
+    s.paint(clip(body, (px) => px < x + tilt * ((px - x) / hw) * 0.3 - hw * 0.15), ramp, { level: 3, edge: false }); // the lit facet
+    s.paint(capsule(x - hw * 0.45, by - 2, x + tilt * 0.6 - hw * 0.1, top + hw * 0.8, 0.5), spire ? 'arcane' : ramp, { level: spire ? 3 : 4, edge: false });
+  }
+  return s.outline();
 }
