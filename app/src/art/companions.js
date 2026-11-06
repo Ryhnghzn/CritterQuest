@@ -667,3 +667,6 @@ export function drawRidden(g, mount, pose, rider, drawDoll) {
   mount.front(g, pose);
   g.restore();
 }
+
+// drawing helpers shared with the majestic mounts (art/mounts.js)
+export const kit = { RIM, P, H, E, piece, bone, leg, hoof, claws, eye, cuteEye, batWing, featherWing, flames, swing, hover, flap, star5, saddle };

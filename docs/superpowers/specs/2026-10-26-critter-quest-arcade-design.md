@@ -1128,13 +1128,13 @@ Mount (§35), tingkat kesulitan & Celah tanpa batas (9E), pet. Angka di §33 bis
 
 ## 35. Mount (permintaan pemilik 2026-10-29, dirancang 2026-11-05)
 
-Wilayah 20.000 × 12.000 px masih terasa jauh walau tempo §33 sudah naik. Mount mempercepat perjalanan di wilayah terbuka dan menjadi koleksi. Gambar 9 mount sudah ada di `art/companions.js` (halaman konsep `pet.html`). Keputusan pemilik: koleksi bertahap; naik lewat tombol, turun otomatis; mount terbang boleh menyeberang air; tiap mount punya kecepatan per rarity + satu bonus kecil.
+Wilayah 20.000 × 12.000 px masih terasa jauh walau tempo §33 sudah naik. Mount mempercepat perjalanan di wilayah terbuka dan menjadi koleksi. Gambar 9 mount megah ada di `art/mounts.js` (halaman konsep `pet.html`, `?lama` = konsep pertama di `art/companions.js`). Keputusan pemilik: koleksi bertahap; naik lewat tombol, turun otomatis; mount terbang boleh menyeberang air; tiap mount punya kecepatan per rarity + satu bonus kecil; mount harus terlihat **megah, bukan seperti monster** (2026-11-06, prototipe disetujui).
 
 ### 35.1 Cara main
 - **Hanya di wilayah terbuka.** Tidak di kota, dungeon, interior. Masuk kota/dungeon/interior/portal → turun tanpa jeda.
 - **Panggil:** tombol <kbd>M</kbd> (PC) / ikon kuda dekat tombol skill (HP). Waktu panggil **1 dtk** (bar kecil di atas kepala); boleh berjalan selama memanggil; batal bila menyerang, memakai skill, menghindar, atau kena pukul. Belum punya mount → pesan singkat "Belum punya mount".
 - **Kecepatan menunggang** (pengali dari kecepatan jalan sesudah §33): Biasa ×1,6 · Bagus ×1,65 · Langka ×1,7 · Epik ×1,8 · Legendaris ×1,9 · Mitos ×2,0.
-- **Mount terbang** (Griffin, Naga, Paus Langit): menyeberang sungai & danau (solid `water`/`lake`). Pohon, batu, pagar, pondok, dan batas wilayah tetap menghalangi. Keluar wilayah tetap hanya di ujung jalan setapak.
+- **Mount terbang** (Legendaris ke atas: Pegasus Fajar, Griffin, Naga, Paus Langit): menyeberang sungai & danau (solid `water`/`lake`). Pohon, batu, pagar, pondok, dan batas wilayah tetap menghalangi. Keluar wilayah tetap hanya di ujung jalan setapak.
 - **Musuh tetap mengejar dan menyerang** pemain yang menunggang. Mount untuk menghindari pertarungan, bukan untuk kebal.
 - **Turun otomatis:**
   - Tekan serang / skill / ultimate / menghindar → turun, dan aksi itu langsung dijalankan di langkah yang sama (input tidak hilang).
@@ -1149,33 +1149,42 @@ Koleksi per slot save (per karakter). Bonus hanya dari **mount aktif**, berlaku 
 |---|---|---|---|
 | Kuda Perang (`horse`) | Biasa | Hadiah bab 1 (mount pertama; membuka tombol M) | +5% emas |
 | Serigala Raksasa (`snowwolf`) | Langka | Kandang, emas | +15% jangkauan magnet permata |
-| Jamur Berjalan (`shroom`) | Langka | Kandang, emas | +10% pemulihan ramuan |
-| Kura Raksasa (`turtle`) | Epik | Toko Lencana Kapten Vera | +5% HP maks |
-| Basilisk (`basilisk`) | Epik | Jatuh dari bos dungeon & mini bos wilayah (peluang kecil) | +5% material tempa |
-| Kuda Mimpi Buruk (`nightmare`) | Legendaris | Jatuh dari bos & mini bos Tanah Gerhana (peluang kecil) | +5% EXP |
+| Rusa Cahaya (`stag`) | Langka | Kandang, emas | +10% pemulihan ramuan |
+| Singa Kerajaan (`lion`) | Epik | Toko Lencana Kapten Vera | +5% HP maks |
+| Harimau Putih (`tiger`) | Epik | Jatuh dari bos dungeon & mini bos wilayah (peluang kecil) | +5% material tempa |
+| Pegasus Fajar (`pegasus`) | Legendaris | Jatuh dari bos & mini bos Tanah Gerhana (peluang kecil) | +5% EXP |
 | Griffin (`griffin`) | Legendaris | Quest sampingan berantai "Bintang Jatuh" (`s_salju`) | +5% peluang gear |
 | Naga (`dragon`) | Mitos | Mengalahkan Sang Gerhana (epilog) | +5% EXP, +5% emas |
 | Paus Langit (`skywhale`) | Mitos | Menyelesaikan semua quest sampingan | +10% magnet, +5% material |
 
-- **Jaminan jatuh:** peluang Basilisk & Mimpi Buruk naik sedikit tiap bos yang kalah tanpa hasil; dijamin pada bos ke-25. Hitungan terpisah per mount, direset saat mount itu jatuh.
+- **Jaminan jatuh:** peluang Harimau Putih & Pegasus Fajar naik sedikit tiap bos yang kalah tanpa hasil; dijamin pada bos ke-25. Hitungan terpisah per mount, direset saat mount itu jatuh.
 - **Varian warna** (dari `skins` tiap mount): warna pertama gratis saat mount didapat. Warna lain dibeli di Kandang dengan emas, atau didapat acak bila mount yang sudah dimiliki jatuh lagi dari bos.
-- **Penjaga Kandang:** NPC baru di Kota Awal. Tab **Beli** (Serigala, Jamur, warna) dan tab **Kandang** (pilih mount aktif & warna, pratinjau mount bergerak).
+- **Penjaga Kandang:** NPC baru di Kota Awal. Tab **Beli** (Serigala, Rusa, warna) dan tab **Kandang** (pilih mount aktif & warna, pratinjau mount bergerak).
 - **Panel Karakter:** tab **Mount** (lihat koleksi; ganti mount aktif & warna saat di kota). Tab Koleksi mendapat baris "Mount n/9".
-- **Ditunda:** pelana, jejak, aura, topi dari halaman konsep; pet.
+- **Ditunda:** pelana, jejak, aura, topi dari halaman konsep; pet (nanti memakai aturan tampilan 35.3 yang sama).
 
-### 35.3 Teknis
-- **`data/mounts.js`:** kecepatan per rarity, waktu panggil, jeda jatuh, harga mount & warna, peluang jatuh dasar & kenaikan, jaminan 25, bonus tiap mount. Daftar id dicocokkan dengan `MOUNTS` di `art/companions.js` (tes).
+### 35.3 Tampilan megah (prototipe `pet.html`, disetujui 2026-11-06)
+Kebalikan bahasa gambar monster, supaya mount selalu terbaca sebagai teman pahlawan:
+- **Ukuran & postur:** skala ±1,35–1,45 dari konsep pertama (`scale` per mount); kepala tegak, langkah panjang; telinga kuda/rusa berhenti sedikit di atas kepala penunggang, kepala singa/harimau di bawahnya.
+- **Cahaya:** garis tepi putih/emas hangat (`holy`, `gold`, `ice`, `rose`, `jade`, `dusk`), tanpa arsiran komik. Warna kulit tidak memakai palet jahat (tanpa Bayang/Bara/Gagak/Gerhana).
+- **Mata tenang:** iris + kilau + garis kelopak; tidak pernah mata menyala.
+- **Zirah naik per rarity:** Biasa pelat muka baja + kain berpinggir gading · Langka pinggir emas, kalung/pelat leher, cincin emas tanduk · Epik jambul bulu, pelat dada emas, lambang matahari di kain · Legendaris panji berkibar di belakang penunggang, kuku emas, partikel cahaya · Mitos + cahaya di tanah, partikel lebih banyak. Cahaya lembut dari atas mulai Epik.
+- **Panggil:** cincin rune emas terbuka di tanah, cahaya turun, mount muncul dari cahaya lalu mengangkat kaki depan sekali (yang terbang hanya mendongak).
+- **Kode:** `art/mounts.js` — `MAJESTIC_MOUNTS`, `drawMajesticRidden` (mount pada skalanya, penunggang tetap 0,82), `drawMajesty`, `drawSummonRing`; alat gambar dipinjam dari `art/companions.js` (`kit`).
+
+### 35.4 Teknis
+- **`data/mounts.js`:** kecepatan per rarity, waktu panggil, jeda jatuh, harga mount & warna, peluang jatuh dasar & kenaikan, jaminan 25, bonus tiap mount. Daftar id dicocokkan dengan `MAJESTIC_MOUNTS` di `art/mounts.js` (tes).
 - **`run/mount.js`** (logika murni + tes): keadaan `none → summoning → riding`; `startSummon`, `stepMount`, `dismount(reason)`, `mountSpeed()`, `canCrossWater()`. Dipanggil dari `run/run.js` (gerak, aksi, kena pukul) dan `run/field.js`.
 - **`run/fieldmap.js`:** `pushOut(map, o, r, { fly })` melewatkan solid `water`/`lake` bila `fly`; fungsi tepi daratan terdekat untuk turun di atas air.
 - **`meta/stable.js`** (logika murni + tes): beli mount/warna, pilih aktif, `mountBonus(char)`, hadiah quest & jatuhan bos dengan jaminan. Jatuhan bos lewat `applyTrip`; hadiah quest lewat alur quest yang sudah ada. Bonus disuntikkan ke perhitungan yang sudah ada (emas, EXP, magnet, ramuan, material, peluang gear, HP maks).
 - **Save v21:** `char.mounts = { owned: { horse: [0] }, active: 'horse', skin: { horse: 0 }, pity: { basilisk: 0, nightmare: 0 } }` (`owned`: id → daftar indeks warna). `migrate()` v20→v21: isi kosong, lalu berikan mount yang haknya sudah didapat (bab 1 selesai → Kuda; Sang Gerhana kalah → Naga; `s_salju` selesai → Griffin; semua quest sampingan → Paus Langit). Tes migrasi & validasi.
-- **Gambar:** `render3d/actors.js` `drawHero` memakai `drawRidden` saat menunggang; kanvas billboard pemain diperbesar hanya selama menunggang; mount terbang melayang dengan bayangan di tanah. Bar panggil di atas kepala; debu saat naik/turun (RNG efek sendiri, bukan RNG simulasi). Tampilan 2D lama (`?2d`) ikut memakai `drawRidden`.
+- **Gambar:** `render3d/actors.js` `drawHero` memakai `drawMajesticRidden` saat menunggang (dengan `drawMajesty`; animasi panggil dari `drawSummonRing`); kanvas billboard pemain diperbesar hanya selama menunggang; mount terbang melayang dengan bayangan di tanah. Bar panggil di atas kepala; debu saat naik/turun (RNG efek sendiri, bukan RNG simulasi). Tampilan 2D lama (`?2d`) ikut memakai `drawMajesticRidden`.
 - **Input & HUD:** <kbd>M</kbd> di `core/input.js`; ikon kuda + cincin jeda di HUD HP; tombol tersembunyi sampai mount pertama didapat.
 - **Teks:** semua dibungkus `tr()`/`t()`, kamus EN di `src/i18n/`.
 - **Suara:** `chime` saat naik; langkah kaki kuda menyusul lewat `data/audio.js`.
 - **Cheat:** +Kuda, +semua mount.
 
-### 35.4 Urutan kerja (berhenti untuk cek pemilik tiap bagian)
+### 35.5 Urutan kerja (berhenti untuk cek pemilik tiap bagian)
 - **A** Naik/turun & kecepatan dengan Kuda lewat cheat: `data/mounts.js`, `run/mount.js` + tes, gambar menunggang, tombol M & ikon HP.
 - **B** Mount terbang menyeberang air + gambar melayang.
 - **C** Koleksi: save v21, `meta/stable.js`, Penjaga Kandang, tab Mount, bonus.
