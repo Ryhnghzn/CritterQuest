@@ -4,7 +4,7 @@
 // the hero and the townsfolk are the game's 2D dolls standing as billboards; role tags,
 // names, quest marks, shop plates and the door fade are drawn on the 2D canvas on top.
 import * as THREE from 'three';
-import { S, sharp } from './stage.js';
+import { S, sharp, sunAt, dusk } from './stage.js';
 import { LOOK } from '../data/look.js';
 import { billMat, canvasTexture } from './actors.js';
 import { NightMats, setGhost, GEO } from './kit3d.js';
@@ -197,13 +197,13 @@ export class Town25 {
       sc.background = this.bgRoom || (this.bgRoom = new THREE.Color(0x07050f)); sc.fog = null;
     } else {
       const s = place.st;
-      this.hemi.color.copy(cDay).lerp(cNight, n); this.hemi.groundColor.copy(gDay).lerp(gNight, n);
+      dusk(this.hemi.color.copy(cDay), 'hemi', n).lerp(cNight, n); dusk(this.hemi.groundColor.copy(gDay), 'ground', n).lerp(gNight, n);
       this.hemi.intensity = (1.5 + 0.2 * n) * LOOK.ambient;
-      this.sun.color.copy(sDay).lerp(sNight, n).lerp(sWarm, Math.min(0.6, sky.warm * 3));
+      dusk(this.sun.color.copy(sDay), 'sun', n).lerp(sNight, n).lerp(sWarm, Math.min(0.6, sky.warm * 3));
       this.sun.intensity = (2.4 - 1.3 * n) * LOOK.key;
-      this.sun.position.set(this.camX * S - 15, 30, this.camY * S - 10); this.sun.target.position.set(this.camX * S, 0, this.camY * S);
+      sunAt(this.sun, this.camX * S, this.camY * S, [-15, 30, -10]);
       const bg = place.bg || (place.bg = new THREE.Color());
-      bg.set(s.day).lerp(place.nightBg || (place.nightBg = new THREE.Color(s.sky)), n);
+      dusk(bg.set(s.day), 'fog', n * 0.5 + 0.5).lerp(place.nightBg || (place.nightBg = new THREE.Color(s.sky)), n);
       sc.background = bg; this.fog.color.copy(bg); sc.fog = this.fog;
       this.fog.near = 24 * st.zoom; this.fog.far = 58 * st.zoom; // the camera backs off when zooming out
     }

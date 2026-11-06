@@ -102,6 +102,57 @@ export function toon(color, rim = 0, kind = null) {
   TOON.set(key, m);
   return m;
 }
+// Sun shadows and dusk (plan C1). sunAt places a scene's sun (or moon) around the camera
+// target (metres): LOOK.mood's low sun, else the scene's own offset; the target snaps to the
+// shadow map's texel grid so shadows do not crawl while walking. dusk leans a day colour warm.
+const _dusk = new THREE.Color();
+export function sunAt(light, tx, tz, offset) {
+  const M = LOOK.mood, SH = LOOK.shadows;
+  let [ox, oy, oz] = offset;
+  if (M) { const [a, b, c] = M.sunDir, l = Math.hypot(a, b, c); [ox, oy, oz] = [a / l * M.sunDist, b / l * M.sunDist, c / l * M.sunDist]; }
+  if (SH) { const tex = (SH.box * 2) / SH.size; tx = Math.round(tx / tex) * tex; tz = Math.round(tz / tex) * tex; }
+  light.position.set(tx + ox, oy, tz + oz); light.target.position.set(tx, 0, tz);
+  light.target.updateMatrixWorld();
+}
+export function dusk(color, key, night = 0) {
+  const M = LOOK.mood;
+  if (M) color.lerp(_dusk.set(M[key]), M.warm * (1 - night));
+  return color;
+}
+// what casts and catches shadows, decided once per object: opaque solids cast and catch,
+// flat planes (ground, floors) only catch, cut-out billboards (hero, monsters, people) cast
+// through their picture's alpha, glows / decals / effects (basic materials) stay out
+function shadowRole(o) {
+  const m = Array.isArray(o.material) ? o.material[0] : o.material;
+  if (!m || m.isMeshBasicMaterial || m.isPointsMaterial || m.isSpriteMaterial) return 'none';
+  if (m.transparent && m.map && m.alphaTest > 0) return 'card';
+  if (m.transparent) return 'none';
+  return o.geometry?.type === 'PlaneGeometry' ? 'floor' : 'solid';
+}
+function shade(scene, on) {
+  const SH = LOOK.shadows;
+  scene.traverse((o) => {
+    if (o.isDirectionalLight) {
+      if (o.castShadow !== on) {
+        o.castShadow = on;
+        const sc = o.shadow.camera;
+        o.shadow.mapSize.set(SH.size, SH.size); sc.left = sc.bottom = -SH.box; sc.right = sc.top = SH.box; sc.near = 0.5; sc.far = 90; sc.updateProjectionMatrix();
+        o.shadow.bias = SH.bias; o.shadow.normalBias = SH.normalBias; o.shadow.intensity = SH.intensity;
+      }
+      return;
+    }
+    if (!o.isMesh) return;
+    let role = o.userData.shadow;
+    if (!role) {
+      role = o.userData.shadow = shadowRole(o);
+      if (role === 'solid') o.castShadow = o.receiveShadow = true;
+      else if (role === 'floor') o.receiveShadow = true;
+      else if (role === 'card') { o.castShadow = true; o.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 }); }
+    }
+    if (role === 'card' && o.customDepthMaterial.map !== o.material.map) { o.customDepthMaterial.map = o.material.map; o.customDepthMaterial.needsUpdate = true; }
+  });
+}
+
 export const glowMat = (c, k = 1.8) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k) });
 
 export class Stage {
@@ -123,6 +174,7 @@ export class Stage {
     const r = this.renderer = new THREE.WebGLRenderer({ antialias: !this.lite, powerPreference: 'high-performance' });
     r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = LOOK.exposure;
     r.outputColorSpace = THREE.SRGBColorSpace;
+    if (LOOK.shadows) { r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; }
     const c = r.domElement;
     c.id = 'game3d';
     c.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0';
@@ -219,6 +271,7 @@ export class Stage {
   }
 
   render(scene) {
+    if (LOOK.shadows) shade(scene, !this.lite);
     if (this.lite) { this.renderer.render(scene, this.camera); return; }
     this.pass.scene = scene;
     this.composer.render();

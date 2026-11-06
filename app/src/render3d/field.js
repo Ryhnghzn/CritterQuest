@@ -8,7 +8,7 @@
 // monsters, ground effects and numbers come from Actors (actors.js). Light follows the
 // in-game clock; Tanah Gerhana is always dusk-violet.
 import * as THREE from 'three';
-import { S, sharp, SHARP, muted, detailed, setDetail } from './stage.js';
+import { S, sharp, SHARP, muted, detailed, setDetail, sunAt, dusk } from './stage.js';
 import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
@@ -383,21 +383,21 @@ export class Field25 {
       this.groundGlow(0.36);
     } else {
       const sky = skyAt(game?.clock ?? 12 * 60), n = sky.night, w = sky.warm;
-      this.hemi.color.set(0xb8c4d8).lerp(_c.set(0x3a3e80), n);
-      this.hemi.groundColor.set(0x4a3a2a).lerp(_c.set(0x100c1c), n);
+      dusk(this.hemi.color.set(0xb8c4d8), 'hemi', n).lerp(_c.set(0x3a3e80), n);
+      dusk(this.hemi.groundColor.set(0x4a3a2a), 'ground', n).lerp(_c.set(0x100c1c), n);
       const lk = LIGHT_K[this.biome] || 1;
       this.hemi.intensity = (3.2 - 1.8 * n) * lk * LOOK.ambient;
-      this.sun.color.set(0xfff0d0).lerp(_c.set(0x8a9aff), n).lerp(_c.set(0xff8040), Math.min(1, w * 4));
+      dusk(this.sun.color.set(0xfff0d0), 'sun', n).lerp(_c.set(0x8a9aff), n).lerp(_c.set(0xff8040), Math.min(1, w * 4));
       this.sun.intensity = (2.4 - 1.9 * n) * lk * LOOK.key;
       this.groundGlow((0.55 - 0.35 * n) * lk);
-      fog.color.set(FOG_DAY[this.biome] || FOG_DAY.forest).lerp(_c2.set(FOG_NIGHT), n);
+      dusk(fog.color.set(FOG_DAY[this.biome] || FOG_DAY.forest), 'fog', n).lerp(_c2.set(FOG_NIGHT), n);
       for (const m of this.fogLayers || []) m.material.color.set(FOG_BANK[this.biome] || FOG_BANK.forest).lerp(_c2.set(FOG_BANK_NIGHT), n * 0.8);
     }
     sc.background.copy(fog.color);
     const z = this.stage.zoom;
     fog.near = 22 * z; fog.far = (this.biome === 'eclipse' ? 48 : 58) * z;
     const tx = this.camX * S, tz = this.camY * S;
-    this.sun.position.set(tx - 8, 18, tz + 10); this.sun.target.position.set(tx, 0, tz);
+    sunAt(this.sun, tx, tz, [-8, 18, 10]);
   }
 
   // the ground keeps its painted colours (as in 2D) by day, sinks into the dark by night

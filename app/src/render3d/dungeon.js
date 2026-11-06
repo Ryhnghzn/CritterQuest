@@ -3,7 +3,7 @@
 // drawRoom and becomes a texture; walls and pillars are 3D blocks; lamps light the room.
 // The hero, monsters, ground effects and numbers come from Actors (actors.js).
 import * as THREE from 'three';
-import { S, toon, glowMat, sharp, SHARP, muted, detailed } from './stage.js';
+import { S, toon, glowMat, sharp, SHARP, muted, detailed, sunAt } from './stage.js';
 import { LOOK } from '../data/look.js';
 import { Actors } from './actors.js';
 import { wallCells } from './roomgrid.js';
@@ -40,7 +40,7 @@ export class Dungeon25 {
     this.stage.init();
     const sc = this.scene = new THREE.Scene();
     this.hemi = new THREE.HemisphereLight(0x5a4a90, 0x140c18, 1.2); sc.add(this.hemi);
-    this.moon = new THREE.DirectionalLight(0x9a8cff, 0.6); this.moon.position.set(-10, 20, -8); sc.add(this.moon);
+    this.moon = new THREE.DirectionalLight(0x9a8cff, 0.6); this.moon.position.set(-10, 20, -8); sc.add(this.moon, this.moon.target);
     this.pool = []; // point lights handed to the nearest lamps each frame
     for (let i = 0; i < 4; i++) { const L = new THREE.PointLight(0xffa050, 0, 10, 1.6); sc.add(L); this.pool.push(L); }
     this.heroLight = new THREE.PointLight(0xffd8a0, 4, 9, 1.6); sc.add(this.heroLight);
@@ -169,6 +169,7 @@ export class Dungeon25 {
     const sh = playing && game.shake > 0 && this.flat.shakeOn ? game.shake * SHAKE_PX * S : 0;
     st.shake.x = (Math.random() - 0.5) * sh; st.shake.y = (Math.random() - 0.5) * sh;
     st.look(this.camX, this.camY);
+    sunAt(this.moon, this.camX * S, this.camY * S, [-10, 20, -8]); // follows the camera: its shadows cover the view
 
     this.setWalls(false, this.camX, this.camY, 1 / 60);
     this.lights(game, t, playing);

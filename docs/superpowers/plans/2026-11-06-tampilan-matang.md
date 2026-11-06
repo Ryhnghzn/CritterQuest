@@ -58,5 +58,11 @@ Efek berdiri di dunia 3D seperti prototipe A (`app/pixel`): gambar dari `art/spe
 - [x] **B3** Petir & sihir: Badai Petir = tiap sambaran petir bercabang dari langit + bekas + kilat cahaya + percikan; Teleportasi = ledakan ungu di titik awal dan tujuan; Perisai Mana = ledakan ungu di pemain. Cek pemilik B2+B3 → commit.
 - [ ] **B4** Kelas lain (dibahas setelah Penyihir); cek silau malam hari.
 
+## Bagian C — Dunia seperti prototipe A (permintaan pemilik 2026-11-06: "masih jauh dari pixel.html A")
+Selisih terbesar dengan prototipe: tidak ada bayangan, props berupa bentuk 3D polos (bukan ilustrasi), tanah berupa ubin, cahaya netral. Dikerjakan berurutan, cek pemilik di tiap bagian.
+- [x] **C1** Bayangan matahari nyata (Penuh saja; Ringan tanpa bayangan) untuk bangunan, props, dinding dungeon, dan billboard karakter (lewat alpha gambarnya); matahari rendah barat-barat daya mengikuti kamera (target menempel grid texel → bayangan tidak merayap); suasana senja: cahaya langit, pantulan tanah, matahari, kabut condong ke warna hangat prototipe di siang hari. `LOOK.shadows`, `LOOK.mood`, `stage.js` `sunAt` / `dusk` / `shade`.
+- [ ] **C2** Tanah dilukis: jalan setapak bertepi, teduh di bawah pohon, rumput & bunga kecil (Kota Awal + Rimbawana dulu).
+- [ ] **C3** Props ilustrasi: pohon, batu, semak, rumput sebagai gambar bergaya prototipe (PixelSprite k = 3) menggantikan bentuk A5.
+
 ## Penutup
 - [ ] Perbarui status di `CLAUDE.md`.
