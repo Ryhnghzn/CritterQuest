@@ -12,7 +12,21 @@ export const input = {
   pressed: new Set(),               // queued one-shot actions
   onAction: [],                     // code => void ; menus/shortcuts (Esc, M, 1-3, …)
   onTouchMode: [],                  // () => void ; first touch switches to touch controls
+  aim: null,                        // { action } while a skill waits for a left click (spec §37)
+  aimFilter: null,                  // (action) => true when that skill should wait (set by main.js)
 };
+
+// Queues a one-shot action. With a mouse, a skill that needs aiming waits instead (spec §37):
+// its marker shows until a left click casts it; the same key again casts at once.
+export function queueAction(action, mouse = !input.touch) {
+  if (mouse && input.aimFilter && (action.startsWith('skill') || action === 'ult')) {
+    if (input.aim?.action === action) { input.aim = null; input.pressed.add(action); return; }
+    if (input.aimFilter(action)) { input.aim = { action }; return; }
+  }
+  if (action.startsWith('skill') || action === 'ult') input.aim = null;
+  input.pressed.add(action);
+}
+export function cancelAim() { input.aim = null; }
 
 export const JOY_RADIUS = 56;       // CSS px of stick travel for full speed
 
@@ -32,19 +46,26 @@ const ACTION_KEYS = {
 addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, textarea')) return; // typing a name, not playing
   if (KEYMAP[e.code]) { input.keys.add(e.code); e.preventDefault(); }
-  if (ACTION_KEYS[e.code]) { e.preventDefault(); if (!e.repeat) input.pressed.add(ACTION_KEYS[e.code]); }
+  if (e.code === 'Escape' && input.aim) { input.aim = null; return; } // Esc cancels the aim (not a pause)
+  if (ACTION_KEYS[e.code]) { e.preventDefault(); if (!e.repeat) queueAction(ACTION_KEYS[e.code]); }
   for (const cb of input.onAction) cb(e.code);
 });
 addEventListener('keyup', (e) => input.keys.delete(e.code));
 addEventListener('focusout', (e) => { if (e.target.matches('input, textarea')) scrollTo(0, 0); }); // iPhone leaves the page shifted after its keyboard closes
-addEventListener('blur', () => { input.keys.clear(); input.mouse.down = false; input.attackHeld = false; input.joy = null; });
+addEventListener('blur', () => { input.keys.clear(); input.mouse.down = false; input.attackHeld = false; input.joy = null; input.aim = null; });
 
 addEventListener('mousemove', (e) => {
   if (input.touch) return; // ignore the emulated mouse events that follow taps
   input.mouse.x = e.clientX; input.mouse.y = e.clientY; input.mouse.active = true;
 });
 addEventListener('mousedown', (e) => {
-  if (e.button === 0 && e.target.id === 'game') input.mouse.down = true;
+  if (e.target.id !== 'game') return;
+  if (input.aim) { // left: cast where the marker is (this click is not an attack); right: cancel
+    if (e.button === 0) input.pressed.add(input.aim.action);
+    if (e.button === 0 || e.button === 2) input.aim = null;
+    return;
+  }
+  if (e.button === 0) input.mouse.down = true;
 });
 addEventListener('mouseup', (e) => { if (e.button === 0) input.mouse.down = false; });
 

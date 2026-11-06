@@ -35,7 +35,15 @@
 - [x] **A3.4** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A3: material tanah & props wilayah`.
 
 ## Bagian A4 — Dungeon & interior
-- [ ] Lantai & dinding 4 tema dungeon dan interior rumah bertekstur.
+- [x] **A4.1** `texkit.js` pola `slab` (batu lantai besar); lantai dungeon (di atas lukisan lantai), dinding & tutup dinding dungeon `stone`, tiang lampu `wood`.
+- [x] **A4.2** Interior: dinding `plaster`, list & lambrisering `wood` (lantai lukisan papan dibiarkan).
+- [x] **A4.3** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A4: material dungeon & interior`.
+- [x] **A4.4** Setelan lebih berani (pemilik 2026-11-06: "masih seperti yang lama"): saturasi 0,6, kontras detail ×1,9, ambien 0,5, lampu ×1,7, cahaya sendiri billboard 0,12 (pemain 0,26); `?lama` di URL menampilkan tampilan lama untuk dibandingkan.
+
+## Sisipan — Bidik skill (§37)
+- [x] `run/aim.js` (+ tes): skill mana yang menunggu bidikan, bentuk penanda. `render/aim.js`: gambar penanda lewat proyeksi kamera.
+- [x] `core/input.js`: `queueAction` (mode bidik, tombol sama = cast cepat), klik kiri lepas, klik kanan / Esc batal; `ui/touch.js` tombol HUD diklik mouse ikut membidik; `main.js` `aimFilter` + gambar penanda.
+- [x] Cek pemilik → commit `Bidik skill dulu, klik kiri untuk melepas (§37)`.
 
 ## Bagian A5 — Vegetasi & props
 - [ ] Pohon, semak, batu: siluet berlapis, variasi ukuran.

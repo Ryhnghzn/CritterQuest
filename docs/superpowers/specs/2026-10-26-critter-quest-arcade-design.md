@@ -1194,3 +1194,14 @@ Pemilik menilai visual sekarang terlalu "childish" (warna terlalu terang & jenuh
 4. **Efek & glow** diselaraskan dengan cahaya baru (tidak silau).
 
 Rencana: `docs/superpowers/plans/2026-11-06-tampilan-matang.md`.
+
+## 37. Bidik Skill Dulu, Klik untuk Melepas (permintaan pemilik 2026-11-06)
+
+Dengan mouse (PC, mode serang otomatis mati), skill yang butuh arah atau titik tidak langsung keluar saat tombolnya ditekan:
+1. Tekan **1–4** (atau **5** untuk ultimate, atau klik tombol skillnya di HUD) → **mode bidik**: penanda tipis emas di tanah mengikuti mouse.
+2. **Klik kiri** → skill dilepas ke arah/titik itu (klik ini tidak dihitung serangan biasa).
+3. **Klik kanan** atau **Esc** → batal (Esc tidak membuka jeda saat membidik). Tombol skill yang sama ditekan lagi → langsung dilepas di posisi mouse (cast cepat). Tombol skill lain → pindah membidik skill itu.
+
+Penanda per jenis skill (`run/aim.js`, digambar `render/aim.js` di atas dunia 2.5D maupun 2D): proyektil & garis & terjang → jalur berpanah sepanjang jangkauan (proyektil yang meledak: lingkaran ledakan di ujung); area di titik bidik → lingkaran jangkauan maksimal (garis putus) + lingkaran area yang berhenti di batas; kipas → kerucut; badai petir → jangkauan + titik awal rantai; pisau orbit → jangkauan lempar.
+
+**Tetap langsung keluar:** skill yang berpusat di pemain (buff, putaran, kipas 360°, ultimate area yang mengikuti), skill yang masih cooldown (supaya tetap ada umpan balik), mode serang otomatis, dan kontrol sentuh di HP (bidik otomatis). Logika skill (`run/skills.js`) tidak berubah: skill tetap mengarah ke posisi mouse saat dilepas. Save tidak berubah.

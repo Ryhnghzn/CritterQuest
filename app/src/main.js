@@ -18,7 +18,9 @@ import { SHARP_SCALE, ZOOM_START, CAM_SENS } from './data/settings.js';
 import { renderSettings } from './ui/settings.js';
 import { freshSettings } from './meta/schema.js';
 import { CLASSES, CLASS_BASE } from './data/classes.js';
-import { input, pollMove, consumePressed } from './core/input.js';
+import { input, pollMove, consumePressed, cancelAim } from './core/input.js';
+import { needsAim, aimShape } from './run/aim.js';
+import { drawAim } from './render/aim.js';
 import { ensureAudio, playMusic, stopMusic, toggleMuted, setMuted, setVolumes, sfx } from './core/audio.js';
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
@@ -39,7 +41,7 @@ import { renderTitle } from './ui/title.js';
 import { drawCampfire } from './art/titlebg.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
-import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL } from './data/balance.js';
+import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL, ULT } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
@@ -88,7 +90,33 @@ const T3 = new Town25(view, TR, STAGE);
 const URL_2D = new URLSearchParams(location.search).has('2d');
 let FLAT = URL_2D; // the flat 2D view: ?2d or Settings → Tampilan 2D (applySettings)
 const runView = () => (FLAT ? R : game.field ? R4 : game.room ? R3 : R);
-function drawRunView(t) { T3.hide(); const r = runView(); if (r !== R3) R3.hide(); if (r !== R4) R4.hide(); r.draw(game, t); }
+function drawRunView(t) {
+  T3.hide(); const r = runView(); if (r !== R3) R3.hide(); if (r !== R4) R4.hide(); r.draw(game, t);
+  drawAimMarker(r, t);
+}
+// Aimed casting (spec §37): with a mouse, a skill that needs a direction or a spot waits for a
+// left click; a skill still cooling down, without its charge, or in auto mode fires as before.
+function aimedSkill(action) { return action === 'ult' ? game.ult : game.skillDefs?.[Number(action.slice(5)) - 1]; }
+input.aimFilter = (action) => {
+  if (scene !== 'run' || game.state !== ST.PLAY || settings.autoAttack || !input.mouse.active) return false;
+  const s = aimedSkill(action);
+  if (!needsAim(s)) return false;
+  if (action === 'ult') return game.ultCharge >= ULT.max;
+  return game.skillCd[Number(action.slice(5)) - 1] <= 0;
+};
+function drawAimMarker(r, t) {
+  const a = input.aim;
+  document.body.classList.toggle('aiming', !!a);
+  if (!a) return;
+  if (scene !== 'run' || game.state !== ST.PLAY || !input.mouse.active) { cancelAim(); return; }
+  const s = aimedSkill(a.action);
+  if (!s) { cancelAim(); return; }
+  const m = r.screenToWorld(input.mouse.x, input.mouse.y);
+  const toScreen = r === R
+    ? (x, y) => ({ x: (x - R.camX) * view.zoom + innerWidth / 2, y: (y - R.camY) * view.zoom + innerHeight / 2 })
+    : (x, y) => STAGE.project(x, y, 0);
+  drawAim(view.ctx, aimShape(s, game.px, game.py, m.x, m.y), toScreen, view.c.width / innerWidth, t);
+}
 const game = new Game();
 setupTouch();
 
