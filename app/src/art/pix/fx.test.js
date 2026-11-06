@@ -42,3 +42,11 @@ describe('illustrated props (plan C3, C4)', async () => {
     expect(glowing(P.crystal(2, 2, 'obsidian'))).toBeGreaterThan(0); // the spire's violet veins
   });
 });
+
+describe('warrior frames (plan B4)', () => {
+  it('every frame drawn; the pillar burns at its foot; the whirl is round (laid flat)', () => {
+    for (const fr of [FX.slash(2), FX.whirl(2), FX.pillar(2), FX.dust(2), FX.axe(2), FX.novaRing(1, 2, 'torch')]) for (const sp of fr) expect(opaque(sp)).toBeGreaterThan(0);
+    expect(glowing(FX.pillar(2)[2])).toBeGreaterThan(0);
+    const w = FX.whirl(1)[0]; expect(w.w).toBe(w.h);
+  });
+});

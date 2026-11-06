@@ -23,5 +23,12 @@ export const SPELL3D = {
   // Badai Petir: one strike; height in metres, scorch diameter = r × scorch
   strike: { height: 7.5, fps: 22, life: 0.3, glow: 1.6, scorch: 1.6, sparks: 22, sparkSpeed: 4.5, light: { color: 0xc8e0ff, peak: 45, life: 0.35, dist: 9 } },
   // Teleportasi / Perisai Mana: a violet burst `size` metres wide
+  // plan B4 — Warrior. slash: the swoosh's radius reaches r × fill; whirl: the ring's half-width r × fill
+  slash: { fill: 1.0, h: 22, fps: 22 },
+  whirl: { fill: 1.05, h: 14, fps: 16 },
+  pillar: { fill: 1.7, sched: [0.04, 0.05, 0.22, 0.12, 0.08, 0.2], sparks: 10, light: { color: 0xff7a30, peak: 12, life: 0.4, dist: 5 } },
+  shock: { ringR: 65, fps: 18, glow: 1.3, sparks: 30, light: { color: 0xffc860, peak: 22, life: 0.45, dist: 8 } },
+  dust: { size: 1.3, fps: 10, every: 0.035 },
+  axe: { size: 1.5, fps: 18 },
   arcane: { size: 1.3, fps: 18, glow: 1.5, sparks: 12, sparkSpeed: 2.5, blinkEnd: 0.1, light: { color: 0xa070ff, peak: 14, life: 0.3, dist: 4 } },
 };

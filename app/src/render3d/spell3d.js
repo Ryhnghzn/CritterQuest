@@ -10,6 +10,11 @@ import { SPELL3D as C } from '../data/spell3d.js';
 import { S } from './stage.js';
 
 const MAX_FX = 72;
+// a ground direction (vx, vy) as an angle on screen for a camera turned by yaw (far = up, foreshortened)
+function screenAngle(vx, vy, yaw) {
+  const sx = vx * Math.cos(yaw) - vy * Math.sin(yaw), sz = -(vx * Math.sin(yaw) + vy * Math.cos(yaw));
+  return Math.atan2(sz * 0.6, sx);
+}
 
 // ---- frames → textures (built once, on first use) -------------------------------------------
 function flipRows(a, w, h) { const o = new Uint8Array(a.length); for (let y = 0; y < h; y++) o.set(a.subarray(y * w * 4, (y + 1) * w * 4), (h - 1 - y) * w * 4); return o; }
@@ -28,6 +33,12 @@ const MAKE = {
   shard: () => FX.iceShard(C.detail),
   bolt: () => FX.lightning(3, C.detail),
   arcane: () => FX.arcaneHit(C.detail),
+  slash: () => FX.slash(C.detail),
+  whirl: () => FX.whirl(C.detail),
+  pillar: () => FX.pillar(C.detail),
+  shock: () => FX.novaRing(1, C.detail, 'torch'),
+  dust: () => FX.dust(C.detail),
+  axe: () => FX.axe(C.detail),
 };
 const frames = (id) => FRAMES[id] || (FRAMES[id] = MAKE[id]().map(tex));
 
@@ -52,6 +63,7 @@ function glowTexture() {
 }
 const hexes = (ramp, steps) => steps.map((i) => new THREE.Color(RAMPS[ramp][i]));
 const FIRE_SPARKS = [...hexes('ember', [3, 4]), ...hexes('torch', [3, 4])];
+const GOLD_SPARKS = [...hexes('torch', [4, 3]), ...hexes('gold', [4])], RED_SPARKS = [...hexes('ember', [2, 3]), ...hexes('red', [4])];
 const FROST_SPARKS = hexes('frost', [4, 3, 2]), BOLT_SPARKS = hexes('bolt', [4, 3, 2]), ARCANE_SPARKS = hexes('arcane', [4, 3]);
 
 export class Spell3D {
@@ -154,6 +166,33 @@ export class Spell3D {
     this.light(A.light.color, A.light.peak, A.light.life, A.light.dist, x, h, y);
     this.burst(x * S, h * S, y * S, Math.round(A.sparks * mul * size), A.sparkSpeed, ARCANE_SPARKS, 0.45);
   }
+  // ---- Warrior (plan B4) ---------------------------------------------------------------
+  // a sword swoosh in front of the hero, turned to the swing's direction on screen
+  swoosh(h, yaw) {
+    const W = C.slash, a = h.angle || 0, d = h.r * 0.35, x = h.x + Math.cos(a) * d, y = h.y + Math.sin(a) * d;
+    const e = this.add('slash', x, y, { ax: 14 / 48, ay: 0.5, h: W.h, m: (h.r * W.fill * S) / 22, fps: W.fps, glow: 1.2 });
+    if (!e) return;
+    e.roll = screenAngle(Math.cos(a), Math.sin(a), yaw);
+    this.flipSwing = !this.flipSwing; if (this.flipSwing) e.flipY = true; // alternate swings
+  }
+  // a ring of light kicked out along the ground (Teriakan Baja, Amarah Perang)
+  shock(x, y, r, mul, cols) {
+    const K = C.shock;
+    this.add('shock', x, y, { flat: true, m: (r * S) / K.ringR, fps: K.fps, glow: K.glow });
+    this.light(K.light.color, K.light.peak, K.light.life, K.light.dist, x, 40, y);
+    this.burst(x * S, 0.8, y * S, Math.round(K.sparks * mul), 3, cols, 0.7, 2, 1.2);
+  }
+  pillar(x, y, r, mul) {
+    const P = C.pillar, fr = frames('pillar')[0];
+    this.add('pillar', x, y, { ax: 0.5, ay: 1, m: (r * P.fill * S) / fr.w, sched: P.sched, flip: Math.random() < 0.5 });
+    this.light(P.light.color, P.light.peak, P.light.life, P.light.dist, x, 20, y);
+    this.burst(x * S, 0.3, y * S, Math.round(P.sparks * mul), 3.5, FIRE_SPARKS, 0.7, 8, 2.5);
+  }
+  dust(x, y, mul) {
+    if (Math.random() > mul + 0.2) return;
+    const D = C.dust, fr = frames('dust')[0];
+    this.add('dust', x + (Math.random() - 0.5) * 10, y, { ax: 0.5, ay: 0.8, m: D.size / fr.w * (0.8 + Math.random() * 0.5), fps: D.fps, flip: Math.random() < 0.5 });
+  }
   // a falling meteor `size` metres long; o.life (fixed fall) or o.fall (Hujan Meteor's own clock)
   meteor(x, y, size, o) {
     const e = this.add('fire', x, y, { ax: 0.75, ay: 0.5, m: size / frames('fire')[0].w, fps: 16, loop: true, life: o.life ?? 1e9, glow: C.fireball.glow });
@@ -177,6 +216,13 @@ export class Spell3D {
     const live = new Set();
     for (const h of game.hits) {
       if (h.kind === 'proj') {
+        if (h.fx === 'axe' && !h.dead) { // Kapak Bumerang: the drawn axe spinning along its flight
+          live.add(h);
+          let e = this.proj.get(h);
+          if (!e) { e = this.add('axe', h.x, h.y, { ax: 0.5, ay: 0.5, h: C.flyH, m: C.axe.size / frames('axe')[0].w, fps: C.axe.fps, loop: true, life: 1e9 }); if (!e) continue; this.proj.set(h, e); }
+          e.x = h.x; e.y = h.y;
+          continue;
+        }
         if (h.fx !== 'fireball' || h.dead || h.delay > 0) continue;
         live.add(h);
         let e = this.proj.get(h);
@@ -190,14 +236,22 @@ export class Spell3D {
         e.x = h.x; e.y = h.y;
         // turn the flame along its flight as seen on screen (far = up, foreshortened)
         const vx = h.vx || Math.cos(h.angle), vy = h.vy || Math.sin(h.angle);
-        const sx = vx * Math.cos(yaw) - vy * Math.sin(yaw), sz = -(vx * Math.sin(yaw) + vy * Math.cos(yaw));
-        e.roll = Math.atan2(sz * 0.6, sx);
+        e.roll = screenAngle(vx, vy, yaw);
         const n = Math.floor(C.fireball.trail * mul * Math.max(1, h.r / 10) * dt + Math.random());
         const bx = -vx / (Math.hypot(vx, vy) || 1), by = -vy / (Math.hypot(vx, vy) || 1);
         for (let i = 0; i < n; i++) this.spark(h.x * S + bx * 0.25, C.flyH * S + (Math.random() - 0.5) * 0.2, h.y * S + by * 0.25, (Math.random() - 0.5) * 0.6, 0.6 + Math.random() * 0.8, (Math.random() - 0.5) * 0.6, 0.5, FIRE_SPARKS[i % 4]);
         continue;
       }
       if (h.delay > 0) continue;
+      // Warrior (plan B4): the swoosh of a sword swing, a whirl following the hero, pillars of the fissure
+      if (h.fx === 'slash' && !this.seen.has(h)) { this.seen.add(h); this.swoosh(h, yaw); }
+      if (h.fx === 'quake' && !this.seen.has(h)) { this.seen.add(h); this.pillar(h.x, h.y, h.r, mul); }
+      if (h.fx === 'spin' && h.life > 0) {
+        live.add(h);
+        let e = this.proj.get(h);
+        if (!e) { e = this.add('whirl', h.x, h.y, { flat: true, h: C.whirl.h, m: (h.r * C.whirl.fill * S) / 40, fps: C.whirl.fps, loop: true, life: 1e9, glow: 1.15 }); if (e) { e.spin = -9; this.proj.set(h, e); } }
+        if (e) { e.x = h.x; e.y = h.y; }
+      }
       if (!this.seen.has(h) && (h.fx === 'nova' || h.fx === 'chain')) { // Nova Es (and the archer's ice blast), Badai Petir
         this.seen.add(h);
         if (h.fx === 'nova') this.nova(h.x, h.y, h.r, mul); else this.strike(h.x, h.y, h.r, mul);
@@ -222,8 +276,15 @@ export class Spell3D {
       if (cp && this.pose !== undefined) {
         if (cp.id === 'blink') { this.arcane(game.dashFromX ?? game.px, game.dashFromY ?? game.py, 30, mul, 1.2); this.pending.push({ t: C.arcane.blinkEnd, id: 'blink' }); }
         if (cp.id === 'manashield') this.arcane(game.px, game.py, 34, mul, 1.6);
+        if (cp.id === 'shout') this.shock(game.px, game.py, 115, mul, GOLD_SPARKS);
+        if (cp.id === 'warcry') this.shock(game.px, game.py, 90, mul, RED_SPARKS);
+        if (cp.id === 'charge') { this.dust(game.dashFromX ?? game.px, game.dashFromY ?? game.py, mul); this.dashDust = 0.25; }
       }
       this.pose = cp;
+    }
+    if (this.dashDust > 0) { // Terjang: puffs of dust along the dash
+      this.dashDust -= dt; this.dustT = (this.dustT || 0) + dt;
+      while (this.dustT > C.dust.every) { this.dustT -= C.dust.every; this.dust(game.px, game.py + 8, mul); }
     }
     for (let i = this.pending.length - 1; i >= 0; i--) {
       const q = this.pending[i];
@@ -255,12 +316,13 @@ export class Spell3D {
       if (e.mesh.material.map !== fr.map) e.mesh.material.map = fr.map;
       if (e.fade) e.mesh.material.opacity = e.opacity * Math.min(1, (e.life - e.t) / e.fade);
       e.mesh.visible = true;
-      if (e.flat) { e.mesh.position.set(e.x * S, 0.05, e.y * S); e.mesh.rotation.y = yaw; continue; }
+      if (e.flat) { e.mesh.position.set(e.x * S, e.h ? e.h * S : 0.05, e.y * S); e.mesh.rotation.y = yaw + (e.spin ? e.t * e.spin : 0); continue; }
       if (e.meteor) this.placeMeteor(e, e.x, e.y, Math.max(0, 1 - e.t / e.life), yaw);
       else if (e.fall) this.placeMeteor(e, e.x, e.y, Math.max(0, e.fall.t / e.fall.max), yaw);
       else e.mesh.position.set(e.x * S, e.h * S, e.y * S);
       e.mesh.rotation.set(0, yaw, e.roll, 'YXZ');
       if (e.flip) e.mesh.scale.x = -Math.abs(e.mesh.scale.x);
+      if (e.flipY) e.mesh.scale.y = -Math.abs(e.mesh.scale.y);
     }
     // lights
     for (const L of this.lights) {

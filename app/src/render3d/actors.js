@@ -110,7 +110,7 @@ export class Actors {
           continue;
         }
         if (h.kind !== 'proj' || h.dead || (h.delay > 0 && !h.hover)) continue; // a delayed arrow is still being drawn back
-        if (this.spells && h.fx === 'fireball') continue; // a real flame billboard (spell3d.js)
+        if (this.spells && (h.fx === 'fireball' || h.fx === 'axe')) continue; // drawn billboards instead (spell3d.js)
         if (h.delay > 0) { // a dagger floating in the Dagger Circle: it pulses
           const pu = 0.5 + 0.5 * Math.sin(game.time * 14 + h.angle * 3);
           put(h.x, h.y, PROJ_H, 12 + pu * 8, PROJ_COLOR.dagger, 0.6 + 0.4 * pu);

@@ -2,7 +2,7 @@
 // PixelSprite frames drawn from continuous shapes; k > 1 samples them finely (smooth shading).
 // render3d/spell3d.js turns them into textures on upright billboards or flat ground decals.
 // Pure: no DOM, no Math.random (designs are seeded and the same every time).
-import { PixelSprite, ellipse, capsule, poly, rect, rng } from './sprite.js';
+import { PixelSprite, ellipse, capsule, poly, rect, rng, clip } from './sprite.js';
 
 const TAU = Math.PI * 2;
 
@@ -63,7 +63,7 @@ export function arcaneHit(k = 1) {
 }
 
 // frost nova ring flat on the ground. The texture is circle-in-ground-space: width w, height w·sin(pitch)
-export function novaRing(sin, k = 1) {
+export function novaRing(sin, k = 1, ramp = 'frost') {
   const w = 132, h = Math.round(w * sin), N = 7;
   return Array.from({ length: N }, (_, f) => {
     const s = new PixelSprite(w, h, k), R = 14 + f * 8.5, th = 6 - f * 0.6, cx = w / 2, cy = h / 2;
@@ -72,7 +72,7 @@ export function novaRing(sin, k = 1) {
       if (d > R || d < R - th) return null;
       const a = Math.atan2(dy, dx), crack = Math.abs(Math.sin(a * 9 + f)) < 0.12;
       return crack ? -0.5 : 0.2 + ((d - (R - th)) / th) * 0.7;
-    } }, 'frost', { edge: false });
+    } }, ramp, { edge: false });
     return s;
   });
 }
@@ -119,3 +119,69 @@ export function scorch(sin, ramp = 'stone', k = 1) {
   return s;
 }
 
+// ---- plan B4: Warrior -----------------------------------------------------------------------
+// a sword swoosh: a crescent that sweeps from the top to the right (pointing +x), then fades
+export function slash(k = 1) {
+  const W = 48, H = 50, cx = 14, cy = 25, R = 22, th = 9;
+  return [0.45, 0.8, 1, 1, 0.7].map((reach, f) => {
+    const s = new PixelSprite(W, H, k), fade = f >= 3 ? (f - 2) * 0.35 : 0;
+    s.paint({ x0: 0, y0: 0, x1: W, y1: H, f: (x, y) => {
+      const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx); // a: -π/2 (top) … π/2 (bottom)
+      const t = (a + Math.PI / 2) / Math.PI; // 0 top … 1 bottom
+      if (t < 0 || t > reach) return null;
+      const w = th * Math.sin(Math.PI * Math.min(1, t / reach)) ** 0.7; // thick in the middle, thin at the ends
+      if (d > R || d < R - w) return null;
+      return 0.3 + ((d - (R - w)) / Math.max(0.5, w)) * 0.75 - fade; // bright outer edge
+    } }, 'smear', { edge: false });
+    return s;
+  });
+}
+// a whirl of blades seen from above (laid flat at waist height): a ring of light, three bright streaks running round
+export function whirl(k = 1) {
+  const W = 92, H = 92, cx = W / 2, cy = H / 2, rx = 40, ry = 40;
+  return [0, 1, 2, 3].map((f) => {
+    const s = new PixelSprite(W, H, k);
+    s.paint({ x0: 0, y0: 0, x1: W, y1: H, f: (x, y) => {
+      const nx = (x - cx) / rx, ny = (y - cy) / ry, d = Math.hypot(nx, ny);
+      if (d > 1 || d < 0.72) return null;
+      const a = Math.atan2(ny, nx), streak = ((a / (Math.PI * 2) + f / 12) * 3 % 1 + 1) % 1;
+      const back = 0;
+      return streak < 0.35 ? 0.85 + back : 0.2 + back - streak * 0.2;
+    } }, 'smear', { edge: false });
+    return s;
+  });
+}
+// a pillar of rock bursting out of a burning crack: grows, holds, crumbles
+export function pillar(k = 1) {
+  return [0.35, 0.75, 1, 1, 1, -1].map((g, f) => {
+    const s = new PixelSprite(34, 58, k), r = rng(41 + f), by = 56;
+    s.paint(ellipse(17, by - 1, 15, 3.2), 'ember', { level: f < 4 ? 3 : 2, edge: false }); // the glowing crack
+    if (g < 0) { for (let i = 0; i < 6; i++) s.paint(poly([[5 + i * 4, by], [6 + i * 4 + r() * 3, by - 6 - r() * 5], [9 + i * 4, by]]), 'stone', { bias: -0.5 }); return s.outline(); }
+    for (const [x, hw, tall, tilt] of [[17, 6, 50, 0], [9, 4, 30, -4], [26, 4.5, 34, 4]]) {
+      const top = by - tall * g, body = poly([[x - hw, by], [x - hw * 0.6 + tilt * 0.3, top + 6], [x + tilt, top], [x + hw * 0.6 + tilt * 0.3, top + 5], [x + hw, by]], { cx: x - hw * 0.4, cy: top + tall * 0.3, rx: hw * 1.5, ry: tall * 0.6 });
+      s.paint(body, 'stone', { rim: true });
+      s.paint(clip(body, (px, py) => py > by - 4 - (3 + Math.sin(px * 1.4 + f) * 2.5) * g), 'ember', { level: 2.5, edge: false }); // flames licking at the foot
+      s.paint(capsule(x + tilt * 0.4, top + 4, x, by - 4, 0.45), 'ember', { level: 3, edge: false }); // a burning seam
+    }
+    return s.outline();
+  });
+}
+// a puff of dust kicked up by a dash: swells and thins away (unlit, lit by the scene)
+export function dust(k = 1) {
+  return [0, 1, 2, 3, 4].map((f) => {
+    const s = new PixelSprite(30, 22, k), r = rng(61 + f), t = f / 4;
+    for (let i = 0; i < 6 - f; i++) s.paint(ellipse(15 + (r() - 0.5) * 12 * (0.5 + t), 15 - t * 5 + (r() - 0.5) * 4, 4 + t * 4 + r() * 2, 3 + t * 3 + r()), 'smear', { bias: -1.2 - t * 0.8 });
+    return s;
+  });
+}
+// the boomerang axe, four turns of its spin
+export function axe(k = 1) {
+  return [0, 1, 2, 3].map((f) => {
+    const s = new PixelSprite(30, 30, k), a = (f / 4) * Math.PI * 2, c = 15, ca = Math.cos(a), sa = Math.sin(a);
+    const P = (x, y) => [c + x * ca - y * sa, c + x * sa + y * ca];
+    s.paint(capsule(...P(-11, 0), ...P(6, 0), 1.3), 'wood');
+    s.paint(poly([P(3, -1.5), P(9, -9), P(13, -3), P(13, 3), P(9, 9), P(3, 1.5)]), 'metal', { rim: true });
+    s.paint(capsule(...P(12.2, -3), ...P(12.2, 3), 0.5), 'metal', { level: 4, edge: false });
+    return s.outline();
+  });
+}
