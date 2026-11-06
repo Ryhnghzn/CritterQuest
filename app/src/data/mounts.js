@@ -6,6 +6,7 @@ export const MOUNT = {
   summon: 1.0,                         // seconds to call it (spec §35.1)
   fallLock: 3.0,                       // seconds the call stays locked after being knocked off
   speed: [1.6, 1.65, 1.7, 1.8, 1.9, 2.0], // × walking speed, by rarity
+  fxTime: 0.4,                         // seconds of dust when mounting / being knocked off
   landTries: 12,                       // pushes to find dry land when landing over water
   box: { hx: 120, ht: 150 },           // hero billboard half-width / height while riding (game units)
 };

@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { LOOK } from '../data/look.js';
 import { S, sharp } from './stage.js';
-import { Renderer } from '../render/world.js';
+import { Renderer, MAJESTIC_BY_ID, mountDust } from '../render/world.js';
 import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
@@ -14,6 +14,8 @@ import { auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { moveDuration } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DODGE } from '../data/balance.js';
+import { MOUNT } from '../data/mounts.js';
+import { drawMajesticRidden, drawSummonRing } from '../art/mounts.js';
 import { ATTACK_POSE } from '../run/skills.js';
 import { Spell3D } from './spell3d.js';
 
@@ -198,11 +200,14 @@ export class Actors {
     const a = this.avatar, mesh = this.hero;
     mesh.visible = playing && !!a;
     if (!mesh.visible) return;
-    const k = sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(HX * 2 * k), h = Math.ceil((HT + HB) * k);
+    const mounted = game.field && game.mount.state !== 'none', riding = mounted && game.mount.state === 'riding';
+    const bx = mounted ? MOUNT.box.hx : HX, bt = mounted ? MOUNT.box.ht : HT; // a bigger box while calling / riding a mount
+    const k = sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(bx * 2 * k), h = Math.ceil((bt + HB) * k);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; this.heroTex.dispose(); }
+    mesh.scale.set(bx / HX, (bt + HB) / (HT + HB), 1);
     const g = c.getContext('2d');
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
-    g.setTransform(k, 0, 0, k, HX * k, HT * k);
+    g.setTransform(k, 0, 0, k, bx * k, bt * k);
     g.lineJoin = 'round';
     // pose: the same rules as the 2D renderer
     const moving = Math.min(1, Math.hypot(game.moveX, game.moveY));
@@ -225,14 +230,21 @@ export class Actors {
       g.globalAlpha = playerAlpha(game);
       if (game.dodgeT > 0) g.rotate(game.dodgeX * 0.25);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
-      g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
-      const hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
-      drawTraitHero(g, game, t, hero);
+      if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
+      if (game.field && game.mountFxT > 0) mountDust(g, 1 - game.mountFxT / MOUNT.fxTime);
+      if (riding) {
+        g.scale(this.facing, 1);
+        drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: a.classId, look: a.look }, drawDoll);
+      } else {
+        g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
+        const hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+        drawTraitHero(g, game, t, hero);
+      }
       g.restore();
     }
     auraFront(g, 0, 0, game.fx, bestRarity(a.look.gear), t, { ...opt, level: game.level, facing: this.facing, enemies: game.enemies, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });
     this.heroTex.needsUpdate = true;
-    mesh.position.set(game.px * S, (HT - (HT + HB) / 2) * S, (game.py + 10) * S);
+    mesh.position.set(game.px * S, (bt - (bt + HB) / 2) * S, (game.py + 10) * S);
     mesh.rotation.y = this.stage.yaw; // face the camera
   }
 

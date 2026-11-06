@@ -38,7 +38,7 @@ const KEYMAP = {
 };
 // skills on 1–4, ultimate on 5, potion belt on Z X C V, E talks in town (spec §22)
 const ACTION_KEYS = {
-  Space: 'dodge', KeyE: 'talk',
+  Space: 'dodge', KeyE: 'talk', KeyR: 'mount',
   Digit1: 'skill1', Digit2: 'skill2', Digit3: 'skill3', Digit4: 'skill4', Digit5: 'ult',
   KeyZ: 'pot0', KeyX: 'pot1', KeyC: 'pot2', KeyV: 'pot3',
 };

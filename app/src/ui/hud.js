@@ -1,5 +1,7 @@
 // In-run HUD (DOM): bars, counters and banner (~10×/s), action cooldown rings (every frame).
 import { DODGE, ENERGY, ULT } from '../data/balance.js';
+import { MOUNT } from '../data/mounts.js';
+import { isRiding } from '../run/mount.js';
 import { fieldHere } from '../run/field.js';
 import { POTIONS, POTION_CD, POTION_IDS } from '../data/potions.js';
 import { iconCanvas } from '../art/sprites.js';
@@ -73,6 +75,9 @@ export function updateHUD(game) {
 // skills also show the seconds left.
 export function updateActions(game) {
   ring($('act-dodge'), game.dodgeCd, DODGE.cooldown);
+  ring($('act-mount'), game.mount.lock, MOUNT.fallLock);
+  $('act-mount').classList.toggle('hidden', !game.field || !game.mount.id);
+  $('act-mount').classList.toggle('on', isRiding(game.mount));
   updateBelt(game.belt, game.potions, game.potionCd);
   const skills = game.skillDefs;
   for (let i = 0; i < 4; i++) {

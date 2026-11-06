@@ -18,7 +18,8 @@ import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
-import { freshMount, startSummon, stepMount, dismount, wantsAction } from './mount.js';
+import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
+import { MOUNT } from '../data/mounts.js';
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
 import { Vfx } from './vfx.js';
@@ -257,9 +258,9 @@ export class Game {
     if (this.mountFxT > 0) this.mountFxT = Math.max(0, this.mountFxT - dt);
     if (this.field) { // mount (spec §35.1): knocked off before the action so the press is not lost
       const m = this.mount, it = this.intent;
-      if (m.state !== 'none' && wantsAction(it, attackWanted(this, it))) dismount(m, 'action');
+      if (m.state !== 'none' && wantsAction(it, attackWanted(this, it))) { if (isRiding(m)) this.mountFxT = MOUNT.fxTime; dismount(m, 'action'); }
       if (it.mount && m.state === 'none') startSummon(m);
-      if (stepMount(m, dt) === 'rode') { this.mountFxT = 0.4; sfx.chime(); }
+      if (stepMount(m, dt) === 'rode') { this.mountFxT = MOUNT.fxTime; sfx.chime(); }
     }
     stepPlayer(this, this.intent, dt);
 
@@ -477,7 +478,8 @@ export class Game {
     if (dot) { this.dotKind = dot; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }
     if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; shieldFlash(this); }
     this.stats.hp -= dmg;
-    if (dismount(this.mount, 'hit')) this.mountFxT = 0.4;
+    const wasRiding = isRiding(this.mount);
+    if (dismount(this.mount, 'hit') && wasRiding) this.mountFxT = MOUNT.fxTime;
     traitHurt(this, dmg);
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
     this.invuln = 0.7; this.flash = 0.25; this.addShake('medium');

@@ -529,6 +529,15 @@ describe('mount di wilayah (§35.1)', () => {
     expect(g.hurtPlayer(5)).toBe(true);
     expect(g.mount.state).toBe('none');
     expect(g.mount.lock).toBeGreaterThan(0);
+    expect(g.mountFxT).toBe(MOUNT.fxTime);
+  });
+  it('kena pukul saat baru memanggil: batal tanpa debu', () => {
+    const g = exploreGame({ mount: HORSE });
+    g.intent = { ...g.intent, mount: true }; g.enemies.length = 0; g.step(1 / 60);
+    expect(g.mount.state).toBe('summoning');
+    g.invuln = 0; g.dodgeInv = 0; g.hurtPlayer(5);
+    expect(g.mount.state).toBe('none');
+    expect(g.mountFxT).toBe(0);
   });
   it('dungeon: mount tidak pernah aktif', () => {
     const g = new Game(); g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, mount: HORSE });

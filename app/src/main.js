@@ -44,6 +44,7 @@ import { POTION_MAX } from './data/potions.js';
 import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL, ULT } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
+import { freshMount } from './run/mount.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
 import { FIELD, TREASURE, TOWNS, TOWN_IDS, REGIONS, regionById, regionOfDungeon } from './data/world.js';
 import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
@@ -677,6 +678,12 @@ function setupRunUI() {
 }
 
 // open world (spec §25.1)
+// TEMPORARY test mount (cheat panel) until the Stable gives real mounts (Bagian C)
+let cheatMount = null;
+const CHEAT_MOUNTS = {
+  horse: { id: 'horse', rarity: 0, fly: false, skin: 0 },
+  dragon: { id: 'dragon', rarity: 5, fly: true, skin: 0 },
+};
 async function explore(regionId, at = 'west') {
   if (scene === 'town') syncHp();
   await saveCurrent();
@@ -693,7 +700,7 @@ async function explore(regionId, at = 'west') {
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
     effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
-    region: regionId, at, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
+    region: regionId, at, mount: cheatMount, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
   });
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
   if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
@@ -988,6 +995,7 @@ function addToBag(c, items) {
 
 const cheatActions = {
   close: toggleCheat,
+  mount: (id) => { cheatMount = CHEAT_MOUNTS[id]; if (game.field) game.mount = freshMount(cheatMount); toast(tr('Mount uji siap: tekan R')); },
   gold: (n) => cheatChar((c) => { c.gold += n; }, t('+{n} koin', { n })),
   level: (n) => cheatChar((c) => { c.level = Math.min(CHAR_LEVEL_MAX, c.level + n); c.exp = 0; }, 'Level naik'),
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),
@@ -1089,6 +1097,7 @@ addEventListener('pointerup', function lockLandscape() {
 input.onAction.push((code) => {
   if (CHEAT_ON && code === 'Backquote') { toggleCheat(); return; }
   if (!$('settings').classList.contains('hidden')) { if (code === 'Escape') $('settings-close').click(); return; } // Settings open: keys stay there
+  if (code === 'KeyR' && scene === 'run' && game.field && game.state === ST.PLAY && !game.mount.id) toast(tr('Belum punya mount'));
   if (code === 'KeyM' && scene === 'town' && (screen === null || screen === 'fieldmap')) { if (screen === 'fieldmap') closeTownOverlay(); else openTownMap(); return; }
   if (code === 'KeyM') { // the map in a region or town, mute elsewhere
     if (scene === 'run' && game.field && (game.state === ST.PLAY || screen === 'fieldmap')) { if (screen === 'fieldmap') resume(); else openMap(); } else $('mute').click();
@@ -1144,7 +1153,7 @@ function tickRun(pressed) {
   const attack = input.touch ? input.attackHeld : input.mouse.down;
   game.intent = {
     move: runView() !== R ? STAGE.toWorld(input.x, input.y) : { x: input.x, y: input.y }, aimAt, attack, auto,
-    dodge: pressed.has('dodge'), potion: potionSlot(pressed), ult: pressed.has('ult'),
+    dodge: pressed.has('dodge'), mount: pressed.has('mount'), potion: potionSlot(pressed), ult: pressed.has('ult'),
     skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'),
   };
   if (game.field) {

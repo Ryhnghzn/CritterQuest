@@ -13,6 +13,8 @@ import { DROP_BEAM } from '../data/itemfx.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { RARITIES, MYTHIC } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
+import { MAJESTIC_MOUNTS, drawMajesticRidden, drawSummonRing } from '../art/mounts.js';
+import { MOUNT } from '../data/mounts.js';
 import { ATTACK_POSE } from '../run/skills.js';
 import { DODGE } from '../data/balance.js';
 import { moveDuration } from '../art/hero/rig.js';
@@ -22,6 +24,17 @@ import { skyAt } from '../meta/clock.js';
 import { drawVfx, drawFlashes, drawFloaters } from './fxkit.js';
 import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, playerAlpha } from './skillfx.js';
 import { SHAKE_PX } from '../data/fx.js';
+
+// the riding hero (spec §35.3), shared with render3d/actors.js
+export const MAJESTIC_BY_ID = Object.fromEntries(MAJESTIC_MOUNTS.map((m) => [m.id, m]));
+// rising dust at the mount's feet: 8 puffs at fixed angles (no RNG), k 0 → 1 over the effect
+export function mountDust(g, k) {
+  for (let i = 0; i < 8; i++) {
+    const a = i * 0.785, d = 18 + k * 46;
+    g.beginPath(); g.arc(Math.cos(a) * d, Math.sin(a) * d * 0.35 - k * 8, 6 + k * 9, 0, Math.PI * 2);
+    g.fillStyle = `rgba(200,180,150,${(0.5 * (1 - k)).toFixed(3)})`; g.fill();
+  }
+}
 
 const DOLL_SCALE = 0.82;   // player doll size in world units
 const ATTACK_ANIM = 0.45;  // seconds of the keyframed swing (style-D heroes)
@@ -212,15 +225,23 @@ export class Renderer {
       g.translate(game.px, game.py + 10);
       if (dodging) g.rotate(game.dodgeX * 0.25);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8)
-      g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
-      const attack = Math.max(0, game.attackT / ATTACK_POSE);
-      if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
-      this.lastAttackT = game.attackT;
-      const ph = (t - this.atkStart) / ATTACK_ANIM;
-      const move = this.skillMove(game, t);
-      const dodge = dodging ? 1 - game.dodgeT / DODGE.duration : undefined;
-      const hero = drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
-      drawTraitHero(g, game, t, hero);
+      const mounted = game.field && game.mount.state !== 'none', riding = mounted && game.mount.state === 'riding';
+      if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
+      if (game.field && game.mountFxT > 0) mountDust(g, 1 - game.mountFxT / MOUNT.fxTime);
+      if (riding) {
+        g.scale(this.facing, 1);
+        drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: this.avatar.classId, look: this.avatar.look }, drawDoll);
+      } else {
+        g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
+        const attack = Math.max(0, game.attackT / ATTACK_POSE);
+        if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
+        this.lastAttackT = game.attackT;
+        const ph = (t - this.atkStart) / ATTACK_ANIM;
+        const move = this.skillMove(game, t);
+        const dodge = dodging ? 1 - game.dodgeT / DODGE.duration : undefined;
+        const hero = drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+        drawTraitHero(g, game, t, hero);
+      }
       g.restore();
     }
     playerStatus(g, game, t);
