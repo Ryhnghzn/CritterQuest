@@ -219,6 +219,9 @@ export class Renderer {
     levelRing(g, game.px, game.py + 10, game.level, t, { lite: game.vfx.mul < 1 });
     auraBack(g, game.px, game.py + 10, game.fx, t, { host: this, lite: game.vfx.mul < 1, best: bestRarity(this.avatar?.look.gear), set: this.avatar?.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn });
     aimMarker(g, game.px, game.py, game.aimX, game.aimY);
+    if (this.avatar && game.field && game.mountFxT > 0) { // not hidden by the hit blink
+      g.save(); g.translate(game.px, game.py + 10); mountDust(g, 1 - game.mountFxT / MOUNT.fxTime); g.restore();
+    }
     if (this.avatar && !blink) {
       g.save();
       g.globalAlpha = playerAlpha(game); // Bom Asap: a faint silhouette
@@ -227,18 +230,17 @@ export class Renderer {
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8)
       const mounted = game.field && game.mount.state !== 'none', riding = mounted && game.mount.state === 'riding';
       if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
-      if (game.field && game.mountFxT > 0) mountDust(g, 1 - game.mountFxT / MOUNT.fxTime);
+      const attack = Math.max(0, game.attackT / ATTACK_POSE);
+      if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
+      this.lastAttackT = game.attackT;
+      const ph = (t - this.atkStart) / ATTACK_ANIM;
+      const move = this.skillMove(game, t);
+      const dodge = dodging ? 1 - game.dodgeT / DODGE.duration : undefined;
       if (riding) {
         g.scale(this.facing, 1);
         drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: this.avatar.classId, look: this.avatar.look }, drawDoll);
       } else {
         g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
-        const attack = Math.max(0, game.attackT / ATTACK_POSE);
-        if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
-        this.lastAttackT = game.attackT;
-        const ph = (t - this.atkStart) / ATTACK_ANIM;
-        const move = this.skillMove(game, t);
-        const dodge = dodging ? 1 - game.dodgeT / DODGE.duration : undefined;
         const hero = drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving, walk: this.walk, attack, attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
         drawTraitHero(g, game, t, hero);
       }

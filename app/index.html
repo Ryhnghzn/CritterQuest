@@ -347,8 +347,9 @@ h2.h.bad{color:var(--coral)}
 #mute.muted .off{display:inline}
 /* action buttons (dodge now; attack + skills in 3C/3D), pause, joystick */
 #actions{position:absolute;right:16px;bottom:16px;display:grid;gap:14px 12px;align-items:end;justify-items:center;
-  grid-template-areas:". . . . . mount" "s1 s2 s3 s4 ult dodge"}
+  grid-template-areas:"s1 s2 s3 s4 ult dodge"}
 #act-mount{grid-area:mount}
+body:not(.touch) #act-mount{position:absolute;right:0;bottom:calc(100% + 14px)}
 #act-mount.on{border-color:#e6c27a;box-shadow:0 0 14px rgba(230,194,122,.6)}
 #act-s1{grid-area:s1}#act-s2{grid-area:s2}#act-s3{grid-area:s3}#act-s4{grid-area:s4}#act-ult{grid-area:ult}#act-dodge{grid-area:dodge}#act-attack{grid-area:atk}#act-talk{grid-area:atk}
 body.touch #actions{grid-template-areas:"mount s3 s4 ult" "s1 s2 dodge atk";right:14px;bottom:14px;gap:10px 8px}

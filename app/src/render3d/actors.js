@@ -201,7 +201,8 @@ export class Actors {
     mesh.visible = playing && !!a;
     if (!mesh.visible) return;
     const mounted = game.field && game.mount.state !== 'none', riding = mounted && game.mount.state === 'riding';
-    const bx = mounted ? MOUNT.box.hx : HX, bt = mounted ? MOUNT.box.ht : HT; // a bigger box while calling / riding a mount
+    const big = mounted || (game.field && game.mountFxT > 0); // the big box also holds the dust after a knock-off
+    const bx = big ? MOUNT.box.hx : HX, bt = big ? MOUNT.box.ht : HT;
     const k = sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(bx * 2 * k), h = Math.ceil((bt + HB) * k);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; this.heroTex.dispose(); }
     mesh.scale.set(bx / HX, (bt + HB) / (HT + HB), 1);
@@ -225,13 +226,13 @@ export class Actors {
     const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn };
     auraBack(g, 0, 0, game.fx, t, opt);
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
+    if (game.field && game.mountFxT > 0) mountDust(g, 1 - game.mountFxT / MOUNT.fxTime); // not hidden by the hit blink
     if (!blink) {
       g.save();
       g.globalAlpha = playerAlpha(game);
       if (game.dodgeT > 0) g.rotate(game.dodgeX * 0.25);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
       if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
-      if (game.field && game.mountFxT > 0) mountDust(g, 1 - game.mountFxT / MOUNT.fxTime);
       if (riding) {
         g.scale(this.facing, 1);
         drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: a.classId, look: a.look }, drawDoll);
