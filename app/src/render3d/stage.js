@@ -7,6 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { LOOK } from '../data/look.js';
+import { detailPixels, DETAIL_SCALE, DETAIL_SIZE } from './texkit.js';
 
 export const S = 1 / 22;          // game units → metres (a hero ≈ 1.7 m)
 export const ZOOM = { min: 0.85, max: 1.6, start: 1.35, step: 0.08 }; // starts far out; close-ups stop before textures go soft
@@ -36,12 +37,50 @@ export function muted(m) {
   return m;
 }
 
+// Material detail (plan A2): a tileable grey map (texkit.js) multiplies the colour, sampled by
+// world position along the face's main axis, so bricks keep their size on any building and
+// merged / instanced parts need no UVs. One small texture per kind, made on first use.
+const DETAIL_TEX = new Map();
+function detailTex(kind) {
+  let t = DETAIL_TEX.get(kind);
+  if (!t) {
+    t = new THREE.DataTexture(detailPixels(kind), DETAIL_SIZE, DETAIL_SIZE, THREE.RedFormat);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.generateMipmaps = true; t.anisotropy = 4; t.needsUpdate = true;
+    DETAIL_TEX.set(kind, t);
+  }
+  return t;
+}
+export function detailed(m, kind) {
+  const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey(), map = detailTex(kind), scale = DETAIL_SCALE[kind];
+  m.onBeforeCompile = (sh, r) => {
+    prev.call(m, sh, r);
+    sh.uniforms.detailMap = { value: map }; sh.uniforms.detailScale = { value: scale };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vDPos;\nvarying vec3 vDN;')
+      .replace('#include <project_vertex>', `#include <project_vertex>
+vec4 dWp = vec4(transformed, 1.0); vec3 dN = objectNormal;
+#ifdef USE_INSTANCING
+dWp = instanceMatrix * dWp; dN = mat3(instanceMatrix) * dN;
+#endif
+vDPos = (modelMatrix * dWp).xyz; vDN = mat3(modelMatrix) * dN;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform sampler2D detailMap;\nuniform float detailScale;\nvarying vec3 vDPos;\nvarying vec3 vDN;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+{ vec3 an = abs(vDN); vec2 duv = an.y > max(an.x, an.z) ? vDPos.xz : (an.x > an.z ? vDPos.zy : vDPos.xy);
+  diffuseColor.rgb *= texture2D(detailMap, duv / detailScale).r * 2.0; }`);
+  };
+  m.customProgramCacheKey = () => `detail|${prevKey}`;
+  return m;
+}
+
 const steps = new Uint8Array([70, 70, 70, 255, 150, 150, 150, 255, 255, 255, 255, 255]);
 let gradientMap = null;
 const TOON = new Map();
-// a 3-step toon material (cached per colour); rim adds a coloured edge light
-export function toon(color, rim = 0) {
-  const key = `${color}:${rim}`;
+// a 3-step toon material (cached per colour); rim adds a coloured edge light; kind (texkit.js:
+// plaster, stone, wood, roof, log, thatch) adds a material surface
+export function toon(color, rim = 0, kind = null) {
+  const key = `${color}:${rim}:${kind}`;
   if (TOON.has(key)) return TOON.get(key);
   if (!gradientMap) {
     gradientMap = new THREE.DataTexture(steps, 3, 1, THREE.RGBAFormat);
@@ -54,6 +93,7 @@ export function toon(color, rim = 0) {
       .replace('#include <opaque_fragment>', 'float rimF = 1.0 - max(dot(normal, normalize(vViewPosition)), 0.0);\noutgoingLight += rimColor * smoothstep(0.6, 0.95, rimF) * 0.6;\n#include <opaque_fragment>');
   };
   m.customProgramCacheKey = () => `toon|${rim ? 1 : 0}`; // rim and plain toons compile apart
+  if (kind) detailed(m, kind);
   muted(m);
   TOON.set(key, m);
   return m;

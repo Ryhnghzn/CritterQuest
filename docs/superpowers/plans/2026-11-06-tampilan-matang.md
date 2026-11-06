@@ -23,7 +23,10 @@
 - [x] **A1.5** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A1: cahaya & palet terpusat`.
 
 ## Bagian A2 — Material kota
-- [ ] Tekstur plester/kayu/batu/genteng untuk bangunan kota (`townbuild.js`, `townkit.js`), dibuat sekali per jenis.
+- [x] **A2.1** `render3d/texkit.js`: peta detail abu-abu yang bisa diulang (plaster, stone, wood, roof, log, thatch; 128 = ×1), tes tanpa sambungan & rata-rata ≈ ×1.
+- [x] **A2.2** `stage.js` `detailed()` + `toon(warna, rim, bahan)`: peta detail mengalikan warna, diambil menurut posisi dunia di sumbu utama permukaan (tanpa UV; cocok untuk Batch & instanced).
+- [x] **A2.3** `townbuild.js`: tembok kota (batu / palisade kayu / lumpur), rumah (plester, kayu balok, alas batu, genteng / jerami / kubah lumpur), pondok gelondong, gerbang, cerobong, pagar.
+- [x] **A2.4** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A2: material bangunan kota`.
 
 ## Bagian A3 — Material wilayah
 - [ ] Tanah & jalan wilayah lebih bertekstur (rumput, tanah, batu jalan), props wilayah (`fieldprops.js`, `fieldkit.js`).

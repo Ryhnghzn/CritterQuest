@@ -183,7 +183,7 @@ function cobbles(root, def) {
 function walls(root, def, st, out) {
   const cells = wallCells(def, st.cell), H = st.wallH, T = def.wall, C = st.cell;
   const items = cells.map((c) => ({ x: c.x, y: c.y, ry: c.alongX ? 0 : Math.PI / 2, sx: c.len / C }));
-  const body = toon(st.wall, 0x3a2a5a), cap = toon(st.cap), snow = toon(0xeef3ff);
+  const kind = WALL_KIND[st.top] || 'stone', body = toon(st.wall, 0x3a2a5a, kind), cap = toon(st.cap, 0, kind), snow = toon(0xeef3ff);
   const m = (x, y, z, sx, sy, sz) => matrixOf(x * S, y * S, z * S, sx * S, sy * S, sz * S, 0, 0, 0, new THREE.Matrix4());
   const parts = [];
   if (st.top === 'stake') { // palisade: sharpened logs
@@ -231,17 +231,21 @@ function trees(root, def, key, out) {
   }
 }
 
+// surface per style of wall top (texkit.js) — palisades are wood, mud walls plaster
+const WALL_KIND = { stake: 'wood', crenel: 'plaster' };
+const ROOF_KIND = { forest: 'thatch', desert: 'plaster' };
+
 // houses
 const PLASTER = { inn: 0xb89a7a, potion: 0x9a90b0, smith: 0x8a7a6a, guild: 0xa0a88a };
 function house(root, b, key, out) {
   const B = new Batch(), grp = new THREE.Group(); root.add(grp);
-  const { x, y, w, h: d } = b, cx = x + w / 2, cz = y + d / 2, front = y + d, roof = toon(b.roof || '#5a3a2a', 0x4a2a3a);
-  const dark = toon(0x1e140e), beam = toon(0x3a2418);
+  const { x, y, w, h: d } = b, cx = x + w / 2, cz = y + d / 2, front = y + d, roof = toon(b.roof || '#5a3a2a', 0x4a2a3a, ROOF_KIND[key] || 'roof');
+  const dark = toon(0x1e140e, 0, 'wood'), beam = toon(0x3a2418, 0, 'wood');
   let H = 95, signY = 70, chimney = null;
   const windows = []; // [x, height, w, h]
   if (key === 'home') {
-    P(B, GEO.box, toon(PLASTER[b.theme] || 0xa09080, 0x5a3a2a), cx, cz, 0, w, H, d);
-    P(B, GEO.box, toon(0x3e3640), cx, cz, 0, w + 4, 11, d + 4);
+    P(B, GEO.box, toon(PLASTER[b.theme] || 0xa09080, 0x5a3a2a, 'plaster'), cx, cz, 0, w, H, d);
+    P(B, GEO.box, toon(0x3e3640, 0, 'stone'), cx, cz, 0, w + 4, 11, d + 4);
     for (const fx of [-w / 2 + 4, -w / 6, w / 6, w / 2 - 4]) P(B, GEO.box, beam, cx + fx, front + 1.4, 0, 6, H, 3);
     P(B, GEO.box, beam, cx, front + 1.4, H * 0.55, w, 6, 3); P(B, GEO.box, beam, cx, front + 1.4, H - 6, w, 6, 3);
     PB(B, GEO.gable, roof, cx, cz, H, w + 24, 60, d + 24);
@@ -256,7 +260,7 @@ function house(root, b, key, out) {
     if (b.theme === 'potion') light(out.lights, cx - 52, front + 24, 30, '90,255,140', 2.5, 4.5, true);
   } else if (key === 'forest') {
     H = 78;
-    P(B, GEO.cyl, toon(0x6a4a2e, 0x3a2a1a), cx, cz, 0, w - 16, H, d - 16);
+    P(B, GEO.cyl, toon(0x6a4a2e, 0x3a2a1a, 'log'), cx, cz, 0, w - 16, H, d - 16);
     for (const hy of [16, 36, 56]) P(B, GEO.cyl, toon(0x4a3220), cx, cz, hy, w - 13, 4, d - 13);
     PB(B, GEO.dome, roof, cx, cz, H - 12, w + 26, 88, d + 26);
     P(B, GEO.cyl, toon(new THREE.Color(b.roof || '#2f5a3a').multiplyScalar(0.7).getHex()), cx, cz, H - 14, w + 28, 10, d + 28);
@@ -269,7 +273,7 @@ function house(root, b, key, out) {
     light(out.lights, cx - 34, front + 14, 62, '255,210,130', 4, 5, true);
   } else if (key === 'ice') {
     H = 112;
-    P(B, GEO.box, toon(0x66748c, 0x4a5a7a), cx, cz, 0, w - 10, H, d - 6);
+    P(B, GEO.box, toon(0x66748c, 0x4a5a7a, 'stone'), cx, cz, 0, w - 10, H, d - 6);
     PB(B, GEO.gable, roof, cx, cz, H, w + 18, 92, d + 18);
     PB(B, GEO.gable, toon(0xeef3ff), cx, cz, H + 92 * 0.64, w + 22, 92 * 0.38, (d + 22) * 0.38);
     P(B, GEO.box, toon(0xeef3ff), cx, front + 9, H - 2, w + 22, 6, 10);
@@ -278,9 +282,9 @@ function house(root, b, key, out) {
     chimney = [cx + w * 0.22, cz - d / 8, H + 30, 20, 80, true];
   } else if (key === 'desert') {
     H = 100;
-    const mud = toon(0xb8905e, 0x6a4a2a);
+    const mud = toon(0xb8905e, 0x6a4a2a, 'plaster');
     P(B, GEO.box, mud, cx, cz, 0, w - 8, H, d - 8);
-    P(B, GEO.box, toon(0xa07a4e), cx, cz, H, w - 4, 5, d - 4);
+    P(B, GEO.box, toon(0xa07a4e, 0, 'plaster'), cx, cz, H, w - 4, 5, d - 4);
     for (let px = x + 14; px < x + w - 8; px += 26) for (const pz of [y + 4, front - 4]) PB(B, GEO.dome, mud, px, pz, H + 4, 18, 12, 6);
     for (let px = x + 20; px < x + w - 14; px += 30) P(B, GEO.cyl6, toon(0x4a2e1a), px, front - 2, H - 22, 6, 6, 16, 0, Math.PI / 2);
     if (b.sign) {
@@ -297,14 +301,14 @@ function house(root, b, key, out) {
     for (const [px, s2] of [[x + 16, 1], [x + w - 16, 0.8]]) P(B, GEO.ball, toon(0xa8502a), px, front + 10, 0, 16 * s2, 18 * s2, 16 * s2);
   } else { // volcano
     H = 96;
-    P(B, GEO.box, toon(0x463432, 0x5a2a1a), cx, cz, 0, w - 6, H, d - 6);
+    P(B, GEO.box, toon(0x463432, 0x5a2a1a, 'stone'), cx, cz, 0, w - 6, H, d - 6);
     PB(B, GEO.shed, roof, cx, cz, H, w + 20, 52, d + 20);
     const ember = out.emberMat;
     for (const [sx, sy, len, rz] of [[x + 16, 30, 26, 0.3], [x + 22, 52, 20, -0.4], [x + w - 18, 24, 30, -0.25], [x + w - 24, 46, 18, 0.5]]) {
       const m = new THREE.Mesh(GEO.box, ember); m.scale.set(2.6 * S, len * S, 1.5 * S); m.position.set(sx * S, sy * S, (front - 2.4) * S); m.rotation.z = rz; grp.add(m);
     }
     windows.push([-w / 3.4, 54, 22, 26], [w / 3.4, 54, 22, 26]);
-    P(B, GEO.box, toon(0x3a2a26), x + 32, cz - d / 4, H - 10, 24, 80, 24);
+    P(B, GEO.box, toon(0x3a2a26, 0, 'stone'), x + 32, cz - d / 4, H - 10, 24, 80, 24);
     const flame = new THREE.Mesh(GEO.cone, glow(0xff7a2a, 2.2)); flame.scale.set(14 * S, 26 * S, 14 * S); flame.position.set((x + 32) * S, (H + 83) * S, (cz - d / 4) * S);
     flame.userData.anim = true; flame.userData.flicker = x * 0.1; grp.add(flame); out.flames.push(flame);
     out.embers.push({ x: x + 32, y: cz - d / 4, h: H + 76, kind: 'spark' });
@@ -324,7 +328,7 @@ function house(root, b, key, out) {
   }
   if (chimney) {
     const [hx, hz, hy, s, hh, snow] = chimney;
-    P(B, GEO.box, toon(snow ? 0x56637a : 0x352e40), hx, hz, hy - 20, s, hh, s);
+    P(B, GEO.box, toon(snow ? 0x56637a : 0x352e40, 0, 'stone'), hx, hz, hy - 20, s, hh, s);
     if (snow) P(B, GEO.box, toon(0xeef3ff), hx, hz, hy - 20 + hh, s + 6, 5, s + 6);
     out.smokes.push({ x: hx, y: hz, h: hy - 20 + hh + 4 });
   }
@@ -352,7 +356,8 @@ function signMat(id) {
 function gateOf(root, b, key, st, out) {
   const B = new Batch(), grp = new THREE.Group(); root.add(grp);
   const cx = b.x + b.w / 2, gz = b.y + b.h * 0.72, D = 56, TW = 50, H = st.wallH + 60;
-  const stone = key === 'forest' ? toon(0x6a4a2c, 0x3a2a1a) : toon(st.wall, 0x3a2a5a), cap = toon(st.cap);
+  const gk = key === 'forest' ? 'wood' : key === 'desert' ? 'plaster' : 'stone';
+  const stone = key === 'forest' ? toon(0x6a4a2c, 0x3a2a1a, gk) : toon(st.wall, 0x3a2a5a, gk), cap = toon(st.cap, 0, gk);
   for (const sgn of [-1, 1]) {
     const tx = cx + sgn * (b.w / 2 - TW / 2);
     if (key === 'forest') {
@@ -391,7 +396,7 @@ function gateOf(root, b, key, st, out) {
 }
 
 function fenceOf(B, b) {
-  const wood = toon(0x5a3e28), cx = b.x + b.w / 2;
+  const wood = toon(0x5a3e28, 0, 'wood'), cx = b.x + b.w / 2;
   for (let k = 0; k < 4; k++) P(B, GEO.box, wood, cx, b.y + 4 + (k / 3) * (b.h - 8), 0, 7, 26, 7);
   for (const hy of [9, 19]) P(B, GEO.box, wood, cx, b.y + b.h / 2, hy, 3, 3.5, b.h);
 }
