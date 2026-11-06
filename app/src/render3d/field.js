@@ -10,6 +10,9 @@
 import * as THREE from 'three';
 import { S, sharp, SHARP, muted, detailed, setDetail, sunAt, dusk } from './stage.js';
 import { groundCanvas, groundPattern, GROUND_P } from './paintground.js';
+import { ILLUSTRATED, illustratedIn, illustrated } from './billprops.js';
+import { Fireflies } from './fireflies.js';
+import { drawFrame } from './frame.js';
 import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
@@ -43,7 +46,7 @@ const LIGHT_K = { ice: 0.5, desert: 0.9 }; // pale snow would glare (and bloom) 
 // how far (radius units) a prop sinks when it stands between the hero and the camera
 // trees and rocks come in variants (flora.js): one InstancedMesh per kind and variant
 const propKey = (p) => (VARIED.has(p.kind) ? `${p.kind}~${Math.floor(p.v * 7) % 3}` : p.kind);
-const SINK = { bush: 0.9, rock: 0.6, icerock: 0.9, floatrock: 1.4, crystal: 1.3, cactus: 1.7 };
+const SINK = { tuft: 1.2, bush: 0.9, rock: 0.6, icerock: 0.9, floatrock: 1.4, crystal: 1.3, cactus: 1.7 };
 
 const _o = new THREE.Object3D(), _c = new THREE.Color(), _c2 = new THREE.Color();
 const RGB = new Map(); // "r,g,b" → THREE.Color
@@ -76,6 +79,7 @@ export class Field25 {
     this.pool = []; // point lights handed to the nearest region lights each frame (≤ 6 lights in all)
     for (let i = 0; i < 4; i++) { const L = new THREE.PointLight(0xffa050, 0, 10, 1.6); sc.add(L); this.pool.push(L); }
     this.heroLight = new THREE.PointLight(0xffd8a0, 4, 9, 1.6); sc.add(this.heroLight);
+    this.fireflies = new Fireflies(sc); // plan C4
     // the land below everything (past the tiles, past the map)
     this.base = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshBasicMaterial({ color: 0x080808 }));
     this.base.rotation.x = -Math.PI / 2; this.base.position.y = -0.03; sc.add(this.base);
@@ -121,15 +125,21 @@ export class Field25 {
       tl.pat.setTransform(new DOMMatrix().scale(tile.T / tile.canvas.width));
     }
     // props: one InstancedMesh per kind, filled with the ones near the hero
-    this.props = buildProps(map);
+    this.props = buildProps(map, { tufts: illustratedIn(biome) });
     this.index = indexProps(this.props, map.w, map.h);
     const count = new Map();
     for (const p of this.props) { p.key = propKey(p); count.set(p.key, (count.get(p.key) || 0) + 1); }
     this.kinds = new Map();
     for (const [key, n] of count) {
       const [kind, variant] = key.split('~'), cap = Math.min(n, CAP);
-      const { geo, rim, smooth } = propGeometry(kind, biome, Number(variant) || 0);
-      const mesh = new THREE.InstancedMesh(geo, vtoon(rim, !smooth, PROP_KIND[kind] || null), cap);
+      let mesh;
+      if (ILLUSTRATED.has(kind) && illustratedIn(biome)) { // plan C3: a painted picture standing up
+        const ill = illustrated(kind, biome, Number(variant) || 0);
+        mesh = new THREE.InstancedMesh(ill.geo, ill.mat, cap); mesh.customDepthMaterial = ill.depth;
+      } else {
+        const { geo, rim, smooth } = propGeometry(kind, biome, Number(variant) || 0);
+        mesh = new THREE.InstancedMesh(geo, vtoon(rim, !smooth, PROP_KIND[kind] || null), cap);
+      }
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.setColorAt(0, _c.setScalar(1));
       mesh.count = 0; mesh.frustumCulled = false; // bounds change as instances stream in
@@ -259,6 +269,7 @@ export class Field25 {
   groundShade(g, r) {
     const k = LOOK.paintGround.ao;
     for (const p of this.props) {
+      if (p.kind === 'tuft') continue;
       const R = p.r * (p.kind === 'bush' ? 1.5 : 1.9);
       if (p.x < r.x0 - R || p.x > r.x1 + R || p.y < r.y0 - R || p.y > r.y1 + R) continue;
       const cy = p.y + p.r * 0.25, gr = g.createRadialGradient(p.x, cy, 0, p.x, cy, R);
@@ -383,6 +394,8 @@ export class Field25 {
     if (!this.fillAt || (hx - this.fillAt.x) ** 2 + (hy - this.fillAt.y) ** 2 > REFILL * REFILL) this.refill(hx, hy);
     this.cutaway(hx, hy, 1 / 60, playing);
     this.tint(game);
+    const green = this.biome === 'forest' && !!LOOK.illustrated;
+    this.fireflies.update(t, this.camX, this.camY, green ? this.night || 0 : 0);
     this.lights(game, t, playing);
     this.game = game; this.t = t;
     this.actors.fx3d(game, t, playing); // before the decal: it sorts the particles into air / ground
@@ -391,7 +404,7 @@ export class Field25 {
     this.actors.drawEnemies(game, t, playing);
     this.animate(game, t, lite);
     st.render(this.scene);
-    this.actors.overlay(game, playing, playing ? 1 - game.time * 2.5 : 0);
+    this.actors.overlay(game, playing, playing ? 1 - game.time * 2.5 : 0, green ? drawFrame : null);
     this.labels(game);
   }
 
@@ -405,6 +418,7 @@ export class Field25 {
       this.groundGlow(0.36);
     } else {
       const sky = skyAt(game?.clock ?? 12 * 60), n = sky.night, w = sky.warm;
+      this.night = n;
       dusk(this.hemi.color.set(0xb8c4d8), 'hemi', n).lerp(_c.set(0x3a3e80), n);
       dusk(this.hemi.groundColor.set(0x4a3a2a), 'ground', n).lerp(_c.set(0x100c1c), n);
       const lk = LIGHT_K[this.biome] || 1;

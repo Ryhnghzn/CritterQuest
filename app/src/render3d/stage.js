@@ -125,7 +125,7 @@ export function dusk(color, key, night = 0) {
 function shadowRole(o) {
   const m = Array.isArray(o.material) ? o.material[0] : o.material;
   if (!m || m.isMeshBasicMaterial || m.isPointsMaterial || m.isSpriteMaterial) return 'none';
-  if (m.transparent && m.map && m.alphaTest > 0) return 'card';
+  if (m.map && m.alphaTest > 0 && (m.transparent || m.userData.card)) return 'card';
   if (m.transparent) return o.geometry?.type === 'PlaneGeometry' ? 'floor' : 'none'; // painted overlays (roads) still catch shadows
   return o.geometry?.type === 'PlaneGeometry' ? 'floor' : 'solid';
 }
@@ -147,11 +147,16 @@ function shade(scene, on) {
       role = o.userData.shadow = shadowRole(o);
       if (role === 'solid') o.castShadow = o.receiveShadow = true;
       else if (role === 'floor') o.receiveShadow = true;
-      else if (role === 'card') { o.castShadow = true; o.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 }); }
+      else if (role === 'card') { o.castShadow = true; o.customDepthMaterial ||= new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 }); }
     }
-    if (role === 'card' && o.customDepthMaterial.map !== o.material.map) { o.customDepthMaterial.map = o.material.map; o.customDepthMaterial.needsUpdate = true; }
+    if (role === 'card' && !o.material.userData.card && o.customDepthMaterial.map !== o.material.map) { o.customDepthMaterial.map = o.material.map; o.customDepthMaterial.needsUpdate = true; }
   });
 }
+
+// Illustrated props (plan C3) turn to face the camera in their vertex shader; their shadow
+// copies turn to face the sun so a tree always throws its whole silhouette (billprops.js)
+export const BILL_U = { uYaw: { value: 0 }, uSunYaw: { value: 0 }, uTime: { value: 0 } };
+{ const d = LOOK.mood?.sunDir || [-8, 18, 10]; BILL_U.uSunYaw.value = Math.atan2(d[0], d[2]); }
 
 export const glowMat = (c, k = 1.8) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k) });
 
@@ -271,6 +276,7 @@ export class Stage {
   }
 
   render(scene) {
+    BILL_U.uYaw.value = this.yaw; BILL_U.uTime.value = performance.now() / 1000;
     if (LOOK.shadows) shade(scene, !this.lite);
     if (this.lite) { this.renderer.render(scene, this.camera); return; }
     this.pass.scene = scene;

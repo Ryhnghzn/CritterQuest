@@ -4,6 +4,7 @@
 // The hero, monsters, ground effects and numbers come from Actors (actors.js).
 import * as THREE from 'three';
 import { S, toon, glowMat, sharp, SHARP, muted, detailed, sunAt } from './stage.js';
+import { flameSet } from './billprops.js';
 import { LOOK } from '../data/look.js';
 import { Actors } from './actors.js';
 import { wallCells } from './roomgrid.js';
@@ -82,15 +83,17 @@ export class Dungeon25 {
       top.position.set(q.x * S, 95 * S, q.y * S); G.add(top);
     }
     // lamps: a post with a glowing flame (the light comes from the pool)
-    const dr = dress(room, theme);
+    const dr = dress(room, theme), torches = [];
     for (const l of dr.lamps) {
       const post = new THREE.Mesh(new THREE.CylinderGeometry(2.5 * S, 3.5 * S, 34 * S, 5), toon(0x2a2228, 0, 'wood'));
       post.material.userData.shared = true;
       post.position.set(l.x * S, 17 * S, l.y * S); G.add(post);
       const col = l.kind === 'crystal' ? rgbColor(theme.glow[0]) : rgbColor(theme.light);
+      if (LOOK.illustrated && l.kind !== 'crystal') { torches.push({ x: l.x, y: l.y, h: 33, s: 1 }); continue; } // plan C4: drawn flames
       const flame = new THREE.Mesh(new THREE.ConeGeometry(5 * S, 14 * S, 6), glowMat(col, 2));
       flame.position.set(l.x * S, 40 * S, l.y * S); flame.userData.flicker = Math.random() * 9; G.add(flame);
     }
+    if (torches.length) G.add(flameSet(torches));
     // the rune circle at the centre lights up when the floor is clear
     this.rune = new THREE.Mesh(new THREE.RingGeometry(55 * S, 62 * S, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x9a7aff).multiplyScalar(1.6), transparent: true, opacity: 0.2, depthWrite: false }));
     this.rune.rotation.x = -Math.PI / 2; this.rune.position.y = 0.03; G.add(this.rune);

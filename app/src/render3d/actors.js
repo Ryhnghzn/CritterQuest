@@ -265,10 +265,11 @@ export class Actors {
   }
 
   // the 2D canvas on top: HP pills, damage numbers, screen flashes, vignette, fade (0..1)
-  overlay(game, playing, fade) {
+  overlay(game, playing, fade, frame = null) {
     const v = this.view, g = v.ctx, dpr = v.c.width / innerWidth;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, v.c.width, v.c.height);
+    if (frame) frame(g, v.c.width, v.c.height, game.time ?? 0); // branches at the corners (plan C4)
     if (playing) {
       for (const e of game.enemies) {
         if (e.hidden || !(e.boss || e.elite || e.hp < e.maxHp)) continue;

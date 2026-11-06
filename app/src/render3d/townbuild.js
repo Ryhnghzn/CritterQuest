@@ -12,6 +12,7 @@ import { drawIcon } from '../art/sprites.js';
 import * as FLORA from './flora.js';
 import { vtoon } from './fieldkit.js';
 import { groundTexture, groundPattern, GROUND_P } from './paintground.js';
+import { ILLUSTRATED, illustrated, flameSet } from './billprops.js';
 import { LOOK } from '../data/look.js';
 
 const TAU = Math.PI * 2;
@@ -133,7 +134,7 @@ export function buildTown(def, mats) {
   const key = keyOf(def), st = STYLE[key];
   const root = new THREE.Group(); root.name = `town:${def.id}`;
   const B = new Batch();
-  const out = { def, key, st, root, occluders: [], sinks: [], lights: [], flames: [], embers: [], smokes: [], doors: [], carts: [], lamps: [], ...mats };
+  const out = { def, key, style: key, st, root, occluders: [], sinks: [], lights: [], flames: [], embers: [], smokes: [], doors: [], carts: [], lamps: [], ...mats };
   const houses = def.buildings.filter((b) => b.kind === 'house');
   const gate = def.buildings.find((b) => b.kind === 'gate');
   const fire = def.buildings.find((b) => b.kind === 'fire');
@@ -249,6 +250,13 @@ function trees(root, def, key, out) {
     const [base, variant] = k.split('~'), F = FLORA_TREE[base];
     if (F) {
       const m = matrixOf(0, 0, 0, F.r * S, F.r * S, F.r * S, 0, 0, 0, new THREE.Matrix4());
+      if (LOOK.illustrated?.towns && ILLUSTRATED.has(base)) { // plan C3: the prototype's painted trees
+        const ill = illustrated(base, base === 'snowpine' ? 'ice' : 'forest', Number(variant));
+        const set = new SinkSet(root, items, [{ geo: ill.geo, mat: ill.mat, m }], 'all', 520);
+        set.parts[0].im.customDepthMaterial = ill.depth;
+        out.sinks.push(set);
+        continue;
+      }
       out.sinks.push(new SinkSet(root, items, [{ geo: F.geo(Number(variant)), mat: vtoon(F.rim, false), m }], 'all', 520));
       continue;
     }
@@ -337,8 +345,11 @@ function house(root, b, key, out) {
     }
     windows.push([-w / 3.4, 54, 22, 26], [w / 3.4, 54, 22, 26]);
     P(B, GEO.box, toon(0x3a2a26, 0, 'stone'), x + 32, cz - d / 4, H - 10, 24, 80, 24);
-    const flame = new THREE.Mesh(GEO.cone, glow(0xff7a2a, 2.2)); flame.scale.set(14 * S, 26 * S, 14 * S); flame.position.set((x + 32) * S, (H + 83) * S, (cz - d / 4) * S);
-    flame.userData.anim = true; flame.userData.flicker = x * 0.1; grp.add(flame); out.flames.push(flame);
+    if (LOOK.illustrated) grp.add(flameSet([{ x: x + 32, y: cz - d / 4, h: H + 68, s: 1.3 }])); // plan C4: a drawn, moving flame
+    else {
+      const flame = new THREE.Mesh(GEO.cone, glow(0xff7a2a, 2.2)); flame.scale.set(14 * S, 26 * S, 14 * S); flame.position.set((x + 32) * S, (H + 83) * S, (cz - d / 4) * S);
+      flame.userData.anim = true; flame.userData.flicker = x * 0.1; grp.add(flame); out.flames.push(flame);
+    }
     out.embers.push({ x: x + 32, y: cz - d / 4, h: H + 76, kind: 'spark' });
     light(out.lights, x + 32, cz - d / 4, H + 90, 0xff6a2a, 5, 6);
   }
@@ -433,11 +444,15 @@ function bonfire(B, root, b, out) {
   const cx = b.x + b.w / 2, cz = b.y + b.h / 2;
   for (let k = 0; k < 6; k++) P(B, GEO.box, toon(0x4a3020), cx, cz, 3, 32, 5, 5, (k / 6) * Math.PI);
   for (let k = 0; k < 9; k++) { const a = (k / 9) * TAU; P(B, GEO.box, toon(0x4a4256), cx + Math.cos(a) * 24, cz + Math.sin(a) * 18, 0, 11, 8, 11, a); }
-  const flame = new THREE.Group(); flame.position.set(cx * S, 6 * S, cz * S); root.add(flame);
-  for (const [r, h, c, y] of [[13, 38, 0xff6a2a, 19], [8, 28, 0xffb347, 14], [4, 18, 0xfff0b0, 9]]) {
-    const m = new THREE.Mesh(GEO.cone, glow(c, 2)); m.scale.set(r * 2 * S, h * S, r * 2 * S); m.position.y = y * S; m.userData.anim = true; flame.add(m);
+  if (LOOK.illustrated) { // plan C4: three drawn flames licking out of the logs
+    root.add(flameSet([{ x: cx, y: cz + 2, h: 2, s: 2.7 }, { x: cx - 11, y: cz + 4, h: 2, s: 1.8 }, { x: cx + 10, y: cz + 5, h: 2, s: 1.6 }]));
+  } else {
+    const flame = new THREE.Group(); flame.position.set(cx * S, 6 * S, cz * S); root.add(flame);
+    for (const [r, h, c, y] of [[13, 38, 0xff6a2a, 19], [8, 28, 0xffb347, 14], [4, 18, 0xfff0b0, 9]]) {
+      const m = new THREE.Mesh(GEO.cone, glow(c, 2)); m.scale.set(r * 2 * S, h * S, r * 2 * S); m.position.y = y * S; m.userData.anim = true; flame.add(m);
+    }
+    flame.userData.flicker = 0; out.flames.push(flame);
   }
-  flame.userData.flicker = 0; out.flames.push(flame);
   out.embers.push({ x: cx, y: cz, h: 20, kind: 'ember' });
   light(out.lights, cx, cz, 36, 0xff7a2a, 30, 16);
 }

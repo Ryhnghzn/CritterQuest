@@ -32,3 +32,11 @@ describe('spell frames (plan B)', () => {
     expect(b.w).toBe(a.w * 3); expect(b.w / b.k).toBe(a.w / a.k);
   });
 });
+
+describe('illustrated props (plan C3, C4)', async () => {
+  const P = await import('./props.js');
+  it('every prop and flame frame has something in it; flames glow', () => {
+    for (const sp of [P.oak('m', 1, 2), P.pine('l', 2, 2, true), P.rock('l', 1, 2, 'snow'), P.bush(2, 2, 'leaf', 'flowerV'), P.grassTuft(1, 2), P.frameBranch(3, 2)]) expect(opaque(sp)).toBeGreaterThan(0);
+    for (const sp of P.flames(2)) expect(glowing(sp)).toBe(opaque(sp));
+  });
+});

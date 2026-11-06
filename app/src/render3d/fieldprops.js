@@ -38,7 +38,8 @@ export function propKind(biome, s) {
 const EDGE_KIND = { forest: 'pine', ice: 'snowpine', desert: 'rock', volcano: 'deadtree', eclipse: 'spire' };
 
 // all props of a map: [{ x, y, r, v, kind, tint }] (tint: brightness, < 1 for the far edge)
-export function buildProps(map) {
+// opts.tufts: standing grass tufts round the feet of forest trees (plan C4, illustrated props)
+export function buildProps(map, opts = {}) {
   const biome = map.region.biome || 'forest', out = [];
   for (const s of map.solids) {
     const kind = propKind(biome, s);
@@ -50,6 +51,13 @@ export function buildProps(map) {
     if ((p.kind !== 'oak' && p.kind !== 'pine') || p.v > 0.45) continue;
     const a = p.v * 40, d = p.r * 1.25;
     out.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d * 0.8, r: p.r * 0.42, v: (p.v * 13) % 1, kind: 'bush', tint: p.tint });
+  }
+  if (opts.tufts && biome === 'forest') for (const p of out.slice()) {
+    if (p.kind !== 'oak' && p.kind !== 'pine') continue;
+    for (let i = 0; i < 3; i++) {
+      const a = p.v * 23 + i * 2.1, d = p.r * (1.05 + ((p.v * 7 + i * 0.37) % 1) * 0.9);
+      out.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d * 0.8, r: 8 + ((p.v * 11 + i) % 1) * 4, v: (p.v * 17 + i * 0.31) % 1, kind: 'tuft', tint: p.tint });
+    }
   }
   // the land goes on: a band of dark trees (dunes of rock in the desert) past every edge
   const n = Math.round((2 * (map.w + map.h)) / 75);

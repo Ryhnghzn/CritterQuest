@@ -5,6 +5,10 @@
 // names, quest marks, shop plates and the door fade are drawn on the 2D canvas on top.
 import * as THREE from 'three';
 import { S, sharp, sunAt, dusk } from './stage.js';
+import { Fireflies } from './fireflies.js';
+import { drawFrame } from './frame.js';
+// plan C4: towns among the trees get fireflies at night and branches at the screen's corners
+const GREEN_TOWNS = new Set(['home', 'forest']);
 import { LOOK } from '../data/look.js';
 import { billMat, canvasTexture } from './actors.js';
 import { NightMats, setGhost, GEO } from './kit3d.js';
@@ -56,6 +60,7 @@ export class Town25 {
     for (let i = 0; i < POOL; i++) { const L = new THREE.PointLight(0xffa050, 0, 10, 1.6); sc.add(L); this.pool.push(L); }
     this.heroLight = new THREE.PointLight(0xffd8a0, 0, 7, 1.6); sc.add(this.heroLight);
     this.fog = new THREE.Fog(0x0a0812, 26, 58);
+    this.fireflies = new Fireflies(sc);
     // shared materials whose look follows the clock
     this.mats = {
       nightMats: new NightMats(),
@@ -169,6 +174,9 @@ export class Town25 {
     const hx = town ? town.x : this.camX, hy = town ? town.y : this.camY, yaw = st.yaw;
 
     this.sky(place, sky, lite);
+    const green = !!LOOK.illustrated && !room && GREEN_TOWNS.has(place.style);
+    this.fireflies.update(t, this.camX, this.camY, green ? night : 0);
+    this.green = green;
     if (room) {
       for (const pn of place.panels) {
         const goal = facesCamera(pn.p, yaw) ? 0.12 : 1;
@@ -352,6 +360,7 @@ export class Town25 {
     const v = this.view, g = v.ctx, dpr = v.c.width / innerWidth;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, v.c.width, v.c.height);
+    if (this.green) drawFrame(g, v.c.width, v.c.height, t);
     const def = place.def, npcs = room ? room.npcs : def.npcs, nt = town ? town.t : t;
     const at = (s) => g.setTransform(s, 0, 0, s, this.px * dpr, this.py * dpr);
     const scaleOf = () => Math.max(0.7, Math.min(1.7, this.pk)) * dpr;
