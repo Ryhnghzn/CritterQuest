@@ -17,6 +17,13 @@ describe('spell frames (plan B)', () => {
     expect(glowing(f[0])).toBe(opaque(f[0]));
     expect(glowing(f[7])).toBeLessThan(opaque(f[7]) * 0.2);
   });
+  it('ice, lightning and arcane frames: every frame drawn, the bolt variants differ', () => {
+    for (const fr of [FX.novaRing(1, 2), FX.iceShard(2), FX.lightning(3, 2), FX.arcaneHit(2)]) for (const sp of fr) expect(opaque(sp)).toBeGreaterThan(0);
+    const [a, b] = FX.lightning(2, 1);
+    expect(Array.from(a.px)).not.toEqual(Array.from(b.px));
+    const ring = FX.novaRing(1, 1);
+    expect(ring[0].w).toBe(ring[0].h); // round on the flat ground (no screen squash)
+  });
   it('the same design every time (seeded, never Math.random)', () => {
     expect(Array.from(FX.explosion(2)[3].px)).toEqual(Array.from(FX.explosion(2)[3].px));
   });

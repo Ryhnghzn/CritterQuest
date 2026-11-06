@@ -54,8 +54,8 @@
 ## Bagian B — Efek skill gaya prototipe (menggantikan A6)
 Efek berdiri di dunia 3D seperti prototipe A (`app/pixel`): gambar dari `art/spell/` (PixelSprite, k = 3), dipasang `render3d/spell3d.js` (billboard beranimasi, bekas di tanah, lampu, percikan 3D bergravitasi). Simulasi tidak disentuh; lapisan tanah 2D (cincin, retakan) tetap. `?lama` = efek lama. Angka di `data/spell3d.js`.
 - [x] **B1** Api Penyihir: bola api terbang (serangan dasar, Matahari Kecil) dengan nyala menghadap arah terbang, jejak percikan dan cahaya ikut; ledakan (api → asap) + bekas hangus + kilat cahaya; Meteor jatuh dari langit lalu meledak; Hujan Meteor: tiap meteor jatuh satu per satu. Cek pemilik → commit.
-- [ ] **B2** Es: Nova Es = cincin es di tanah + kristal tumbuh–retak–runtuh, debu es.
-- [ ] **B3** Petir & sihir: Badai Petir = sambaran dari langit + bekas; Teleportasi & Perisai Mana.
+- [x] **B2** Es: Nova Es (dan ledakan es Lompatan Mundur) = cincin es di tanah + 18 kristal tumbuh–retak–runtuh bergelombang dari tengah, debu es, cahaya biru.
+- [x] **B3** Petir & sihir: Badai Petir = tiap sambaran petir bercabang dari langit + bekas + kilat cahaya + percikan; Teleportasi = ledakan ungu di titik awal dan tujuan; Perisai Mana = ledakan ungu di pemain. Cek pemilik B2+B3 → commit.
 - [ ] **B4** Kelas lain (dibahas setelah Penyihir); cek silau malam hari.
 
 ## Penutup

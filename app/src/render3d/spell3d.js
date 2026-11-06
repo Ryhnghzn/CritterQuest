@@ -24,6 +24,10 @@ const MAKE = {
   fire: () => FX.fireball(C.detail),
   boom: () => FX.explosion(C.detail),
   scorch: () => [FX.scorch(1, 'stone', C.detail)],
+  ring: () => FX.novaRing(1, C.detail),
+  shard: () => FX.iceShard(C.detail),
+  bolt: () => FX.lightning(3, C.detail),
+  arcane: () => FX.arcaneHit(C.detail),
 };
 const frames = (id) => FRAMES[id] || (FRAMES[id] = MAKE[id]().map(tex));
 
@@ -48,6 +52,7 @@ function glowTexture() {
 }
 const hexes = (ramp, steps) => steps.map((i) => new THREE.Color(RAMPS[ramp][i]));
 const FIRE_SPARKS = [...hexes('ember', [3, 4]), ...hexes('torch', [3, 4])];
+const FROST_SPARKS = hexes('frost', [4, 3, 2]), BOLT_SPARKS = hexes('bolt', [4, 3, 2]), ARCANE_SPARKS = hexes('arcane', [4, 3]);
 
 export class Spell3D {
   constructor(scene) {
@@ -64,7 +69,9 @@ export class Spell3D {
       const l = new THREE.PointLight(0xffffff, 0, 6, 1.6); scene.add(l);
       return { l, t: 0, life: 0, peak: 0, follow: null };
     });
-    for (const id in MAKE) frames(id); // ~60 ms once, while the scene loads, not at the first cast
+    this.pose = undefined; this.pending = []; // undefined: the cast already showing when the scene opened is not replayed
+    // ~250 ms in all, once per session: spread over the first frames, not at the first cast
+    Object.keys(MAKE).forEach((id, i) => setTimeout(() => frames(id), 40 * i));
   }
 
   // ---- building blocks -----------------------------------------------------------------
@@ -80,8 +87,8 @@ export class Spell3D {
     const m = o.m ?? 1 / C.ppm;
     if (o.flat) mesh.scale.set(fr[0].w * m, 1, fr[0].h * m); else mesh.scale.set(fr[0].w * m, fr[0].h * m, 1);
     this.scene.add(mesh);
-    const e = { mesh, fr, x, y, h: o.h ?? 0, t: 0, fps: o.fps || 14, loop: !!o.loop, delay: o.delay || 0, fade: o.fade, opacity: o.opacity ?? 1, flat: !!o.flat, roll: o.roll || 0 };
-    e.life = o.life ?? fr.length / e.fps;
+    const e = { mesh, fr, x, y, h: o.h ?? 0, t: 0, fps: o.fps || 14, loop: !!o.loop, delay: o.delay || 0, fade: o.fade, opacity: o.opacity ?? 1, flat: !!o.flat, roll: o.roll || 0, sched: o.sched, flip: o.flip };
+    e.life = o.life ?? (o.sched ? o.sched.reduce((a, b) => a + b, 0) : fr.length / e.fps);
     this.list.push(e);
     return e;
   }
@@ -114,6 +121,38 @@ export class Spell3D {
     this.add('scorch', x, y, { flat: true, m: (r * C.scorch.fill * S) / sc.w, life: C.scorch.life, fade: C.scorch.fade, opacity: C.scorch.opacity });
     this.light(B.light.color, B.light.peak * Math.min(2, r / 40), B.light.life, Math.max(5, r * S * B.light.dist), x, 30, y);
     this.burst(x * S, 0.5, y * S, Math.round(B.sparks * mul * Math.min(2.5, r / 36)), B.sparkSpeed * Math.min(2, Math.sqrt(r / 36)), FIRE_SPARKS, 0.9, 7, 1.5);
+  }
+  // Nova Es: a ring of frost racing out flat on the ground, ice shards bursting up in two rings
+  nova(x, y, r, mul) {
+    const N = C.nova;
+    this.add('ring', x, y, { flat: true, m: (r * S) / N.ringR, fps: N.fps, glow: N.glow });
+    const shard = frames('shard')[0], m = N.shard / shard.h;
+    for (const [f, n] of N.rings) {
+      const R = r * f, count = Math.max(4, Math.round(n * Math.min(1, 0.5 + mul / 2)));
+      for (let i = 0; i < count; i++) {
+        const a = (i / count) * Math.PI * 2 + f * 3, sx = x + Math.cos(a) * R, sy = y + Math.sin(a) * R;
+        this.add('shard', sx, sy, { ax: 0.5, ay: 1, m: m * (0.8 + Math.random() * 0.4), sched: N.sched, delay: f * N.wave, flip: Math.random() < 0.5 });
+      }
+    }
+    this.light(N.light.color, N.light.peak, N.light.life, Math.max(6, r * S * 1.6), x, 30, y);
+    this.burst(x * S, 0.3, y * S, Math.round(N.sparks * mul), N.sparkSpeed, FROST_SPARKS, 0.8, -0.4);
+  }
+  // one lightning strike: a bolt from the sky onto (x, y), a burnt mark, a white flash of light
+  strike(x, y, r, mul) {
+    const B = C.strike, fr = frames('bolt')[0];
+    const e = this.add('bolt', x, y, { ax: 0.5, ay: 1, m: B.height / fr.h, fps: B.fps, loop: true, life: B.life, glow: B.glow, flip: Math.random() < 0.5 });
+    if (e) e.t = Math.random() * 0.2; // a different fork pattern first
+    const sc = frames('scorch')[0];
+    this.add('scorch', x, y, { flat: true, m: (r * B.scorch * S) / sc.w, life: C.scorch.life * 0.6, fade: C.scorch.fade, opacity: C.scorch.opacity * 0.8 });
+    this.light(B.light.color, B.light.peak, B.light.life, B.light.dist, x, 60, y);
+    this.burst(x * S, 0.2, y * S, Math.round(B.sparks * mul), B.sparkSpeed, BOLT_SPARKS, 0.5, 9, 2);
+  }
+  // a burst of violet sparks and rays at (x, y), h game units up (Teleportasi, Perisai Mana)
+  arcane(x, y, h, mul, size = 1) {
+    const A = C.arcane, fr = frames('arcane')[0];
+    this.add('arcane', x, y, { ax: 0.5, ay: 0.5, h, m: (A.size * size) / fr.w, fps: A.fps, glow: A.glow });
+    this.light(A.light.color, A.light.peak, A.light.life, A.light.dist, x, h, y);
+    this.burst(x * S, h * S, y * S, Math.round(A.sparks * mul * size), A.sparkSpeed, ARCANE_SPARKS, 0.45);
   }
   // a falling meteor `size` metres long; o.life (fixed fall) or o.fall (Hujan Meteor's own clock)
   meteor(x, y, size, o) {
@@ -159,6 +198,10 @@ export class Spell3D {
         continue;
       }
       if (h.delay > 0) continue;
+      if (!this.seen.has(h) && (h.fx === 'nova' || h.fx === 'chain')) { // Nova Es (and the archer's ice blast), Badai Petir
+        this.seen.add(h);
+        if (h.fx === 'nova') this.nova(h.x, h.y, h.r, mul); else this.strike(h.x, h.y, h.r, mul);
+      }
       // a new explosion (Hujan Meteor's own area is not one: its meteors fall one by one, below)
       if (h.fx === 'boom' && !this.seen.has(h) && h.sid !== 'meteorstorm') {
         this.seen.add(h);
@@ -172,6 +215,21 @@ export class Spell3D {
         const e = this.meteor(f.x, f.y, C.storm.size[f.big ? 0 : 1], { fall: f });
         if (e) this.falls.set(f, e);
       }
+    }
+    // casts with no hit of their own: Teleportasi (both ends), Perisai Mana
+    const cp = game.castPose;
+    if (cp !== this.pose) {
+      if (cp && this.pose !== undefined) {
+        if (cp.id === 'blink') { this.arcane(game.dashFromX ?? game.px, game.dashFromY ?? game.py, 30, mul, 1.2); this.pending.push({ t: C.arcane.blinkEnd, id: 'blink' }); }
+        if (cp.id === 'manashield') this.arcane(game.px, game.py, 34, mul, 1.6);
+      }
+      this.pose = cp;
+    }
+    for (let i = this.pending.length - 1; i >= 0; i--) {
+      const q = this.pending[i];
+      if ((q.t -= dt) > 0) continue;
+      this.pending.splice(i, 1);
+      this.arcane(game.px, game.py, 30, mul, 1.2);
     }
     // projectiles and meteors that are gone
     for (const [h, e] of this.proj) {
@@ -190,7 +248,10 @@ export class Spell3D {
         if (e.then) e.then();
         this.scene.remove(e.mesh); e.mesh.material.dispose(); this.list.splice(i, 1); continue;
       }
-      const fi = Math.floor(e.t * e.fps), fr = e.fr[e.loop ? fi % e.fr.length : Math.min(fi, e.fr.length - 1)];
+      let fi;
+      if (e.sched) { let tt = e.t; fi = 0; while (fi < e.sched.length - 1 && tt >= e.sched[fi]) tt -= e.sched[fi++]; }
+      else fi = Math.floor(e.t * e.fps);
+      const fr = e.fr[e.loop ? fi % e.fr.length : Math.min(fi, e.fr.length - 1)];
       if (e.mesh.material.map !== fr.map) e.mesh.material.map = fr.map;
       if (e.fade) e.mesh.material.opacity = e.opacity * Math.min(1, (e.life - e.t) / e.fade);
       e.mesh.visible = true;
@@ -199,6 +260,7 @@ export class Spell3D {
       else if (e.fall) this.placeMeteor(e, e.x, e.y, Math.max(0, e.fall.t / e.fall.max), yaw);
       else e.mesh.position.set(e.x * S, e.h * S, e.y * S);
       e.mesh.rotation.set(0, yaw, e.roll, 'YXZ');
+      if (e.flip) e.mesh.scale.x = -Math.abs(e.mesh.scale.x);
     }
     // lights
     for (const L of this.lights) {
@@ -222,7 +284,7 @@ export class Spell3D {
 
   clear() {
     for (const e of this.list) { this.scene.remove(e.mesh); e.mesh.material.dispose(); }
-    this.list.length = 0; this.proj.clear(); this.falls.clear();
+    this.list.length = 0; this.proj.clear(); this.falls.clear(); this.pending.length = 0;
     for (const L of this.lights) { L.follow = null; L.t = L.life = 0; L.l.intensity = 0; }
     this.pLife.fill(0); this.pPos.fill(-99);
     this.points.geometry.attributes.position.needsUpdate = true;

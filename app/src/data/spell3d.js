@@ -17,4 +17,11 @@ export const SPELL3D = {
   // a meteor dropping in from the sky before its explosion
   meteor: { height: 9, drift: 3.5, fall: 0.16, size: 2.8 },  // size: length in metres
   storm: { big: 46, small: 28, size: [1.9, 1.3] },  // Hujan Meteor: blast radius (game units) and length (m) of a big / small meteor
+  // Nova Es: the ring frame's outer radius is ringR design px (it reaches r); shards `shard` m tall
+  nova: { ringR: 65, fps: 16, glow: 1.3, shard: 1.15, rings: [[0.45, 7], [0.8, 11]], wave: 0.25, sched: [0.04, 0.04, 0.55, 0.12, 0.12, 0.16],
+    sparks: 34, sparkSpeed: 3.2, light: { color: 0x86c8ff, peak: 30, life: 0.6 } },
+  // Badai Petir: one strike; height in metres, scorch diameter = r × scorch
+  strike: { height: 7.5, fps: 22, life: 0.3, glow: 1.6, scorch: 1.6, sparks: 22, sparkSpeed: 4.5, light: { color: 0xc8e0ff, peak: 45, life: 0.35, dist: 9 } },
+  // Teleportasi / Perisai Mana: a violet burst `size` metres wide
+  arcane: { size: 1.3, fps: 18, glow: 1.5, sparks: 12, sparkSpeed: 2.5, blinkEnd: 0.1, light: { color: 0xa070ff, peak: 14, life: 0.3, dist: 4 } },
 };
