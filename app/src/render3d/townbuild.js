@@ -9,6 +9,8 @@ import { S, toon, muted } from './stage.js';
 import { GEO, glow, Batch, SinkSet, occluder, matrixOf, col, rgbCol, signTexture, tileTexture, rnd, wrapped } from './kit3d.js';
 import { wallCells, treesOf } from './townkit.js';
 import { drawIcon } from '../art/sprites.js';
+import * as FLORA from './flora.js';
+import { vtoon } from './fieldkit.js';
 
 const TAU = Math.PI * 2;
 const WARM = 0xffa050;
@@ -205,6 +207,12 @@ function walls(root, def, st, out) {
   out.sinks.push(new SinkSet(root, items, parts, 'y'));
 }
 
+// town trees drawn by flora.js: radius in game units (about the old trees' size), rim light
+const FLORA_TREE = {
+  pine: { r: 31, rim: 0x2a4a3a, geo: (v) => FLORA.pine(v) },
+  oak: { r: 30, rim: 0x3a5a2a, geo: (v) => FLORA.oak(v) },
+  snowpine: { r: 31, rim: 0x8ab8e8, geo: (v) => FLORA.pine(v, true) },
+};
 const TREE_PARTS = {
   pine: () => [[GEO.cyl6, 0x2a1e1a, 0, 10, 0, 8, 20, 8], [GEO.cone, 0x1c2832, 0, 42, 0, 64, 52, 64], [GEO.cone, 0x223040, 0, 74, 0, 46, 40, 46]],
   oak: () => [[GEO.cyl6, 0x2a1d12, 0, 20, 0, 12, 40, 12], [GEO.blob, 0x1e3a22, -16, 52, 0, 46, 40, 46], [GEO.blob, 0x1e3a22, 16, 50, 4, 46, 40, 46], [GEO.blob, 0x284a2a, 0, 70, -4, 54, 46, 54]],
@@ -220,10 +228,17 @@ function trees(root, def, key, out) {
     let k = kind;
     if (kind === 'palm' && p.v < 0.35) k = 'cactus';
     if (kind === 'charred' && p.v < 0.3) { k = 'rock'; light(out.lights, p.x, p.y, 20, '255,110,40', 4, 3.5); }
+    if (FLORA_TREE[k]) k = `${k}~${Math.floor(p.v * 7) % FLORA.VARIANTS}`; // flora.js variants (plan A5)
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push({ x: p.x, y: p.y, s: p.s, ry: p.v * TAU });
   }
   for (const [k, items] of groups) {
+    const [base, variant] = k.split('~'), F = FLORA_TREE[base];
+    if (F) {
+      const m = matrixOf(0, 0, 0, F.r * S, F.r * S, F.r * S, 0, 0, 0, new THREE.Matrix4());
+      out.sinks.push(new SinkSet(root, items, [{ geo: F.geo(Number(variant)), mat: vtoon(F.rim, false), m }], 'all', 520));
+      continue;
+    }
     const parts = TREE_PARTS[k]().map(([geo, c, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0]) => ({
       geo, mat: c === 'ember' ? glow(0xff6a20, 1.6) : toon(c), m: matrixOf(x * S, y * S, z * S, sx * S, sy * S, sz * S, rx, ry, rz, new THREE.Matrix4()),
     }));

@@ -45,6 +45,12 @@ export function buildProps(map) {
     if (kind) out.push({ x: s.x, y: s.y, r: s.r, v: s.v ?? hash01(s.y, s.x), kind, tint: 0.85 + (s.v ?? 0.5) * 0.3 });
   }
   const r = seeded(map.region.seed * 104729 + 3);
+  // undergrowth (3D only, no collision): a bush at the foot of some forest trees (plan A5)
+  if (biome === 'forest') for (const p of out.slice()) {
+    if ((p.kind !== 'oak' && p.kind !== 'pine') || p.v > 0.45) continue;
+    const a = p.v * 40, d = p.r * 1.25;
+    out.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d * 0.8, r: p.r * 0.42, v: (p.v * 13) % 1, kind: 'bush', tint: p.tint });
+  }
   // the land goes on: a band of dark trees (dunes of rock in the desert) past every edge
   const n = Math.round((2 * (map.w + map.h)) / 75);
   for (let i = 0; i < n; i++) {

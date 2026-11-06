@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { S, toon } from './stage.js';
+import * as FLORA from './flora.js';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 
@@ -48,26 +49,18 @@ const ROCK = { forest: ['#3e3d42', '#4a4540'], ice: ['#5b6878', '#66707e'], dese
 const STONE = { forest: '#4b4a5c', ice: '#566373', desert: '#8a6448', volcano: '#2e2a2c', eclipse: '#2a2236' };
 const RUNE = { volcano: '#ff8a3c', eclipse: '#c79bff' };
 
-// prop kind → { geo, rim } for a biome
-export function propGeometry(kind, biome) {
+// kinds drawn by flora.js (plan A5): three variants each, soft shading (smooth: true)
+export const VARIED = new Set(['pine', 'oak', 'snowpine', 'rock', 'bush']);
+const ROCK_TOP = { forest: '#3d5a33', ice: '#c4d2e4' };
+
+// prop kind → { geo, rim, smooth? } for a biome (variant: 0..FLORA.VARIANTS-1 for VARIED kinds)
+export function propGeometry(kind, biome, variant = 0) {
   const P = [];
   switch (kind) {
-    case 'pine': // dark forest pine: three stacked tiers
-      P.push(part(Cyl(0.14, 0.2, 0.9, 5), '#2e1f17', { y: 0.45 }));
-      P.push(part(Cone(1.05, 1.5), '#1b3524', { y: 1.35 }), part(Cone(0.82, 1.3), '#20402a', { y: 2.15, ry: 0.4 }), part(Cone(0.56, 1.1), '#27492f', { y: 2.85, ry: 0.9 }));
-      return { geo: merge(P), rim: 0x2a4a3a };
-    case 'oak': // broad tree: lumpy canopy
-      P.push(part(Cyl(0.16, 0.26, 1.3, 6), '#33231a', { y: 0.65 }));
-      P.push(part(Ico(0.78), '#22391f', { x: -0.42, y: 1.55, z: 0.1 }), part(Ico(0.72), '#2a4424', { x: 0.45, y: 1.5, z: -0.12 }), part(Ico(0.86), '#30502a', { y: 2.15 }));
-      return { geo: merge(P), rim: 0x3a5a2a };
-    case 'snowpine': {
-      P.push(part(Cyl(0.13, 0.18, 0.8, 5), '#2a1d16', { y: 0.4 }));
-      for (const [y, w, h] of [[1.25, 1.05, 1.4], [2.0, 0.84, 1.2], [2.7, 0.62, 1.05]]) {
-        P.push(part(Cone(w, h), '#173027', { y }));
-        P.push(part(Cone(w * 0.5, h * 0.46), '#c4d2e4', { y: y + h / 2 - h * 0.23 + 0.02 }));
-      }
-      return { geo: merge(P), rim: 0x8ab8e8 };
-    }
+    case 'pine': return { geo: FLORA.pine(variant), rim: 0x2a4a3a, smooth: true };
+    case 'oak': return { geo: FLORA.oak(variant), rim: 0x3a5a2a, smooth: true };
+    case 'snowpine': return { geo: FLORA.pine(variant, true), rim: 0x8ab8e8, smooth: true };
+    case 'bush': return { geo: FLORA.bush(variant), rim: 0x3a5a2a, smooth: true };
     case 'cactus': {
       const c = '#3f6b3a';
       P.push(part(Cyl(0.22, 0.25, 1.7, 8), c, { y: 0.85 }), part(new THREE.SphereGeometry(0.22, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), c, { y: 1.7 }));
@@ -108,10 +101,7 @@ export function propGeometry(kind, biome) {
       return { geo: merge(P), rim: 0xe8f6ff };
     case 'rock':
     case 'floatrock': {
-      const [a, b] = ROCK[biome] || ROCK.forest;
-      P.push(part(Dode(1), a, { y: 0.22, sy: 0.62, sz: 0.85 }), part(Dode(0.48), b, { x: 0.95, y: 0.05, z: 0.15, sy: 0.75 }));
-      if (biome === 'forest') P.push(part(Ico(0.45), '#3d5a33', { x: 0.15, y: 0.75, sy: 0.25 }));
-      if (biome === 'ice') P.push(part(Ico(0.62), '#c4d2e4', { x: -0.1, y: 0.82, sy: 0.22 }));
+      P.push(FLORA.rock(kind === 'rock' ? variant : 0, ROCK[biome] || ROCK.forest, ROCK_TOP[biome] || null)); // moss / snow on top
       if (biome === 'volcano') P.push(part(Box(0.9, 0.06, 0.08), '#ff7a30', { y: 0.55, z: 0.72, ry: 0.3, rz: 0.25 }));
       if (kind === 'floatrock') P.push(part(Box(0.7, 0.05, 0.06), '#b98cff', { y: 0.45, z: 0.7, rz: -0.3 }));
       return { geo: merge(P), rim: biome === 'eclipse' ? 0x8a5ad8 : biome === 'volcano' ? 0x6a2a10 : 0x4a4a6a };

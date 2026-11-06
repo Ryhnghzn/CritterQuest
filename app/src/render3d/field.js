@@ -13,7 +13,7 @@ import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
 import { buildProps, indexProps, gatherNear, inCutaway, bridgeSpots, tilesAround } from './fieldprops.js';
-import { propGeometry, vtoon, LIFT, gateMesh, chestMesh, homeMesh, bridgesMesh, riverRibbon, signMesh, additive, glowTex, townGateMesh, fogBank } from './fieldkit.js';
+import { propGeometry, VARIED, vtoon, LIFT, gateMesh, chestMesh, homeMesh, bridgesMesh, riverRibbon, signMesh, additive, glowTex, townGateMesh, fogBank } from './fieldkit.js';
 import { groundTile, drawField, fieldDecorLights, targetArrow, gateGlow, gateGuards, drawGuard } from '../render/field.js';
 import { drawQuestSpot } from '../render/hideout.js';
 import { actor, tag } from '../render/paint.js';
@@ -40,7 +40,9 @@ const GROUND_KIND = { desert: 'sand', ice: 'snow', volcano: 'ash', eclipse: 'ash
 const PROP_KIND = { rock: 'rock', floatrock: 'rock', icerock: 'rock', stone: 'rock', column: 'rock' };
 const LIGHT_K = { ice: 0.5, desert: 0.9 }; // pale snow would glare (and bloom) under the forest's light
 // how far (radius units) a prop sinks when it stands between the hero and the camera
-const SINK = { rock: 0.6, icerock: 0.9, floatrock: 1.4, crystal: 1.3, cactus: 1.7 };
+// trees and rocks come in variants (flora.js): one InstancedMesh per kind and variant
+const propKey = (p) => (VARIED.has(p.kind) ? `${p.kind}~${Math.floor(p.v * 7) % 3}` : p.kind);
+const SINK = { bush: 0.9, rock: 0.6, icerock: 0.9, floatrock: 1.4, crystal: 1.3, cactus: 1.7 };
 
 const _o = new THREE.Object3D(), _c = new THREE.Color(), _c2 = new THREE.Color();
 const RGB = new Map(); // "r,g,b" → THREE.Color
@@ -115,16 +117,17 @@ export class Field25 {
     this.props = buildProps(map);
     this.index = indexProps(this.props, map.w, map.h);
     const count = new Map();
-    for (const p of this.props) count.set(p.kind, (count.get(p.kind) || 0) + 1);
+    for (const p of this.props) { p.key = propKey(p); count.set(p.key, (count.get(p.key) || 0) + 1); }
     this.kinds = new Map();
-    for (const [kind, n] of count) {
-      const { geo, rim } = propGeometry(kind, biome), cap = Math.min(n, CAP);
-      const mesh = new THREE.InstancedMesh(geo, vtoon(rim, true, PROP_KIND[kind] || null), cap);
+    for (const [key, n] of count) {
+      const [kind, variant] = key.split('~'), cap = Math.min(n, CAP);
+      const { geo, rim, smooth } = propGeometry(kind, biome, Number(variant) || 0);
+      const mesh = new THREE.InstancedMesh(geo, vtoon(rim, !smooth, PROP_KIND[kind] || null), cap);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.setColorAt(0, _c.setScalar(1));
       mesh.count = 0; mesh.frustumCulled = false; // bounds change as instances stream in
       G.add(mesh);
-      this.kinds.set(kind, { mesh, cap, ids: new Int32Array(cap), k: new Float32Array(cap), n: 0, lift: LIFT[kind] || 0, sink: SINK[kind] ?? 2.4 });
+      this.kinds.set(key, { mesh, cap, ids: new Int32Array(cap), k: new Float32Array(cap), n: 0, lift: LIFT[kind] || 0, sink: SINK[kind] ?? 2.4 });
     }
     const sh = new THREE.CircleGeometry(1, 14); sh.rotateX(-Math.PI / 2);
     this.shadows = new THREE.InstancedMesh(sh, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), CAP * 3);
@@ -270,7 +273,7 @@ export class Field25 {
     gatherNear(this.index, this.props, x, y, PROP_R, this.near);
     let ns = 0;
     for (const i of this.near) {
-      const p = this.props[i], K = this.kinds.get(p.kind);
+      const p = this.props[i], K = this.kinds.get(p.key);
       if (K.n >= K.cap) continue;
       const j = K.n++;
       K.ids[j] = i; K.k[j] = -1; // −1: place on the next cutaway pass

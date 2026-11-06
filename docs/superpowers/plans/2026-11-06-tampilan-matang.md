@@ -46,7 +46,10 @@
 - [x] Cek pemilik → commit `Bidik skill dulu, klik kiri untuk melepas (§37)`.
 
 ## Bagian A5 — Vegetasi & props
-- [ ] Pohon, semak, batu: siluet berlapis, variasi ukuran.
+- [x] **A5.1** `render3d/flora.js` (+ tes): oak (batang miring, cabang, tajuk 8–10 gumpalan), pinus 5 tingkat bergerigi (versi salju: salju hanya di permukaan menghadap langit, bagian atas tiap tingkat), semak, tumpukan batu (lumut/salju di atas); warna per titik gelap→terang, 3 varian per jenis.
+- [x] **A5.2** Wilayah: `propGeometry(kind, biome, varian)`, satu InstancedMesh per jenis+varian (`propKey`), shading halus untuk tanaman; semak di kaki sebagian pohon hutan (3D saja, tanpa tabrakan).
+- [x] **A5.3** Kota: pinus, oak, pinus salju memakai flora.js (varian per pohon).
+- [x] **A5.4** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A5: pohon, semak, batu berlapis`.
 
 ## Bagian A6 — Efek & glow
 - [ ] Glow efek skill/aura diselaraskan dengan cahaya baru; cek tidak silau di malam hari.
