@@ -50,3 +50,11 @@ describe('warrior frames (plan B4)', () => {
     const w = FX.whirl(1)[0]; expect(w.w).toBe(w.h);
   });
 });
+
+describe('archer frames (plan B4)', () => {
+  it('every frame drawn; the lance and the stars glow, the arrow does not', () => {
+    for (const fr of [[FX.arrow(2)], FX.lightSpear(2), FX.star(2), FX.thorns(2)]) for (const sp of fr) expect(opaque(sp)).toBeGreaterThan(0);
+    expect(glowing(FX.lightSpear(2)[0])).toBe(opaque(FX.lightSpear(2)[0]));
+    expect(glowing(FX.arrow(2))).toBe(0);
+  });
+});

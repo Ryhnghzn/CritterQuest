@@ -57,7 +57,7 @@ Efek berdiri di dunia 3D seperti prototipe A (`app/pixel`): gambar dari `art/spe
 - [x] **B2** Es: Nova Es (dan ledakan es Lompatan Mundur) = cincin es di tanah + 18 kristal tumbuh–retak–runtuh bergelombang dari tengah, debu es, cahaya biru.
 - [x] **B3** Petir & sihir: Badai Petir = tiap sambaran petir bercabang dari langit + bekas + kilat cahaya + percikan; Teleportasi = ledakan ungu di titik awal dan tujuan; Perisai Mana = ledakan ungu di pemain. Cek pemilik B2+B3 → commit.
 - [x] **B4a** Warrior: tebasan dasar = sabit cahaya di depan pemain menghadap arah ayun (bergantian atas/bawah); Putaran Pedang & Badai Pedang = cincin pedang berputar datar setinggi pinggang mengikuti pemain; Retakan Bumi = pilar batu-api tumbuh–bertahan–runtuh di tiap titik + percikan + cahaya; Teriakan Baja / Amarah Perang = gelombang cincin emas di tanah + percikan emas/merah; Terjang = kepulan debu di sepanjang jalur; Kapak Bumerang = kapak bergambar berputar.
-- [ ] **B4b** Archer.
+- [x] **B4b** Archer: panah bergambar (serangan dasar, Panah Pecah & pecahannya) menghadap arah terbang; Panah Naga = tombak cahaya berpita melingkar + cahaya ikut + percikan es; Hujan Panah = panah jatuh dari langit lalu menancap sebentar; Ladang Jebakan = rumpun duri tumbuh di area selama jebakan; Hujan Bintang = bintang jatuh satu per satu + percikan emas (sebelumnya ikut memakai meteor); Mata Elang = gelombang emas kecil; Lompatan Mundur = debu di titik lompat (ledakan es dari Nova).
 - [ ] **B4c** Assassin; cek silau malam hari.
 
 ## Bagian C — Dunia seperti prototipe A (permintaan pemilik 2026-11-06: "masih jauh dari pixel.html A")

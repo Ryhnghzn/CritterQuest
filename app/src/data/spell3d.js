@@ -30,5 +30,11 @@ export const SPELL3D = {
   shock: { ringR: 65, fps: 18, glow: 1.3, sparks: 30, light: { color: 0xffc860, peak: 22, life: 0.45, dist: 8 } },
   dust: { size: 1.3, fps: 10, every: 0.035 },
   axe: { size: 1.5, fps: 18 },
+  // plan B4 — Archer. arrow / spear: length in metres; rain: arrows per second over the area
+  arrow: { size: 1.0 },
+  spear: { size: 3.4, fps: 14, glow: 1.6, light: { color: 0x7fd8ff, peak: 14, dist: 5 } },
+  rain: { rate: 18, height: 6.5, fall: 0.2, stuck: 0.8, fade: 0.4 },
+  star: { size: 0.9, fps: 14, glow: 1.7, light: { color: 0xffd27a, peak: 10, life: 0.3, dist: 4 } },
+  thorns: { count: 9, fill: 0.85, size: 1.1 },
   arcane: { size: 1.3, fps: 18, glow: 1.5, sparks: 12, sparkSpeed: 2.5, blinkEnd: 0.1, light: { color: 0xa070ff, peak: 14, life: 0.3, dist: 4 } },
 };

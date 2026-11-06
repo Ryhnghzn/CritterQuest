@@ -9,7 +9,7 @@ import { RAMPS } from '../art/pix/palette.js';
 import { SPELL3D as C } from '../data/spell3d.js';
 import { S } from './stage.js';
 
-const MAX_FX = 72;
+const MAX_FX = 140;
 // a ground direction (vx, vy) as an angle on screen for a camera turned by yaw (far = up, foreshortened)
 function screenAngle(vx, vy, yaw) {
   const sx = vx * Math.cos(yaw) - vy * Math.sin(yaw), sz = -(vx * Math.sin(yaw) + vy * Math.cos(yaw));
@@ -39,6 +39,10 @@ const MAKE = {
   shock: () => FX.novaRing(1, C.detail, 'torch'),
   dust: () => FX.dust(C.detail),
   axe: () => FX.axe(C.detail),
+  arrow: () => [FX.arrow(C.detail)],
+  spear: () => FX.lightSpear(C.detail),
+  star: () => FX.star(C.detail),
+  thorns: () => FX.thorns(C.detail),
 };
 const frames = (id) => FRAMES[id] || (FRAMES[id] = MAKE[id]().map(tex));
 
@@ -193,10 +197,31 @@ export class Spell3D {
     const D = C.dust, fr = frames('dust')[0];
     this.add('dust', x + (Math.random() - 0.5) * 10, y, { ax: 0.5, ay: 0.8, m: D.size / fr.w * (0.8 + Math.random() * 0.5), fps: D.fps, flip: Math.random() < 0.5 });
   }
+  // ---- Archer (plan B4) ----------------------------------------------------------------
+  // an arrow dropping out of the sky onto (x, y), then left standing in the ground for a moment
+  dropArrow(x, y) {
+    const R = C.rain, m = C.arrow.size / frames('arrow')[0].w, tilt = (Math.random() - 0.5) * 0.35;
+    const e = this.add('arrow', x, y, { ax: 1, ay: 0.5, m, life: R.fall });
+    if (!e) return;
+    e.drop = { from: R.height, tilt }; e.roll = -Math.PI / 2 + tilt;
+    e.then = () => { const st = this.add('arrow', x, y, { ax: 1, ay: 0.5, m, life: R.stuck, fade: R.fade, h: -3 }); if (st) st.roll = -Math.PI / 2 + tilt; };
+  }
+  thornField(h) {
+    const T = C.thorns, life = Math.max(0.5, h.life || 1), fr = frames('thorns')[0];
+    for (let i = 0; i < T.count; i++) {
+      const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * h.r * T.fill;
+      this.add('thorns', h.x + Math.cos(a) * d, h.y + Math.sin(a) * d * 0.9, { ax: 0.5, ay: 24 / 26, m: (T.size / fr.w) * (0.8 + Math.random() * 0.4), sched: [0.05, 0.05, life - 0.35, 0.1, 0.15], delay: Math.random() * 0.12, flip: Math.random() < 0.5 });
+    }
+  }
   // a falling meteor `size` metres long; o.life (fixed fall) or o.fall (Hujan Meteor's own clock)
   meteor(x, y, size, o) {
     const e = this.add('fire', x, y, { ax: 0.75, ay: 0.5, m: size / frames('fire')[0].w, fps: 16, loop: true, life: o.life ?? 1e9, glow: C.fireball.glow });
     if (e) { if (o.fall) e.fall = o.fall; else e.meteor = true; }
+    return e;
+  }
+  fallingStar(f) {
+    const S2 = C.star, e = this.add('star', f.x, f.y, { ax: 0.5, ay: 0.5, m: (S2.size * (f.big ? 1.3 : 1)) / frames('star')[0].w, fps: S2.fps, loop: true, life: 1e9, glow: S2.glow });
+    if (e) { e.fall = f; e.star = true; }
     return e;
   }
   // a fireball dropping out of the sky toward (x, y): q = 1 just started … 0 landed
@@ -216,6 +241,21 @@ export class Spell3D {
     const live = new Set();
     for (const h of game.hits) {
       if (h.kind === 'proj') {
+        if ((h.fx === 'arrow' || h.fx === 'pierce') && !h.dead && !(h.delay > 0)) { // Archer: drawn arrows, the dragon's lance of light
+          live.add(h);
+          let e = this.proj.get(h);
+          if (!e) {
+            const spear = h.fx === 'pierce', id = spear ? 'spear' : 'arrow';
+            e = this.add(id, h.x, h.y, { ax: 1, ay: 0.5, h: C.flyH, m: (spear ? C.spear.size : C.arrow.size) / frames(id)[0].w, fps: C.spear.fps, loop: true, life: 1e9, glow: spear ? C.spear.glow : 1 });
+            if (!e) continue;
+            if (spear) e.light = this.light(C.spear.light.color, C.spear.light.peak, 1e9, C.spear.light.dist, h.x, C.flyH, h.y, h);
+            this.proj.set(h, e);
+          }
+          e.x = h.x; e.y = h.y;
+          e.roll = screenAngle(h.vx || Math.cos(h.angle), h.vy || Math.sin(h.angle), yaw);
+          if (h.fx === 'pierce') for (let i = Math.floor(30 * mul * dt + Math.random()); i > 0; i--) this.spark(h.x * S, C.flyH * S, h.y * S, (Math.random() - 0.5) * 0.8, 0.4 + Math.random() * 0.6, (Math.random() - 0.5) * 0.8, 0.45, FROST_SPARKS[i % 3]);
+          continue;
+        }
         if (h.fx === 'axe' && !h.dead) { // Kapak Bumerang: the drawn axe spinning along its flight
           live.add(h);
           let e = this.proj.get(h);
@@ -252,6 +292,12 @@ export class Spell3D {
         if (!e) { e = this.add('whirl', h.x, h.y, { flat: true, h: C.whirl.h, m: (h.r * C.whirl.fill * S) / 40, fps: C.whirl.fps, loop: true, life: 1e9, glow: 1.15 }); if (e) { e.spin = -9; this.proj.set(h, e); } }
         if (e) { e.x = h.x; e.y = h.y; }
       }
+      // Archer: arrows rain on the spot; thorns spring up in the trap
+      if (h.fx === 'rain' && h.sid === 'rain' && h.life > 0) for (let i = Math.floor(C.rain.rate * mul * dt + Math.random()); i > 0; i--) {
+        const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * h.r;
+        this.dropArrow(h.x + Math.cos(a) * d, h.y + Math.sin(a) * d);
+      }
+      if (h.sid === 'trap' && !this.seen.has(h)) { this.seen.add(h); this.thornField(h); }
       if (!this.seen.has(h) && (h.fx === 'nova' || h.fx === 'chain')) { // Nova Es (and the archer's ice blast), Badai Petir
         this.seen.add(h);
         if (h.fx === 'nova') this.nova(h.x, h.y, h.r, mul); else this.strike(h.x, h.y, h.r, mul);
@@ -266,7 +312,7 @@ export class Spell3D {
       if (h.falls) for (const f of h.falls) {
         live.add(f);
         if (this.falls.has(f)) continue;
-        const e = this.meteor(f.x, f.y, C.storm.size[f.big ? 0 : 1], { fall: f });
+        const e = h.sid === 'starfall' ? this.fallingStar(f) : this.meteor(f.x, f.y, C.storm.size[f.big ? 0 : 1], { fall: f });
         if (e) this.falls.set(f, e);
       }
     }
@@ -278,6 +324,8 @@ export class Spell3D {
         if (cp.id === 'manashield') this.arcane(game.px, game.py, 34, mul, 1.6);
         if (cp.id === 'shout') this.shock(game.px, game.py, 115, mul, GOLD_SPARKS);
         if (cp.id === 'warcry') this.shock(game.px, game.py, 90, mul, RED_SPARKS);
+        if (cp.id === 'hawk') this.shock(game.px, game.py, 70, mul * 0.6, GOLD_SPARKS);
+        if (cp.id === 'leap') this.dust(game.dashFromX ?? game.px, game.dashFromY ?? game.py, mul);
         if (cp.id === 'charge') { this.dust(game.dashFromX ?? game.px, game.dashFromY ?? game.py, mul); this.dashDust = 0.25; }
       }
       this.pose = cp;
@@ -298,7 +346,12 @@ export class Spell3D {
       e.life = 0; this.proj.delete(h);
       if (e.light?.follow === h) { e.light.follow = null; e.light.life = 0; }
     }
-    for (const [f, e] of this.falls) if (!live.has(f)) { e.life = 0; this.falls.delete(f); this.boom(f.x, f.y, f.big ? C.storm.big : C.storm.small, mul * 0.5); }
+    for (const [f, e] of this.falls) {
+      if (live.has(f)) continue;
+      e.life = 0; this.falls.delete(f);
+      if (e.star) { const L = C.star.light; this.light(L.color, L.peak, L.life, L.dist, f.x, 10, f.y); this.burst(f.x * S, 0.3, f.y * S, Math.round((f.big ? 14 : 7) * mul), 2.5, GOLD_SPARKS, 0.5, 4, 1); }
+      else this.boom(f.x, f.y, f.big ? C.storm.big : C.storm.small, mul * 0.5);
+    }
 
     // animate
     for (let i = this.list.length - 1; i >= 0; i--) {
@@ -317,6 +370,7 @@ export class Spell3D {
       if (e.fade) e.mesh.material.opacity = e.opacity * Math.min(1, (e.life - e.t) / e.fade);
       e.mesh.visible = true;
       if (e.flat) { e.mesh.position.set(e.x * S, e.h ? e.h * S : 0.05, e.y * S); e.mesh.rotation.y = yaw + (e.spin ? e.t * e.spin : 0); continue; }
+      if (e.drop) { const q = Math.max(0, 1 - e.t / e.life); e.mesh.position.set(e.x * S, e.drop.from * q, e.y * S); e.mesh.rotation.set(0, yaw, e.roll, 'YXZ'); continue; }
       if (e.meteor) this.placeMeteor(e, e.x, e.y, Math.max(0, 1 - e.t / e.life), yaw);
       else if (e.fall) this.placeMeteor(e, e.x, e.y, Math.max(0, e.fall.t / e.fall.max), yaw);
       else e.mesh.position.set(e.x * S, e.h * S, e.y * S);

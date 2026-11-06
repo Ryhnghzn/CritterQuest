@@ -185,3 +185,51 @@ export function axe(k = 1) {
     return s.outline();
   });
 }
+
+// ---- plan B4: Archer ------------------------------------------------------------------------
+// one arrow pointing +x (tip at the right edge): steel head, wooden shaft, fletching
+export function arrow(k = 1) {
+  const s = new PixelSprite(40, 10, k), y = 5;
+  s.paint(capsule(6, y, 33, y, 0.7), 'wood', { rim: true });
+  s.paint(poly([[33, y - 2.6], [39.5, y], [33, y + 2.6], [34.5, y]]), 'metal', { rim: true });
+  for (const d of [-1, 1]) s.paint(poly([[2, y + d * 3.6], [9, y + d * 0.6], [11, y + d * 0.6], [5, y + d * 3.8]]), 'red', { bias: d > 0 ? -0.6 : 0.3 });
+  return s.outline();
+}
+// Panah Naga: a lance of cold light with a ribbon coiling round it, head at the right edge
+export function lightSpear(k = 1) {
+  return [0, 1, 2].map((f) => {
+    const s = new PixelSprite(90, 22, k), cy = 11;
+    s.paint(capsule(4, cy, 78, cy, 1, 4.2), 'frost', { level: 2, edge: false });
+    for (let x = 6; x < 80; x += 1.5) { // the coiling ribbon
+      const y = cy + Math.sin(x * 0.18 - f * 2.1) * (3 + x * 0.06);
+      s.paint(ellipse(x, y, 1.3, 1.1), 'frost', { level: 3, edge: false });
+    }
+    s.paint(poly([[70, cy - 7], [89, cy], [70, cy + 7], [75, cy]]), 'frost', { level: 3, edge: false });
+    s.paint(capsule(30, cy, 86, cy, 0.6, 1.6), 'bolt', { level: 4, edge: false });
+    return s;
+  });
+}
+// a falling star: a four-pointed twinkle with a short tail (Hujan Bintang)
+export function star(k = 1) {
+  return [0, 1, 2, 3].map((f) => {
+    const s = new PixelSprite(24, 24, k), c = 12, L = 9 + (f % 2) * 2, a0 = f * 0.2;
+    for (let i = 0; i < 4; i++) { const a = a0 + (i * Math.PI) / 2; s.paint(capsule(c, c, c + Math.cos(a) * L, c + Math.sin(a) * L, 1.8, 0.3), 'torch', { level: 3, edge: false }); }
+    s.paint(ellipse(c, c, 3.2, 3.2), 'torch', { level: 4, edge: false });
+    return s;
+  });
+}
+// a clump of thorny stakes springing out of the ground (Ladang Jebakan): grows, holds, sinks
+export function thorns(k = 1) {
+  return [0.4, 0.8, 1, 1, -1].map((g, f) => {
+    const s = new PixelSprite(30, 26, k), r = rng(81 + f), by = 24;
+    if (g < 0) { s.paint(ellipse(15, by, 11, 2.2), 'wood', { level: 1, edge: false }); return s; }
+    for (const [x, tall, tilt] of [[8, 14, -5], [15, 20, 0], [22, 15, 5], [11, 10, -2], [19, 11, 2]]) {
+      const top = by - tall * g, tx = x + tilt * g;
+      s.paint(poly([[x - 2.2, by], [tx, top], [x + 2.2, by]], { cx: x - 1, cy: (by + top) / 2, rx: 3, ry: tall * 0.6 }), 'wood', { rim: true });
+      if (g >= 1) s.dot(Math.round(tx), Math.round(top + 1), 'metal', 4);
+      void r;
+    }
+    s.paint(ellipse(15, by, 12, 2), 'leaf', { level: 1, edge: false });
+    return s.outline();
+  });
+}
