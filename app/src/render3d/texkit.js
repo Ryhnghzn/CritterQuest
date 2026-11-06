@@ -5,7 +5,7 @@
 
 export const DETAIL_SIZE = 128;
 // metres per tile repeat (the shader samples by world position)
-export const DETAIL_SCALE = { plaster: 3.2, stone: 2.4, wood: 1.6, roof: 1.8, log: 1.6, thatch: 1.4, rock: 2.2, soil: 5, sand: 6, snow: 5, ash: 4.5 };
+export const DETAIL_SCALE = { plaster: 3.2, stone: 2.4, wood: 1.6, roof: 1.8, log: 1.6, thatch: 1.4, rock: 2.2, soil: 5, sand: 6, snow: 5, ash: 4.5, slab: 4 };
 
 function hash(x, y, s) { let h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // value noise that repeats every px cells across and py cells up (so the tile wraps)
@@ -89,6 +89,18 @@ const PATTERNS = {
   },
   snow(u, v) { // soft drifts and a fine crust
     return 1 + (fbm(u, v, 101, 3) - 0.5) * 0.22 + (pnoise(u * 64, v * 64, 64, 102) - 0.5) * 0.1;
+  },
+  // big worn flagstones (Voronoi on a wrapping 4 × 4 grid): faint joints, each stone its own tone
+  slab(u, v) {
+    const n = 4, x = u * n, y = v * n, cx = Math.floor(x), cy = Math.floor(y);
+    let d1 = 9, d2 = 9, id = 0;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+      const gx = cx + i, gy = cy + j, wx = ((gx % n) + n) % n, wy = ((gy % n) + n) % n;
+      const d = Math.hypot(x - (gx + 0.2 + hash(wx, wy, 121) * 0.6), y - (gy + 0.2 + hash(wx, wy, 122) * 0.6));
+      if (d < d1) { d2 = d1; d1 = d; id = wy * n + wx; } else if (d < d2) d2 = d;
+    }
+    if (d2 - d1 < 0.05) return 0.68;
+    return 0.93 + hash(id, 0, 123) * 0.14 + (fbm(u, v, 124, 4) - 0.5) * 0.16 + (d2 - d1 < 0.12 ? 0.06 : 0);
   },
   ash(u, v) { // cracked crust: dark seams between plates
     let k = 1 + (fbm(u, v, 111, 4) - 0.5) * 0.28;

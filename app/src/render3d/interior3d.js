@@ -51,7 +51,7 @@ export function buildRoom(r, mats) {
   out2.rotation.x = -Math.PI / 2; out2.scale.set(r.w * 3 * S, 600 * S, 1); out2.position.set(r.w / 2 * S, -0.05, (r.h + 300) * S); root.add(out2);
 
   // walls: one group per panel (sinks as a whole); the back panel carries the wall furniture
-  const wall = toon(r.wallColor, 0x2a1a3a), trim = toon(new THREE.Color(r.wallColor).multiplyScalar(0.62).getHex()), wains = toon(0x4a3426);
+  const wall = toon(r.wallColor, 0x2a1a3a, 'plaster'), trim = toon(new THREE.Color(r.wallColor).multiplyScalar(0.62).getHex(), 0, 'wood'), wains = toon(0x4a3426, 0, 'wood');
   const panels = roomPanels(r);
   panels.forEach((p, i) => {
     const grp = new THREE.Group(), B = new Batch();

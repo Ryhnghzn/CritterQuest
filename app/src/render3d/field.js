@@ -81,7 +81,7 @@ export class Field25 {
     for (let i = 0; i < 16; i++) {
       const c = document.createElement('canvas'), tex = canvasTexture(c);
       tex.anisotropy = SHARP.aniso;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(TS * S, TS * S), muted(detailed(new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 }), 'soil')));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(TS * S, TS * S), muted(LOOK.detail > 0 ? detailed(new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 }), 'soil') : new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 })));
       m.rotation.x = -Math.PI / 2; m.visible = false; sc.add(m);
       this.tiles.push({ ix: 0, iy: 0, used: false, ready: false, c, tex, mesh: m, pat: null });
     }
@@ -94,7 +94,7 @@ export class Field25 {
     if (this.regionGroup) { sc.remove(this.regionGroup); dispose(this.regionGroup); for (const k of this.kinds.values()) k.mesh.geometry.dispose(); }
     const G = this.regionGroup = new THREE.Group(); sc.add(G);
     this.mapRef = map; this.biome = biome;
-    for (const tl of this.tiles) setDetail(tl.mesh.material, GROUND_KIND[biome] || 'soil');
+    if (LOOK.detail > 0) for (const tl of this.tiles) setDetail(tl.mesh.material, GROUND_KIND[biome] || 'soil');
     this.base.material.color.set(EDGE[biome] || EDGE.forest);
     // the 2D ground painter sees a map with no solids, gates, homes or signposts: those stand up in 3D
     this.ghost = {

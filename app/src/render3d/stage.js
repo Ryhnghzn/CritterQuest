@@ -26,6 +26,7 @@ const CAM = { dist: 10.5, height: 11.5, fov: 40 }; // at zoom 1 the short screen
 // on their self light), so characters, effects and fire stand out. Chains any earlier hook.
 const SAT = LOOK.saturation.toFixed(3), LUMA = 'vec3(0.299, 0.587, 0.114)';
 export function muted(m) {
+  if (LOOK.saturation === 1) return m; // ?lama
   const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey();
   m.onBeforeCompile = (sh, r) => {
     prev.call(m, sh, r);
@@ -69,7 +70,7 @@ vDPos = (modelMatrix * dWp).xyz; vDN = mat3(modelMatrix) * dN;`);
       .replace('#include <common>', '#include <common>\nuniform sampler2D detailMap;\nuniform float detailScale;\nvarying vec3 vDPos;\nvarying vec3 vDN;')
       .replace('#include <color_fragment>', `#include <color_fragment>
 { vec3 an = abs(vDN); vec2 duv = an.y > max(an.x, an.z) ? vDPos.xz : (an.x > an.z ? vDPos.zy : vDPos.xy);
-  diffuseColor.rgb *= texture2D(detailMap, duv / detailScale).r * 2.0; }`);
+  diffuseColor.rgb *= max(vec3(0.0), vec3(mix(1.0, texture2D(detailMap, duv / detailScale).r * 2.0, ${LOOK.detail.toFixed(2)}))); }`);
   };
   m.customProgramCacheKey = () => `detail|${prevKey}`;
   return m;
@@ -96,7 +97,7 @@ export function toon(color, rim = 0, kind = null) {
       .replace('#include <opaque_fragment>', 'float rimF = 1.0 - max(dot(normal, normalize(vViewPosition)), 0.0);\noutgoingLight += rimColor * smoothstep(0.6, 0.95, rimF) * 0.6;\n#include <opaque_fragment>');
   };
   m.customProgramCacheKey = () => `toon|${rim ? 1 : 0}`; // rim and plain toons compile apart
-  if (kind) detailed(m, kind);
+  if (kind && LOOK.detail > 0) detailed(m, kind);
   muted(m);
   TOON.set(key, m);
   return m;
