@@ -25,10 +25,10 @@ export const merge = (parts) => { const g = mergeGeometries(parts); parts.forEac
 
 // toon material that shows vertex colours (flat facets for the low-poly look), cached
 const VTOON = new Map();
-export function vtoon(rim = 0, flat = true) {
-  const key = `${rim}:${flat}`;
+export function vtoon(rim = 0, flat = true, kind = null) {
+  const key = `${rim}:${flat}:${kind}`;
   if (VTOON.has(key)) return VTOON.get(key);
-  const base = toon(0xffffff, rim), m = base.clone();
+  const base = toon(0xffffff, rim, kind), m = base.clone();
   m.vertexColors = true; m.flatShading = flat;
   m.onBeforeCompile = base.onBeforeCompile; m.customProgramCacheKey = base.customProgramCacheKey;
   m.userData.shared = true;
@@ -187,7 +187,7 @@ export function gateMesh(c0, c1) {
     stone.push(part(Box(20 * u, 14 * u, 24 * u), i === 3 ? '#2c2a35' : '#433f50', { x: Math.cos(a) * r, y: 100 * u + Math.sin(a) * r * 0.75, rz: a - Math.PI / 2 }));
   }
   stone.push(part(Box(54 * u, 6 * u, 4 * u), '#2c2a35', { y: 2 * u, z: 6 * u }));
-  const arch = new THREE.Mesh(merge(stone), vtoon(0x6a5ab8));
+  const arch = new THREE.Mesh(merge(stone), vtoon(0x6a5ab8, true, 'stone'));
   G.add(arch);
   const col0 = new THREE.Color(`rgb(${c0})`), col1 = new THREE.Color(`rgb(${c1})`);
   const portal = new THREE.Mesh(new THREE.CircleGeometry(1, 32), additive(col0.clone().multiplyScalar(1.4), 0.9, swirlTex()));
@@ -230,7 +230,7 @@ export function townGateMesh(biome, half, wall) {
   P.push(part(Box(12 * u, 10 * u, (half + 22) * 2 * u), st.wood, { y: 96 * u })); // the beam over the road
   P.push(part(Box(2 * u, 36 * u, 40 * u), '#7a1e1e', { x: 7 * u, y: 74 * u }));
   P.push(part(Box(2.5 * u, 8 * u, 14 * u), '#d8a84a', { x: 7 * u, y: 80 * u }));
-  G.add(new THREE.Mesh(merge(P), vtoon(0)));
+  G.add(new THREE.Mesh(merge(P), vtoon(0, true, 'stone')));
   const lamps = [];
   for (const s of [-1, 1]) {
     const lamp = new THREE.Mesh(Box(10 * u, 12 * u, 10 * u), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc070).multiplyScalar(2) }));
@@ -295,10 +295,10 @@ export function chestMesh(lord) {
   const G = new THREE.Group(), u = S * (lord ? 1.35 : 1);
   const body = [part(Box(60 * u, 34 * u, 38 * u), '#6b3f1f', { y: 17 * u })];
   for (const bx of [-26, 0, 26]) body.push(part(Box(8 * u, 35 * u, 39 * u), '#c9a24a', { x: bx * u, y: 17 * u }));
-  G.add(new THREE.Mesh(merge(body), vtoon(0xffc060)));
-  const lidC = new THREE.Mesh(merge([part(new THREE.CylinderGeometry(19 * u, 19 * u, 60 * u, 10, 1, false, 0, Math.PI), '#7a4a24', { rz: Math.PI / 2 })]), vtoon(0xffc060));
+  G.add(new THREE.Mesh(merge(body), vtoon(0xffc060, true, 'wood')));
+  const lidC = new THREE.Mesh(merge([part(new THREE.CylinderGeometry(19 * u, 19 * u, 60 * u, 10, 1, false, 0, Math.PI), '#7a4a24', { rz: Math.PI / 2 })]), vtoon(0xffc060, true, 'wood'));
   lidC.position.y = 34 * u; G.add(lidC);
-  const lidO = new THREE.Mesh(merge([part(Box(60 * u, 6 * u, 26 * u), '#5a3418', {})]), vtoon(0xffc060));
+  const lidO = new THREE.Mesh(merge([part(Box(60 * u, 6 * u, 26 * u), '#5a3418', {})]), vtoon(0xffc060, true, 'wood'));
   lidO.position.set(0, 46 * u, -22 * u); lidO.rotation.x = -1.2; G.add(lidO);
   const chains = new THREE.Mesh(merge([
     part(Box(76 * u, 3 * u, 3 * u), '#9a9aaa', { y: 26 * u, z: 20 * u, rz: 0.45 }), part(Box(76 * u, 3 * u, 3 * u), '#9a9aaa', { y: 26 * u, z: 20 * u, rz: -0.45 }),
@@ -349,7 +349,7 @@ export function homeMesh(h, biome) {
     fire.position.set(20 * u, 12 * u, 0); fire.userData.flicker = h.x % 9; G.add(fire);
     G.add(groundGlow(20, 0, 70, new THREE.Color(0xff8a40), 0.45));
   }
-  if (P.length) G.add(new THREE.Mesh(merge(P), vtoon(0x6a4a3a)));
+  if (P.length) G.add(new THREE.Mesh(merge(P), vtoon(0x6a4a3a, true, 'wood')));
   for (const [x, y, z, w, hh, c] of lit) { // a lit window / door: unlit bright face
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w * u, hh * u), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.6) }));
     m.position.set(x * u, y * u, (z + 0.6) * u); m.userData.flicker = (h.x + x) % 7; G.add(m);
@@ -373,7 +373,7 @@ export function bridgesMesh(spots, lava) {
       for (const pz of [-len / 2, 0, len / 2]) { const [x, z] = at(s * wid / 2, pz); P.push(part(Cyl(0.16, 0.2, 0.75, 6), post, { x: x * S, y: 0.38, z: z * S })); }
     }
   }
-  return new THREE.Mesh(merge(P), vtoon(0x6a4a2a));
+  return new THREE.Mesh(merge(P), vtoon(0x6a4a2a, true, 'wood'));
 }
 
 // a flat ribbon along each river (water sheen / glowing lava), game units → metres
@@ -399,7 +399,7 @@ export function riverRibbon(rivers, width, y = 0.03) {
 // signpost at an exit: a post and a board with the town's name
 export function signMesh(text, dir) {
   const G = new THREE.Group();
-  const post = new THREE.Mesh(merge([part(Cyl(3 * S, 3.5 * S, 56 * S, 5), '#4a311c', { y: 28 * S })]), vtoon(0));
+  const post = new THREE.Mesh(merge([part(Cyl(3 * S, 3.5 * S, 56 * S, 5), '#4a311c', { y: 28 * S })]), vtoon(0, true, 'wood'));
   G.add(post);
   const c = document.createElement('canvas'); c.width = 256; c.height = 48;
   const g = c.getContext('2d');

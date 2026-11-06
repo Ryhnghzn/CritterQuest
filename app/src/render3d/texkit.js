@@ -5,7 +5,7 @@
 
 export const DETAIL_SIZE = 128;
 // metres per tile repeat (the shader samples by world position)
-export const DETAIL_SCALE = { plaster: 3.2, stone: 2.4, wood: 1.6, roof: 1.8, log: 1.6, thatch: 1.4 };
+export const DETAIL_SCALE = { plaster: 3.2, stone: 2.4, wood: 1.6, roof: 1.8, log: 1.6, thatch: 1.4, rock: 2.2, soil: 5, sand: 6, snow: 5, ash: 4.5 };
 
 function hash(x, y, s) { let h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // value noise that repeats every px cells across and py cells up (so the tile wraps)
@@ -66,6 +66,34 @@ const PATTERNS = {
     const layer = Math.floor(v * 4), lv = v * 4 - layer;
     let k = 0.86 + (pnoise(u * 64, v * 8, 64, 61 + layer, 8) - 0.5) * 0.5 + lv * 0.18;
     if (lv < 0.12) k *= 0.7;
+    return k;
+  },
+  // natural rock: broad mottling, a few dark cracks, lichen-like speckles (no blocks)
+  rock(u, v) {
+    let k = 1 + (fbm(u, v, 71, 3) - 0.5) * 0.42 + (pnoise(u * 24, v * 24, 24, 72) - 0.5) * 0.12;
+    if (Math.abs(fbm(u, v, 73, 2) - 0.5) < 0.012) k *= 0.62;
+    if (pnoise(u * 40, v * 40, 40, 74) > 0.86) k *= 1.12;
+    return k;
+  },
+  // ground (horizontal, under the painted tile): soil clods and pebbles that read on grass and road alike
+  soil(u, v) {
+    let k = 1 + (fbm(u, v, 81, 4) - 0.5) * 0.3;
+    const c = pnoise(u * 48, v * 48, 48, 82);
+    if (c > 0.82) k *= 1.14; else if (c < 0.14) k *= 0.8;          // pebbles catch light, dents hold shade
+    if (Math.abs(fbm(u, v, 83, 3) - 0.5) < 0.008) k *= 0.85;        // hairline ruts
+    return k;
+  },
+  sand(u, v) { // wind ripples along u with a soft drift
+    const w = Math.sin((v * 22 + fbm(u, v, 91, 2) * 3) * Math.PI * 2);
+    return 1 + w * 0.08 + (fbm(u, v, 92, 4) - 0.5) * 0.22 + (pnoise(u * 64, v * 64, 64, 93) - 0.5) * 0.06;
+  },
+  snow(u, v) { // soft drifts and a fine crust
+    return 1 + (fbm(u, v, 101, 3) - 0.5) * 0.22 + (pnoise(u * 64, v * 64, 64, 102) - 0.5) * 0.1;
+  },
+  ash(u, v) { // cracked crust: dark seams between plates
+    let k = 1 + (fbm(u, v, 111, 4) - 0.5) * 0.28;
+    const seam = Math.min(Math.abs(fbm(u, v, 112, 3) - 0.5), Math.abs(fbm(u, v, 113, 4) - 0.5));
+    if (seam < 0.01) k *= 0.6;
     return k;
   },
 };

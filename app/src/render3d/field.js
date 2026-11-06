@@ -8,7 +8,7 @@
 // monsters, ground effects and numbers come from Actors (actors.js). Light follows the
 // in-game clock; Tanah Gerhana is always dusk-violet.
 import * as THREE from 'three';
-import { S, sharp, SHARP, muted } from './stage.js';
+import { S, sharp, SHARP, muted, detailed, setDetail } from './stage.js';
 import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { dispose } from './dungeon.js';
@@ -35,6 +35,9 @@ const FOG_NIGHT = 0x06070f;
 // the fog bank past the edges (by day; it sinks towards FOG_BANK_NIGHT at night)
 const FOG_BANK = { forest: 0xa8b8ae, ice: 0xdde8f4, desert: 0xc8b090, volcano: 0x7a5a50, eclipse: 0x8a6ac0 };
 const FOG_BANK_NIGHT = 0x1a1e2a;
+// Tampilan Matang (§36): the surface under the painted ground, and on stone-like props
+const GROUND_KIND = { desert: 'sand', ice: 'snow', volcano: 'ash', eclipse: 'ash' };
+const PROP_KIND = { rock: 'rock', floatrock: 'rock', icerock: 'rock', stone: 'rock', column: 'rock' };
 const LIGHT_K = { ice: 0.5, desert: 0.9 }; // pale snow would glare (and bloom) under the forest's light
 // how far (radius units) a prop sinks when it stands between the hero and the camera
 const SINK = { rock: 0.6, icerock: 0.9, floatrock: 1.4, crystal: 1.3, cactus: 1.7 };
@@ -78,7 +81,7 @@ export class Field25 {
     for (let i = 0; i < 16; i++) {
       const c = document.createElement('canvas'), tex = canvasTexture(c);
       tex.anisotropy = SHARP.aniso;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(TS * S, TS * S), muted(new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 })));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(TS * S, TS * S), muted(detailed(new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4 }), 'soil')));
       m.rotation.x = -Math.PI / 2; m.visible = false; sc.add(m);
       this.tiles.push({ ix: 0, iy: 0, used: false, ready: false, c, tex, mesh: m, pat: null });
     }
@@ -91,6 +94,7 @@ export class Field25 {
     if (this.regionGroup) { sc.remove(this.regionGroup); dispose(this.regionGroup); for (const k of this.kinds.values()) k.mesh.geometry.dispose(); }
     const G = this.regionGroup = new THREE.Group(); sc.add(G);
     this.mapRef = map; this.biome = biome;
+    for (const tl of this.tiles) setDetail(tl.mesh.material, GROUND_KIND[biome] || 'soil');
     this.base.material.color.set(EDGE[biome] || EDGE.forest);
     // the 2D ground painter sees a map with no solids, gates, homes or signposts: those stand up in 3D
     this.ghost = {
@@ -115,7 +119,7 @@ export class Field25 {
     this.kinds = new Map();
     for (const [kind, n] of count) {
       const { geo, rim } = propGeometry(kind, biome), cap = Math.min(n, CAP);
-      const mesh = new THREE.InstancedMesh(geo, vtoon(rim), cap);
+      const mesh = new THREE.InstancedMesh(geo, vtoon(rim, true, PROP_KIND[kind] || null), cap);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.setColorAt(0, _c.setScalar(1));
       mesh.count = 0; mesh.frustumCulled = false; // bounds change as instances stream in

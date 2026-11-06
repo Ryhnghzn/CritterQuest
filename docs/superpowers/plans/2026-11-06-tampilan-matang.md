@@ -29,7 +29,10 @@
 - [x] **A2.4** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A2: material bangunan kota`.
 
 ## Bagian A3 — Material wilayah
-- [ ] Tanah & jalan wilayah lebih bertekstur (rumput, tanah, batu jalan), props wilayah (`fieldprops.js`, `fieldkit.js`).
+- [x] **A3.1** `texkit.js`: pola `rock` (batu alam), `soil`, `sand`, `snow`, `ash` (tanah per bioma).
+- [x] **A3.2** Tanah wilayah 3D: peta detail di atas lukisan tanah (lukisan 2D tidak diubah, jalur `?2d` tetap); diganti per bioma lewat `setDetail()`.
+- [x] **A3.3** Props: batu, batu es, batu melayang, batu tegak, tiang runtuhan → `rock`; gerbang dungeon & gerbang kota → `stone`; peti, rumah persembunyian, jembatan, papan arah → `wood`.
+- [x] **A3.4** `npm test`, `npm run build`, cek pemilik → commit `Tampilan matang A3: material tanah & props wilayah`.
 
 ## Bagian A4 — Dungeon & interior
 - [ ] Lantai & dinding 4 tema dungeon dan interior rumah bertekstur.

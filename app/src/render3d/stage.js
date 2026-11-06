@@ -52,10 +52,11 @@ function detailTex(kind) {
   return t;
 }
 export function detailed(m, kind) {
-  const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey(), map = detailTex(kind), scale = DETAIL_SCALE[kind];
+  const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey();
+  const u = m.userData.detail = { map: { value: detailTex(kind) }, scale: { value: DETAIL_SCALE[kind] } };
   m.onBeforeCompile = (sh, r) => {
     prev.call(m, sh, r);
-    sh.uniforms.detailMap = { value: map }; sh.uniforms.detailScale = { value: scale };
+    sh.uniforms.detailMap = u.map; sh.uniforms.detailScale = u.scale;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vDPos;\nvarying vec3 vDN;')
       .replace('#include <project_vertex>', `#include <project_vertex>
@@ -73,6 +74,8 @@ vDPos = (modelMatrix * dWp).xyz; vDN = mat3(modelMatrix) * dN;`);
   m.customProgramCacheKey = () => `detail|${prevKey}`;
   return m;
 }
+// swap a detailed material's surface (the region ground changes with the biome)
+export function setDetail(m, kind) { m.userData.detail.map.value = detailTex(kind); m.userData.detail.scale.value = DETAIL_SCALE[kind]; }
 
 const steps = new Uint8Array([70, 70, 70, 255, 150, 150, 150, 255, 255, 255, 255, 255]);
 let gradientMap = null;
