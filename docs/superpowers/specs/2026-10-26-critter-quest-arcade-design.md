@@ -1214,3 +1214,13 @@ Dengan mouse (PC, mode serang otomatis mati), skill yang butuh arah atau titik t
 Penanda per jenis skill (`run/aim.js`, digambar `render/aim.js` di atas dunia 2.5D maupun 2D): proyektil & garis & terjang → jalur berpanah sepanjang jangkauan (proyektil yang meledak: lingkaran ledakan di ujung); area di titik bidik → lingkaran jangkauan maksimal (garis putus) + lingkaran area yang berhenti di batas; kipas → kerucut; badai petir → jangkauan + titik awal rantai; pisau orbit → jangkauan lempar.
 
 **Tetap langsung keluar:** skill yang berpusat di pemain (buff, putaran, kipas 360°, ultimate area yang mengikuti), skill yang masih cooldown (supaya tetap ada umpan balik), mode serang otomatis, dan kontrol sentuh di HP (bidik otomatis). Logika skill (`run/skills.js`) tidak berubah: skill tetap mengarah ke posisi mouse saat dilepas. Save tidak berubah.
+
+## 38. Arah Hadap: Ikut Kamera, Berbalik seperti Kertas, Pose Depan/Belakang (permintaan pemilik 2026-11-07)
+
+Masalah: karakter, NPC, dan mount selalu terlihat menyamping, dan saat bertarung arah hadap diambil dari sumbu X dunia sehingga salah kalau kamera diputar. Contoh yang disetujui: `app/arah.html` (prototipe, tidak masuk game).
+
+- **A, arah ikut layar:** arah hadap dihitung dari arah di layar (`render3d/facing.js` `screenX`). Hero menghadap ke arah bidik, monster ke hero (atau ke arah terjangnya), warga yang berjalan ke arah jalannya, dan warga yang diam ke hero.
+- **B, berbalik seperti kertas:** saat ganti arah, gambar menyempit menjadi garis tipis lalu melebar terbalik, dengan lompatan kecil. Hero condong ke arah jalannya. Angka ada di `data/look.js` `facing` (`turn` 0,16 dtk, `hop` 4, `lean` 0,11 rad). `?lama` = langsung berbalik, tanpa lompat dan condong (A tetap berlaku).
+- **C ringan, pose depan & belakang:** hero dan NPC memakai pose depan saat berjalan mendekati kamera dan pose belakang saat menjauh. Pose depan/belakang hanya untuk berjalan dan diam. Saat menyerang, memakai skill, atau menghindar, karakter kembali menyamping menghadap bidikannya. NPC yang diam menghadap kamera. Mount, monster, dan pet tetap menyamping.
+
+Rencana: `docs/superpowers/plans/2026-11-09-arah-hadap.md`.

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Contoh Arah Hadap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a24a;--gold-d:#6e5426;--gold-l:#e8cf8e;--ink:#e8dcc4;--dim:#9a8f80}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#08060a;color:var(--ink);font-family:'Barlow',system-ui,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--gold-d)}
+.bar h1{font:700 15px 'Cinzel',serif;color:var(--gold-l);margin:0 10px 0 0;letter-spacing:1px}
+.btn{font:700 12px 'Cinzel',serif;color:var(--gold-l);background:#100c14;border:1px solid var(--gold-d);padding:7px 11px;cursor:pointer;min-height:34px}
+.btn.on{border-color:var(--gold);color:#fff1d6;background:#2a1d14}
+.split{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--gold-d);min-height:0}
+.pane{position:relative;background:#0b0810;min-height:0}
+.pane canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.pane .lbl{position:absolute;left:10px;top:8px;pointer-events:none;text-shadow:0 2px 6px #000}
+.pane .lbl b{display:block;font:700 18px 'Cinzel',serif;color:var(--gold-l)}
+.pane .lbl span{color:var(--dim);font-size:13px}
+#gallery{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.help{padding:6px 12px;color:var(--dim);font-size:12.5px;border-top:1px solid var(--gold-d)}
+@media (max-width:760px){.split{grid-template-columns:1fr;grid-template-rows:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>Arah Hadap</h1>
+  <button class="btn" id="left">⟲ Putar</button>
+  <button class="btn" id="right">Putar ⟳</button>
+  <button class="btn" id="spin">Putar otomatis</button>
+  <button class="btn" id="slow">Gerak lambat</button>
+  <button class="btn on" id="cbtn">Pose depan/belakang (C)</button>
+  <button class="btn" id="gal">Galeri pose</button>
+</div>
+<div class="split">
+  <div class="pane"><canvas id="old"></canvas><div class="lbl"><b>Lama</b><span>arah dari sumbu dunia, langsung berbalik</span></div></div>
+  <div class="pane"><canvas id="new"></canvas><div class="lbl"><b id="newname">Baru (A + B)</b><span id="newnote">arah ikut kamera, berbalik seperti kertas + condong</span></div></div>
+  <canvas id="gallery" hidden></canvas>
+</div>
+<div class="help">Hero: WASD / panah, atau ketuk tanah untuk berjalan ke sana. Kamera: geser ke samping di layar, atau Q / E. Coba putar kamera ±180°, lalu jalan ke kiri dan ke kanan.</div>
+<script type="module" src="./arah/main.js"></script>
+</body>
+</html>
