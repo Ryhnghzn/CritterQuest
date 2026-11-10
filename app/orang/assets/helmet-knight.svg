@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Helmet — knight great helm</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#1a1819;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#1a1819;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .ir{fill:#9aa1a8}.irS{fill:#6c737a}.irD{fill:#4b5056}.irH{fill:#c6ccd1}.irX{fill:#eef1f3}
+      .cr{fill:#7a2630}.crS{fill:#521820}.crH{fill:#9a3a44}
+      .rv{fill:#c9cfd3;stroke:#1a1819;stroke-width:1.1}
+      .slot{fill:#0e0c0d}
+    </style>
+    <clipPath id="helmC"><path d="M202,122 C200,84 222,56 256,54 C290,56 312,84 310,122 L308,160 C304,176 284,188 256,190 C228,188 208,176 204,160 Z"/></clipPath>
+    <clipPath id="plumeC"><path d="M242,60 C236,44 238,26 248,16 C251,28 257,32 262,24 C266,32 272,34 276,26 C280,40 276,54 270,62 Z"/></clipPath>
+  </defs>
+  <g transform="translate(256,171) scale(0.86) translate(-256,-171)">
+    <!-- plume -->
+    <path class="cr" d="M242,60 C236,44 238,26 248,16 C251,28 257,32 262,24 C266,32 272,34 276,26 C280,40 276,54 270,62 Z"/>
+    <g clip-path="url(#plumeC)">
+      <path class="crS" d="M260,20 C266,34 270,48 266,64 L284,64 L284,20 Z"/>
+      <path class="crH" d="M244,30 C244,40 246,50 250,58 L246,60 C240,50 240,40 244,30 Z"/>
+    </g>
+    <path class="ln" d="M242,60 C236,44 238,26 248,16 C251,28 257,32 262,24 C266,32 272,34 276,26 C280,40 276,54 270,62"/>
+    <path class="fn" stroke="#3a1015" d="M252,58 C250,46 252,36 256,30 M262,58 C262,48 266,40 270,34"/>
+    <path class="ir" d="M248,52 L264,52 L265,62 L247,62 Z"/>
+    <path class="ln" d="M248,52 L264,52 L265,62 L247,62 Z"/>
+
+    <!-- bevor / neck flare -->
+    <path class="ir" d="M222,180 Q256,196 290,180 L300,200 Q256,218 212,200 Z"/>
+    <path class="irS" d="M256,188 Q276,186 290,180 L300,200 Q280,210 256,212 Z"/>
+    <path class="ln" d="M222,180 Q256,196 290,180 L300,200 Q256,218 212,200 Z"/>
+    <path class="fn" d="M216,192 Q256,208 296,192"/>
+
+    <!-- helm shell -->
+    <path class="ir" d="M202,122 C200,84 222,56 256,54 C290,56 312,84 310,122 L308,160 C304,176 284,188 256,190 C228,188 208,176 204,160 Z"/>
+    <g clip-path="url(#helmC)">
+      <path class="irS" d="M256,50 L320,50 L320,196 L256,196 Z"/>
+      <path class="irD" d="M290,58 C306,80 312,120 306,196 L320,196 L320,50 Z"/>
+      <path class="irS" d="M196,100 C206,130 206,160 214,196 L196,196 Z"/>
+      <path class="irH" d="M216,104 C214,84 226,66 244,60 C234,74 228,88 228,108 Z"/>
+      <path class="irX" d="M222,96 C224,82 230,72 238,66 C233,76 230,86 229,96 Z"/>
+      <path class="irH" opacity="0.6" d="M220,136 L230,136 L232,172 L224,170 Z"/>
+      <path class="irD" opacity="0.7" d="M196,112 Q256,104 316,112 L316,118 Q256,110 196,118 Z"/>
+    </g>
+    <path class="ln" d="M202,122 C200,84 222,56 256,54 C290,56 312,84 310,122 L308,160 C304,176 284,188 256,190 C228,188 208,176 204,160 Z"/>
+    <!-- centre ridge -->
+    <path d="M256,56 L256,188" stroke="#e5eaed" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M258.5,58 L258.5,188" stroke="#1a1819" stroke-width="1" opacity="0.55"/>
+    <!-- brow band -->
+    <path class="fn" d="M203,112 Q256,102 309,112"/>
+    <path class="fn" d="M203,132 Q256,124 309,132"/>
+    <!-- eye slits -->
+    <path class="slot" d="M220,118 L250,120 L250,127 L222,126 Z"/>
+    <path class="slot" d="M292,118 L262,120 L262,127 L290,126 Z"/>
+    <path class="fn" d="M220,118 L250,120 L250,127 L222,126 Z M292,118 L262,120 L262,127 L290,126 Z"/>
+    <!-- breaths -->
+    <g class="slot">
+      <rect x="226" y="146" width="9" height="3.2" rx="1.2"/><rect x="238" y="146" width="9" height="3.2" rx="1.2"/>
+      <rect x="226" y="155" width="9" height="3.2" rx="1.2"/><rect x="238" y="155" width="9" height="3.2" rx="1.2"/>
+      <rect x="230" y="164" width="9" height="3.2" rx="1.2"/>
+      <rect x="265" y="146" width="9" height="3.2" rx="1.2"/><rect x="277" y="146" width="9" height="3.2" rx="1.2"/>
+      <rect x="265" y="155" width="9" height="3.2" rx="1.2"/><rect x="277" y="155" width="9" height="3.2" rx="1.2"/>
+      <rect x="273" y="164" width="9" height="3.2" rx="1.2"/>
+    </g>
+    <circle class="rv" cx="210" cy="118" r="2.2"/><circle class="rv" cx="302" cy="118" r="2.2"/>
+    <circle class="rv" cx="212" cy="164" r="2.2"/><circle class="rv" cx="300" cy="164" r="2.2"/>
+    <circle class="rv" cx="230" cy="180" r="2"/><circle class="rv" cx="282" cy="180" r="2"/>
+  </g>
+</svg>

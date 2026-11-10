@@ -10,7 +10,11 @@ import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
 import { drawDoll } from '../art/doll.js';
-import { makeFacing, turnTo, pose2d, screenX } from './facing.js';
+import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
+import { setFxSink, drawFx } from '../art/anime/elemfx.js';
+import { pickWing } from '../art/anime/wingpick.js';
+import { gaitRate } from '../art/hero/rig.js';
+import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
 import { auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { moveDuration } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -68,7 +72,7 @@ export class Actors {
     this.decalMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: this.decalTex, transparent: true, depthWrite: false }));
     this.decalMesh.rotation.x = -Math.PI / 2; this.decalMesh.renderOrder = 1; scene.add(this.decalMesh);
     this.heroCanvas = document.createElement('canvas');
-    this.heroTex = canvasTexture(this.heroCanvas);
+    this.heroTex = pixelTexture(canvasTexture(this.heroCanvas));
     this.hero = new THREE.Mesh(new THREE.PlaneGeometry((HX * 2) * S, (HT + HB) * S), billMat(this.heroTex, LOOK.heroBill));
     this.hero.renderOrder = 2; scene.add(this.hero);
     this.enemies = new THREE.Group(); scene.add(this.enemies);
@@ -105,6 +109,7 @@ export class Actors {
     };
     if (playing) {
       for (const h of game.hits) {
+        if (h.kind === 'orbit' && this.spells) continue; // drawn shuriken (spell3d.js)
         if (h.kind === 'orbit') { // the giant shuriken circling the hero (the flat shape is on the ground decal)
           put(h.x, h.y, PROJ_H, h.r * 1.8 + 10, '#dfe6f2', 0.9);
           put(h.x, h.y, PROJ_H, h.r * 0.8 + 4, '#ffffff', 1);
@@ -112,6 +117,7 @@ export class Actors {
         }
         if (h.kind !== 'proj' || h.dead || (h.delay > 0 && !h.hover)) continue; // a delayed arrow is still being drawn back
         if (this.spells && (h.fx === 'fireball' || h.fx === 'axe' || h.fx === 'arrow' || h.fx === 'pierce')) continue; // drawn billboards instead (spell3d.js)
+        if (this.spells && h.fx === 'dagger') continue; // drawn daggers (spell3d.js)
         if (h.delay > 0) { // a dagger floating in the Dagger Circle: it pulses
           const pu = 0.5 + 0.5 * Math.sin(game.time * 14 + h.angle * 3);
           put(h.x, h.y, PROJ_H, 12 + pu * 8, PROJ_COLOR.dagger, 0.6 + 0.4 * pu);
@@ -199,7 +205,7 @@ export class Actors {
     const a = this.avatar, mesh = this.hero;
     mesh.visible = playing && !!a;
     if (!mesh.visible) return;
-    const k = sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(HX * 2 * k), h = Math.ceil((HT + HB) * k);
+    const k = LOOK.pixel ? LOOK.pixel.k : sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(HX * 2 * k), h = Math.ceil((HT + HB) * k);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; this.heroTex.dispose(); }
     const g = c.getContext('2d');
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
@@ -211,7 +217,7 @@ export class Actors {
     const yaw = this.stage.yaw;
     this.facing = turnTo(this.face, screenX(game.aimX, game.aimY, yaw), t).face;
     const turn = pose2d(this.face, t, screenX(game.moveX, game.moveY, yaw));
-    this.walk += moving * 0.22;
+    this.walk += moving * 0.22 * (LOOK.anime ? gaitRate(a.classId) : 1); // each anime class runs at its own cadence
     if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
     this.lastAttackT = game.attackT;
     const ph = (t - this.atkStart) / ATTACK_ANIM;
@@ -220,8 +226,13 @@ export class Actors {
     let move;
     if (this.move) { const mp = (t - this.move.t0) / this.move.dur; if (mp >= 0 && mp < 1) move = { id: this.move.id, ph: mp, dur: this.move.dur }; else this.move = null; }
     const dodge = game.dodgeT > 0 ? 1 - game.dodgeT / DODGE.duration : undefined;
+    // front / back while walking toward / away from the camera; side-on while attacking (spec §38)
+    const busy = !!move || (ph >= 0 && ph < 1) || game.attackT > 0 || dodge !== undefined;
+    viewTo(this.face, screenX(game.moveX, game.moveY, yaw), towardCam(game.moveX, game.moveY, yaw), t, busy);
+    const vw = viewNow(this.face, t), side = vw.view === 'side';
     // the gear's own effects (glow, wings, mists, sparks) are painted on the billboard, around the body
-    const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn };
+    const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn, anime: LOOK.anime };
+    const wings = LOOK.anime ? pickWing(a) : null; // anime wings (art/anime/wings.js)
     auraBack(g, 0, 0, game.fx, t, opt);
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
     if (!blink) {
@@ -230,12 +241,16 @@ export class Actors {
       if (game.dodgeT > 0) g.rotate(screenX(game.dodgeX, game.dodgeY, yaw) * 0.25);
       g.translate(0, -turn.hop); g.rotate(turn.lean);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
-      g.scale(DOLL_SCALE * turn.w * hs, DOLL_SCALE * hs);
-      const hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+      g.scale(DOLL_SCALE * (side ? turn.w : 1) * vw.squash * hs, DOLL_SCALE * hs);
+      if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []); // element effects: kept out of the pixel filter
+      let hero;
+      try { hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0, view: vw.view, turn: this.face.cur, anime: LOOK.anime, wings }); } finally { setFxSink(null); }
       drawTraitHero(g, game, t, hero);
       g.restore();
     }
     auraFront(g, 0, 0, game.fx, bestRarity(a.look.gear), t, { ...opt, level: game.level, facing: this.facing, enemies: game.enemies, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });
+    pixelateCanvas(c, LOOK.pixel); // pixel art (spec §39); nothing with ?lama
+    if (this.fxList?.length) { drawFx(g, this.fxList, new DOMMatrix()); this.fxList = null; }
     this.heroTex.needsUpdate = true;
     mesh.position.set(game.px * S, (HT - (HT + HB) / 2) * S, (game.py + 10) * S);
     mesh.rotation.y = this.stage.yaw; // face the camera
@@ -243,7 +258,7 @@ export class Actors {
 
   spriteTex(s) {
     let tex = this.texOf.get(s.img);
-    if (!tex) { tex = canvasTexture(s.img); this.texOf.set(s.img, tex); }
+    if (!tex) { tex = LOOK.pixel ? pixelTexture(canvasTexture(pixelCopy(s.img, s.ext))) : canvasTexture(s.img); this.texOf.set(s.img, tex); }
     return tex;
   }
   drawEnemies(game, t, playing) {

@@ -36,5 +36,11 @@ export const SPELL3D = {
   rain: { rate: 18, height: 6.5, fall: 0.2, stuck: 0.8, fade: 0.4 },
   star: { size: 0.9, fps: 14, glow: 1.7, light: { color: 0xffd27a, peak: 10, life: 0.3, dist: 4 } },
   thorns: { count: 9, fill: 0.85, size: 1.1 },
+  // plan B4 — Assassin. stab: the thrust reaches r × fill; poison: puffs per second over the cloud
+  stab: { fill: 1.2, h: 22, fps: 20 },
+  dagger: { size: 0.75 },
+  shuriken: { size: 1.7, fps: 20 },
+  poison: { rate: 9, size: 1.6, fps: 7, opacity: 0.6 },
+  smoke: { puffs: 12, size: 2.2 },
   arcane: { size: 1.3, fps: 18, glow: 1.5, sparks: 12, sparkSpeed: 2.5, blinkEnd: 0.1, light: { color: 0xa070ff, peak: 14, life: 0.3, dist: 4 } },
 };

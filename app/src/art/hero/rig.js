@@ -90,6 +90,30 @@ const NPC_IDLE = {
   child: (t, s, m) => [0.3 - s * 0.6 * m + Math.sin(t * 4) * 0.3, 0.6, 0.06, -Math.abs(Math.sin(t * 3)) * 2.4, 0, -0.2 + s * 0.6 * m - Math.sin(t * 4) * 0.3, 0, 0],
   stance: (t) => [1.35, 0.4, 0.08, 2.4 + Math.sin(t * 2) * 0.3, 2, 1.25, 0, 0],
 };
+// Running, one gait per class (spec §39; used when pose.gait is set — the anime heroes).
+// stride / lift (foot height) / bob (hip bounce) in skeleton units, rate = how fast the legs turn
+// over (× the walk phase), and arms(s, c, m) → the idle row while running:
+// [phi, k, lean, crouch, step, phiB, x1, x2] (s, c = sin/cos of the walk phase, m = 0..1).
+export const GAIT = {
+  warrior: { // heavy and driving: long stamping strides, the greatsword carried low, the free arm pumping
+    stride: 13, lift: 7, bob: 3, rate: 0.9,
+    arms: (s, c, m) => [0.35 - s * 0.25 * m, 0.6, 0.16 * m, 1.5 * m, 0, 0.9 + s * 0.7 * m, 0, 0],
+  },
+  archer: { // light and springy: high knees, the bow held low in front, the string hand pumping
+    stride: 12, lift: 10, bob: 2.4, rate: 1.1,
+    arms: (s, c, m) => [0.85 + s * 0.15 * m, 1.3, 0.13 * m, 0.5 * m, 0, -0.1 + s * 0.8 * m, 0, 0],
+  },
+  mage: { // gliding: short steps under the robe, upright, the staff steady, barely any bounce
+    stride: 7, lift: 3, bob: 0.5, rate: 1.15, float: 1.6,
+    arms: (s, c, m) => [0.42 + s * 0.06 * m, Math.PI - 0.12, 0.03 * m, 0, 0, -0.05 + s * 0.25 * m, 0, 0],
+  },
+  assassin: { // a low, fast sprint leaning hard forward, both arms swept back with the daggers
+    stride: 14, lift: 6, bob: 1.2, rate: 1.25,
+    arms: (s, c, m) => [-0.7 + s * 0.12 * m, 2.84, 0.2 + 0.36 * m, 3.2 + 2.2 * m, 0, -0.8 - s * 0.12 * m, 2.84, 0],
+  },
+};
+export const gaitRate = (classId) => GAIT[classId]?.rate || 1;
+
 const pad = (row) => { const r = row.slice(); while (r.length < 10) r.push(0); return r; };
 
 // Skill moves (plan "Gaya D" §3). Rows: [phase, phi, k, lean, crouch, step, phiB, x1, x2, lift]
@@ -152,12 +176,13 @@ export function rig(classId, pose) {
   const C = CLASSES[classId] || CLASSES.warrior;
   const a = pose.attack ?? -1, prof = pose.snappy ? 'snappy' : 'slow';
   const s = Math.sin(walk), c = Math.cos(walk);
-  const bob = moving ? -Math.abs(s) * 2 * moving * C.bob : Math.sin(t * 2) * 0.45 * C.bob;
-  const stride = 10 * moving;
-  const fF = { x: 4 + s * stride, y: -2.5 - Math.max(0, c) * 6 * moving };
-  const fB = { x: -4 - s * stride, y: -2.5 - Math.max(0, -c) * 6 * moving };
+  const G = pose.gait && moving > 0 ? GAIT[classId] : null;
+  const bob = moving ? -Math.abs(s) * 2 * moving * (G ? G.bob : C.bob) - (G?.float || 0) * moving : Math.sin(t * 2) * 0.45 * C.bob;
+  const stride = (G ? G.stride : 10) * moving, footLift = (G ? G.lift : 6) * moving;
+  const fF = { x: 4 + s * stride, y: -2.5 - Math.max(0, c) * footLift };
+  const fB = { x: -4 - s * stride, y: -2.5 - Math.max(0, -c) * footLift };
 
-  const idle = [...C.idle(s, moving, t, pose.kind), 0];
+  const idle = [...(G ? G.arms(s, c, moving) : C.idle(s, moving, t, pose.kind)), 0];
   let [phi, k, lean, crouch, step, phiB, x1, x2, lift] = idle;
   let swing = 0, trail = 0, flip = 1;
   const M = pose.move && MOVES[classId]?.[pose.move.id];

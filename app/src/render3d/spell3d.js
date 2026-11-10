@@ -43,6 +43,11 @@ const MAKE = {
   spear: () => FX.lightSpear(C.detail),
   star: () => FX.star(C.detail),
   thorns: () => FX.thorns(C.detail),
+  stab: () => FX.stab(C.detail),
+  dagger: () => [FX.dagger(C.detail)],
+  shuriken: () => FX.shuriken(C.detail),
+  poison: () => FX.poisonPuff(C.detail),
+  aring: () => FX.novaRing(1, C.detail, 'arcane'),
 };
 const frames = (id) => FRAMES[id] || (FRAMES[id] = MAKE[id]().map(tex));
 
@@ -192,10 +197,19 @@ export class Spell3D {
     this.light(P.light.color, P.light.peak, P.light.life, P.light.dist, x, 20, y);
     this.burst(x * S, 0.3, y * S, Math.round(P.sparks * mul), 3.5, FIRE_SPARKS, 0.7, 8, 2.5);
   }
-  dust(x, y, mul) {
+  dust(x, y, mul, size = C.dust.size) {
     if (Math.random() > mul + 0.2) return;
     const D = C.dust, fr = frames('dust')[0];
-    this.add('dust', x + (Math.random() - 0.5) * 10, y, { ax: 0.5, ay: 0.8, m: D.size / fr.w * (0.8 + Math.random() * 0.5), fps: D.fps, flip: Math.random() < 0.5 });
+    this.add('dust', x + (Math.random() - 0.5) * 10, y, { ax: 0.5, ay: 0.8, m: size / fr.w * (0.8 + Math.random() * 0.5), fps: D.fps, flip: Math.random() < 0.5 });
+  }
+  // ---- Assassin (plan B4) --------------------------------------------------------------
+  thrust(h, yaw) {
+    const T = C.stab, a = h.angle || 0, e = this.add('stab', h.x, h.y, { ax: 4 / 46, ay: 0.5, h: T.h, m: (h.r * T.fill * S) / 40, fps: T.fps, glow: 1.4 });
+    if (e) e.roll = screenAngle(Math.cos(a), Math.sin(a), yaw);
+  }
+  puff(x, y) {
+    const P = C.poison, fr = frames('poison')[0];
+    this.add('poison', x, y, { ax: 0.5, ay: 0.75, m: (P.size / fr.w) * (0.7 + Math.random() * 0.6), fps: P.fps, opacity: P.opacity, glow: 1.2, flip: Math.random() < 0.5 });
   }
   // ---- Archer (plan B4) ----------------------------------------------------------------
   // an arrow dropping out of the sky onto (x, y), then left standing in the ground for a moment
@@ -240,6 +254,20 @@ export class Spell3D {
     if (!playing) { this.clear(); return; }
     const live = new Set();
     for (const h of game.hits) {
+      if (h.kind === 'orbit' || (h.kind === 'proj' && h.fx === 'dagger' && !h.dead && (!(h.delay > 0) || h.hover))) { // Assassin's blades
+        live.add(h);
+        const big = h.kind === 'orbit' || h.sid === 'shuriken' || h.part === 'throw';
+        let e = this.proj.get(h);
+        if (!e) {
+          e = big ? this.add('shuriken', h.x, h.y, { ax: 0.5, ay: 0.5, h: C.flyH, m: C.shuriken.size / frames('shuriken')[0].w, fps: C.shuriken.fps, loop: true, life: 1e9 })
+            : this.add('dagger', h.x, h.y, { ax: 1, ay: 0.5, h: C.flyH, m: C.dagger.size / frames('dagger')[0].w, life: 1e9 });
+          if (!e) continue;
+          this.proj.set(h, e);
+        }
+        e.x = h.x; e.y = h.y;
+        if (!big) e.roll = screenAngle(h.vx || Math.cos(h.angle), h.vy || Math.sin(h.angle), yaw);
+        continue;
+      }
       if (h.kind === 'proj') {
         if ((h.fx === 'arrow' || h.fx === 'pierce') && !h.dead && !(h.delay > 0)) { // Archer: drawn arrows, the dragon's lance of light
           live.add(h);
@@ -285,11 +313,16 @@ export class Spell3D {
       if (h.delay > 0) continue;
       // Warrior (plan B4): the swoosh of a sword swing, a whirl following the hero, pillars of the fissure
       if (h.fx === 'slash' && !this.seen.has(h)) { this.seen.add(h); this.swoosh(h, yaw); }
+      if (h.fx === 'stab' && !this.seen.has(h)) { this.seen.add(h); this.thrust(h, yaw); }
+      if (h.sid === 'poison' && h.life > 0) for (let i = Math.floor(C.poison.rate * mul * dt + Math.random()); i > 0; i--) {
+        const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * h.r * 0.9;
+        this.puff(h.x + Math.cos(a) * d, h.y + Math.sin(a) * d * 0.9);
+      }
       if (h.fx === 'quake' && !this.seen.has(h)) { this.seen.add(h); this.pillar(h.x, h.y, h.r, mul); }
       if (h.fx === 'spin' && h.life > 0) {
         live.add(h);
         let e = this.proj.get(h);
-        if (!e) { e = this.add('whirl', h.x, h.y, { flat: true, h: C.whirl.h, m: (h.r * C.whirl.fill * S) / 40, fps: C.whirl.fps, loop: true, life: 1e9, glow: 1.15 }); if (e) { e.spin = -9; this.proj.set(h, e); } }
+        if (!e) { e = this.add('whirl', h.x, h.y, { flat: true, h: C.whirl.h, m: (h.r * C.whirl.fill * S) / 40, fps: C.whirl.fps, loop: true, life: 1e9, glow: 1.15 }); if (e) { e.spin = -9; if (h.sid === 'thousandshadows') e.mesh.material.color.set(0xc09aff).multiplyScalar(1.3); this.proj.set(h, e); } }
         if (e) { e.x = h.x; e.y = h.y; }
       }
       // Archer: arrows rain on the spot; thorns spring up in the trap
@@ -324,6 +357,9 @@ export class Spell3D {
         if (cp.id === 'manashield') this.arcane(game.px, game.py, 34, mul, 1.6);
         if (cp.id === 'shout') this.shock(game.px, game.py, 115, mul, GOLD_SPARKS);
         if (cp.id === 'warcry') this.shock(game.px, game.py, 90, mul, RED_SPARKS);
+        if (cp.id === 'smoke') for (let i = 0; i < C.smoke.puffs; i++) { const a = (i / C.smoke.puffs) * Math.PI * 2; this.dust(game.px + Math.cos(a) * 40, game.py + Math.sin(a) * 30, 1, C.smoke.size); }
+        if (cp.id === 'assassinate') { this.add('aring', game.px, game.py, { flat: true, m: (80 * S) / C.shock.ringR, fps: C.shock.fps, glow: 1.4 }); this.burst(game.px * S, 0.8, game.py * S, Math.round(20 * mul), 2.5, ARCANE_SPARKS, 0.6, 1, 1); }
+        if (cp.id === 'shadow') { this.arcane(game.dashFromX ?? game.px, game.dashFromY ?? game.py, 30, mul); this.pending.push({ t: 0.18, id: 'shadow' }); }
         if (cp.id === 'hawk') this.shock(game.px, game.py, 70, mul * 0.6, GOLD_SPARKS);
         if (cp.id === 'leap') this.dust(game.dashFromX ?? game.px, game.dashFromY ?? game.py, mul);
         if (cp.id === 'charge') { this.dust(game.dashFromX ?? game.px, game.dashFromY ?? game.py, mul); this.dashDust = 0.25; }

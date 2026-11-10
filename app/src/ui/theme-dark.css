@@ -347,7 +347,8 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 #ptsbadge{position:absolute;right:112px;top:4px;z-index:6;min-width:20px;height:20px;padding:0 5px;display:grid;place-items:center;
   font:700 12px/1 'Barlow',sans-serif;color:#0d3b28;background:linear-gradient(180deg,#8ff5c8,#3fd496);border:1px solid #0d3b28;
   box-shadow:0 0 10px rgba(143,245,200,.8);animation:cq-ptspulse 1.2s ease-in-out infinite;pointer-events:none}
-@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#ptsbadge{zoom:.72}}
+/* smaller on a phone in landscape — sized directly: zoom would also shrink right/top and drop the badge on Jeda */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#ptsbadge{min-width:15px;height:15px;padding:0 4px;font-size:9px;right:114px;top:6px}}
 #ui #charbtn.alert{--cq-edge:#8ff5c8;color:#8ff5c8}
 @keyframes cq-ptspulse{50%{transform:scale(1.18);box-shadow:0 0 18px rgba(143,245,200,1)}}
 

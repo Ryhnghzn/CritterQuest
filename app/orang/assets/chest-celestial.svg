@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Chest — celestial plate</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#1f2433;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#1f2433;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round}
+      .wp{fill:#eef1f6}.wpS{fill:#bcc6d4}.wpD{fill:#8b97ab}.wpH{fill:#ffffff}
+      .gd{fill:#d8b45f}.gdS{fill:#a07f38}.gdH{fill:#f6e2a2}
+      .cl{fill:#26396e}.clS{fill:#18264d}.clH{fill:#3a529a}
+      .az{fill:#5cc8ff}.azC{fill:#e4f8ff}
+      .gt{fill:none;stroke:#c9a24c;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      .fl{fill:none;stroke:#d8b45f;stroke-width:1.4;stroke-linecap:round}
+      .fe{fill:#f3f5fa}.feS{fill:#d3dbe8}.feD{fill:#aab6ca}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    
+  </defs>
+
+<g id="armL">
+
+  <path class="cl" d="M152,250 L201,250 L196,304 L149,304 Z"/><path class="ln" d="M152,250 L201,250 L196,304 L149,304 Z"/>
+<path class="wp" d="M150,298 L192,298 C190,320 186,340 184,360 C180,390 176,414 173,442 L142,442 C144,404 146,360 148,330 Z" />
+<clipPath id="vamC"><path d="M150,298 L192,298 C190,320 186,340 184,360 C180,390 176,414 173,442 L142,442 C144,404 146,360 148,330 Z"/></clipPath><g clip-path="url(#vamC)"><path class="wpS" d="M176,290 L200,290 L182,450 L164,450 Z"/><path class="wpH" d="M154,306 L160,306 L152,432 L147,432 Z"/></g>
+<path class="ln" d="M150,298 L192,298 C190,320 186,340 184,360 C180,390 176,414 173,442 L142,442 C144,404 146,360 148,330 Z" />
+  <path class="gt" d="M150,306 L190,306 M146,432 L174,434"/>
+  <path class="fl" d="M156,330 C164,340 170,352 168,368 C166,384 160,392 158,404"/>
+  <g filter="url(#glowBig)" fill="#5cc8ff" stroke="#5cc8ff" class="pulse"><path d="M166,374 L170.5,380 L166,386 L161.5,380 Z"/></g>
+  <path class="gd" d="M166,371 L173.5,380 L166,389 L158.5,380 Z"/><path class="ln" d="M166,371 L173.5,380 L166,389 L158.5,380 Z"/>
+  <path class="az" d="M166,374 L170.5,380 L166,386 L161.5,380 Z"/><path class="azC" d="M166,375.8 L167.8,380 L166,381.2 L163.6,379.4 Z"/>
+<path class="wp" d="M136,438 L178,436 L183,464 C183,482 173,494 160,494 C146,494 135,486 133,470 Z" />
+<clipPath id="gauC"><path d="M136,438 L178,436 L183,464 C183,482 173,494 160,494 C146,494 135,486 133,470 Z"/></clipPath><g clip-path="url(#gauC)"><path class="wpS" d="M168,430 L190,430 L190,500 L160,500 C174,486 178,470 172,440 Z"/></g>
+<path class="ln" d="M136,438 L178,436 L183,464 C183,482 173,494 160,494 C146,494 135,486 133,470 Z" />
+  <path class="fn" d="M136,458 L180,456 M136,470 L182,468 M139,482 L178,481"/>
+  <path class="gt" d="M138,448 L178,446"/>
+</g>
+<use href="#armL" transform="matrix(-1 0 0 1 512 0)"/>
+  <path class="cl" d="M205,350 L307,350 L314,440 Q256,452 198,440 Z"/><path class="ln" d="M207,362 L198,440 Q256,452 314,440 L305,362"/>
+<g id="tassetL">
+
+  <path class="wp" d="M206,376 L250,386 L248,446 L226,476 L204,452 Z"/>
+  <path class="wpS" d="M236,383 L250,386 L248,446 L234,464 Z"/>
+  <path class="wpH" d="M210,388 L215,389 L211,448 L207,446 Z"/>
+  <path class="ln" d="M206,376 L250,386 L248,446 L226,476 L204,452 Z"/>
+  <path class="gt" d="M207,448 L226,469 L245,444"/>
+  <path class="fl" d="M216,400 C224,410 232,412 240,410 M214,420 C222,430 232,432 240,430"/>
+</g>
+<use href="#tassetL" transform="matrix(-1 0 0 1 512 0)"/>
+<path class="cl" d="M228,368 L284,368 L290,568 L270,550 L256,574 L242,550 L222,568 Z" />
+<clipPath id="tabC"><path d="M228,368 L284,368 L290,568 L270,550 L256,574 L242,550 L222,568 Z"/></clipPath><g clip-path="url(#tabC)"><path class="clS" d="M262,360 L296,360 L296,580 L262,580 Z" opacity="0.8"/><path class="clH" d="M234,372 L240,372 L236,540 L230,540 Z"/></g>
+<path class="ln" d="M228,368 L284,368 L290,568 L270,550 L256,574 L242,550 L222,568 Z" />
+  <path class="gt" d="M233,376 L279,376 L284,556 L270,542 L256,564 L242,542 L228,556 Z"/>
+  <g transform="translate(256,456)">
+    <g filter="url(#glow)" fill="#7fd6ff" stroke="#7fd6ff" class="pulse"><path d="M0,-22 L5,-5 L22,0 L5,5 L0,22 L-5,5 L-22,0 L-5,-5 Z"/></g>
+    <path class="gd" d="M0,-24 L5.5,-5.5 L24,0 L5.5,5.5 L0,24 L-5.5,5.5 L-24,0 L-5.5,-5.5 Z"/><path class="fn" d="M0,-24 L5.5,-5.5 L24,0 L5.5,5.5 L0,24 L-5.5,5.5 L-24,0 L-5.5,-5.5 Z"/>
+    <circle r="4.5" class="az"/>
+  </g>
+  <path class="wp" d="M204,340 Q256,354 308,340 L310,358 Q256,374 202,358 Z"/><path class="wpS" d="M203,352 Q256,366 309,352 L310,358 Q256,374 202,358 Z"/><path class="ln" d="M204,340 Q256,354 308,340 L310,358 Q256,374 202,358 Z"/>
+  <path class="gd" d="M202,358 Q256,374 310,358 L310,366 Q256,382 202,366 Z"/><path class="ln" d="M202,358 Q256,374 310,358 L310,366 Q256,382 202,366 Z"/>
+<path class="wp" d="M236,176 C220,182 202,190 190,198 C184,222 188,246 194,266 C199,292 202,318 205,342 Q256,356 307,342 C310,318 313,292 318,266 C324,246 328,222 322,198 C310,190 292,182 276,176 C270,190 263,197 256,198 C249,197 242,190 236,176 Z" />
+<clipPath id="bpC"><path d="M236,176 C220,182 202,190 190,198 C184,222 188,246 194,266 C199,292 202,318 205,342 Q256,356 307,342 C310,318 313,292 318,266 C324,246 328,222 322,198 C310,190 292,182 276,176 C270,190 263,197 256,198 C249,197 242,190 236,176 Z"/></clipPath><g clip-path="url(#bpC)"><path class="wpS" d="M256,180 L340,180 L340,360 L256,360 Z" opacity="0.75"/><path class="wpD" d="M298,190 C312,230 316,290 310,360 L340,360 L340,190 Z" opacity="0.6"/><path class="wpH" d="M214,206 C220,236 226,270 234,300 L246,298 C238,268 232,236 228,204 Z"/><path class="wpS" opacity="0.5" d="M206,294 C226,306 286,306 306,294 L306,304 C286,316 226,316 206,304 Z"/></g>
+<path class="ln" d="M236,176 C220,182 202,190 190,198 C184,222 188,246 194,266 C199,292 202,318 205,342 Q256,356 307,342 C310,318 313,292 318,266 C324,246 328,222 322,198 C310,190 292,182 276,176 C270,190 263,197 256,198 C249,197 242,190 236,176 Z" />
+  <path class="gt" d="M238,182 C244,192 250,198 256,200 C262,198 268,192 274,182"/>
+  <path class="fl" d="M256,262 C246,276 228,280 214,272 C204,266 204,252 214,248 M256,262 C266,276 284,280 298,272 C308,266 308,252 298,248"/>
+  <path class="fl" d="M256,306 C244,318 226,322 212,318 M256,306 C268,318 286,322 300,318"/>
+  <path class="fl" d="M256,212 L256,224 M256,282 L256,334"/>
+  <g filter="url(#glowBig)" fill="#5cc8ff" stroke="#5cc8ff" class="pulse"><path d="M256,229 L267.25,244 L256,259 L244.75,244 Z"/></g>
+  <path class="gd" d="M256,226 L270.25,244 L256,262 L241.75,244 Z"/><path class="ln" d="M256,226 L270.25,244 L256,262 L241.75,244 Z"/>
+  <path class="az" d="M256,229 L267.25,244 L256,259 L244.75,244 Z"/><path class="azC" d="M256,233.5 L260.5,244 L256,247.0 L250.0,242.5 Z"/>
+  <path class="wp" d="M232,168 Q256,180 280,168 L288,188 Q256,204 224,188 Z"/><path class="wpS" d="M256,176 Q270,175 280,168 L288,188 Q272,198 256,200 Z"/><path class="ln" d="M232,168 Q256,180 280,168 L288,188 Q256,204 224,188 Z"/>
+  <path class="gt" d="M228,180 Q256,193 284,180"/>
+<g id="pauldL">
+
+  <g transform="translate(206,234) rotate(58)"><path class="wp" d="M0,0 C10,13.799999999999999 10,34.5 0,46 C-10,34.5 -10,13.799999999999999 0,0 Z"/><path class="wpS" d="M0,0 C10,13.799999999999999 10,34.5 0,46 Z"/><path class="ln" d="M0,0 C10,13.799999999999999 10,34.5 0,46 C-10,34.5 -10,13.799999999999999 0,0 Z"/><path class="gt" d="M0,5.52 L0,39.1"/></g><g transform="translate(196,226) rotate(46)"><path class="wp" d="M0,0 C10,15.6 10,39.0 0,52 C-10,39.0 -10,15.6 0,0 Z"/><path class="wpS" d="M0,0 C10,15.6 10,39.0 0,52 Z"/><path class="ln" d="M0,0 C10,15.6 10,39.0 0,52 C-10,39.0 -10,15.6 0,0 Z"/><path class="gt" d="M0,6.24 L0,44.199999999999996"/></g><g transform="translate(184,218) rotate(34)"><path class="wp" d="M0,0 C10,16.8 10,42.0 0,56 C-10,42.0 -10,16.8 0,0 Z"/><path class="wpS" d="M0,0 C10,16.8 10,42.0 0,56 Z"/><path class="ln" d="M0,0 C10,16.8 10,42.0 0,56 C-10,42.0 -10,16.8 0,0 Z"/><path class="gt" d="M0,6.72 L0,47.6"/></g>
+<path class="wp" d="M212,186 C190,172 160,172 140,188 C128,200 126,218 130,236 C150,246 182,246 214,232 Z" />
+<clipPath id="pdC"><path d="M212,186 C190,172 160,172 140,188 C128,200 126,218 130,236 C150,246 182,246 214,232 Z"/></clipPath><g clip-path="url(#pdC)"><path class="wpS" d="M124,222 C146,236 182,238 220,222 L220,260 L124,260 Z"/><path class="wpH" d="M140,200 C152,184 170,178 188,180 C170,188 156,198 146,216 C142,210 140,206 140,200 Z"/></g>
+<path class="ln" d="M212,186 C190,172 160,172 140,188 C128,200 126,218 130,236 C150,246 182,246 214,232 Z" />
+  <path class="gt" d="M132,232 C152,242 182,242 212,230"/>
+  <path class="fl" d="M150,214 C160,200 176,194 192,196 M156,224 C166,214 180,208 194,208"/>
+  <g class="drift">
+    <g filter="url(#glow)" fill="#5cc8ff" stroke="#5cc8ff" class="pulse"><path d="M150,160 L158,172 L150,184 L142,172 Z M124,186 L130,196 L124,206 L118,196 Z"/></g>
+    <path class="wp" d="M150,158 L159,172 L150,186 L141,172 Z"/><path class="wpS" d="M150,158 L159,172 L150,186 Z"/><path class="ln" d="M150,158 L159,172 L150,186 L141,172 Z"/>
+    <path class="wp" d="M124,184 L131,196 L124,208 L117,196 Z"/><path class="wpS" d="M124,184 L131,196 L124,208 Z"/><path class="ln" d="M124,184 L131,196 L124,208 L117,196 Z"/>
+    <path class="az" d="M150,166 L154,172 L150,178 L146,172 Z"/>
+  </g>
+</g>
+<use href="#pauldL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

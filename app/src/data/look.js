@@ -29,14 +29,25 @@ const MATANG = {
   illustrated: { biomes: ['forest', 'ice', 'desert', 'volcano', 'eclipse'], towns: true },
   // which way upright figures face (spec §38, render3d/facing.js): by the screen, not the world;
   // turn = seconds of the paper turn, hop = its lift (game units), lean = radians at full walk speed
-  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05 },
+  // views: front/back poses (C); viewMin = walk speed (0..1) that picks a view; viewBand = how much
+  // more toward/away than across the walk must be for front/back (and across than toward for side;
+  // in between the view is kept)
+  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25 },
+  // pixel art characters (spec §39, render3d/pixelate.js): k = pixels per game unit for the hero,
+  // townsfolk and monsters alike (the hero is ~40 units tall → ~80 px), levels = colour steps per
+  // channel, solid = alpha that counts as body (gets the outline), ink = outline colour
+  pixel: { k: 2, levels: 7, solid: 0.8, ink: [19, 11, 26] },
+  // the heroes drawn in the anime style (spec §39, art/anime): run per class, front/back views, element
+  // effects on the weapon (drawn after the pixel filter so they stay smooth); townsfolk stay as they are
+  anime: true,
   mood: { warm: 0.55, hemi: 0xb4927e, ground: 0x2c1f1a, sun: 0xffb070, fog: 0x2a1c1c, sunDir: [-11, 8, 7], sunDist: 24 },
 };
 // the look before §36, for comparing side by side
 const LAMA = {
   saturation: 1, detail: 0, exposure: 1, bloom: { strength: 0.7, radius: 0.45, threshold: 0.82 }, bloomScale: 1,
   bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1, spells: false, shadows: null, mood: null, paintGround: null, illustrated: null,
-  facing: { turn: 0, hop: 0, lean: 0, dead: 0.05 },
+  pixel: null, anime: false,
+  facing: { turn: 0, hop: 0, lean: 0, dead: 0.05, views: false, viewMin: 0.3, viewBand: 1.25 },
 };
 const old = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lama');
 export const LOOK = old ? LAMA : MATANG;

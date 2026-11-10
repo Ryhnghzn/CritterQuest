@@ -60,7 +60,7 @@ describe('createCharacter', () => {
   it('menolak masukan tidak sah', () => {
     expect(() => make({ name: '' })).toThrow();
     expect(() => make({ classId: 'ninja' })).toThrow();
-    expect(() => make({ look: { hair: 5, hairColor: 0 } })).toThrow();
+    expect(() => make({ look: { hair: 6, hairColor: 0 } })).toThrow();
     expect(() => make({ slot: 3 })).toThrow();
   });
 });

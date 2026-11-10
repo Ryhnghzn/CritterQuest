@@ -9,6 +9,7 @@ import { bountyText } from './board.js';
 import { isDone } from '../meta/bounties.js';
 import { ENEMIES } from '../data/enemies.js';
 import { tr, t } from '../i18n.js';
+import { causeText } from './death.js';
 
 // the boss waiting on a dungeon's last floor
 const bossOf = (id) => ENEMIES[Object.keys(dungeonById(id).floors.at(-1).waves.at(-1).mix).find((k) => ENEMIES[k].boss)]?.name ?? '';
@@ -16,7 +17,7 @@ const bossOf = (id) => ENEMIES[Object.keys(dungeonById(id).floors.at(-1).waves.a
 // info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
 // continueLabel: text of the button (default "Kembali ke Kota")
 export function renderResults(box, info, { onContinue, continueLabel = null }) {
-  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError, bountiesDone, uniquesFound } = info;
+  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError, bountiesDone, uniquesFound, cause } = info;
   box.replaceChildren();
   const titleText = tr(trip.died ? 'Tumbang!' : trip.cleared ? 'Dungeon Tamat!' : 'Pulang dengan Selamat');
   const title = el('h2', trip.died ? 'h bad' : 'h', titleText);
@@ -59,7 +60,9 @@ export function renderResults(box, info, { onContinue, continueLabel = null }) {
   const err = el('div', 'err', saveError ? t('Gagal menyimpan: {e}', { e: saveError }) : '');
   const next = button(continueLabel || tr('Kembali ke Kota'), 'btn', onContinue);
   next.id = 'tocamp';
-  box.append(title, where, tiles, badges);
+  box.append(title, where);
+  if (trip.died && cause) box.append(el('div', 'deathcause', causeText(cause)));
+  box.append(tiles, badges);
   if (matRow.childElementCount) box.append(matRow);
   if (loot.childElementCount) box.append(loot);
   box.append(board);

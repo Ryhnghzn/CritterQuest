@@ -10,7 +10,7 @@ import { REWARD_POP } from '../data/itemfx.js';
 import { iconCanvas } from '../art/sprites.js';
 import { RARITIES, SLOTS, MYTHIC } from '../data/items.js';
 import { CHEST_FX, MYTHIC_PICK } from '../data/itemfx.js';
-import { drawGearIcon, gearCanvas } from '../art/gear.js';
+import { drawItemIcon, gearCanvas } from '../art/gear.js';
 import { itemName, gemName } from '../meta/itemgen.js';
 import { INK } from '../art/gear.js';
 
@@ -148,7 +148,7 @@ function drawChest(g, S, dpr, p, item, color, t) {
     const s = 0.4 + p.rise * 0.9;
     g.scale(s, s);
     g.globalAlpha = Math.min(1, p.rise * 2);
-    drawGearIcon(g, item, 34, t);
+    drawItemIcon(g, item, 34, t);
     g.restore();
   }
 }

@@ -2,7 +2,7 @@
 // synthesized sounds for everything that has no file yet.
 // The context is created lazily on the first user gesture (autoplay policy).
 // Mute is persisted by the caller (save settings), not here.
-import { MUSIC, MUSIC_FADE, SOUNDS, PITCH_JITTER } from '../data/audio.js';
+import { MUSIC, MUSIC_FADE, SOUNDS, PITCH_JITTER, SKILL_SOUND } from '../data/audio.js';
 
 let ctx = null, master = null, musicGain = null, musicTimer = null, muted = false;
 let sfxGain = null, vol = { music: 0.8, sfx: 0.8 }; // Settings → Suara (spec §29): 0..1 each
@@ -42,7 +42,8 @@ function loadSounds() {
 }
 
 // Plays a file sound; false when it has none yet, so the caller falls back to its synth.
-function play(name) {
+// delay: seconds from now
+function play(name, delay = 0) {
   const s = loaded.get(name), def = SOUNDS[name];
   if (!s) return false;
   if (muted || ctx.currentTime - s.last < def.gap || s.voices >= def.max) return true; // a busy fight: skip it, no synth on top
@@ -53,7 +54,7 @@ function play(name) {
   g.gain.value = def.vol;
   src.connect(g); g.connect(sfxGain);
   src.onended = () => { s.voices--; };
-  src.start();
+  src.start(ctx.currentTime + delay);
   return true;
 }
 
@@ -85,7 +86,9 @@ export const sfx = {
   shoot() { tone(760, 0.07, 'square', 0.05, -320); },
   zap() { tone(1400, 0.09, 'sawtooth', 0.06, -900); },
   hit(kind = 'hit') { if (!play(kind)) noise(0.06, 0.07); }, // 'hit' | 'hitHard' | 'hitCrit'
-  enemyDie() { tone(320, 0.12, 'triangle', 0.1, -240); noise(0.08, 0.06); },
+  enemyDie(kind = 'dieSmall') { // 'dieSmall' | 'dieBig' | 'dieBoss'
+    if (!play(kind)) { tone(320, 0.12, 'triangle', 0.1, -240); noise(0.08, 0.06); }
+  },
   gem() { tone(880, 0.06, 'sine', 0.08, 220); },
   heart() { tone(520, 0.12, 'sine', 0.1, 260); },
   // basic attacks, by fx name (data/classes.js)
@@ -97,6 +100,7 @@ export const sfx = {
     else if (fx === 'fireball') { tone(260, 0.16, 'sawtooth', 0.05, 180); noise(0.1, 0.04); }
   },
   skill(id) {
+    if (SKILL_SOUND[id] && play(SKILL_SOUND[id])) return;
     if (id === 'spin') { noise(0.3, 0.08); tone(300, 0.3, 'sawtooth', 0.05, -120); }
     else if (id === 'shout') { tone(160, 0.35, 'square', 0.08, 60); tone(240, 0.3, 'square', 0.05, 0, 0.05); }
     else if (id === 'rain') { for (let i = 0; i < 4; i++) tone(1300 - i * 120, 0.05, 'triangle', 0.04, -500, i * 0.06); }
@@ -106,9 +110,12 @@ export const sfx = {
     else if (id === 'shadow') { noise(0.15, 0.08); tone(200, 0.15, 'sine', 0.06, 600); }
     else if (id === 'fan') { for (let i = 0; i < 3; i++) tone(1100, 0.04, 'square', 0.03, -400, i * 0.03); }
   },
-  dodge() { noise(0.12, 0.06); tone(300, 0.12, 'sine', 0.05, 500); },
+  ult(id) { if (!(SKILL_SOUND[id] && play(SKILL_SOUND[id]))) this.boss(); },
+  noEnergy() { if (!play('noEnergy')) tone(200, 0.1, 'square', 0.05, -60); },
+  dodge() { if (!play('dodge')) { noise(0.12, 0.06); tone(300, 0.12, 'sine', 0.05, 500); } },
   fail() { tone(330, 0.12, 'triangle', 0.1, -80); tone(247, 0.22, 'triangle', 0.1, -60, 0.1); }, // a forge roll that missed
-  hurt() { tone(220, 0.2, 'sawtooth', 0.16, -140); noise(0.12, 0.1); },
+  hurt(heavy = false) { if (!play(heavy ? 'hurtHeavy' : 'hurtLight')) this.blast(); },
+  blast() { tone(220, 0.2, 'sawtooth', 0.16, -140); noise(0.12, 0.1); }, // a big telegraphed blast going off
   fanfare() { // a reward claimed: rising arpeggio, a held chord and a sparkle on top
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 'triangle', 0.11, 0, i * 0.09));
     for (const f of [523, 659, 784]) tone(f, 0.6, 'square', 0.045, 0, 0.38);
@@ -119,8 +126,9 @@ export const sfx = {
   chime() { tone(523, 0.1, 'square', 0.1); tone(659, 0.1, 'square', 0.1, 0, 0.09); tone(784, 0.16, 'square', 0.1, 0, 0.18); },
   pickCard() { tone(660, 0.08, 'square', 0.09); tone(990, 0.12, 'square', 0.09, 0, 0.07); },
   boss() { tone(110, 0.7, 'sawtooth', 0.2, -40); tone(82, 0.9, 'sawtooth', 0.18, 0, 0.25); noise(0.5, 0.08, 0.1); },
-  gameover() {
-    if (play('gameover')) return;
+  gameover() { // the player's fall, then the jingle
+    const after = play('playerDie') ? 0.8 : 0;
+    if (play('gameover', after)) return;
     tone(392, 0.18, 'triangle', 0.14); tone(311, 0.18, 'triangle', 0.14, 0, 0.16); tone(233, 0.4, 'triangle', 0.14, -60, 0.32);
   },
 };

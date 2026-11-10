@@ -13,14 +13,13 @@
 - [x] Monster (`drawEnemies`): hadap ke hero/terjang di layar, kertas + lompat
 - [x] Kota (`render3d/town.js`): hero & warga memakai `facing.js` (warga digambar ulang tiap frame saat berbalik)
 
-## Bagian 2: pose depan/belakang Warrior
-- [ ] `art/hero/views.js`: kepala depan/belakang, 5 rambut, badan Warrior depan/belakang (dari `app/arah/pose.js`), helm 4 jenis
-- [ ] `facing.js`: pilih `front`/`side`/`back` dari arah jalan di layar (pita mati), animasi pergantian
-- [ ] `drawDoll` menerima `pose.view`; serangan/skill/guling memaksa `side`
-- [ ] Hero bertarung & di kota memakai view
+## Bagian 2: pose depan/belakang Warrior — diganti gaya anime (§39)
+- [x] Pilihan pose `viewTo`/`viewNow` (`facing.js`) — dipakai gaya anime
+- [x] `drawHero` menerima `pose.view`; hero bertarung (`actors.js`) & di kota (`town.js`) memakai view
+- [x] `art/hero/views.js` + `art/hero/warriorview.js` (badan & senjata depan/belakang gaya D) **dibuang**, diganti anime (§39)
 
 ## Bagian 3: Archer, Mage, Assassin
-- [ ] Badan depan/belakang tiap kelas + senjatanya
+→ lihat plans/2026-11-09-anime-lengkap.md (diganti gaya anime §39)
 
 ## Bagian 4: NPC
-- [ ] Warga umum depan/belakang; pose depan saat diam/diajak bicara; alat pekerjaan (palu, tombak, tongkat) di pose depan
+→ lihat plans/2026-11-09-anime-lengkap.md (diganti gaya anime §39)

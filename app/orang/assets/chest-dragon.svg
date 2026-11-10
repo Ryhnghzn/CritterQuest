@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Chest — dragon knight plate</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#140f10;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#140f10;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .st{fill:#2c2528}.stS{fill:#1a1517}.stH{fill:#4d4347}.stX{fill:#8a7c80}
+      .rd{fill:#8a1f22}.rdS{fill:#561114}.rdH{fill:#c0392f}
+      .gd{fill:#c9963f}.gdS{fill:#8a6224}.gdH{fill:#f0cf7c}
+      .iv{fill:#e1d4b8}.ivS{fill:#a8977a}.ivD{fill:#6f6250}
+      .em{fill:#ff8a2a}.emC{fill:#ffe08a}
+      .gt{fill:none;stroke:#c9963f;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      .crack{fill:none;stroke:#ffb347;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    <pattern id="scale" width="12" height="9" patternUnits="userSpaceOnUse">
+      <rect width="12" height="9" fill="#7a1b1e"/>
+      <path d="M0,0 A6,7 0 0 0 12,0" fill="#93272a" stroke="#2a0a0c" stroke-width="1.1"/>
+      <path d="M-6,4.5 A6,7 0 0 0 6,4.5 M6,4.5 A6,7 0 0 0 18,4.5" fill="#8a2124" stroke="#2a0a0c" stroke-width="1.1"/>
+      <path d="M3,1.5 A3,2.5 0 0 0 7,1.5" fill="none" stroke="#c0392f" stroke-width="0.9"/>
+    </pattern>
+  </defs>
+
+<g id="armL">
+
+  <path fill="url(#scale)" d="M152,248 L201,248 L196,302 L149,302 Z"/><path class="ln" d="M152,248 L201,248 L196,302 L149,302 Z"/>
+<path class="st" d="M150,296 L192,296 C190,320 186,340 184,360 C180,390 176,414 173,442 L142,442 C144,404 146,360 148,330 Z" />
+<clipPath id="vamC"><path d="M150,296 L192,296 C190,320 186,340 184,360 C180,390 176,414 173,442 L142,442 C144,404 146,360 148,330 Z"/></clipPath><g clip-path="url(#vamC)"><path class="stS" d="M176,290 L200,290 L182,450 L164,450 Z"/><path class="stH" d="M154,304 L160,304 L152,432 L147,432 Z"/></g>
+<path class="ln" d="M150,296 L192,296 C190,320 186,340 184,360 C180,390 176,414 173,442 L142,442 C144,404 146,360 148,330 Z" />
+  <path class="st" d="M151,318 L124,296 L150,346 Z"/><path class="stH" d="M151,318 L124,296 L140,320 Z"/><path class="ln" d="M151,318 L124,296 L150,346 Z"/>
+  <g filter="url(#glow)" fill="#ff7a1a" stroke="#ff7a1a" class="pulse"><path d="M164,316 L160,350 L166,380 L160,420" fill="none" stroke-width="4"/></g>
+  <path class="crack" d="M164,316 L160,350 L166,380 L160,420"/>
+  <path class="gt" d="M146,436 L174,438"/><path class="gt" d="M152,300 L188,300"/>
+<path class="st" d="M136,438 L178,436 L183,464 C183,482 173,494 160,494 C146,494 135,486 133,470 Z" />
+<clipPath id="gauC"><path d="M136,438 L178,436 L183,464 C183,482 173,494 160,494 C146,494 135,486 133,470 Z"/></clipPath><g clip-path="url(#gauC)"><path class="stS" d="M168,430 L190,430 L190,500 L160,500 C174,486 178,470 172,440 Z"/></g>
+<path class="ln" d="M136,438 L178,436 L183,464 C183,482 173,494 160,494 C146,494 135,486 133,470 Z" />
+  <path class="fn" d="M136,458 L180,456 M136,470 L182,468 M139,482 L178,481"/>
+  <g class="iv"><path d="M141,490 L139,500 L147,492 Z"/><path d="M152,494 L152,504 L158,494 Z"/><path d="M164,494 L166,503 L170,492 Z"/></g>
+  <circle cx="158" cy="447" r="3.2" class="em"/>
+</g>
+<use href="#armL" transform="matrix(-1 0 0 1 512 0)"/>
+  <path fill="url(#scale)" d="M205,350 L307,350 L316,448 Q256,462 196,448 Z"/>
+  <path class="ln" d="M207,362 L196,448 Q256,462 316,448 L305,362"/>
+<g id="tassetL">
+
+  <path class="st" d="M204,372 L250,384 L246,440 L232,470 L216,450 L198,456 Z"/>
+  <path class="stS" d="M236,381 L250,384 L246,440 L232,470 L230,446 Z"/>
+  <path class="stH" d="M208,384 L214,385 L208,444 L203,446 Z"/>
+  <path class="ln" d="M204,372 L250,384 L246,440 L232,470 L216,450 L198,456 Z"/>
+  <path class="gt" d="M203,446 L216,442 L231,460"/>
+  <path class="crack" d="M222,392 L226,412 L220,430"/>
+</g>
+<use href="#tassetL" transform="matrix(-1 0 0 1 512 0)"/>
+  <path class="st" d="M238,380 L274,380 L270,432 L256,456 L242,432 Z"/><path class="stS" d="M256,380 L274,380 L270,432 L256,456 Z"/><path class="ln" d="M238,380 L274,380 L270,432 L256,456 L242,432 Z"/>
+  <g filter="url(#glow)" fill="#ff7a1a" stroke="#ff7a1a" class="pulse"><path d="M256,392 L256,440" stroke-width="5"/></g>
+  <path d="M256,392 L256,440" stroke="#ffc35a" stroke-width="2.2" stroke-linecap="round"/>
+<path class="st" d="M234,176 L196,188 C186,214 188,244 196,266 L204,344 L256,358 L308,344 L316,266 C324,244 326,214 316,188 L278,176 L256,198 Z" />
+<clipPath id="bpC"><path d="M234,176 L196,188 C186,214 188,244 196,266 L204,344 L256,358 L308,344 L316,266 C324,244 326,214 316,188 L278,176 L256,198 Z"/></clipPath><g clip-path="url(#bpC)"><path class="stS" d="M256,180 L340,180 L340,360 L256,360 Z"/><path class="stS" d="M182,180 C192,230 198,290 198,360 L180,360 Z"/><path class="stH" d="M212,204 L232,196 L240,276 L224,282 Z"/><path class="stX" d="M218,206 L224,204 L232,256 L227,258 Z"/><path fill="url(#scale)" d="M218,286 L294,286 L304,346 L256,358 L208,346 Z"/></g>
+<path class="ln" d="M234,176 L196,188 C186,214 188,244 196,266 L204,344 L256,358 L308,344 L316,266 C324,244 326,214 316,188 L278,176 L256,198 Z" />
+  <path class="fn" d="M218,286 L294,286 M218,286 L208,346 M294,286 L304,346"/>
+  <path class="gt" d="M236,182 L256,202 L276,182"/>
+  <path class="gt" d="M200,272 C220,286 292,286 312,272"/>
+  <g filter="url(#glow)" fill="#ff6a12" stroke="#ff6a12" class="pulse"><path d="M212,214 L224,234 L218,252 L230,270 M300,214 L290,230 L296,250 L284,268" fill="none" stroke-width="4.5"/></g>
+  <path class="crack" d="M212,214 L224,234 L218,252 L230,270 M300,214 L290,230 L296,250 L284,268"/>
+  <g filter="url(#glowBig)" fill="#ff7a1a" stroke="#ff7a1a" class="pulse"><path d="M256,224 L270,232 L256,252 L242,232 Z"/></g>
+
+  <path class="gd" d="M256,216 L276,226 L284,214 L282,236 L268,252 L256,262 L244,252 L230,236 L228,214 L236,226 Z"/>
+  <path class="gdS" d="M256,216 L276,226 L284,214 L282,236 L268,252 L256,262 Z"/>
+  <path class="ln" d="M256,216 L276,226 L284,214 L282,236 L268,252 L256,262 L244,252 L230,236 L228,214 L236,226 Z"/>
+  <path class="gdH" d="M232,222 L238,230 L246,234 L240,236 Z"/>
+  <path class="em" d="M248,234 L254,238 L248,240 Z"/><path class="em" d="M264,234 L258,238 L264,240 Z"/>
+  <path class="st" d="M204,342 L256,356 L308,342 L310,360 L256,374 L202,360 Z"/><path class="ln" d="M204,342 L256,356 L308,342 L310,360 L256,374 L202,360 Z"/>
+  <circle cx="256" cy="365" r="7" class="gd"/><circle cx="256" cy="365" r="7" class="ln"/><circle cx="256" cy="365" r="3.6" class="em"/>
+  <path class="st" d="M228,166 L256,178 L284,166 L292,192 L256,210 L220,192 Z"/><path class="stS" d="M256,178 L284,166 L292,192 L256,210 Z"/><path class="ln" d="M228,166 L256,178 L284,166 L292,192 L256,210 L220,192 Z"/>
+  <path class="gt" d="M224,186 L256,202 L288,186"/>
+<g id="pauldL">
+
+  <path fill="url(#scale)" d="M126,232 C146,246 180,248 210,234 L206,262 C180,274 148,272 130,258 Z"/>
+  <path class="ln" d="M126,232 C146,246 180,248 210,234 L206,262 C180,274 148,272 130,258 Z"/>
+  <path class="gt" d="M130,256 C150,268 180,270 205,259"/>
+  <path class="st" d="M150,180 C140,160 130,146 116,134 C138,138 156,150 168,172 Z"/><path class="stH" d="M150,180 C140,160 130,146 116,134 C130,142 144,156 156,176 Z"/><path class="ln" d="M150,180 C140,160 130,146 116,134 C138,138 156,150 168,172 Z"/>
+  <path class="st" d="M170,172 C166,150 160,132 150,116 C168,126 182,144 188,168 Z"/><path class="stH" d="M170,172 C166,150 160,132 150,116 C160,128 168,146 176,170 Z"/><path class="ln" d="M170,172 C166,150 160,132 150,116 C168,126 182,144 188,168 Z"/>
+  <path class="st" d="M190,172 C190,156 188,142 184,130 C198,140 206,154 206,176 Z"/><path class="ln" d="M190,172 C190,156 188,142 184,130 C198,140 206,154 206,176 Z"/>
+<path class="st" d="M212,184 C188,168 158,166 136,184 C122,196 118,216 122,238 C144,250 178,252 214,236 Z" />
+<clipPath id="pdC"><path d="M212,184 C188,168 158,166 136,184 C122,196 118,216 122,238 C144,250 178,252 214,236 Z"/></clipPath><g clip-path="url(#pdC)"><path class="stS" d="M118,222 C140,238 180,240 220,224 L220,260 L118,260 Z"/><path class="stH" d="M134,196 C146,180 166,174 184,176 C166,184 150,196 140,216 C136,210 134,204 134,196 Z"/><path class="stX" d="M142,194 C150,186 160,182 170,181 C160,186 152,192 146,200 Z"/></g>
+<path class="ln" d="M212,184 C188,168 158,166 136,184 C122,196 118,216 122,238 C144,250 178,252 214,236 Z" />
+  <path class="gt" d="M124,234 C146,246 178,248 211,233"/>
+  <path class="gt" d="M140,186 C160,174 186,174 206,186"/>
+  <g filter="url(#glow)" fill="#ff7a1a" stroke="#ff7a1a" class="pulse"><circle cx="170" cy="212" r="7"/></g>
+  <circle cx="170" cy="212" r="8" class="gd"/><circle cx="170" cy="212" r="8" class="ln"/>
+  <circle cx="170" cy="212" r="4.6" class="em"/><circle cx="168.6" cy="210.6" r="1.6" class="emC"/>
+</g>
+<use href="#pauldL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

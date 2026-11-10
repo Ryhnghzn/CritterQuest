@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Boots — void greaves</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#09070c;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#09070c;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .ob{fill:#2a2236}.obS{fill:#18131f}.obD{fill:#0e0b13}.obH{fill:#4a3e60}.obX{fill:#8676a8}
+      .cr{fill:#7b4dff}.crS{fill:#4a2aa8}.crH{fill:#c9b0ff}.crC{fill:#f2e8ff}
+      .vc{fill:#3a1856}.vcS{fill:#24103a}
+      .sv{fill:#9a93ad}
+      .rune{fill:none;stroke:#d7a8ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+      .gt{fill:none;stroke:#8676a8;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    
+  </defs>
+<g id="legL">
+
+<path class="ob" d="M207,698 L249,698 L256,724 C260,736 250,746 228,758 C206,746 198,736 202,724 Z" />
+<clipPath id="sabC"><path d="M207,698 L249,698 L256,724 C260,736 250,746 228,758 C206,746 198,736 202,724 Z"/></clipPath><g clip-path="url(#sabC)"><path class="obS" d="M230,690 L264,690 L264,760 L230,760 Z"/><path class="obH" d="M212,712 L220,712 L216,736 L209,734 Z"/></g>
+<path class="ln" d="M207,698 L249,698 L256,724 C260,736 250,746 228,758 C206,746 198,736 202,724 Z" />
+  <path class="gt" d="M206,712 L252,712"/>
+<path class="ob" d="M205,574 C206,620 208,660 210,700 L248,700 C248,660 249,620 251,574 Z" />
+<clipPath id="grvC"><path d="M205,574 C206,620 208,660 210,700 L248,700 C248,660 249,620 251,574 Z"/></clipPath><g clip-path="url(#grvC)"><path class="obS" d="M236,560 L262,560 L262,710 L236,710 Z"/><path class="obH" d="M210,584 L216,584 L215,690 L211,690 Z"/></g>
+<path class="ln" d="M205,574 C206,620 208,660 210,700 L248,700 C248,660 249,620 251,574 Z" />
+  <path class="ob" d="M206,600 L190,610 L207,624 Z M208,650 L192,662 L209,674 Z"/><path class="ln" d="M206,600 L190,610 L207,624 Z M208,650 L192,662 L209,674 Z"/>
+  <g filter="url(#glow)" fill="#a35cff" stroke="#a35cff" class="pulse"><path d="M228,590 L224,620 L232,640 L226,672" fill="none" stroke-width="4"/></g>
+  <path class="rune" d="M228,590 L224,620 L232,640 L226,672"/>
+<path class="ob" d="M206,544 C206,528 248,528 248,544 L246,574 C240,586 214,586 208,574 Z" />
+<clipPath id="kneeC"><path d="M206,544 C206,528 248,528 248,544 L246,574 C240,586 214,586 208,574 Z"/></clipPath><g clip-path="url(#kneeC)"><path class="obS" d="M230,520 L256,520 L256,590 L230,590 Z"/></g>
+<path class="ln" d="M206,544 C206,528 248,528 248,544 L246,574 C240,586 214,586 208,574 Z" />
+  <g transform="translate(227,548) rotate(0)">
+    <g filter="url(#glow)" fill="#a35cff" stroke="#a35cff" class="pulse"><path d="M0,0 L8,-8.5 L4.0,-28.9 L0,-34 L-4.8,-27.200000000000003 L-8,-6.800000000000001 Z"/></g>
+    <path class="cr" d="M0,0 L8,-8.5 L4.0,-28.9 L0,-34 L-4.8,-27.200000000000003 L-8,-6.800000000000001 Z"/><path class="crS" d="M0,0 L8,-8.5 L4.0,-28.9 L0,-34 Z"/>
+    <path class="crH" d="M-4.4,-8.5 L-2.4,-25.5 L-0.4,-10.2 Z"/>
+    <path class="ln" d="M0,0 L8,-8.5 L4.0,-28.9 L0,-34 L-4.8,-27.200000000000003 L-8,-6.800000000000001 Z"/><path class="fn" d="M0,0 L0,-34"/></g>
+  <g class="pulse" opacity="0.8">
+    <ellipse cx="228" cy="752" rx="34" ry="9" fill="#a35cff" opacity="0.35" filter="url(#glowBig)"/>
+    <path d="M196,746 C204,734 214,744 222,736 C230,728 240,742 250,734 C256,730 262,738 262,746" fill="none" stroke="#c9a0ff" stroke-width="2" stroke-linecap="round" opacity="0.7" filter="url(#glow)"/>
+  </g>
+</g>
+<use href="#legL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

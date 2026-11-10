@@ -1,0 +1,6 @@
+name = "critter-quest"
+compatibility_date = "2026-01-01"
+
+# Static PWA: serve the built dist/ directly (Workers Static Assets).
+[assets]
+directory = "./dist"

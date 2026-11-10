@@ -4,9 +4,9 @@ Prompt untuk membuat musik latar di generator musik AI (Suno, Udio, dll.), ditam
 untuk efek suara yang dicari sendiri. Prompt ditulis dalam bahasa Inggris karena hasil generator
 biasanya lebih baik. Penjelasan dalam bahasa Indonesia.
 
-## Status file (2026-10-31)
+## Status file (2026-11-09)
 
-**Sudah terpasang di game (17 file):**
+**Sudah terpasang di game (46 file):**
 
 | Kelompok | File | Dipakai untuk |
 |---|---|---|
@@ -15,9 +15,14 @@ biasanya lebih baik. Penjelasan dalam bahasa Indonesia.
 | Jingle | `jingle-naik-level`, `jingle-tamat`, `jingle-kalah` | Naik level, lantai bersih, kalah |
 | Serangan | `sfx-serang-pedang`, `sfx-serang-panah`, `sfx-serang-sihir`, `sfx-serang-belati` | Serangan dasar tiap kelas |
 | Kena serangan | `sfx-hit-biasa`, `sfx-hit-keras`, `sfx-hit-kritis` | Hit biasa, hit ke elite/bos, kritis |
+| Musuh mati | `sfx-mati-kecil`(2), `sfx-mati-besar`(2), `sfx-mati-bos`(3) | Musuh kecil; elite atau musuh besar; bos |
+| Pemain | `sfx-luka-ringan`(2), `sfx-luka-berat`(2), `sfx-pemain-mati`, `sfx-menghindar`, `sfx-energi-habis` | Luka berat = satu pukulan ≥ 15% HP maks |
+| Skill | `sfx-skill-putar`, `-buff`, `-api`, `-es`, `-petir`, `-tanah`, `-panah-kuat`, `-hujan-panah`, `-belati`, `-racun`, `-terjang` | Pemetaan skill → suara di `SKILL_SOUND` (`app/src/data/audio.js`) |
+| Ultimate | `sfx-ult-badai-pedang`, `-hujan-bintang`, `-hujan-meteor`, `-seribu-bayangan` | Ultimate tiap kelas |
 
-**Belum ada (45 file efek suara, masih memakai suara dari kode):** kelompok Musuh mati (3), Pemain (5),
-Skill (12), Ultimate (4), Mekanik kelas (4), Item (5), Dunia (4), Menu (8). Rinciannya di bagian C.
+**Belum ada (22 file, masih memakai suara dari kode):** `sfx-skill-jebakan`, Mekanik kelas (4), Item (5),
+Dunia (4), Menu (8). Rinciannya di bagian C. Kelompok Mekanik kelas, Dunia dan Menu baru disambungkan ke
+kode saat filenya masuk.
 
 **Variasi:** nama berakhiran angka (`sfx-hit-biasa2`, dst.) dipakai bergantian secara acak. Setelah
 menambah file, kabari aku supaya dicatat di `app/src/data/audio.js`, atau jalankan `npm run audio` lalu

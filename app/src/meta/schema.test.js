@@ -22,6 +22,11 @@ describe('validateSlot', () => {
     expect(validateSlot(c)).toEqual([]);
   });
 
+  it('menerima gaya rambut ke-6 (spec §39)', () => {
+    const c = { ...fresh(), look: { hair: 5, hairColor: 0 } };
+    expect(validateSlot(c)).toEqual([]);
+  });
+
   it.each([
     ['nama terlalu panjang', (c) => { c.name = 'x'.repeat(13); }],
     ['kelas tak dikenal', (c) => { c.classId = 'ninja'; }],

@@ -9,7 +9,9 @@ addEventListener('touchstart', (e) => {
     const d = document.createElement('div'), tg = t.target;
     d.style.cssText = `position:fixed;left:${t.clientX - 14}px;top:${t.clientY - 14}px;width:28px;height:28px;border:3px solid #ff3b6b;border-radius:50%;z-index:99;pointer-events:none;`
       + 'font:700 11px/1 system-ui;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap;text-indent:34px;padding-top:6px;box-sizing:border-box';
-    d.textContent = `${Math.round(t.clientX)},${Math.round(t.clientY)} ${tg.id || tg.className || tg.tagName} sy${Math.round(scrollY)} vv${window.visualViewport ? `${Math.round(visualViewport.offsetTop)}×${visualViewport.scale.toFixed(2)}` : '-'}`;
+    // the screen being scrolled: scrolled / scrollable px and its height, against the window and visible heights
+    const sc = tg.closest?.('.screen'), scr = sc ? ` sc${Math.round(sc.scrollTop)}/${sc.scrollHeight - sc.clientHeight} h${sc.clientHeight}` : '';
+    d.textContent = `${Math.round(t.clientX)},${Math.round(t.clientY)} ${tg.id || tg.className || tg.tagName} sy${Math.round(scrollY)} vv${window.visualViewport ? `${Math.round(visualViewport.offsetTop)}×${visualViewport.scale.toFixed(2)} vh${Math.round(visualViewport.height)}` : '-'} ih${innerHeight}${scr}`;
     document.body.append(d);
     setTimeout(() => d.remove(), 2500);
   }

@@ -8,6 +8,8 @@ import { drawMage, RIM as MAGE_RIM } from './mage.js';
 import { drawAssassin, RIM as ASSASSIN_RIM } from './assassin.js';
 import { drawNpc, archetypeOf, idleOf, RIM as NPC_RIM } from './npc.js';
 import { HAIR_PALETTE } from '../doll.js';
+import { drawAnime, animeLook } from '../anime/index.js';
+import { Z } from '../anime/kit.js';
 
 export const HERO_SCALE = 44 / 80; // keep the old doll height in the world
 const DRAW = { warrior: drawWarrior, archer: drawArcher, mage: drawMage, assassin: drawAssassin };
@@ -36,6 +38,15 @@ export function drawHero(g, classId, look, pose = {}) {
   const hc = HAIR_PALETTE[look.hairColor] || HAIR_PALETTE[0], key = `${rimKey}:${look.hairColor}`;
   let hairP = HAIR.get(key);
   if (!hairP) { hairP = hairPalette(hc, RIM[rimKey]); HAIR.set(key, hairP); }
+  if (pose.anime && !isNpc) { // the anime heroes (spec §39), at the same height as these
+    const S = HERO_SCALE * (SIZE[classId] || 1) / Z;
+    g.save(); g.scale(S, S);
+    const al = animeLook(classId, look);
+    if (pose.wings) al.wings = pose.wings; // Mitos gear / Phoenix (replaces the thin wings of art/aura.js)
+    const a = drawAnime(g, classId, al, pose);
+    g.restore();
+    if (a) return { head: { x: a.head[0] * S, y: a.head[1] * S, r: 13 * S }, body: { x: a.body[0] * S, y: a.body[1] * S }, hand: { x: a.hand[0] * S, y: a.hand[1] * S } };
+  }
   const arch = isNpc ? archetypeOf(npcOf(look)) : null;
   const p = { t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, hurt: !!pose.hurt, attack: pose.attackPhase ?? -1, snappy: pose.attackPhase != null && !pose.slow, move: pose.move, dodge: pose.dodge, kind: isNpc ? idleOf(arch) : undefined };
   const R = rig(isNpc ? 'npc' : classId, p);

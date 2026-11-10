@@ -61,6 +61,8 @@ import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
 import { renderResults } from './ui/results.js';
+import { renderDeath } from './ui/death.js';
+import { DEATH } from './data/dungeon.js';
 import { renderEnding } from './ui/ending.js';
 import { renderNpc, renderDungeonGate } from './ui/npc.js';
 import { renderCharPanel, setCharTab } from './ui/charpanel.js';
@@ -222,8 +224,9 @@ function saveSettings() {
 }
 
 let toastTimer = 0;
-function toast(text) {
+function toast(text, color = '') {
   $('toast').textContent = text;
+  $('toast').style.color = color;
   $('toast').classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $('toast').classList.remove('show'), 1800);
@@ -390,7 +393,8 @@ function openNpc(npc, message = null) {
     })),
     onSell: (ids) => serve((c, now) => sellItems(c, ids, now), (r) => t('Terjual! +{n} koin.', { n: r.gold })),
     onEnhance: (id) => serve((c, now) => enhance(c, id, now), (r) => (r.success
-      ? { text: t('Berhasil! Sekarang +{n}.', { n: r.plus }), color: '#e6c27a' }
+      ? (showRewardPop({ title: tr('Tempa Berhasil!'), sub: t('Naik ke +{n}!', { n: r.plus }), items: [r.char.inventory.find((x) => x.id === id)].filter(Boolean) }),
+        { text: t('Berhasil! Sekarang +{n}.', { n: r.plus }), color: '#e6c27a' })
       : { text: r.dropped ? t('Gagal… turun ke +{n}.', { n: r.plus }) : tr('Gagal… tingkatnya tetap.'), color: '#e0526a', bad: true })),
     onReroll: (id, line) => serve((c, now) => reroll(c, id, line, now), (r) => t('Bonus baru: {stat}', { stat: statText(r.bonus.stat, r.bonus.value) })),
     onSalvage: (ids) => serve((c, now) => salvage(c, ids, now), (r) => t('Diurai! {mats}', { mats: Object.entries(r.mats).filter(([, n]) => n).map(([m, n]) => `+${n} ${MATS[m].name}`).join(', ') }) + (r.gems.length ? t(' + {n} permata', { n: r.gems.length }) : '')),
@@ -457,7 +461,9 @@ async function serve(action, okText) {
   const r = action(current, Date.now());
   if (r.ok && r.char.clock !== current.clock) worldClock = r.char.clock; // slept at the Inn
   if (!r.ok) {
-    openNpc(townNpc, { text: tr(REFUSE[r.reason] && typeof REFUSE[r.reason] === 'string' ? REFUSE[r.reason] : REFUSE.full[townNpc.role]), ok: false });
+    const why = tr(REFUSE[r.reason] && typeof REFUSE[r.reason] === 'string' ? REFUSE[r.reason] : REFUSE.full[townNpc.role]);
+    openNpc(townNpc, { text: why, ok: false });
+    toast(why, '#e0526a'); // the panel line can sit out of view on a phone
     return;
   }
   current = r.char;
@@ -468,6 +474,7 @@ async function serve(action, okText) {
   if (ok?.bad) sfx.fail(); else if (okText) sfx.heart(); else sfx.pickCard();
   const err = await saveCurrent();
   openNpc(townNpc, err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : ok && (typeof ok === 'string' ? { text: ok, ok: true } : { ...ok, ok: !ok.bad }));
+  if (!err && ok) toast(typeof ok === 'string' ? ok : ok.text, typeof ok === 'string' ? '#8ff5c8' : ok.color || (ok.bad ? '#e0526a' : '#8ff5c8'));
   updateTownHUD(current, town);
 }
 
@@ -762,15 +769,20 @@ async function endField(died) {
       return;
     }
   }
-  let text = t('Kembali ke {town}.', { town: TOWNS[current.location].name });
-  if (died) {
+  if (died) { // a dialog says what happened; the only way on is waking in town
+    const cause = game.deathCause();
     const r = fieldDeath(current, Date.now());
     current = r.char;
-    await saveCurrent();
-    text = t('Kamu tumbang di {region} dan terbangun di {town}. −{n} koin.', { region: region.name, town: TOWNS[current.location].name, n: r.goldLost });
+    const saveError = await saveCurrent();
+    renderDeath($('results'), {
+      region: region.name, town: TOWNS[current.location].name, cause, goldLost: r.goldLost,
+      wakeHpPct: Math.round(DEATH.wakeHp * 100), saveError,
+    }, () => enterTown(current, 'gate'));
+    showMenu('results');
+    return;
   }
   enterTown(current, 'gate');
-  toast(text);
+  toast(t('Kembali ke {town}.', { town: TOWNS[current.location].name }));
 }
 
 function openMap() {
@@ -898,9 +910,10 @@ async function endRun(died) {
   const back = !died && dungeonReturn;
   dungeonReturn = null;
   const go = () => (back ? explore(back.region, { x: back.x, y: back.y }) : enterTown(current, 'gate'));
-  renderResults($('results'), { ...applied, trip, newRecord, saveError },
+  renderResults($('results'), { ...applied, trip, newRecord, saveError, cause: died ? game.deathCause() : null },
     { onContinue: applied.ending ? () => { playMusic('epilog'); renderEnding($('ending'), current, go); showMenu('ending'); } : go,
-      continueLabel: back ? t('Kembali ke {r}', { r: regionById(back.region).name }) : null });
+      continueLabel: back ? t('Kembali ke {r}', { r: regionById(back.region).name })
+        : died ? t('Bangkit di {town}', { town: TOWNS[current.location].name }) : null });
   showMenu('results');
 }
 

@@ -58,7 +58,7 @@ Efek berdiri di dunia 3D seperti prototipe A (`app/pixel`): gambar dari `art/spe
 - [x] **B3** Petir & sihir: Badai Petir = tiap sambaran petir bercabang dari langit + bekas + kilat cahaya + percikan; Teleportasi = ledakan ungu di titik awal dan tujuan; Perisai Mana = ledakan ungu di pemain. Cek pemilik B2+B3 → commit.
 - [x] **B4a** Warrior: tebasan dasar = sabit cahaya di depan pemain menghadap arah ayun (bergantian atas/bawah); Putaran Pedang & Badai Pedang = cincin pedang berputar datar setinggi pinggang mengikuti pemain; Retakan Bumi = pilar batu-api tumbuh–bertahan–runtuh di tiap titik + percikan + cahaya; Teriakan Baja / Amarah Perang = gelombang cincin emas di tanah + percikan emas/merah; Terjang = kepulan debu di sepanjang jalur; Kapak Bumerang = kapak bergambar berputar.
 - [x] **B4b** Archer: panah bergambar (serangan dasar, Panah Pecah & pecahannya) menghadap arah terbang; Panah Naga = tombak cahaya berpita melingkar + cahaya ikut + percikan es; Hujan Panah = panah jatuh dari langit lalu menancap sebentar; Ladang Jebakan = rumpun duri tumbuh di area selama jebakan; Hujan Bintang = bintang jatuh satu per satu + percikan emas (sebelumnya ikut memakai meteor); Mata Elang = gelombang emas kecil; Lompatan Mundur = debu di titik lompat (ledakan es dari Nova).
-- [ ] **B4c** Assassin; cek silau malam hari.
+- [x] **B4c** Assassin: tusukan ganda ungu dengan kilat X di ujung; belati bergambar (Lingkaran Belati, juga saat melayang); Shuriken Raksasa bergambar berputar saat mengitari & dilempar; Kabut Racun = kepulan hijau tembus pandang di area; Bom Asap = cincin kepulan asap; Langkah Bayangan = ledakan ungu di awal & akhir; Naluri Pembunuh = cincin ungu + percikan; Tarian Seribu Bayangan = cincin pedang berputar berwarna ungu.
 
 ## Bagian C — Dunia seperti prototipe A (permintaan pemilik 2026-11-06: "masih jauh dari pixel.html A")
 Selisih terbesar dengan prototipe: tidak ada bayangan, props berupa bentuk 3D polos (bukan ilustrasi), tanah berupa ubin, cahaya netral. Dikerjakan berurutan, cek pemilik di tiap bagian.
@@ -70,4 +70,4 @@ Selisih terbesar dengan prototipe: tidak ada bayangan, props berupa bentuk 3D po
 - [x] **C5** Bioma lain: tanah salju (hanyutan, kerak berkilau, es licin beretak), pasir (riak 21 per ubin, semak kering, kerikil), abu (lempeng retak, bara di sebagian celah), Gerhana (ungu gelap, urat bercahaya, debu bintang); jalan per bioma (`BIOME_GROUND`); semua pola diuji berulang persis tiap 320 (sekalian membetulkan kerikil jalan tanah C2). Props ilustrasi: palem, kaktus, pohon hangus, kristal es, menara obsidian berurat ungu, batu es bersalju; kota es/gurun/vulkanik ikut (tanah + pohon). Tetap 3D: batu melayang, tiang & batu reruntuhan.
 
 ## Penutup
-- [ ] Perbarui status di `CLAUDE.md`.
+- [x] Perbarui status di `CLAUDE.md`.
