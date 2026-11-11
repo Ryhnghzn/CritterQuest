@@ -7,6 +7,8 @@ import { MONSTER_ART } from '../src/art/monsters.js';
 import { MOUNTS as OLD_MOUNTS, PETS, SADDLES, HATS, TRAILS, AURAS, drawRidden, drawHat, drawTrail, drawAura } from '../src/art/companions.js';
 import { drawDoll } from '../src/art/doll.js';
 import { RARITIES } from '../src/data/items.js';
+import { LOOK } from '../src/data/look.js';
+import { pixelateCanvas } from '../src/render3d/pixelate.js';
 
 const OLD = new URLSearchParams(location.search).has('lama');
 const MOUNTS = OLD ? OLD_MOUNTS : MAJESTIC_MOUNTS;
@@ -21,8 +23,10 @@ const $ = (id) => document.getElementById(id);
 const state = {
   cls: 'warrior', walk: true, mount: MOUNTS.find((m) => m.id === 'dragon'), pet: PETS.find((p) => p.id === 'babydragon'),
   skin: {}, saddle: 'royal', hat: 'crown', mountTrail: 'none', petTrail: 'stars', aura: OLD ? 'gold' : 'none',
-  summonT: -9, foe: true,
+  summonT: -9, foe: true, pixel: !!LOOK.pixel, view: 'turn', // side | front | back | turn (cycles; spec §38 for mounts)
 };
+const VIEW_CYCLE = ['side', 'front', 'side', 'back'];
+const viewAt = (t) => (state.view === 'turn' ? VIEW_CYCLE[Math.floor(t / 2.2) % 4] : state.view);
 const SUMMON = 1.1; // seconds (spec §35.1: 1 s)
 const skinIx = (it) => state.skin[it.id] || 0;
 const rider = () => ({ classId: state.cls, look: RIDERS[state.cls].look });
@@ -59,6 +63,8 @@ function redraw() {
   buttons($('modes'), [['walk', 'Berjalan'], ['idle', 'Diam'], ['summon', 'Panggil'], ['foe', 'Musuh pembanding']],
     (id) => (id === 'foe' ? state.foe : id === 'summon' ? false : (id === 'walk') === state.walk),
     (id) => { if (id === 'summon') state.summonT = performance.now() / 1000; else if (id === 'foe') state.foe = !state.foe; else state.walk = id === 'walk'; });
+  if (!OLD) buttons($('views'), [['turn', 'Putar'], ['side', 'Samping'], ['front', 'Depan'], ['back', 'Belakang'], ...(LOOK.pixel ? [['px', state.pixel ? 'Pixel ✓' : 'Halus']] : [])],
+    (id) => (id === 'px' ? state.pixel : state.view === id), (id) => { if (id === 'px') state.pixel = !state.pixel; else state.view = id; });
   const m = state.mount, p = state.pet;
   $('cosm').replaceChildren(
     row('Warna mount', m.name, m.skins.map((s, i) => [i, s.name]), (i) => skinIx(m) === i, (i) => { state.skin[m.id] = i; }),
@@ -97,11 +103,33 @@ function drawPet(g, pet, pose, withCosm) {
   const head = pet.draw(g, pose);
   if (withCosm) drawHat(g, state.hat, head, pose.t);
 }
+// the rider as in the game: the anime style when the game uses it (spec §39)
+const riderDoll = (g, cls, look, p) => drawDoll(g, cls, look, { ...p, anime: !OLD && !!LOOK.anime });
 function drawMount(g, mount, pose, rd, withCosm) {
   const S = mount.scale || 1;
   if (withCosm) { drawAura(g, state.aura, pose.t, 30 * S); drawTrail(g, state.mountTrail, pose.t, pose.m, 50 * S, mount.fly ? -30 * S : 0); }
   if (OLD) drawRidden(g, mount, pose, rd, drawDoll);
-  else drawMajesticRidden(g, mount, pose, rd, drawDoll);
+  else drawMajesticRidden(g, mount, pose, rd, riderDoll);
+}
+
+// Pixel art like the game (render3d/actors.js, spec §39): the mount and rider are drawn small,
+// LOOK.pixel.k pixels per game unit in the game's riding box, run through the same filter and
+// enlarged without smoothing. draw(gg) paints in game units, feet at the origin.
+const BOX = { hx: 120, ht: 150, hb: 14 };
+const pixBuf = new Map();
+function inPixels(g, x, y, S, key, draw) {
+  if (!state.pixel || OLD || !LOOK.pixel) { g.save(); g.translate(x, y); g.scale(S, S); draw(g); g.restore(); return; }
+  const K = LOOK.pixel.k, w = BOX.hx * 2 * K, h = (BOX.ht + BOX.hb) * K;
+  let c = pixBuf.get(key);
+  if (!c) { c = document.createElement('canvas'); c.width = w; c.height = h; pixBuf.set(key, c); }
+  const gg = c.getContext('2d', { willReadFrequently: true });
+  gg.setTransform(1, 0, 0, 1, 0, 0); gg.clearRect(0, 0, w, h);
+  gg.setTransform(K, 0, 0, K, BOX.hx * K, BOX.ht * K); gg.lineJoin = 'round';
+  draw(gg);
+  pixelateCanvas(c, LOOK.pixel);
+  g.save(); g.imageSmoothingEnabled = false;
+  g.drawImage(c, x - BOX.hx * S, y - BOX.ht * S, BOX.hx * 2 * S, (BOX.ht + BOX.hb) * S);
+  g.restore();
 }
 
 // the stage: a forest floor scrolling under the rider
@@ -139,7 +167,7 @@ function drawStage(t) {
     g.fillText('musuh (Serigala Bayang)', W * 0.86, gy + 22 * k);
   }
   const ms = state.mount.scale || 1, sk = (t - state.summonT) / SUMMON;
-  g.save(); g.translate(W * 0.56, gy); g.scale(S, S);
+  inPixels(g, W * 0.56, gy, S, 'stage', (g) => {
   if (sk >= 0 && sk < 1) drawSummonRing(g, sk, t, 30 * ms);
   if (sk < 0 || sk >= 0.35) {
     // the mount rises out of the light and rears up once (rotates about the hind feet)
@@ -147,20 +175,24 @@ function drawStage(t) {
     g.globalAlpha = a;
     shadow(g, 26 * ms, state.mount.fly ? 12 : 0);
     g.translate(-14 * ms, 0); g.rotate(state.mount.fly ? -rear * 0.12 : -rear * 0.28); g.translate(14 * ms, -(1 - a) * 10);
-    drawMount(g, state.mount, { t, m: sk >= 0 && sk < 1 ? 0 : m, w: t * 9, skin: skinIx(state.mount), saddle: state.saddle }, rider(), true);
+    const view = viewAt(t);
+    if (view === 'side') drawMount(g, state.mount, { t, m: sk >= 0 && sk < 1 ? 0 : m, w: t * 9, skin: skinIx(state.mount), saddle: state.saddle }, rider(), true);
+    else drawMount(g, state.mount, { t, m: sk >= 0 && sk < 1 ? 0 : m, w: t * 9, skin: skinIx(state.mount), view }, rider(), true);
   }
-  g.restore();
+  });
 }
 
 function drawCard(k, t) {
   const g = fit(k.cv), W = k.cv.width, H = k.cv.height;
   g.clearRect(0, 0, W, H);
-  const tt = t + k.it.id.length, pose = { t: tt, m: 1, w: tt * 8, skin: skinIx(k.it), saddle: state.saddle };
+  const tt = t + k.it.id.length, pose = { t: tt, m: 1, w: tt * 8, skin: skinIx(k.it), saddle: state.saddle, view: k.kind === 'mount' ? viewAt(t) : undefined };
   g.save();
   if (k.kind === 'mount') {
-    const S = H / (120 * (k.it.scale || 1)); g.translate(W * 0.52, H * 0.88); g.scale(S, S);
-    shadow(g, 26 * (k.it.scale || 1), k.it.fly ? 12 : 0);
-    drawMount(g, k.it, pose, { classId: 'warrior', look: RIDERS.warrior.look }, false);
+    const S = H / (120 * (k.it.scale || 1));
+    inPixels(g, W * 0.52, H * 0.88, S, `card:${k.it.id}`, (g) => {
+      shadow(g, 26 * (k.it.scale || 1), k.it.fly ? 12 : 0);
+      drawMount(g, k.it, pose, { classId: 'warrior', look: RIDERS.warrior.look }, false);
+    });
   } else {
     const S = H / 44; g.translate(W * 0.5, H * 0.84); g.scale(S, S);
     shadow(g, 10, k.it.fly ? 14 : 0);

@@ -250,13 +250,14 @@ export class Actors {
       g.translate(0, -turn.hop); g.rotate(turn.lean);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
       if (mounted && !riding) { drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale); drawSummonBar(g, game.mount.t / MOUNT.summon); }
-      if (riding) { // the mount is always drawn side-on; turn.w carries the paper-turn facing (spec §38)
-        g.scale(turn.w, 1);
+      if (riding) { // like the hero on foot (spec §38): side-on (turn.w = the paper-turn facing), or
+        // the front / back view walking toward / away from the camera (art/mountviews.js)
+        g.scale((side ? turn.w : 1) * vw.squash, 1);
         // the rider keeps the on-foot style (anime + wings + element effects out of the pixel filter)
         this.rideWings = wings;
-        this.rideDoll ||= (gg, c2, l, p) => drawDoll(gg, c2, l, { ...p, anime: LOOK.anime, view: 'side', wings: this.rideWings });
+        this.rideDoll ||= (gg, c2, l, p) => drawDoll(gg, c2, l, { ...p, anime: LOOK.anime, view: p.view || 'side', wings: this.rideWings });
         if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []);
-        try { drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: a.classId, look: a.look }, this.rideDoll); } finally { setFxSink(null); }
+        try { drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin, view: vw.view }, { classId: a.classId, look: a.look }, this.rideDoll); } finally { setFxSink(null); }
       } else {
         g.scale(DOLL_SCALE * (side ? turn.w : 1) * vw.squash * hs, DOLL_SCALE * hs);
         if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []); // element effects: kept out of the pixel filter
