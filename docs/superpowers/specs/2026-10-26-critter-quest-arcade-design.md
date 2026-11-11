@@ -1279,3 +1279,101 @@ Masalah: gerbang kota besar hanya menawarkan wilayahnya sendiri (Rimbawana → H
 - `migrate()` v21 → v22 (v21 sudah dipakai Mount §35).
 - Rencana kerja: `docs/superpowers/plans/2026-11-11-satu-dunia.md`.
 - **Warga kota anime di game (2026-11-11):** warga kota & interior (`render3d/town.js`), NPC tersembunyi di wilayah (`render3d/field.js`), dan potret NPC memakai `art/anime/npc.js` (22 jenis dari `art/hero/npc.js` `archParts`, gerak diam pekerjaan dari rig `npc`), lewat `drawHero` bila `pose.anime`. Penjaga gerbang wilayah kini digambar sebagai warga jenis Penjaga (helm, tombak), bukan Warrior. `?lama` = gaya D. Contoh: `app/npc.html`.
+
+## 41. Tantangan: Musuh Beragam, Bos Khas, Tingkat Kesulitan, Job Lanjutan (permintaan pemilik 2026-11-11)
+
+Masalah (pemilik, main Mage): game terlalu gampang dan membosankan. Jarang hampir mati kecuali melawan bos. Jenis musuh terlalu sedikit: varian biome kebanyakan hanya ganti kulit (Lendir Beku/Pasir/Magma/Hampa = Lendir + efek). Lima bos dungeon memakai jurus yang sama (`ring`, `spiral`, `slam`, `charge`, `summon`), hanya beda warna dan angka; yang punya jurus sendiri hanya Sang Gerhana. Mage membunuh dari jauh dengan serangan area sebelum musuh sempat beraksi.
+
+Keputusan pemilik: "lakukan saja semuanya", dengan urutan **A musuh → B bos → C tingkat kesulitan (9E) → D Job Lanjutan**. Job Lanjutan menambah kekuatan, jadi dikerjakan paling akhir, didapat lewat **ujian**, dan **mengubah cara main** (cabang), bukan sekadar menambah angka. Rincian di bawah diputuskan Claude atas permintaan pemilik dan boleh dikoreksi saat cek manual. Tiap proyek punya rencana kerja sendiri dan dikerjakan per bagian.
+
+Prinsip untuk semua proyek: musuh dan bos baru harus **memaksa bergerak atau memilih sasaran**, dengan tanda bahaya yang terlihat dulu (lingkaran/garis seperti sekarang). Sakit kalau kena, adil kalau diperhatikan. Tidak boleh ada serangan tanpa tanda.
+
+### 41.1 Proyek A: musuh beragam & elite bersifat acak
+
+**Delapan perilaku baru** (`run/enemies.js`, angka di `data/enemies.js`), dua musuh baru per biome. Musuh baru ikut muncul di dunia (`data/world.js` `enemies`) dan di gelombang dungeon bertema biome itu.
+
+| Biome | Musuh | Perilaku (`ai`) | Yang dipaksa ke pemain |
+|---|---|---|---|
+| Hutan | Katak Rawa | `leap`: menandai lingkaran di posisi pemain, 0,7 dtk kemudian mendarat di sana | Terus bergerak |
+| Hutan | Semak Penyergap | `ambush`: diam menyamar jadi semak (tak bisa dibidik), menyergap dengan terjang pendek saat pemain dalam 110 | Waspada saat lewat semak |
+| Es | Roh Embun | `trail`: melayang mendekat dan meninggalkan genangan es yang memperlambat 40% selama 4 dtk | Jangan bertarung di tempat yang sama |
+| Es | Penjaga Cermin | `mirror`: tiap 4 dtk mengangkat cermin 1,5 dtk (berkilat dulu 0,4 dtk); proyektil pemain yang kena dari depan dipantulkan balik | Tahan serangan atau ambil sisi |
+| Gurun | Hyena Pasir | `pack`: datang 4–6 ekor, berputar mengepung di jarak 160, lalu menyerbu bersamaan setelah lolongan (tanda garis tiap ekor) | Keluar dari kepungan sebelum lolongan |
+| Gurun | Kumbang Pembelah | `split`: saat mati pecah jadi 2 kumbang kecil, yang kecil pecah lagi jadi 2 tungau | Jangan anggap remeh kerumunan |
+| Gunung Api | Meriam Magma | `mortar`: berdiri jauh (jarak 360, lebih jauh dari jangkauan Mage) dan menembak lambung: lingkaran bahaya di posisi pemain, 1 dtk | Kejar atau terus bergerak |
+| Gunung Api | Totem Bara | `totem`: tidak bergerak; musuh dalam radius 200 mendapat +30% kecepatan dan perisai 20% HP selama totem hidup | Pilih sasaran: hancurkan totem dulu |
+| Gerhana | Obelisk Hampa | `totem` + sinar: seperti Totem Bara, ditambah sinar berputar pelan dari obelisk | Pilih sasaran sambil menghindar |
+| Gerhana | Kembar Hampa | `twin`: muncul berpasangan, tersambung sinar yang melukai bila dilewati; yang mati bangkit lagi dalam 4 dtk kecuali kembarannya juga mati | Bunuh berdua berdekatan |
+
+**Elite bersifat acak** (`data/enemies.js` `AFFIXES`, nama sifat di atas kepala elite, mis. "Golem Cepat · Berlapis"). Elite mendapat 1 sifat (2 sifat di level dunia ≥ 25 atau lantai dungeon ≥ 4; tingkat kesulitan menambah, §41.3):
+
+| Sifat | Efek |
+|---|---|
+| Cepat | kecepatan ×1,5, jeda aksi ×0,7 |
+| Berlapis | perisai 35% HP maks yang harus dihabiskan dulu; pulih bila tidak diserang 4 dtk |
+| Pemanggil | memanggil 2 kroco biome-nya tiap 6 dtk (maks 4) |
+| Berduri | saat kena serangan, paling sering tiap 1 dtk menembakkan 8 duri ke segala arah |
+| Meledak | saat mati: lingkaran bahaya radius 110, 1 dtk |
+| Beraura | meninggalkan genangan sesuai biome (es memperlambat, api membakar, racun) tiap 2 dtk |
+| Penjelajah | tiap 5 dtk menghilang dan muncul di dekat pemain (tanda 0,5 dtk) |
+
+- Peluang dan hadiah elite tetap (`ELITE` di dungeon, `FIELD.eliteChance` di dunia); sifat tidak mengubah drop di proyek A.
+- Sifat dipilih dengan RNG simulasi (deterministik per seed seperti spawn); efek gambar memakai RNG efek.
+- Gambar musuh baru dibuat lewat kode di gaya yang sama dengan musuh sekarang (§36/§39), satu sprite per musuh + varian kecil (anak Kumbang, tungau).
+
+### 41.2 Proyek B: bos dengan jurus khas & fase
+
+Tiap bos dungeon mendapat **2 jurus khas** yang hanya dia punya, dan **satu pergantian fase di 50% HP** (judul besar seperti Sang Gerhana, kebal 1,2 dtk, guncangan). Di fase kedua jurus khas lebih kuat dan ada satu jurus baru. Jurus umum (`ring`/`spiral`/`slam`/`charge`/`summon`) tetap ada sebagai selingan, maksimal 2 per bos.
+
+| Bos | Jurus khas | Fase 50% |
+|---|---|---|
+| Raja Maw (Bayangan) | **Telan**: membuka mulut, menarik pemain 2 dtk (seperti `hole`), lalu gigitan besar di depannya. **Bayang Kembar**: 2 bayangan palsu yang ikut menembakkan cincin, mati sekali pukul | "LAPAR!": 3 bayangan, Telan lebih kuat menarik |
+| Golem Kristal | **Prisma**: menancapkan 3 kristal di arena, sinar garis menyala bergantian di antara kristal (kristal bisa dihancurkan). **Hujan Serpih**: deretan lingkaran kecil jatuh berurutan menyapu arena | "RETAK!": tiap kena serangan memercikkan serpih; Prisma 4 kristal |
+| Ratu Spora | **Ladang Jamur**: menanam 5 jamur yang membesar 3 dtk lalu meledak (bisa dihancurkan sebelum meledak). **Awan Racun**: awan pelan yang mengikuti pemain 6 dtk | "MEKAR!": tepi arena jadi racun, arena menyempit 25% |
+| Raja Mumi | **Kutukan**: tanda di pemain, 3 dtk kemudian ledakan di sekitar pemain dan kutukan menular ke musuh lain di dekatnya. **Badai Pasir**: angin mendorong pemain ke satu arah 3 dtk sambil menembakkan peluru pasir | "KUTUKAN FIRAUN!": membangkitkan 3 mumi dari peti (kroco kuat) |
+| Raja Lava | **Erupsi**: retakan lava menjalar dari bos dalam 3 garis yang berbelok. **Meteor**: 3 meteor dengan bayangan yang membesar 1,5 dtk | "LANTAI MENDIDIH!": 30% arena jadi lava tetap (zona bahaya permanen) |
+| Sang Gerhana | tetap (`beam`, `hole`, fase); `echo` kini meniru **jurus khas** bos lain, bukan cincin/spiral/hantam | tetap |
+
+- Mini bos dunia (penjaga harta, §25) memakai **1 jurus khas** dari bos dungeon biome-nya, dengan angka lebih kecil.
+- Jurus baru memakai `run.hazards` & `run.shots`; jenis hazard baru seperlunya: `zone` (genangan/lava/racun tetap, melukai tiap 0,5 dtk), `push` (angin), dan `crystal` (benda yang bisa dihancurkan, dibuat sebagai musuh tanpa gerak dengan `prop: true`).
+
+### 41.3 Proyek C: tingkat kesulitan & Celah tanpa batas (9E)
+
+**Tingkat kesulitan** satu setelan per karakter, diganti di Balai Petualang (Papan Tugas), berlaku untuk dunia dan dungeon. Dipilih di awal sebuah trip; saat di dunia, gantinya hanya di kota.
+
+| Tingkat | Terbuka | Musuh | Elite | Hadiah |
+|---|---|---|---|---|
+| Normal | sejak awal | angka sekarang | 1–2 sifat | sekarang |
+| Sulit | sejak awal | HP ×2, damage ×1,6 | peluang ×2, +1 sifat | koin & EXP ×1,5, rarity naik satu tingkat lebih sering |
+| Neraka | setelah tamat (Sang Gerhana) di Sulit | HP ×4, damage ×2,5, jeda aksi ×0,8 | peluang ×3, +2 sifat | koin & EXP ×2,5, Mitos ×3, bahan langka |
+
+- Tumbang di Sulit/Neraka: koin hilang 15%/25% (Normal tetap 10%).
+- Angka §33 dan sisa penyeimbangan disetel ulang di sini, sesudah A dan B, dengan sasaran: Mage berlevel pas di Normal pernah turun di bawah 50% HP di sebagian besar lantai dungeon.
+
+**Celah tanpa batas** (terbuka setelah tamat, gerbang di Kota Awal):
+- Lantai bertambah terus; musuh campuran semua biome, kekuatan +8% per lantai di atas tingkat kesulitan yang dipilih.
+- Tiap 5 lantai: bos acak dengan jurus khasnya, lalu **titik simpan**. Hadiah yang terkumpul sampai titik simpan aman; tumbang hanya menghilangkan hadiah sesudahnya.
+- Tiap lantai biasa: pilih **1 dari 3 berkah** yang berlaku sampai keluar, beberapa dengan harga (mis. "+30% serangan, HP maks −20%", "musuh lebih banyak, koin ×2").
+- **Rekor lantai terdalam** per karakter, tampil di Balai Petualang.
+
+Save: `difficulty`, `unlocked` (Neraka, Celah), `rift { best, checkpoint }`. Versi save naik satu dari versi terakhir saat dikerjakan, dengan `migrate()`.
+
+### 41.4 Proyek D: Job Lanjutan
+
+- **Syarat:** level 30, lalu **ujian** di Pelatih: arena khusus melawan **Bayangan Diri**, yaitu bos yang memakai skill kelasmu sendiri dan mekanik khasnya, di tingkat Sulit atau lebih. Menang = memilih satu dari dua cabang. Ganti cabang di Pelatih dengan biaya besar.
+- **Cabang mengganti mekanik khas (§31) dan menambah 2 skill + 1 ultimate baru**, bukan hanya menambah angka. Stat dasar naik sedikit (±10%) saja.
+
+| Kelas | Cabang 1 | Cabang 2 |
+|---|---|---|
+| Warrior | **Berserker**: Murka tidak turun selama terus menyerang; makin rendah HP makin kuat; tanpa kurangi damage | **Paladin**: perisai suci menyerap damage, aura menyembuhkan pelan, serangan mendorong mundur |
+| Archer | **Penembak Jitu**: Bidik penuh = tembakan tembus besar, makin jauh makin sakit, harus diam | **Pemburu**: hewan pendamping ikut menyerang, panah memantul ke musuh lain, kuat sambil berlari |
+| Mage | **Penyihir Api**: Panas menumpuk jadi ledakan berantai besar, mantra lebih lambat | **Penyihir Waktu**: area memperlambat musuh, memutar balik diri ke posisi & HP 3 dtk lalu, memantulkan peluru |
+| Assassin | **Bayangan**: menghilang, serangan dari belakang pasti kritikal | **Penari Pedang**: Kombo tak terbatas, makin tinggi makin cepat, kombo putus = hilang semua |
+
+- Tampilan: gelar baru di atas nama dan warna/aura cabang. Teks baru dua bahasa (§23).
+- Save: `job` (id cabang atau null), versi naik + `migrate()`.
+
+### 41.5 Urutan & rencana kerja
+1. Proyek A: `docs/superpowers/plans/2026-11-11-musuh-beragam.md`.
+2. Proyek B, C, D: rencana masing-masing ditulis saat proyek sebelumnya selesai dicek pemilik.
+3. Satu Dunia (§40) bagian B7–D tetap berjalan; proyek A hanya menyentuh daftar `enemies` per zona di `data/world.js`, bukan peta.
