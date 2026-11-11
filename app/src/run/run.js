@@ -5,6 +5,7 @@ import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE } from '../data/balance.js';
 import { expToNext, levelCap } from '../meta/character.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
+import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
 import { passiveCrit, poisonFoe } from './passives.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
@@ -109,7 +110,7 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {} }) {
     resetRng();
     this.classId = classId;
     this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
@@ -128,7 +129,8 @@ export class Game {
     this.skillCd = [0, 0, 0, 0];
     this.energy = ENERGY.start; this.noEnergyT = 0;
     const pool = CLASSES[classId].skills;
-    this.skillDefs = (skills || [pool[0].id, pool[1].id, null, null]).map((id) => (id ? pool.find((s) => s.id === id) : null));
+    this.levels = levels; // skill id → level (spec §43): each worn skill is built at its level (run/skilllevel.js)
+    this.skillDefs = (skills || [pool[0].id, pool[1].id, null, null]).map((id) => (id ? leveled(pool.find((s) => s.id === id), levels[id] || 1) : null));
     while (this.skillDefs.length < 4) this.skillDefs.push(null);
     this.skillCdMax = this.skillDefs.map((sk) => (sk ? skillCooldown(stats, sk) : 0));
     this.ult = ult; this.ultCharge = 0;
@@ -220,7 +222,7 @@ export class Game {
     const pool = CLASSES[this.classId].skills;
     ids.forEach((id, i) => {
       if ((this.skillDefs[i]?.id ?? null) === id) return;
-      this.skillDefs[i] = id ? pool.find((s) => s.id === id) : null;
+      this.skillDefs[i] = id ? leveled(pool.find((s) => s.id === id), this.levels?.[id] || 1) : null;
       this.skillCdMax[i] = this.skillDefs[i] ? skillCooldown(this.stats, this.skillDefs[i]) : 0;
       this.skillCd[i] = this.skillCdMax[i];
     });
@@ -239,6 +241,7 @@ export class Game {
     if (sb) {
       this.stats.atk *= 1 + (sb.atk || 0); this.stats.atkSpd *= 1 + (sb.atkSpd || 0);
       this.stats.crit += sb.crit || 0; this.stats.critDmg += sb.critDmg || 0;
+      this.stats.moveSpd *= 1 + (sb.moveSpd || 0); // Amarah Perang L3 (spec §43.4)
     }
     this.dodgeCdMul = (this.buffs.wind > 0 ? POTIONS.wind.dodgeCd : 1) * (1 - (this.fx.dodgecd || 0));
   }
@@ -401,6 +404,8 @@ export class Game {
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
+    if (h.vuln) { e.vulnT = VULN_TIME; e.vulnK = h.vuln; }          // Kabut Racun L5 marks the foes inside
+    if (e.vulnT > 0) dmg *= 1 + e.vulnK;
     e.hp -= affixHit(this, e, dmg); // an elite's Berlapis shield soaks first (run/affix.js)
     if (h.execute && e.hp > 0 && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) { e.hp = 0; executeFx(this, e); } // Kombo at max (spec §31.5, §31.8)
     const basic = BASIC_FX.has(h.fx) && !h.skill;
@@ -523,6 +528,7 @@ export class Game {
   killEnemy(e) {
     onDeath(this, e);
     affixDeath(this, e);
+    levelDeath(this, e); // Nova Es L5 shards, Naluri Pembunuh L5 (run/skilllevel.js)
     splitDeath(this, e, ENEMIES[e.type]); // Kumbang Pembelah (spec §41.1)
     this.kills += 1;
     const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin

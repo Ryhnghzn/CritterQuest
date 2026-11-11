@@ -31,6 +31,47 @@ export const CLASS_EN = {
 
 export const SKILL_EN = {
   'Putaran Pedang': 'Blade Spin',
+  // level 3 / level 5 effects (spec §43.4)
+  '+2 tebasan': '+2 slashes',
+  'Pusaran 2 detik menarik musuh, 40% per tebasan': 'A 2-second vortex pulls enemies in, 40% per slash',
+  'Durasi +2 detik': 'Duration +2 seconds',
+  'Gelombang kejut membekukan 0,8 detik': 'The shockwave freezes for 0.8 seconds',
+  'Jarak +60': 'Distance +60',
+  'Jejak api 1,5 detik, 30% tiap 0,25 detik': 'A fire trail for 1.5 seconds, 30% every 0.25 seconds',
+  '+2 pilar': '+2 pillars',
+  'Pilar terakhir meledak besar (area 90, 300%)': 'The last pillar bursts big (area 90, 300%)',
+  'Kapak kedua menyusul': 'A second axe follows',
+  'Kapak berputar di ujung 0,6 detik sebelum kembali': 'The axe spins at the far end for 0.6 seconds before coming back',
+  'Gerak +20%': 'Move +20%',
+  'Murka langsung +40': 'Rage +40 at once',
+  'Area +25%': 'Area +25%',
+  'Memperlambat 40%': 'Slows by 40%',
+  'Jejak terbakar +1 detik': 'Burning trail +1 second',
+  'Dua naga (±10°)': 'Two dragons (±10°)',
+  'Pecah jadi 4': 'Splits into 4',
+  'Pecahan menembus satu musuh lagi': 'Fragments pierce one more enemy',
+  'Bisa 2× berturut': 'Twice in a row',
+  'Bidik langsung penuh setelah melompat': 'Focus fills at once after the leap',
+  'Meledak di akhir 300%': 'Bursts at the end for 300%',
+  'Damage kritis +20%': 'Crit damage +20%',
+  'Panah biasa menembus 1 musuh selama buff': 'Basic arrows pierce 1 enemy during the buff',
+  'Beku +0,5 detik': 'Freeze +0.5 seconds',
+  'Musuh beku yang mati pecah jadi 4 serpihan es 100%': 'Frozen enemies that die shatter into 4 ice shards, 100%',
+  '+3 sambaran': '+3 strikes',
+  'Tiap sambaran menyetrum area 50': 'Every strike shocks an area of 50',
+  'Lava 2 detik, 40% tiap 0,5 detik': 'Lava for 2 seconds, 40% every 0.5 seconds',
+  'Ledakan es di titik awal (150%, beku 0,8 detik)': 'An ice burst where you started (150%, freezes 0.8 seconds)',
+  '+3 serpihan': '+3 shards',
+  'Meledak dua kali': 'Explodes twice',
+  'Meledak 300% area 100 saat habis': 'Bursts for 300% in an area of 100 when it ends',
+  'Bayangan menebas lagi 0,3 detik kemudian': 'A shadow slashes again 0.3 seconds later',
+  '+4 belati': '+4 daggers',
+  'Belati kembali sekali ke pemain': 'The daggers come back to you once',
+  'Musuh di dalam kabut menerima +15% damage': 'Enemies in the mist take +15% damage',
+  'Kebal 1 detik saat dilempar': 'Invulnerable for 1 second when thrown',
+  'Radius +20': 'Radius +20',
+  'Membelah jadi 3 saat dilempar': 'Splits into 3 when thrown',
+  'Tiap kill +0,5 detik (maks +3 detik)': 'Each kill +0.5 seconds (max +3 seconds)',
   'Ayunan Lebar': 'Wide Swing', 'Ayunan memutar di sekeliling: 180%, mendorong.': 'A swing all around you: 180%, knocks back.',
   'Guling Serang': 'Rolling Strike', 'Berguling 140 px ke arah bidik, 200% ke yang dilewati.': 'Roll 140 px toward your aim, 200% to everything passed.',
   'Berputar menebas sekeliling 5×220%, menarik musuh.': 'Spin and slash all around for 5×220%, pulling enemies in.',
@@ -558,7 +599,7 @@ export function localizeData() {
   for (const c of Object.values(CLASSES)) {
     swap(c, 'desc', CLASS_EN);
     if (c.id === 'novice') c.name = 'Wanderer'; // Pengembara (spec §43.1); the job names stay as they are
-    for (const s of [...c.skills, c.ult]) { swap(s, 'name', SKILL_EN); swap(s, 'desc', SKILL_EN); }
+    for (const s of [...c.skills, c.ult]) { swap(s, 'name', SKILL_EN); swap(s, 'desc', SKILL_EN); if (s?.up) s.up = s.up.map((u) => SKILL_EN[u] ?? u); }
   }
   for (const r of RARITIES) swap(r, 'name', RARITY_EN);
   for (const s of Object.values(SLOTS)) swap(s, 'name', SLOT_EN);

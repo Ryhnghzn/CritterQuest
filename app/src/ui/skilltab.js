@@ -92,6 +92,7 @@ export function renderSkillTab(char, opts, redraw) {
     const txt = el('span', 'stx');
     txt.append(el('b', null, d.name), dots(r.level, r.max), el('span', null, d.desc));
     if (isSkill) txt.append(el('span', 'meta', t('Energi {e} · jeda {cd} dtk', { e: d.cost, cd: num(d.cd) })));
+    if (d.up) d.up.forEach((u, k) => txt.append(el('span', `lvup${r.level >= (k ? 5 : 3) ? ' on' : ''}`, `L${k ? 5 : 3} · ${u}`))); // spec §43.4
     const act = el('span', 'skbtns');
     if (locked) act.append(el('span', 'lock', `LV ${d.unlock}`));
     else {

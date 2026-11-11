@@ -143,7 +143,7 @@ function stepOrbit(h, enemies, dt, ctx) {
     const th = h.throw;
     let a = Math.atan2(ctx.aimPY - h.y, ctx.aimPX - h.x);
     if (Number.isNaN(a) || Math.hypot(ctx.aimPX - h.x, ctx.aimPY - h.y) < 1e-6) a = h.angle;
-    const c = makeProjectile({ x: h.x, y: h.y, angle: a, speed: th.speed, range: th.range, r: th.r, mult: th.mult * castScale(h), pierce: th.pierce || 0, fx: h.fx });
+    const c = makeProjectile({ x: h.x, y: h.y, angle: a, speed: th.speed, range: th.range, r: th.r, mult: th.mult * castScale(h), pierce: th.pierce || 0, fx: h.fx, split: th.split || null }); // th.split: Shuriken Raksasa L5
     c.mult0 = th.mult;
     c.part = 'throw';
     ctx.add(inherit(c, h));
@@ -181,6 +181,7 @@ function stepProjectile(h, enemies, dt, ctx) {
     if (h.explode) {
       const blast = makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom' });
       ctx.add(inherit(blast, h)); // a skill's explosion still counts as the skill, looks like it and keeps Kombo
+      if (h.explode.twice) ctx.add(inherit(makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom', delay: h.explode.twice }), h)); // Matahari Kecil L5
       if (h.explode.shards) shardsOut(h, e, ctx);
       h.dead = true;
       return;
@@ -192,6 +193,7 @@ function stepProjectile(h, enemies, dt, ctx) {
   }
   if (h.split && h.dist >= h.split.at) { splitUp(h, ctx); h.dead = true; return; }
   if (h.dist >= h.range) {
+    if (h.boomerang && !h.returning && h.pause > 0) { h.pause -= dt; h.x -= h.vx * dt; h.y -= h.vy * dt; h.dist -= h.speed * dt; if (h.hitSet.size) h.hitSet.clear(); return; } // Kapak Bumerang L5: spins in place
     if (h.boomerang && !h.returning) { h.returning = true; h.hitSet.clear(); } // second pass hits everything again
     else if (!h.boomerang) h.dead = true;
   }
@@ -202,7 +204,7 @@ function splitUp(h, ctx) {
   const sp = h.split, n = sp.count, sm = sp.mult ?? 1;
   for (let k = 0; k < n; k++) {
     const a = h.angle + (n > 1 ? k / (n - 1) - 0.5 : 0) * sp.spread * DEG;
-    const c = makeProjectile({ x: h.x, y: h.y, angle: a, speed: h.speed, range: Math.max(0, h.range - h.dist), r: h.r, mult: h.mult * sm, pierce: h.pierce, fx: h.fx });
+    const c = makeProjectile({ x: h.x, y: h.y, angle: a, speed: h.speed, range: Math.max(0, h.range - h.dist), r: h.r, mult: h.mult * sm, pierce: sp.pierce ?? h.pierce, fx: h.fx }); // sp.pierce: Panah Pecah L5
     c.mult0 = h.mult0 * sm;
     c.part = 'split';
     ctx.add(inherit(c, h));

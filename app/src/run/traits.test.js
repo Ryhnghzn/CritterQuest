@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { leveled } from './skilllevel.js';
 import { initTrait, traitDealt, traitStep, traitBasicHit, traitHurt, traitCast, traitMods, traitLevel, traitFocusShot, traitCastExecute } from './traits.js';
 import { CLASSES } from '../data/classes.js';
 
@@ -232,9 +233,11 @@ describe('Bidik (archer)', () => {
     expect(traitFocusShot(r)).toBe(false);
   });
 
-  it('Lompatan Mundur langsung memenuhi Bidik', () => {
+  it('Lompatan Mundur L5 langsung memenuhi Bidik; di bawah L5 tidak (spec §43.4)', () => {
     const r = mockRun('archer');
-    expect(traitCast(r, skillOf('archer', 'leap'))).toBe(1);
+    traitCast(r, skillOf('archer', 'leap'));
+    expect(r.trait.v).toBe(0);
+    expect(traitCast(r, leveled(skillOf('archer', 'leap'), 5))).toBe(1);
     expect(r.trait.v).toBe(100);
     expect(r.trait.focus).toBe(true);
     traitCast(r, skillOf('archer', 'rain'));

@@ -41,6 +41,7 @@ const has = (e, id) => !!e.affixes?.includes(id);
 export function affixStep(run, e, dt) {
   if (e.sig) miniStep(run, e, dt); // a treasure guardian's borrowed boss move (run/minimove.js)
   if (e.psn) poisonStep(run, e, dt); // Bilah Racun (run/passives.js)
+  if (e.vulnT > 0) e.vulnT -= dt;    // Kabut Racun L5 mark
   if (!e.affixes?.length) return;
   if (has(e, 'armored') && e.armor < e.armorMax) {
     e.armorIdle += dt;

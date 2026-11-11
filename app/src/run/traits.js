@@ -67,6 +67,12 @@ function rageAdd(run, c, n) {
   }
 }
 
+// Murka added at once (Amarah Perang L5); nothing for the other jobs.
+export function traitRage(run, n) {
+  const c = cfg(run);
+  if (c?.id === 'rage' && run.trait) rageAdd(run, c, n);
+}
+
 // Any damage the player deals (skills, ult, waves too): only restarts the decay timer, never adds to the bar.
 export function traitDealt(run) {
   if (run.trait) run.trait.idle = 0;
@@ -117,7 +123,7 @@ export function traitCast(run, skill) {
       }
       return 1;
     case 'focus':
-      if (skill.id === 'leap') { t.v = c.max; t.focus = true; } // Lompatan Mundur fills the bar
+      if (skill.focusFill) { t.v = c.max; t.focus = true; } // Lompatan Mundur L5 fills the bar (spec §43.4)
       return 1;
     case 'combo': {
       const n = t.v;

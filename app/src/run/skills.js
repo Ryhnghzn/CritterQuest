@@ -6,7 +6,7 @@ import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS, TEMPO } from '..
 import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx, focusShotFx } from './skillfx.js';
-import { traitMods, traitCast, traitCastExecute, traitFocusShot } from './traits.js';
+import { traitMods, traitCast, traitCastExecute, traitFocusShot, traitRage } from './traits.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -47,7 +47,7 @@ export function stepAttack(run, intent, dt) {
     const proj = makeProjectile({
       x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
       speed: a.speed * TEMPO.projSpeed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
-      pierce: shot ? shot.pierce : a.pierce, explode: a.explode, fx: a.fx,
+      pierce: (shot ? shot.pierce : a.pierce) + (run.skillBuffT > 0 ? run.skillBuff?.pierceBasic || 0 : 0), explode: a.explode, fx: a.fx, // Mata Elang L5
     });
     if (focus) { proj.crit = true; focusShotFx(run, angle); }
     run.hits.push(proj);
@@ -63,8 +63,14 @@ function markCast(run, skill) {
 // energy a skill costs this run: Hemat Mana (spec §43.3) takes a share off
 export const skillCost = (run, s) => s.cost * (1 - (run.fx?.manaSave || 0));
 
+// a skill with charges: the second cast must come within CHARGE_WINDOW s, at least CHARGE_GAP s after the first
+const CHARGE_WINDOW = 2, CHARGE_GAP = 0.25;
+
 export function stepSkills(run, intent, dt) {
   for (let i = 0; i < SKILL_SLOTS; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
+  if (run.charge) for (let i = 0; i < SKILL_SLOTS; i++) if (run.charge[i] > 0 && (run.charge[i] -= dt) <= 0) { // the second cast was not used
+    run.charge[i] = 0; run.skillCd[i] = run.skillCdMax[i];
+  }
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
   run.energy = Math.min(ENERGY.max, run.energy + ENERGY.regen * dt);
   if (run.noEnergyT > 0) run.noEnergyT -= dt;
@@ -79,6 +85,10 @@ export function stepSkills(run, intent, dt) {
     run.energy -= cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
+    if (skills[i].charges > 1) { // L3 (spec §43.4): a second cast right after the first; the cooldown waits for it
+      run.charge ||= [0, 0, 0, 0, 0, 0, 0, 0];
+      if (!run.charge[i]) { run.charge[i] = CHARGE_WINDOW; run.skillCd[i] = CHARGE_GAP; } else run.charge[i] = 0;
+    }
     const before = run.hits.length;
     castSkill(run, skills[i]);
     const mul = traitCast(run, skills[i]), exec = traitCastExecute(); // Panas / Bidik / Kombo (spec §31.3–31.5)
@@ -134,15 +144,26 @@ function castSkill(run, s) {
         follow: !!s.follow, freeze: s.freeze ?? 0, fx: s.look || s.id,
       }));
       run.hits[run.hits.length - 1].knock = s.knock || 0;
+      if (s.vuln) run.hits[run.hits.length - 1].vuln = s.vuln; // Kabut Racun L5: the foes inside take more
+      if (s.after) later(run, s.after, x, y, s.duration ?? 0, s.look || s.id);           // L5: a vortex / lava stays
+      if (s.finale) later(run, { ...s.finale, duration: 0.35 }, x, y, s.duration ?? 0, 'boom'); // L5: a big blast at the end
+      if (s.shatter) { run.shatterT = s.shatter.time; run.shatter = s.shatter; }           // Nova Es L5 (run/run.js killEnemy)
       break;
     }
-    case 'proj':
-      run.hits.push(makeProjectile({
-        x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle,
-        speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, explode: s.explode || null, fx: s.look || s.id,
-        delay: s.delay || 0, boomerang: !!s.boomerang, pull: s.pull || 0, trail: s.trail || null, split: s.split || null,
-      }));
+    case 'proj': { // count + spread: several at once (Panah Naga L5); twin: a second one a moment later (Kapak Bumerang L3)
+      const n = s.count || 1, shots = s.twin ? [0, s.twin] : [0];
+      for (const wait of shots) for (let k = 0; k < n; k++) {
+        const a = angle + (n > 1 ? (k / (n - 1) - 0.5) * (s.spread || 0) * DEG : 0);
+        const p = makeProjectile({
+          x: run.px + run.aimX * 8, y: run.py + run.aimY * 8, angle: a,
+          speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, explode: s.explode || null, fx: s.look || s.id,
+          delay: (s.delay || 0) + wait, boomerang: !!s.boomerang, pull: s.pull || 0, trail: s.trail || null, split: s.split || null,
+        });
+        if (s.pause) p.pause = s.pause; // a boomerang waits spinning at the far end (Kapak Bumerang L5)
+        run.hits.push(p);
+      }
       break;
+    }
     case 'line': // pillars fixed on the line at cast time; each erupts `gap` s after the one before
       for (let i = 0; i < s.count; i++) {
         const d = s.step * (i + 1);
@@ -152,6 +173,7 @@ function castSkill(run, s) {
         pillar.reach = i < s.count - 1 ? s.step : 0; // px to the next pillar: the crack leaps there when this one erupts
         run.hits.push(pillar);
       }
+      if (s.finale) { const d = s.step * s.count; later(run, { ...s.finale, duration: 0.35 }, run.px + run.aimX * d, run.py + run.aimY * d, s.gap * (s.count - 1) + s.life * 0.5, 'boom'); } // Retakan Bumi L5
       break;
     case 'fan': { // a full circle (spread 360) spaces the arrows by count, not count - 1
       const full = s.spread >= 360, n = s.count;
@@ -160,7 +182,7 @@ function castSkill(run, s) {
         const ring = s.ring || 0;
         run.hits.push(makeProjectile({
           x: run.px + Math.cos(a) * ring, y: run.py + Math.sin(a) * ring, angle: a, speed: s.speed, range: s.range, r: s.r, mult: s.mult,
-          pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null, delay: s.delay || 0, curve: s.curve || 0,
+          pierce: s.pierce || 0, fx: s.look || 'dagger', split: s.split || null, delay: s.delay || 0, curve: s.curve || 0, boomerang: !!s.returns, // L5: they come back once
           hover: s.delay ? ring : 0, // floats on the ring round the player until it launches
         }));
       }
@@ -188,21 +210,37 @@ function castSkill(run, s) {
         if (s.resetOnKill) sw.resetSid = s.id; // a kill makes the skill ready again (Terjang)
         run.hits.push(sw);
       }
+      // along the dash path, laid down as the hero passes: a fire trail (Terjang L5), a shadow that slashes again (Langkah Bayangan L5)
+      const path = (every, fn) => { for (let d = every; d <= s.distance; d += every) fn(run.px + run.dodgeX * d, run.py + run.dodgeY * d, (d / s.distance) * s.duration); };
+      if (s.trail) path(s.trail.every * (s.distance / s.duration), (x, y, at) => later(run, { r: s.trail.r, mult: s.trail.mult, ticks: s.trail.ticks, duration: s.trail.life }, x, y, at, 'trail'));
+      if (s.echo) path(s.r * 1.5, (x, y, at) => later(run, { r: s.r, mult: s.mult * 0.6, duration: 0.1 }, x, y, s.echo + at, s.look || s.id));
       break;
     }
     case 'buff':
       run.buffT = s.duration;
       run.dmgTakenMul = s.dmgTaken;
-      if (s.atk || s.atkSpd || s.crit || s.critDmg) {
-        run.skillBuff = { atk: s.atk, atkSpd: s.atkSpd, crit: s.crit, critDmg: s.critDmg };
+      if (s.atk || s.atkSpd || s.crit || s.critDmg || s.moveSpd || s.pierceBasic || s.killExtend) {
+        run.skillBuff = { atk: s.atk, atkSpd: s.atkSpd, crit: s.crit, critDmg: s.critDmg, moveSpd: s.moveSpd, pierceBasic: s.pierceBasic, killExtend: s.killExtend, extended: 0 };
         run.skillBuffT = s.duration;
         run.applyBuffs();
       }
       if (s.blast) blast(run, s.blast);
+      if (s.rage) traitRage(run, s.rage);                                           // Amarah Perang L5: Murka at once
+      if (s.invuln) run.dodgeInv = Math.max(run.dodgeInv, s.invuln);                  // Bom Asap L5
+      if (s.endBlast) later(run, { ...s.endBlast, duration: 0.35, follow: true }, run.px, run.py, s.duration, 'nova'); // Perisai Mana L5
       break;
     default:
       throw new Error(`unknown skill kind ${s.kind}`);
   }
+}
+
+// An area that starts `at` s from now (after an L5 skill: a vortex, lava, a final blast, a trail patch).
+function later(run, a, x, y, at, fx) {
+  const h = makeArea({ x, y, r: a.r, mult: a.mult, ticks: a.ticks ?? 1, duration: a.duration ?? 0.35, follow: !!a.follow, freeze: a.freeze ?? 0, fx, delay: at });
+  h.knock = a.knock || 0;
+  if (fx === 'trail') h.part = 'trail';
+  run.hits.push(h);
+  return h;
 }
 
 // shockwave around the player (Teriakan Baja, Bom Asap, Lompatan Mundur)

@@ -453,8 +453,10 @@ describe('Mage Panas, Archer Bidik, Assassin Kombo (wiring)', () => {
     expect(1e6 - e.hp).toBeCloseTo(g.stats.atk * g.stats.critDmg, 0);
   });
 
-  it('Lompatan Mundur mengisi Bidik dan lompatannya tidak menghapusnya; panah berikutnya fokus', () => {
-    const g = mk('archer', ['leap', null, null, null]);
+  it('Lompatan Mundur L5 mengisi Bidik dan lompatannya tidak menghapusnya; panah berikutnya fokus', () => {
+    const g = new Game();
+    g.start({ classId: 'archer', stats: { ...CLASS_BASE, ...CLASSES.archer.stats, crit: 0 }, skills: ['leap', null, null, null], level: 25, levels: { leap: 5 } });
+    g.spawnT = 1e9;
     g.energy = 100;
     g.intent = { ...idle, skill1: true };
     g.step(1 / 60);
