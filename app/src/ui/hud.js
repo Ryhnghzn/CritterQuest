@@ -91,6 +91,7 @@ export function updateActions(game) {
     b.querySelector('.cost').textContent = sk ? sk.cost : '';
     b.classList.toggle('noen', !!sk && game.energy < sk.cost);
     b.classList.toggle('locked', !!sk && !!game.trait && game.trait.lock > 0); // Kepanasan
+    b.classList.toggle('chainwin', game.chain?.i === i && game.chain.page === game.page); // a chain waits for its next press (spec §43.4)
     const left = ring(b, game.skillCd[i], game.skillCdMax[i]);
     b.querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
   }

@@ -1507,6 +1507,8 @@ Enam skill lama tetap (angka §31/`data/classes.js` = level 1). Dua skill **temp
 
 **Skill tempo di game (bagian E-1, 2026-11-11):** `run/tempo.js` (tahan-isi, salur, tangkis), `input.held` (tombol angka / tombol sentuh yang masih ditekan), klik kanan = batal. Tebasan Raksasa (Warrior, level 8), Tangkis Baja (Warrior, level 12), Semburan Api (Mage, level 12). Jeda mulai setelah tahan/salur selesai; skill lain tidak bisa dipakai selama menahan; tukar halaman membatalkan. Tanda di tanah: cincin terisi (terang saat penuh) dan perisai emas selama jendela tangkis. Gerak tubuh sementara meminjam Retakan Bumi / Teriakan Baja / Nova Es.
 
+**Skill tempo E-2 (2026-11-11):** `run/summons.js` (menara, klon, rune) + rantai di `run/skills.js`. Sinar Panah (Archer 8), Menara Panah (Archer 12), Bom Waktu (Mage 8), Tarian Tiga Tebasan (Assassin 8; tombol berkedip selama jendela), Klon Bayangan (Assassin 12; satu klon sekaligus, musuh berindeks genap dalam 220 mengejarnya kecuali pemain < 80). Benda di arena digambar di lapisan tanah (menara kayu, bayangan ungu, rune berdetak dengan +%). **Peluru merah tak tertangkis:** spiral semua bos dungeon (`UNPARRYABLE`, `data/enemies.js`). Skill baru ditaruh di akhir daftar tiap job (urutan skill lama tetap).
+
 ### 43.5 Dua ultimate per job
 - Keduanya buka **level 25**; satu dipasang di tombol 5 (tab Skill), tukar gratis di luar pertarungan; bar isi sama (`ULT`). Ultimate cabang (Job Lanjutan) = pilihan ketiga.
 - **Luas** (yang sekarang): area besar, beberapa detik, damage tersebar. **Fokus** (baru): keluar < 1 dtk, area kecil, total ke satu sasaran ≈ **1,8×** Luas; meleset = bar tetap habis. Fokus punya tanda bidik singkat yang menyala, lalu getar layar keras + waktu melambat sesaat saat kena.

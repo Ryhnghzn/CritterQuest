@@ -7,6 +7,7 @@ export function needsAim(s) {
   if (!s) return false;
   switch (s.kind) {
     case 'area': return s.at === 'aim';
+    case 'turret': case 'rune': return true;
     case 'fan': return s.spread < 360;
     case 'proj': case 'line': case 'dash': case 'storm': case 'orbit': return true;
     default: return false;
@@ -19,7 +20,7 @@ export function aimShape(s, px, py, ax, ay) {
   let dx = ax - px, dy = ay - py;
   const d = Math.hypot(dx, dy) || 1, angle = Math.atan2(dy, dx);
   switch (s.kind) {
-    case 'area': {
+    case 'area': case 'turret': case 'rune': {
       if (d > s.maxDist) { dx *= s.maxDist / d; dy *= s.maxDist / d; } // castSkill clamps the same way
       return [{ type: 'circle', x: px, y: py, r: s.maxDist, range: true }, { type: 'circle', x: px + dx, y: py + dy, r: s.r }];
     }

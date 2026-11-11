@@ -8,6 +8,7 @@ import { sfx } from '../core/audio.js';
 import { castFx, focusShotFx } from './skillfx.js';
 import { traitMods, traitCast, traitCastExecute, traitFocusShot, traitRage } from './traits.js';
 import { isHeld, beginHeld, stepHeld, openParry } from './tempo.js';
+import { summon, stepSummons } from './summons.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -77,13 +78,23 @@ export function stepSkills(run, intent, dt) {
   const skills = run.skillDefs;
   if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
   stepHeld(run, intent, dt); // tempo skills being held, the parry window (spec §43.4)
+  stepSummons(run, dt);      // towers, clones, runes
+  if (run.chain && (run.chain.win -= dt) <= 0) endChain(run); // the window ran out
   const pressed = [intent.skill1, intent.skill2, intent.skill3, intent.skill4];
   const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
   for (let i = 0; i < SKILL_SLOTS; i++) {
-    if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0 || run.held) continue;
+    if (locked || !pressed[i] || !skills[i] || run.held) continue;
+    if (run.chain && run.chain.i === i && run.chain.page === (run.page || 0)) { chainNext(run, skills[i]); continue; } // the next step of a chain
+    if (run.skillCd[i] > 0) continue;
     const cost = skillCost(run, skills[i]);
     if (run.energy < cost) { if (run.noEnergyT <= 0) sfx.noEnergy(); run.noEnergyT = 0.4; continue; }
     run.energy -= cost;
+    if (skills[i].kind === 'chain') { // Tarian Tiga Tebasan: step ① now; the cooldown waits for the end of the chain
+      run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
+      run.chain = { i, page: run.page || 0, step: 0, win: 0 };
+      chainNext(run, skills[i]); markCast(run, skills[i]); sfx.skill(skills[i].id);
+      continue;
+    }
     if (isHeld(skills[i])) { // charge / channel: fires while / when let go; the cooldown starts at the end (run/tempo.js)
       run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
       traitCast(run, skills[i]);
@@ -227,6 +238,16 @@ function castSkill(run, s) {
     case 'parry':
       openParry(run, s);
       break;
+    case 'turret': case 'rune': { // at the aim point, clamped like an aimed area (run/summons.js)
+      let dx = run.aimPX - run.px, dy = run.aimPY - run.py;
+      const d = Math.hypot(dx, dy);
+      if (d > s.maxDist) { dx *= s.maxDist / d; dy *= s.maxDist / d; }
+      summon(run, s, run.px + dx, run.py + dy);
+      break;
+    }
+    case 'clone':
+      summon(run, s, run.px, run.py);
+      break;
     case 'buff':
       run.buffT = s.duration;
       run.dmgTakenMul = s.dmgTaken;
@@ -243,6 +264,30 @@ function castSkill(run, s) {
     default:
       throw new Error(`unknown skill kind ${s.kind}`);
   }
+}
+
+// Chains (spec §43.4): each press plays the next step and opens a new window; after step 3 (or a missed window)
+// the cooldown starts.
+function chainNext(run, s) {
+  const c = run.chain, step = ++c.step;
+  const st = s[`s${step}`];
+  if (step === 1) castSkill(run, { ...st, kind: 'dash', id: s.id, look: s.look });
+  else {
+    const h = makeArea({ x: run.px + (step === 3 ? run.aimX * 30 : 0), y: run.py + (step === 3 ? run.aimY * 30 : 0), r: st.r, mult: st.mult, freeze: st.freeze || 0, fx: s.look || s.id, duration: 0.2 });
+    h.skill = true; run.hits.push(h);
+    if (st.wave) { const w = makeArea({ x: run.px, y: run.py, r: st.wave.r, mult: st.wave.mult, fx: 'shout', duration: 0.35 }); w.skill = true; w.knock = 160; run.hits.push(w); }
+    if (step === 3) run.addShake?.('medium');
+  }
+  for (let k = run.hits.length - 1; k >= 0 && !run.hits[k].skill; k--) run.hits[k].skill = true;
+  run.attackT = ATTACK_POSE;
+  c.win = s.window;
+  if (step >= 3) endChain(run);
+}
+function endChain(run) {
+  const c = run.chain;
+  run.chain = null;
+  const cds = run.pageCd || [run.skillCd], maxes = run.pageCdMax || [run.skillCdMax];
+  cds[c.page][c.i] = maxes[c.page][c.i];
 }
 
 // An area that starts `at` s from now (after an L5 skill: a vortex, lava, a final blast, a trail patch).

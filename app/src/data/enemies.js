@@ -287,6 +287,10 @@ export const SHOT_LOOKS = {
 for (const [id, look] of Object.entries(SHOT_LOOKS)) for (const k of ['ring', 'spiral', 'shot', 'slam', 'meteor', 'shrooms', 'cloud', 'pools', 'shardrain', 'eruption', 'curse']) if (ENEMIES[id][k]) ENEMIES[id][k].look = look;
 for (const [id, k] of [['boss', 'clones'], ['tombboss', 'sandstorm']]) ENEMIES[id][k][k === 'clones' ? 'ring' : 'shot'].look = SHOT_LOOKS[id];
 
+// Red shots that no parry can stop (spec §43.8): every dungeon boss's spiral. Drawn with a red glow.
+export const UNPARRYABLE = { boss: ['spiral'], crystalboss: ['spiral'], sporeboss: ['spiral'], tombboss: ['spiral'], lavaboss: ['spiral'], eclipseboss: ['spiral'] };
+for (const [id, keys] of Object.entries(UNPARRYABLE)) for (const k of keys) if (ENEMIES[id][k]) Object.assign(ENEMIES[id][k], { unparryable: true, color: '#ff2a3a' });
+
 // Basic attacks hit a shield; skills (and gear lightning) go through it.
 export const SHIELD_PIERCING = ['spin', 'rain', 'pierce', 'nova', 'chain', 'shadow', 'dagger', 'shout'];
 

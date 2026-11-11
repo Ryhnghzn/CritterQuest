@@ -255,6 +255,7 @@ export class Renderer {
     }
     playerStatus(g, game, t);
     tempoMarks(g, game, t);
+    summonMarks(g, game, t);
 
   }
 
@@ -676,6 +677,33 @@ function tempoMarks(g, game, t) {
   if (game.parryT > 0) {
     g.save(); g.globalAlpha = Math.min(1, game.parryT * 4);
     g.beginPath(); g.ellipse(x, y - 18, 30, 34, 0, 0, TAU); g.lineWidth = 3; g.strokeStyle = '#ffd27a'; g.stroke();
+    g.restore();
+  }
+}
+
+// what tempo skills leave in the arena (run/summons.js): a tower, the hero's shadow clone, a ticking rune
+function summonMarks(g, game, t) {
+  for (const m of game.summons || []) {
+    const k = Math.max(0, m.t / m.max);
+    g.save();
+    if (m.kind === 'turret') {
+      g.beginPath(); g.ellipse(m.x, m.y + 6, 16, 7, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill();
+      g.fillStyle = '#5a4630'; g.fillRect(m.x - 9, m.y - 26, 18, 30); g.fillStyle = '#8a6a44'; g.fillRect(m.x - 12, m.y - 32, 24, 7);
+      g.strokeStyle = '#140c08'; g.lineWidth = 1.5; g.strokeRect(m.x - 9, m.y - 26, 18, 30); g.strokeRect(m.x - 12, m.y - 32, 24, 7);
+      g.fillStyle = '#7be08a'; g.fillRect(m.x - 12, m.y - 38, 24 * k, 3);
+    } else if (m.kind === 'clone') {
+      g.globalAlpha = 0.55 + 0.25 * Math.sin(t * 8);
+      g.beginPath(); g.ellipse(m.x, m.y + 8, 14, 6, 0, 0, TAU); g.fillStyle = 'rgba(80,40,140,.6)'; g.fill();
+      g.beginPath(); g.ellipse(m.x, m.y - 14, 10, 20, 0, 0, TAU); g.fillStyle = 'rgba(60,30,110,.75)'; g.fill();
+      g.beginPath(); g.arc(m.x, m.y - 38, 8, 0, TAU); g.fill();
+      g.globalAlpha = 1; g.fillStyle = '#c79bff'; g.fillRect(m.x - 12, m.y - 52, 24 * k, 3);
+    } else if (m.kind === 'rune') {
+      const beat = 0.5 + 0.5 * Math.sin(t * (6 + (1 - k) * 18));
+      g.beginPath(); g.arc(m.x, m.y, m.r, 0, TAU); g.fillStyle = `rgba(255,120,50,${0.08 + 0.12 * beat})`; g.fill();
+      g.lineWidth = 2; g.strokeStyle = `rgba(255,170,80,${0.6 + 0.4 * beat})`; g.setLineDash([6, 5]); g.lineDashOffset = -t * 30; g.stroke(); g.setLineDash([]);
+      g.beginPath(); g.arc(m.x, m.y, m.r * 0.55, -Math.PI / 2, -Math.PI / 2 + TAU * k); g.lineWidth = 4; g.strokeStyle = '#ffd27a'; g.stroke();
+      if (m.bonus > 0) { g.font = '700 12px Barlow, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#fff2b0'; g.fillText(`+${Math.round(m.bonus * 100)}%`, m.x, m.y + 4); }
+    }
     g.restore();
   }
 }

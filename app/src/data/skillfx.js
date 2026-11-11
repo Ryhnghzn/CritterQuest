@@ -9,6 +9,11 @@ export const SKILL_FX = {
   greatslash: { el: 'steel', n: 18, rate: 60 },
   steelparry: { el: 'holy', n: 16, rate: 40 },
   flamethrower: { el: 'fire', n: 6, rate: 120 },
+  beamshot: { el: 'lightning', n: 8, rate: 100 },
+  tower: { el: 'steel', n: 10, rate: 20 },
+  timebomb: { el: 'fire', n: 16, rate: 30 },
+  tripledance: { el: 'shadow', n: 14, rate: 80 },
+  shadowclone: { el: 'shadow', n: 18, rate: 30 },
   sweep: { el: 'steel', n: 10, rate: 40 },
   tumble: { el: 'steel', n: 8, rate: 90 },
   // warrior

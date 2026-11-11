@@ -503,3 +503,5 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 #act-swap .peek i canvas{width:16px!important;height:16px!important}
 #act-swap .peek i b{position:absolute;inset:0;background:rgba(0,0,0,.6);transform-origin:bottom;transform:scaleY(var(--k,0))}
 body.touch #act-swap{left:-54px;bottom:auto;top:-52px}
+#ui .act.chainwin{animation:cq-chain .25s ease-in-out infinite alternate}
+@keyframes cq-chain{from{box-shadow:0 0 0 rgba(199,155,255,0)}to{box-shadow:0 0 16px rgba(199,155,255,.95)}}

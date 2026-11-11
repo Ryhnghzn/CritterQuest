@@ -176,7 +176,9 @@ const MOVES = {
 };
 // tempo skills (spec §43.4) borrow a move until they get their own
 MOVES.warrior.greatslash = MOVES.warrior.quake; MOVES.warrior.steelparry = MOVES.warrior.shout;
-MOVES.mage.flamethrower = MOVES.mage.nova;
+MOVES.mage.flamethrower = MOVES.mage.nova; MOVES.mage.timebomb = MOVES.mage.meteor;
+MOVES.archer.beamshot = MOVES.archer.pierce; MOVES.archer.tower = MOVES.archer.trap;
+MOVES.assassin.tripledance = MOVES.assassin.shadow; MOVES.assassin.shadowclone = MOVES.assassin.smoke;
 
 // how long the renderer plays a skill's move (seconds)
 export function moveDuration(classId, skillId, skillDur = 0) {

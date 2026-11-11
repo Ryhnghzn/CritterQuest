@@ -82,7 +82,7 @@ function act(run, e, b) {
 
 // by: the enemy type firing it (death dialog)
 export function fire(run, x, y, angle, s, by = null) {
-  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null, by, look: s.look || null });
+  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null, by, look: s.look || null, unparryable: !!s.unparryable });
 }
 
 function summon(run, e, s) {

@@ -8,6 +8,7 @@ import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
 import { passiveCrit, poisonFoe, dotFoe } from './passives.js';
 import { tryParry, cancelHeld } from './tempo.js';
+import { decoyFor, runeFeed } from './summons.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -128,6 +129,7 @@ export class Game {
     this.atkCd = 0; this.attackT = 0;
     this.aimPX = 0; this.aimPY = 0;
     this.energy = ENERGY.start; this.noEnergyT = 0;
+    this.summons = []; this.chain = null; this.held = null; this.parryT = 0; // tempo skills (spec §43.4)
     const pool = CLASSES[classId].skills;
     this.levels = levels; // skill id → level (spec §43): each worn skill is built at its level (run/skilllevel.js)
     // two pages of four (spec §43.6): skillDefs / skillCd / skillCdMax are the page in use; both pages' cooldowns run
@@ -423,6 +425,7 @@ export class Game {
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     if (h.breakShield) { e.armor = 0; if (e.ward) e.ward = 0; } // Tebasan Raksasa at full
     if (h.burn) dotFoe(this, e, h.burn);                    // Semburan Api L5
+    runeFeed(this, e, h);                                     // Bom Waktu grows
     if (h.vuln) { e.vulnT = VULN_TIME; e.vulnK = h.vuln; }          // Kabut Racun L5 marks the foes inside
     if (e.vulnT > 0) dmg *= 1 + e.vulnK;
     e.hp -= affixHit(this, e, dmg); // an elite's Berlapis shield soaks first (run/affix.js)
@@ -499,7 +502,11 @@ export class Game {
         const d = Math.hypot(to.x - e.x, to.y - e.y), stop = e.target ? e.r + 12 : 0;
         const k = d > stop ? 1 : 0;
         vx = Math.cos(ga) * e.speed * k; vy = Math.sin(ga) * e.speed * k;
-      } else ({ vx, vy } = aiStep(this, e, dt));
+      } else {
+        const lure = decoyFor(this, e, i); // Klon Bayangan draws every other enemy near it (run/summons.js)
+        if (lure) { const px = this.px, py = this.py; this.px = lure.x; this.py = lure.y; ({ vx, vy } = aiStep(this, e, dt)); this.px = px; this.py = py; }
+        else ({ vx, vy } = aiStep(this, e, dt));
+      }
       if (e.type === 'dart' || e.type === 'vulture') { // zig-zag flight
         const z = Math.sin(e.wob) * 0.7, c = Math.cos(z), s = Math.sin(z);
         [vx, vy] = [vx * c - vy * s, vx * s + vy * c];
