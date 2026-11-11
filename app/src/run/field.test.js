@@ -3,7 +3,7 @@ vi.mock('../core/audio.js', () => ({ sfx: new Proxy({}, { get: () => () => {} })
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { REGIONS, FIELD, regionById } from '../data/world.js';
-import { buildFieldMap, blocked, sample } from './fieldmap.js';
+import { buildFieldMap, blocked, sample, pushOut, landAt } from './fieldmap.js';
 import { fieldLevel, fieldScale, spawnPack, spawnGuardian, questDrop } from './field.js';
 import { fire } from './enemies.js';
 import { HORDE } from '../data/balance.js';
@@ -308,5 +308,44 @@ describe('musuh biome (§25.4)', () => {
   it('setiap wilayah hanya memakai musuh yang ada', async () => {
     const { ENEMIES } = await import('../data/enemies.js');
     for (const r of REGIONS) for (const id of Object.keys(r.enemies)) expect(ENEMIES[id], `${r.id}:${id}`).toBeDefined();
+  });
+});
+
+const exploreGame = (extra = {}) => { const g = new Game(); g.explore({ ...setup(), ...extra }); return g; };
+const rideNow = (g) => {
+  g.intent = { ...g.intent, mount: true }; g.enemies.length = 0; g.step(1 / 60);
+  g.intent = { ...g.intent, mount: false };
+  for (let i = 0; i < 70; i++) { g.enemies.length = 0; g.step(1 / 60); }
+};
+
+describe('terbang di atas air (§35.1)', () => {
+  const lakeMap = () => { const map = buildFieldMap(forest); return { map, lake: map.solids.find((s) => s.kind === 'lake') }; };
+  it('pushOut biasa mendorong keluar danau, terbang tidak', () => {
+    const { map, lake } = lakeMap();
+    const a = { x: lake.x, y: lake.y }, b = { x: lake.x, y: lake.y };
+    pushOut(map, a, 12); pushOut(map, b, 12, true);
+    expect(Math.hypot(a.x - lake.x, a.y - lake.y)).toBeGreaterThanOrEqual(lake.r);
+    expect(b).toEqual({ x: lake.x, y: lake.y });
+  });
+  it('terbang tetap ditahan pohon & batu', () => {
+    const { map } = lakeMap();
+    const tree = map.solids.find((s) => s.kind === 'tree');
+    const o = { x: tree.x + 1, y: tree.y };
+    pushOut(map, o, 12, true);
+    expect(Math.hypot(o.x - tree.x, o.y - tree.y)).toBeGreaterThanOrEqual(tree.r + 12 - 0.01);
+  });
+  it('landAt: turun di tengah danau → berdiri di daratan', () => {
+    const { map, lake } = lakeMap();
+    const o = { x: lake.x, y: lake.y };
+    landAt(map, o, 12);
+    expect(blocked(map, o.x, o.y, 12)).toBe(false);
+  });
+  it('Game: Naga menyeberang, jatuh di atas air → di darat', () => {
+    const g = exploreGame({ mount: { id: 'dragon', rarity: 5, fly: true, skin: 0 } }); rideNow(g);
+    const lake = g.fmap.solids.find((s) => s.kind === 'lake');
+    g.px = lake.x; g.py = lake.y; g.enemies.length = 0; g.step(1 / 60);
+    expect(Math.hypot(g.px - lake.x, g.py - lake.y)).toBeLessThan(lake.r);
+    g.invuln = 0; g.dodgeInv = 0; g.hurtPlayer(5); g.step(1 / 60);
+    expect(blocked(g.fmap, g.px, g.py, 12)).toBe(false);
   });
 });

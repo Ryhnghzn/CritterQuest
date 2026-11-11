@@ -3,6 +3,7 @@
 // rocks and ruins. Everything solid is a circle in a spatial grid for cheap
 // collision. Pure and deterministic (own seeded RNG).
 import { FIELD } from '../data/world.js';
+import { MOUNT } from '../data/mounts.js';
 
 const CELL = 200;
 const cache = new Map();
@@ -203,17 +204,25 @@ export function solidsNear(map, x, y) {
 }
 
 // Pushes a circle (o.x, o.y, radius r) out of solids and inside the map edge.
-export function pushOut(map, o, r) {
+const WET = new Set(['water', 'lake']);
+export function pushOut(map, o, r, fly = false) {
   for (const i of solidsNear(map, o.x, o.y)) {
     const s = map.solids[i];
+    if (fly && WET.has(s.kind)) continue; // flying mounts pass over rivers & lakes (spec §35.1)
     const dx = o.x - s.x, dy = o.y - s.y, min = s.r + r, d2 = dx * dx + dy * dy;
     if (d2 >= min * min) continue;
-    const d = Math.sqrt(d2) || 0.01;
+    const d = Math.sqrt(d2);
+    if (d < 0.01) { o.x = s.x + min; o.y = s.y; continue; } // dead centre: any direction will do
     o.x = s.x + (dx / d) * min; o.y = s.y + (dy / d) * min;
   }
   const e = FIELD.edge;
   o.x = Math.max(e, Math.min(map.w - e, o.x));
   o.y = Math.max(e, Math.min(map.h - e, o.y));
+}
+
+// Landing (knocked off a flying mount over water): push out until standing on dry land.
+export function landAt(map, o, r) {
+  for (let i = 0; i < MOUNT.landTries && blocked(map, o.x, o.y, r); i++) pushOut(map, o, r);
 }
 
 // true when a circle at (x, y) overlaps something solid (checks the 3×3 cells around it)

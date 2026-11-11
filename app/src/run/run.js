@@ -20,6 +20,7 @@ import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
+import { landAt } from './fieldmap.js';
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
 import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
@@ -76,6 +77,14 @@ export class Game {
       mats: { ...this.mats }, gems: this.gemsFound.slice(),
       bossKills: this.bossKills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy }, floorsCleared: this.floorsCleared, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
     };
+  }
+
+  // Knocked off a flying mount over water: stand on dry land (regions only).
+  afterDismount() {
+    if (!this.field || !this.mount.fly || this.mount.state === 'riding') return;
+    const o = { x: this.px, y: this.py };
+    landAt(this.fmap, o, 12);
+    this.px = o.x; this.py = o.y;
   }
 
   // Pause → Menyerah: ends the trip; the caller treats it like dying (spec §13.4).
@@ -267,7 +276,7 @@ export class Game {
     if (this.mountFxT > 0) this.mountFxT = Math.max(0, this.mountFxT - dt);
     if (this.field) { // mount (spec §35.1): knocked off before the action so the press is not lost
       const m = this.mount, it = this.intent;
-      if (m.state !== 'none' && wantsAction(it, attackWanted(this, it))) { if (isRiding(m)) this.mountFxT = MOUNT.fxTime; dismount(m, 'action'); }
+      if (m.state !== 'none' && wantsAction(it, attackWanted(this, it))) { if (isRiding(m)) this.mountFxT = MOUNT.fxTime; dismount(m, 'action'); this.afterDismount(); }
       if (it.mount && m.state === 'none') startSummon(m);
       if (stepMount(m, dt) === 'rode') { this.mountFxT = MOUNT.fxTime; sfx.chime(); }
     }
@@ -491,6 +500,7 @@ export class Game {
     this.stats.hp -= dmg;
     const wasRiding = isRiding(this.mount);
     if (dismount(this.mount, 'hit') && wasRiding) this.mountFxT = MOUNT.fxTime;
+    this.afterDismount();
     traitHurt(this, dmg);
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
     this.invuln = 0.7; this.flash = 0.25; this.addShake('medium');

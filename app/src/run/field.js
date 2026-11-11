@@ -8,6 +8,7 @@ import { FIELD, FIELD_SCALE, TREASURE, READY_TOWNS, TOWNS, regionById } from '..
 import { ENEMIES } from '../data/enemies.js';
 import { dungeonById } from '../data/dungeons.js';
 import { buildFieldMap, pushOut, blocked } from './fieldmap.js';
+import { canCrossWater } from './mount.js';
 import { makeElite, addMats, dropGear } from './dungeon.js';
 import { revealFog, treasureSpots } from '../meta/world.js';
 import { GEM_IDS, GEMS } from '../data/forge.js';
@@ -142,7 +143,7 @@ export function stepField(run, dt) {
 
 export function confineFieldPlayer(run) {
   const o = { x: run.px, y: run.py };
-  pushOut(run.fmap, o, 12);
+  pushOut(run.fmap, o, 12, canCrossWater(run.mount));
   for (const h of run.hidden) if (h.hut) { // a cabin is solid
     const dx = o.x - h.x, dy = o.y - (h.y - 30), d = Math.hypot(dx, dy), r = HIDDEN_R.solid + 12;
     if (d < r && d > 0) { o.x = h.x + (dx / d) * r; o.y = h.y - 30 + (dy / d) * r; }
