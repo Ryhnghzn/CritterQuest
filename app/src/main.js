@@ -28,7 +28,9 @@ import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, a
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
 import { codexFx } from './meta/collection.js';
-import { activeMountSetup, mountFx } from './meta/stable.js';
+import { activeMountSetup, mountFx, grantMount, buyMount, buySkin, setActiveMount } from './meta/stable.js';
+import { MOUNT_IDS } from './data/mounts.js';
+import { MAJESTIC_BY_ID } from './render/world.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
 import { equipSkill, allocateTalents, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
@@ -414,6 +416,9 @@ function openNpc(npc, message = null) {
         serve(respec, tr('Poinmu kembali. Bagi lagi di panel Karakter (I).'));
       } else openNpc(townNpc);
     },
+    onBuyMount: (id) => serve((c, now) => buyMount(c, id, now), t('{name} kini milikmu!', { name: MAJESTIC_BY_ID[id].name })),
+    onBuySkin: (id, skin) => serve((c, now) => buySkin(c, id, skin, now), t('Warna {name} ditambahkan.', { name: MAJESTIC_BY_ID[id].skins[skin].name })),
+    onSetMount: (id, skin) => serve((c, now) => setActiveMount(c, id, skin, now), t('{name} siap ditunggangi (tekan R di wilayah).', { name: MAJESTIC_BY_ID[id].name })),
     onHaircut: (look) => serve((c, now) => changeLook(c, look, now), tr('Nah, rapi sekali! Cocok untukmu.')),
     onBountyClaim: (i, sub = bountyText(current.bounties[i])) => serve((c, now) => claimBounty(c, i, Math.random, now), (r) => (rewardPop(tr('Tugas selesai!'), sub, { ...r.reward, mats: { dust: r.reward.dust } }, r.levelsGained), {
       text: t('Tugas selesai! +{g} koin, +{e} EXP, +{d} {dust}, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, d: r.reward.dust, dust: MATS.dust.name, m: r.reward.marks })
@@ -572,6 +577,7 @@ function openCharPanel() {
         else openCharPanel();
       },
     },
+    mount: { onSet: (id, skin) => changeGear((c, now) => setActiveMount(c, id, skin, now)) },
     gear: {
       editable: true,
       onEquip: (id) => changeGear((c, now) => equip(c, id, now)),
@@ -686,12 +692,6 @@ function setupRunUI() {
 }
 
 // open world (spec §25.1)
-// TEMPORARY test mount (cheat panel) until the Stable gives real mounts (Bagian C)
-let cheatMount = null;
-const CHEAT_MOUNTS = {
-  horse: { id: 'horse', rarity: 0, fly: false, skin: 0 },
-  dragon: { id: 'dragon', rarity: 5, fly: true, skin: 0 },
-};
 async function explore(regionId, at = 'west') {
   if (scene === 'town') syncHp();
   await saveCurrent();
@@ -708,7 +708,7 @@ async function explore(regionId, at = 'west') {
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
     effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current),
-    region: regionId, at, mount: activeMountSetup(current) ?? cheatMount, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
+    region: regionId, at, mount: activeMountSetup(current), fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
   });
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
   if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
@@ -1009,7 +1009,19 @@ function addToBag(c, items) {
 
 const cheatActions = {
   close: toggleCheat,
-  mount: (id) => { cheatMount = CHEAT_MOUNTS[id]; if (game.field) game.mount = freshMount(cheatMount); toast(tr('Mount uji siap: tekan R')); },
+  mount: async (ids) => { // 'horse' or 'all'
+    const give = (c) => { for (const id of ids === 'all' ? MOUNT_IDS : [ids]) grantMount(c, id); };
+    const msg = ids === 'all' ? 'Semua mount didapat' : 'Kuda didapat';
+    if (scene !== 'run') { cheatChar(give, msg); return; }
+    // in a region: cheatChar would reset HP from the town; touch only the mounts, then call the mount right away
+    const c = structuredClone(current);
+    give(c);
+    c.updatedAt = Date.now();
+    current = c;
+    if (game.field) game.mount = freshMount(activeMountSetup(current));
+    await saveCurrent();
+    toast(tr(msg)); drawCheat();
+  },
   gold: (n) => cheatChar((c) => { c.gold += n; }, t('+{n} koin', { n })),
   level: (n) => cheatChar((c) => { c.level = Math.min(CHAR_LEVEL_MAX, c.level + n); c.exp = 0; }, 'Level naik'),
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),

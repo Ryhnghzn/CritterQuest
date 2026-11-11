@@ -193,7 +193,7 @@ const HAIR_EN = { Pendek: 'Short', Jabrik: 'Spiky', Panjang: 'Long', Bob: 'Bob',
 const HAIR_COLOR_EN = { Hitam: 'Black', Cokelat: 'Brown', Pirang: 'Blond', Merah: 'Red', Biru: 'Blue', Putih: 'White' };
 
 const BUILDING_EN = {
-  Penginapan: 'Inn', 'Toko Ramuan': 'Potion Shop', 'Pandai Besi': 'Smithy', 'Balai Petualang': "Adventurers' Hall", 'Tukang Cukur': 'Barber',
+  Penginapan: 'Inn', Kandang: 'Stable', 'Toko Ramuan': 'Potion Shop', 'Pandai Besi': 'Smithy', 'Balai Petualang': "Adventurers' Hall", 'Tukang Cukur': 'Barber',
   'Pandai Senjata': 'Weaponsmith', 'Penjahit Zirah': 'Armorer', 'Toko Perhiasan': 'Jeweller', Gudang: 'Storehouse', 'Pedagang Bahan': 'Materials Trader',
 };
 // honorifics of the big towns' people: 'Pak Rimbun' → 'Mr. Rimbun'
@@ -207,12 +207,12 @@ const nameEn = (name) => {
   return h ? h[1] + name.slice(h[0].length) : name;
 };
 const NPC_NAME_EN = {
-  'Penjaga Rolan': 'Warden Rolan', 'Bang Rudi': 'Rudi', 'Kakek Odo': 'Old Odo', 'Prajurit Gani': 'Guard Gani', 'Bu Marta': 'Mrs. Marta',
+  'Penjaga Rolan': 'Warden Rolan', 'Bang Rudi': 'Rudi', 'Mbah Sarju': 'Old Sarju', 'Kakek Odo': 'Old Odo', 'Prajurit Gani': 'Guard Gani', 'Bu Marta': 'Mrs. Marta',
   'Petualang Lelah': 'Weary Adventurer', 'Nenek Mira': 'Granny Mira', 'Pandai Brom': 'Brom the Smith', 'Guru Hadi': 'Master Hadi', 'Kapten Vera': 'Captain Vera',
   'Batu Teleport': 'Teleport Stone', 'Sela Api': 'Sela Fire',
 };
 const NPC_TITLE_EN = {
-  Petualang: 'Adventurer', 'Tetua Kota': 'Town Elder', 'Anak Kota': 'Town Kid', 'Penjaga Kota': 'Town Guard', 'Penyanyi Keliling': 'Wandering Bard',
+  Petualang: 'Adventurer', 'Penjaga Kandang': 'Stable Keeper', 'Tetua Kota': 'Town Elder', 'Anak Kota': 'Town Kid', 'Penjaga Kota': 'Town Guard', 'Penyanyi Keliling': 'Wandering Bard',
   Tamu: 'Guest', 'Pedagang Keliling': 'Travelling Merchant', 'Murid Penyihir': 'Mage Apprentice', 'Murid Pandai Besi': 'Smith Apprentice',
   'Ketua Balai': 'Hall Master', Pemanah: 'Archer', Penyihir: 'Mage', Ksatria: 'Knight',
   Pemburu: 'Hunter', 'Penjual Bunga': 'Flower Seller', Pengelana: 'Wanderer', 'Nelayan Es': 'Ice Fisher', 'Pemahat Es': 'Ice Carver',

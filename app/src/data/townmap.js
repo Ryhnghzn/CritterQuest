@@ -12,6 +12,7 @@ export const SERVICES = {
   jewelry: { icon: 'gearRing', text: 'Perhiasan pajangan' },
   storage: { icon: 'chest', text: 'Simpan & ambil gear' },
   mats: { icon: 'gem', text: 'Bahan tempa & permata' },
+  stable: { icon: 'gearBoots', text: 'Beli & pilih mount' },
   barber: { icon: 'barber', text: 'Ganti gaya rambut' },
   teleport: { icon: 'zap', text: 'Pindah ke kota lain' },
   night: { icon: 'gearAmulet', text: 'Barang langka, 18:00–05:00' },

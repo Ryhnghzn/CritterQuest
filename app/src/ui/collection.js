@@ -7,6 +7,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { BESTIARY, BESTIARY_IDS, CODEX_FX } from '../data/collection.js';
 import { UNIQUES, RARITIES } from '../data/items.js';
 import { bestiaryTier, stepsOf, collectionStats } from '../meta/collection.js';
+import { MOUNT_IDS } from '../data/mounts.js';
 import { statText } from '../meta/itemgen.js';
 import { tr, t } from '../i18n.js';
 
@@ -52,6 +53,10 @@ export function renderCollectionTab(char) {
     grid.append(cell);
   }
   codex.append(grid);
-  body.append(best, codex);
+  const mounts = el('div', 'panel');
+  mounts.append(el('h3', null, t('Mount {n}/{m}', { n: Object.keys(char.mounts.owned).length, m: MOUNT_IDS.length })),
+    el('div', 'note', tr('Dapatkan dari cerita, Kandang, Toko Lencana, dan bos. Atur di tab Mount.')));
+  mounts.dataset.row = 'mounts';
+  body.append(best, mounts, codex);
   return body;
 }

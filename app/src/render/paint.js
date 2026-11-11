@@ -4,7 +4,7 @@ import { drawIcon, OUT } from '../art/sprites.js';
 
 export const TAU = Math.PI * 2;
 const DOLL = 0.82;
-const ROLE_ICON = { inn: 'inn', potion: 'potion', gear: 'pow', gate: 'arm', talk: 'talk', trainer: 'trainer', barber: 'barber', jeweler: 'gearRing', board: 'board',
+const ROLE_ICON = { inn: 'inn', potion: 'potion', gear: 'pow', gate: 'arm', talk: 'talk', trainer: 'trainer', barber: 'barber', stable: 'gearBoots', jeweler: 'gearRing', board: 'board',
   teleport: 'zap', weapons: 'gearSword', armor: 'gearArmor', jewelry: 'gearRing', storage: 'chest', mats: 'gem', night: 'gearAmulet' };
 
 export function ink(g, fill, lw = 1.5) { g.fillStyle = fill; g.fill(); g.lineWidth = lw; g.strokeStyle = OUT; g.stroke(); }

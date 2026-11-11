@@ -22,6 +22,7 @@ import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
 import { questDef, shards } from '../meta/quests.js';
 import { rewardChips, giveLines } from './journal.js';
 import { SIDE_MAX } from '../data/quests.js';
+import { renderStableList, renderStableShop } from './stable.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -29,6 +30,7 @@ let newLook = null;     // Tukang Cukur: style being tried on
 let smithTab = 'peti';  // Pandai Brom: peti | jual | tempa | urai
 let gemTab = 'pasang';  // Tukang Permata: pasang | gabung
 let boardTab = 'tugas'; // Kapten Vera: tugas | ekspedisi | lencana
+let stableTab = 'beli'; // Mbah Sarju: beli | kandang
 
 const LINES = {
   inn: 'Selamat malam, petualang. Kasur hangat dan sup panas menunggumu.',
@@ -45,10 +47,11 @@ const LINES = {
   jewelry: 'Kalung dan cincin, masing-masing dengan kisahnya sendiri.',
   night: 'Psst… barang yang tak dijual di etalase. Hanya malam ini.',
   storage: 'Titip apa saja di sini. Barangmu aman, dan bisa kau ambil di kota besar mana pun.',
+  stable: 'Kuda yang dirawat dengan sayang tak akan meninggalkanmu di tengah jalan.',
   mats: 'Debu, kristal, inti, permata: semua yang dibutuhkan pandai besi. Jumlahnya terbatas.',
 };
 const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', jeweler: 'Tukang Permata', gate: 'Penjaga Gerbang', trainer: 'Pelatih', barber: 'Tukang Cukur', board: 'Papan Tugas', talk: 'Warga',
-  teleport: 'Perjalanan Cepat', weapons: 'Pandai Senjata', armor: 'Penjahit Zirah', jewelry: 'Toko Perhiasan', storage: 'Gudang', mats: 'Pedagang Bahan', night: 'Pedagang Malam' };
+  teleport: 'Perjalanan Cepat', weapons: 'Pandai Senjata', armor: 'Penjahit Zirah', jewelry: 'Toko Perhiasan', storage: 'Gudang', mats: 'Pedagang Bahan', stable: 'Penjaga Kandang', night: 'Pedagang Malam' };
 
 // ctx: { char, hp, maxHp, message: { text, ok } | null, line (talk: what they say now),
 //        onInn, onBuyPotion(id), onBelt(slot), onBuyChest(kind), onSell(ids), onUpgrade(id), onRespec(),
@@ -56,7 +59,7 @@ const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', 
 // The dialog sits docked at the bottom: who speaks on the left (portrait, line, quest,
 // messages), the shop on the right (scrolls on its own). Redraws keep the scroll.
 export function renderNpc(box, npc, ctx) {
-  const tab = { gear: smithTab, jeweler: gemTab, board: boardTab }[npc.role] || '';
+  const tab = { gear: smithTab, jeweler: gemTab, board: boardTab, stable: stableTab }[npc.role] || '';
   box.classList.add('dock');
   keepView(box, `npc:${npc.id}:${tab}`, () => buildNpc(box, npc, ctx));
 }
@@ -113,6 +116,10 @@ function buildNpc(box, npc, ctx) {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
     body.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
     body.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx) : markShop(char, ctx.onMarkBuy));
+  } else if (npc.role === 'stable') {
+    const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
+    body.append(tabBar([['beli', 'Beli'], ['kandang', 'Kandang']], stableTab, (tab) => { stableTab = tab; redraw(); }));
+    body.append(stableTab === 'beli' ? renderStableShop(char, ctx) : renderStableList(char, { canChange: true, onSetMount: ctx.onSetMount }));
   } else if (npc.role === 'gate') {
     // open world (spec §25.5): the town gate only leads out; dungeon gates are found out there
     const x = char.expedition;

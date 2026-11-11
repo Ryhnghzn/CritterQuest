@@ -35,7 +35,7 @@ const ARCH = {
   villager: ['normal', 'tunic', 'none', false, 'none', 'gesture'],
 };
 const BUILD = { normal: { w: 0.95, torso: 1 }, stout: { w: 1.15, torso: 1.25 }, thin: { w: 0.85, torso: 0.9 }, old: { w: 0.88, torso: 0.95 } };
-const ROLE = { gear: 'smith', weapons: 'smith', armor: 'tailor', inn: 'innkeeper', potion: 'herbalist', jeweler: 'jeweler', jewelry: 'jeweler', trainer: 'master', barber: 'tailor', board: 'captain', gate: 'guard', storage: 'clerk', mats: 'merchant', night: 'night' };
+const ROLE = { gear: 'smith', weapons: 'smith', armor: 'tailor', inn: 'innkeeper', potion: 'herbalist', jeweler: 'jeweler', jewelry: 'jeweler', trainer: 'master', barber: 'tailor', stable: 'elder', board: 'captain', gate: 'guard', storage: 'clerk', mats: 'merchant', night: 'night' };
 const TITLE = [
   [/anak/i, 'child'], [/prajurit|penjaga kota|penjaga gerbang/i, 'guard'], [/ksatria/i, 'knight'], [/nenek/i, 'grandma'],
   [/kakek|tetua|resi|pertapa|penjaga makam/i, 'elder'], [/penyihir|pendeta|pengamat|murid penyihir/i, 'mage'], [/pemburu|pemanah|nelayan/i, 'hunter'],

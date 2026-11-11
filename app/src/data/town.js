@@ -27,10 +27,12 @@ export const TOWN = {
     { id: 'fire', kind: 'fire', x: 458, y: 405, w: 44, h: 30 },
     { id: 'gate', kind: 'gate', x: 390, y: 650, w: 180, h: 100 },
     { id: 'barber', kind: 'stall', x: 80, y: 548, w: 116, h: 56, name: 'Tukang Cukur' },
+    { id: 'stable', kind: 'stall', x: 764, y: 548, w: 116, h: 56, name: 'Kandang' },
   ],
   npcs: [
     npc('gate', 'gate', 'Penjaga Rolan', 480, 632, { hair: 1, hairColor: 0 }, ['#6b7280', '#4b5563']),
     npc('barber', 'barber', 'Bang Rudi', 138, 628, { hair: 1, hairColor: 3 }, ['#e0527a', '#a8355a']),
+    npc('stable', 'stable', 'Mbah Sarju', 822, 628, { hair: 4, hairColor: 1 }, ['#6a4a2a', '#4a3018'], { title: 'Penjaga Kandang' }),
     npc('dara', 'talk', 'Dara', 418, 396, { hair: 2, hairColor: 4 }, ['#b33a3a', '#7d2424'], { title: 'Petualang', lines: [
       'Lendir itu lambat, tapi jangan biarkan mereka mengepungmu.',
       'Kalau lantai sudah bersih, ambil dulu semua permata sebelum masuk portal.',

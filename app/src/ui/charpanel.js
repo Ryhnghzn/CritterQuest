@@ -11,10 +11,11 @@ import { renderGearTab } from './gear.js';
 import { renderSkillTab } from './skilltab.js';
 import { renderCollectionTab } from './collection.js';
 import { renderQuestTab } from './journal.js';
+import { renderStableList } from './stable.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { tr, t, num } from '../i18n.js';
 
-let tab = 'status'; // 'status' | 'skill' | 'gear' | 'quest' | 'coll', kept between openings
+let tab = 'status'; // 'status' | 'skill' | 'gear' | 'quest' | 'mount' | 'coll', kept between openings
 export const setCharTab = (id) => { tab = id; };
 
 const STAT_ROWS = [
@@ -33,10 +34,11 @@ const STAT_ROWS = [
 // Points are only marked with [+] until Simpan, so a stray tap costs nothing.
 // gear: options for the Gear tab (ui/gear.js).
 // quest: { onTrack, onAbandon } for the Quest tab (town only)
-export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skill, quest }) {
+// mount: { onSet(id, skin) } for the Mount tab (town only; without it the tab is view-only)
+export function renderCharPanel(box, char, hp, { onClose, onAllocate, gear, skill, quest, mount }) {
   const pending = Object.fromEntries(ATTRS.map((a) => [a.id, 0]));
   const draw = () => drawPanel(box, char, hp, pending, {
-    onClose, gear, skill, quest, redraw: () => draw(),
+    onClose, gear, skill, quest, mount, redraw: () => draw(),
     onAdd: (id) => { pending[id] += 1; draw(); },
     onCancel: () => { for (const k in pending) pending[k] = 0; draw(); },
     onSave: () => onAllocate({ ...pending }),
@@ -48,7 +50,7 @@ function drawPanel(box, char, hp, pending, opts) {
   keepView(box, `char:${tab}`, () => buildPanel(box, char, hp, pending, opts));
 }
 
-function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, quest, redraw }) {
+function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, gear, skill, quest, mount, redraw }) {
   box.replaceChildren();
   const marked = Object.values(pending).reduce((a, b) => a + b, 0);
   const preview = (marked && allocate(char, pending, char.updatedAt)) || char;
@@ -123,7 +125,7 @@ function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, 
   const close = button(tr('Tutup'), 'btn ghost', onClose);
   close.id = 'char-close';
   const tabs = el('div', 'tabs');
-  for (const [id, label] of [['status', tr('Status')], ['skill', tr('Skill')], ['gear', t('Gear ({n})', { n: char.inventory.length })], ['quest', tr('Quest')], ['coll', tr('Koleksi')]]) {
+  for (const [id, label] of [['status', tr('Status')], ['skill', tr('Skill')], ['gear', t('Gear ({n})', { n: char.inventory.length })], ['quest', tr('Quest')], ['mount', tr('Mount')], ['coll', tr('Koleksi')]]) {
     const b = button(label, `tab${tab === id ? ' on' : ''}`, () => { tab = id; redraw(); });
     b.dataset.tab = id;
     tabs.append(b);
@@ -133,6 +135,7 @@ function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, 
   else if (tab === 'skill') body = renderSkillTab(char, skill, redraw);
   else if (tab === 'coll') body = renderCollectionTab(char);
   else if (tab === 'quest') body = renderQuestTab(char, quest);
+  else if (tab === 'mount') body.append(renderStableList(char, { canChange: !!mount?.onSet, onSetMount: mount?.onSet })); // change only in town
   else body.append(attrs, panel);
   box.append(head, tabs, body, close);
 }

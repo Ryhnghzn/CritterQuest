@@ -566,14 +566,21 @@ function stall(g, b, t) {
   const { x, y, w, h } = b;
   shadow(g, x + w / 2, y + h + 4, w / 2 + 6, 6);
   g.beginPath(); g.rect(x + 4, y + 16, w - 8, h - 16); ink(g, lin(g, y + 16, y + h, '#6a4630', '#4a2c1a'), 1.8);
-  g.beginPath(); g.roundRect(x + 14, y + 22, 26, 22, 4); ink(g, lin(g, y + 22, y + 44, '#d6ecff', '#8fb8e0'), 1.4); // mirror
-  g.beginPath(); g.roundRect(x + w - 44, y + 30, 26, 18, 4); ink(g, '#c2185b', 1.4); // chair
-  g.beginPath(); g.rect(x + w - 40, y + 22, 18, 10); ink(g, '#a8104a', 1.2);
+  const stable = b.id === 'stable'; // the Kandang: hay and a feed trough instead of mirror, chair and pole
+  if (stable) {
+    g.beginPath(); g.roundRect(x + 12, y + 28, 34, 18, 5); ink(g, lin(g, y + 28, y + 46, '#e6c262', '#b8923a'), 1.4); // hay
+    g.beginPath(); g.roundRect(x + w - 50, y + 32, 38, 14, 3); ink(g, '#6a4630', 1.4); // trough
+  } else {
+    g.beginPath(); g.roundRect(x + 14, y + 22, 26, 22, 4); ink(g, lin(g, y + 22, y + 44, '#d6ecff', '#8fb8e0'), 1.4); // mirror
+    g.beginPath(); g.roundRect(x + w - 44, y + 30, 26, 18, 4); ink(g, '#c2185b', 1.4); // chair
+    g.beginPath(); g.rect(x + w - 40, y + 22, 18, 10); ink(g, '#a8104a', 1.2);
+  }
   for (let i = 0; i < 6; i++) {  // awning
     g.beginPath(); g.moveTo(x + (i * w) / 6, y); g.lineTo(x + ((i + 1) * w) / 6, y); g.lineTo(x + ((i + 1) * w) / 6, y + 16);
     g.quadraticCurveTo(x + ((i + 0.5) * w) / 6, y + 22, x + (i * w) / 6, y + 16); g.closePath();
-    ink(g, i % 2 ? '#f1e9d8' : '#e0527a', 1.3);
+    ink(g, i % 2 ? '#f1e9d8' : stable ? '#3f7a4a' : '#e0527a', 1.3);
   }
+  if (stable) { plate(g, b.name, x + w / 2, y - 10); return; }
   // spinning barber pole
   const px = x - 6;
   g.beginPath(); g.roundRect(px - 4, y + 2, 8, 34, 4); ink(g, '#f1e9d8', 1.4);

@@ -225,6 +225,16 @@ body.fxgray :is(#game,#game3d){filter:grayscale(1)}
 .gemdot{width:18px;height:18px;transform:rotate(45deg);border-radius:4px;background:var(--c);box-shadow:0 0 10px var(--c);display:block}
 .gemdot.mat{transform:none;border-radius:50%}
 .shoprow .have{font-size:13px;font-weight:700;color:var(--dim)}
+.mcard{grid-template-columns:132px minmax(0,1fr) auto;border-left:3px solid var(--c,transparent)}
+.mcard.active{box-shadow:inset 0 0 0 1px var(--c)}
+.mcard .mpv{width:132px;height:92px;display:block}
+.mcard .mpv.unowned{filter:brightness(0) opacity(.55)}
+.mcard.locked .stx b{color:var(--dim)}
+.mcard .mtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mcard .mfly{font-size:11px;color:#9fd8ff}
+.mcard .mskins{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.mcard .mskin.on{outline:2px solid var(--c);outline-offset:1px}
+@media(max-width:560px){.mcard{grid-template-columns:96px minmax(0,1fr)}.mcard .mpv{width:96px;height:66px}.mcard .buys{grid-column:1/-1;justify-content:flex-start}}
 .shoprow .buy{display:flex;align-items:center;gap:5px;padding:7px 12px}
 .shoprow .buy:disabled{opacity:.4;pointer-events:none}
 .beltedit{display:flex;flex-direction:column;gap:6px;align-items:center}

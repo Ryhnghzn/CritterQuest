@@ -463,9 +463,10 @@ function bonfire(B, root, b, out) {
 function stall(B, b) {
   const cx = b.x + b.w / 2, cz = b.y + b.h / 2;
   P(B, GEO.box, toon(0x5a3e28), cx, cz + b.h * 0.2, 0, b.w, 22, b.h * 0.4);
-  for (let k = 0; k < 6; k++) P(B, GEO.box, toon(k % 2 ? 0xe0527a : 0xf0e0d0), b.x + b.w / 12 + (k * b.w) / 6, cz, 50, b.w / 6, 3, b.h * 0.95, 0, 0.25);
+  for (let k = 0; k < 6; k++) P(B, GEO.box, toon(k % 2 ? (b.id === 'stable' ? 0x3f7a4a : 0xe0527a) : 0xf0e0d0), b.x + b.w / 12 + (k * b.w) / 6, cz, 50, b.w / 6, 3, b.h * 0.95, 0, 0.25);
   for (const s of [-1, 1]) P(B, GEO.box, toon(0x3a2a22), cx + s * (b.w / 2 - 3), cz - b.h * 0.35, 0, 3, 52, 3);
-  P(B, GEO.box, toon(0x9ab0d8), cx - b.w * 0.25, cz + b.h * 0.2, 22, 14, 18, 2); // the barber's mirror
+  if (b.id === 'stable') P(B, GEO.box, toon(0xd6b24e), cx - b.w * 0.25, cz + b.h * 0.2, 22, 22, 12, 14); // hay
+  else P(B, GEO.box, toon(0x9ab0d8), cx - b.w * 0.25, cz + b.h * 0.2, 22, 14, 18, 2); // the barber's mirror
 }
 
 function lamp(B, l, out) {
