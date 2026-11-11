@@ -403,6 +403,8 @@ export default {
   "Kumpulkan {n} {item} dari {enemy} di {r}": "Collect {n} {item} from {enemy} in {r}",
   "Kawal {name} di {r}": "Escort {name} in {r}",
   "Pertahankan {name} di {r}": "Defend {name} in {r}",
+  "Buru {name} di {r}": "Hunt {name} in {r}",
+  "Hancurkan {name} di {r}": "Destroy {name} in {r}",
   "Kalahkan Penguasa {r} (peti harta terakhir)": "Defeat the Overlord of {r} (the last treasure chest)",
   "Kalahkan {n} penjaga harta di {r}": "Defeat {n} treasure guardians in {r}",
   "Serahkan barang kepada {who} di {town}": "Hand the items to {who} in {town}",

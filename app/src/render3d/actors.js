@@ -283,7 +283,7 @@ export class Actors {
   drawEnemies(game, t, playing) {
     const seen = new Set();
     if (playing) for (const e of game.enemies) {
-      if (e.hidden) continue;
+      if (e.hidden || e.nest) continue; // a quest nest is drawn by the field (render3d/field.js)
       seen.add(e);
       let m = this.enemyMesh.get(e);
       if (!m) { m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), billMat(null)); m.renderOrder = 2; this.enemies.add(m); this.enemyMesh.set(e, m); }

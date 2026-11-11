@@ -118,3 +118,52 @@ describe('langkah quest event (§42)', () => {
     }
   });
 });
+
+describe('quest event: Buronan & Sarang (§42)', async () => {
+  const { OUTLAW, NEST } = await import('../data/questev.js');
+  it('buronan muncul saat didekati, kabur di 50%, tumbang → berhasil', () => {
+    const g = game(), d = evOf('b_ekormerah');
+    expect(Math.hypot(d.hint.x - d.start.x, d.hint.y - d.start.y)).toBeGreaterThan(100); // the map circle is off the spot
+    setEvents(g, [d]);
+    const ev = g.events[0];
+    expect(eventPoint(ev).hint).toBe(OUTLAW.hint);
+    g.px = d.start.x + OUTLAW.seen - 50; g.py = d.start.y; run(g, 0.1);
+    expect(ev.state).toBe('run');
+    const o = ev.foe;
+    expect(o.type).toBe('scorpion');
+    expect(o.mini && o.elite).toBe(true);
+    o.hp = o.maxHp * 0.4;
+    run(g, 0.1);
+    expect(ev.fled).toBe(true);
+    expect(o.target).toBeTruthy();
+    run(g, 15, () => { g.px = o.x + 300; g.py = o.y; });
+    expect(o.target).toBe(null);
+    expect(Math.hypot(o.x - d.flee.x, o.y - d.flee.y)).toBeLessThan(100);
+    o.hp = 0;
+    run(g, 0.2);
+    expect(ev.state).toBe('done');
+    expect(g.eventsDone).toEqual([d.key]);
+  });
+  it('sarang mengirim musuh, diam di tempat; semua hancur → berhasil; ditinggal → ulang', () => {
+    const g = game(), d = evOf('n_kawah');
+    expect(d.spots).toHaveLength(5);
+    setEvents(g, [d]);
+    const ev = g.events[0];
+    g.px = d.start.x; g.py = d.start.y; run(g, 0.1);
+    expect(ev.state).toBe('run');
+    expect(ev.nests).toHaveLength(5);
+    run(g, NEST.every[1] + 1);
+    expect(g.enemies.filter((e) => e.ev === ev.key && !e.nest).length).toBeGreaterThan(0);
+    for (const n of ev.nests) expect([n.x, n.y]).toEqual([n.home.x, n.home.y]);
+    for (const n of ev.nests) n.hp = 0;
+    run(g, 0.2);
+    expect(ev.state).toBe('done');
+    const h = game();
+    setEvents(h, [d]);
+    const e2 = h.events[0];
+    h.px = d.start.x; h.py = d.start.y; run(h, 0.1);
+    h.px = d.start.x + NEST.leave + 300; run(h, NEST.leaveT + 0.5, () => { h.enemies = h.enemies.filter((e) => e.nest); });
+    expect(e2.state).toBe('wait');
+    expect(h.enemies.filter((e) => e.ev === e2.key)).toHaveLength(0);
+  });
+});

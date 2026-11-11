@@ -19,6 +19,7 @@ import { isEquipped } from './gear.js';
 import { addExp } from './character.js';
 import { gateSpots } from './world.js';
 import { buildWorld, zoneToWorld, freeSpot, roadRoute } from '../run/worldmap.js';
+import { OUTLAW, NEST } from '../data/questev.js';
 import { WORLD } from '../data/worldmap.js';
 import { mulberry } from '../run/fieldmap.js';
 
@@ -348,7 +349,18 @@ export function eventOf(questId, step, s) {
     const route = roadRoute(buildWorld(), s.region, s.from, s.to ?? null);
     return { ...base, start: { x: route[0][0], y: route[0][1] }, route, look: s.look, outfit: s.outfit, title: s.title };
   }
-  return { ...base, start: placeXY(`event:${key}`, s.region, s.at, 120) };
+  const start = placeXY(`event:${key}`, s.region, s.at, s.event === 'nest' ? 200 : 120);
+  if (s.event === 'outlaw') { // the map shows only a circle, a little off where it lurks (fixed per quest)
+    const flee = placeXY(`event:${key}:flee`, s.region, s.flee, 120);
+    const off = (p, k) => { const a = (k * 2.399963) % (Math.PI * 2); return { x: p.x + Math.cos(a) * OUTLAW.hint * 0.45, y: p.y + Math.sin(a) * OUTLAW.hint * 0.45 }; };
+    return { ...base, start, flee, hint: off(start, key.length), fleeHint: off(flee, key.length + 3), enemy: s.enemy || null };
+  }
+  if (s.event === 'nest') { // n nests on a ring round the place
+    const n = s.n || 4, world = buildWorld();
+    const spots = Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2 + 0.4; return freeSpot(world, start.x + Math.cos(a) * NEST.ring, start.y + Math.sin(a) * NEST.ring, NEST.size + 10); });
+    return { ...base, start, spots };
+  }
+  return { ...base, start };
 }
 
 // where to go (spec §26.3)
@@ -381,7 +393,11 @@ export function questTarget(char, regionId = null, from = null) {
     const h = hiddenById(s.npc);
     return inZone(h.region) ? { kind: 'hidden', ...hiddenXY(h) } : null;
   }
-  if (s.kind === 'event') return inZone(s.region) ? { kind: 'event', key: eventKey(a.id, a.state.step), ...eventOf(a.id, a.state.step, s).start } : null;
+  if (s.kind === 'event') {
+    if (!inZone(s.region)) return null;
+    const ev = eventOf(a.id, a.state.step, s), key = eventKey(a.id, a.state.step);
+    return s.event === 'outlaw' ? { kind: 'event', key, x: ev.hint.x, y: ev.hint.y, hint: OUTLAW.hint } : { kind: 'event', key, ...ev.start };
+  }
   const town = s.kind === 'town' || s.kind === 'talk' || s.kind === 'give' ? s.town : null;
   const t = town && buildWorld().towns[town];
   return t ? { kind: 'town', town, x: t.x, y: t.y } : null;

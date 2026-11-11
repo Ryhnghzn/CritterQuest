@@ -320,7 +320,7 @@ export const NPC_LINE_EN = {
 
 // quests (spec §26): titles and what people say, keyed by the Indonesian text
 // the people and places of quest events (spec §42)
-const EVENT_EN = { 'Peziarah Tua': 'Old Pilgrim', Peziarah: 'Pilgrim', 'Murid Liv': "Liv's Apprentice", 'Pemahat Muda': 'Young Sculptor', 'Pos Jaga': 'the Watchpost', 'Altar Cahaya': 'the Altar of Light' };
+const EVENT_EN = { 'Si Ekor Merah': 'Redtail', 'Lidah Bara': 'Embertongue', 'Sarang Gurun': 'the Desert Nests', 'Sarang Kawah': 'the Crater Nests', 'Peziarah Tua': 'Old Pilgrim', Peziarah: 'Pilgrim', 'Murid Liv': "Liv's Apprentice", 'Pemahat Muda': 'Young Sculptor', 'Pos Jaga': 'the Watchpost', 'Altar Cahaya': 'the Altar of Light' };
 const QUEST_TITLE_EN = {
   "Bayangan di Bawah Tanah": "Shadows Below",
   "Gerhana": "Eclipse",
@@ -332,6 +332,10 @@ const QUEST_TITLE_EN = {
   "Patung Es untuk Bekubara": "An Ice Statue for Frosthold",
   "Pos Jaga Hutan": "The Forest Watchpost",
   "Altar Cahaya Utara": "The Altar of Northern Light",
+  "Buronan: Si Ekor Merah": "Wanted: Redtail",
+  "Buronan: Lidah Bara": "Wanted: Embertongue",
+  "Sarang di Bukit Pasir": "Nests in the Dunes",
+  "Sarang di Lubang Kawah": "Nests in the Crater Holes",
 };
 export const QUEST_LINE_EN = {
   "Lima pecahan… Hangatnya terasa sampai ke tulangku. Tapi lihat langit di timur, Nak. Gerhana itu tidak menunggu. Retakan sudah terbuka di balik Baraapi: Tanah Gerhana. Di ujungnya berdiri menaranya. Pergilah, dan akhiri ini.": "Five shards… I can feel their warmth in my bones. But look at the eastern sky, child. The eclipse will not wait. A rift has opened beyond Emberfall: the Eclipse Lands. Its spire stands at the far end. Go, and end this.",
@@ -354,6 +358,14 @@ export const QUEST_LINE_EN = {
   "Pos masih berdiri? Kau sendirian menahan mereka? Rimbawana berutang padamu.": "The post still stands? You held them off alone? Wildwood owes you.",
   "Altar Cahaya Utara menjaga Padang Es dari badai. Makhluk es ingin memadamkannya. Jaga altar itu sampai cahayanya pulih!": "The Altar of Northern Light keeps the storms off the Frost Plains. The ice creatures want to put it out. Guard the altar until its light recovers!",
   "Cahayanya menyala lagi, terlihat sampai dari tembok kota. Ini hadiah dari kepala penjaga.": "Its light burns again, you can see it from the city walls. Here's a reward from the captain of the guard.",
+  "Seekor kalajengking raksasa, Si Ekor Merah, menyerang kafilah di Gurun Merah. Jejaknya ada di utara jalan. Hati-hati, ia licik dan suka kabur ke pasir dalam.": "A giant scorpion called Redtail is attacking caravans in the Red Desert. Its tracks are north of the road. Careful, it is cunning and likes to flee into the deep sand.",
+  "Si Ekor Merah tumbang? Kafilah bisa lewat lagi! Ini hadiah dari para pedagang.": "Redtail is down? The caravans can pass again! Here's a reward from the merchants.",
+  "Salamander tua bernama Lidah Bara membakar tambang di lereng barat. Ia bersembunyi di antara batu panas dan kabur kalau terdesak. Buru dia!": "An old salamander called Embertongue is burning the mines on the western slope. It hides among the hot rocks and runs when cornered. Hunt it down!",
+  "Para penambang bisa bernapas lega. Ambil ini, ditempa dari bijih tambang itu sendiri.": "The miners can breathe again. Take this, forged from that very mine's ore.",
+  "Di selatan jalan gurun ada bukit pasir yang penuh sarang. Setiap malam makhluk baru merayap keluar. Hancurkan semua sarangnya!": "South of the desert road there's a dune full of nests. Every night new creatures crawl out. Destroy every nest!",
+  "Bukitnya sunyi sekarang. Aku bisa lewat tanpa takut. Terima kasih, ini untuk perjalananmu.": "The dune is quiet now. I can pass without fear. Thank you, this is for your travels.",
+  "Lubang-lubang di kaki gunung berubah jadi sarang. Kalau dibiarkan, Baraapi akan dikepung. Lima sarang, hancurkan semuanya!": "The holes at the foot of the mountain have turned into nests. Left alone, Emberfall will be surrounded. Five nests, destroy them all!",
+  "Asapnya mereda. Kau menyelamatkan kota ini lebih dari yang kau tahu.": "The smoke is clearing. You saved this town more than you know.",
 };
 
 // side quests & people in the wild (spec §26.5)

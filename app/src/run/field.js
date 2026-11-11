@@ -115,9 +115,10 @@ export function spawnPack(run) {
 
 // A group of n enemies of a zone round (x, y), at the level there (§33.3: the horde, weaker
 // one by one; a few elites). Returns them. Used by packs and quest events (run/questev.js).
-export function spawnGroup(run, x, y, n, zone) {
+// type: an enemy kind to send (null: one of the zone's, by weight)
+export function spawnGroup(run, x, y, n, zone, type = null) {
   const map = run.fmap;
-  const type = pickType(regionById(zone));
+  type ||= pickType(regionById(zone));
   const level = levelAt(map, x, y);
   const sc = fieldScale(level);
   const out = [];

@@ -872,7 +872,10 @@ async function openWild(h, message = null) {
 // The quest target, with a gate found during this visit shown as found already.
 function liveQuestTarget() {
   const q = game.questTarget;
-  if (q?.kind === 'event') { const ev = game.events.find((e) => e.key === q.key); return ev ? { ...q, ...eventPoint(ev) } : q; }
+  if (q?.kind === 'event') { // a running event follows its walker / altar; an outlaw not found is a circle
+    const ev = game.events.find((e) => e.key === q.key), p = ev ? eventPoint(ev) : q;
+    return p.hint ? { kind: 'hint', x: p.x, y: p.y, r: p.hint } : { ...q, ...p };
+  }
   if (q?.kind !== 'hint') return q;
   const g = game.gates.find((x) => x.dungeon === q.dungeon && (x.found || game.gatesFound.includes(x.dungeon)));
   return g ? { kind: 'gate', x: g.x, y: g.y } : q;

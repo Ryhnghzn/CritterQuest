@@ -27,3 +27,23 @@ export const DEFEND = {
   leave: 720, leaveT: 4,             // walking this far away for this long fails it
   mop: 2,                            // success once the time is up and at most this many attackers are left
 };
+
+// Buronan: a named elite somewhere in a circle; at half HP it flees to a second spot
+export const OUTLAW = {
+  hint: 900,                         // radius of the circle drawn on the map round where it lurks
+  seen: 650,                         // it shows itself (and the hunt begins) this close
+  hp: 9, dmg: 1.5, size: 1.6,        // × a pack enemy of its zone and level
+  flee: 0.5,                         // flees once at this part of its HP…
+  fleeSpeed: 2.2, heal: 0.15,        // …this much faster, and heals this part of its HP when it gets there
+  escort: 4,                         // enemies of its zone round it when it shows itself
+};
+
+// Sarang: nests that keep sending enemies until destroyed
+export const NEST = {
+  ring: 420,                         // nests stand on a ring of this radius round the place
+  near: 700,                         // the fight begins this close to the place
+  hp: 7, size: 34,                   // × a pack enemy's HP; the nest's radius
+  every: [5, 8], send: 2,            // seconds between sendings, enemies per sending (per nest)
+  cap: 14,                           // most of its enemies alive at once
+  leave: 1100, leaveT: 5,            // walking this far away for this long resets it
+};

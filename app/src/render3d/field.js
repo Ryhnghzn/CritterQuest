@@ -33,6 +33,22 @@ import { skyAt } from '../meta/clock.js';
 import { SHAKE_PX } from '../data/fx.js';
 
 const TAU = Math.PI * 2;
+// a quest nest (spec §42): a dark mound ringed with spines round a pulsing core
+function nestMesh() {
+  const G = new THREE.Group();
+  const dark = new THREE.MeshLambertMaterial({ color: 0x2a1a30 });
+  const mound = new THREE.Mesh(new THREE.SphereGeometry(34 * S, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), dark); mound.scale.y = 0.75; G.add(mound);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2, sp = new THREE.Mesh(new THREE.ConeGeometry(5 * S, 30 * S, 5), dark);
+    sp.position.set(Math.cos(a) * 26 * S, 14 * S, Math.sin(a) * 26 * S); sp.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); G.add(sp);
+  }
+  const core = new THREE.Mesh(new THREE.SphereGeometry(11 * S, 10, 8), new THREE.MeshBasicMaterial({ color: 0xd840e0 }));
+  core.position.y = 24 * S; G.add(core);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(200 * S, 200 * S), additive(new THREE.Color(0xc040ff), 0.45, glowTex()));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = 0.06; G.add(glow);
+  G.userData.core = core; G.userData.glow = glow;
+  return G;
+}
 // a defended altar (spec §42): a stone plinth and a floating crystal of light
 function altarMesh() {
   const G = new THREE.Group();
@@ -427,6 +443,7 @@ export class Field25 {
     for (const ev of game.events || []) {
       if (ev.kind === 'escort') this.cards.push(this.card({ walker: ev, x: ev.npc.x, y: ev.npc.y, look: { ...ev.look, outfit: ev.outfit }, who: { name: ev.name, title: ev.title, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 }));
       if (ev.kind === 'defend') { const m = altarMesh(); m.position.set(ev.altar.x * S, 0, ev.altar.y * S); m.userData.ev = ev; P.add(m); }
+      if (ev.kind === 'nest') ev.spots.forEach((p, i) => { const m = nestMesh(); m.position.set(p.x * S, 0, p.y * S); m.userData.nest = { ev, i }; P.add(m); });
     }
   }
   card(o) {
@@ -730,6 +747,17 @@ export class Field25 {
       u.crystal.material.emissive.setRGB(a.hurtT > 0 ? 1 : 0.3 + 0.5 * k, a.hurtT > 0 ? 0.2 : 0.6 * k + 0.2, a.hurtT > 0 ? 0.2 : 1 * k + 0.2);
       u.glow.material.opacity = (ev.state === 'run' ? 0.25 + 0.35 * k : 0.3) + Math.sin(t * 3) * 0.05;
     }
+    for (const m of this.homeGroup.children) { // quest nests: dormant, alive (pulsing, flashing when struck) or gone
+      const nn = m.userData.nest;
+      if (!nn) continue;
+      const { ev, i } = nn, e = ev.nests?.[i], live = ev.state === 'run' ? !!e && e.hp > 0 : ev.state !== 'done';
+      m.visible = live;
+      if (!live) continue;
+      const u = m.userData, hit = e?.flash > 0;
+      u.core.scale.setScalar(1 + Math.sin(t * 4 + i) * 0.12);
+      u.core.material.color.setRGB(hit ? 1 : 0.85, hit ? 1 : 0.25, hit ? 1 : 0.9);
+      u.glow.material.opacity = (ev.state === 'run' ? 0.5 : 0.25) + Math.sin(t * 3 + i) * 0.1;
+    }
     for (const cd of this.cards) { // walkers move every frame, not only when repainted
       if (!cd.walker) continue;
       const n = cd.walker.npc, feet = n.y + 10;
@@ -766,7 +794,7 @@ export class Field25 {
       g.beginPath(); g.ellipse(x - e.r * 0.2, y - e.r * 0.15, e.r * 0.6, e.r * 0.25, 0, 0, TAU); g.fillStyle = 'rgba(220,180,120,.45)'; g.fill();
     }
     for (const ev of game.events || []) { // where a quest event starts (spec §42): a turning ring of gold
-      if (ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue;
+      if (ev.kind === 'outlaw' || ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue;
       const pulse = 0.5 + 0.5 * Math.sin(t * 3);
       g.save(); g.translate(ev.start.x, ev.start.y); g.scale(1, 0.7);
       g.setLineDash([18, 12]); g.lineDashOffset = -t * 30; g.lineWidth = 4; g.strokeStyle = `rgba(255,210,74,${(0.55 + pulse * 0.35).toFixed(2)})`;
@@ -777,10 +805,30 @@ export class Field25 {
     if (game.state !== 0) targetArrow(g, game, t);
   }
 
+  // an outlaw's name and HP, each nest's HP (spec §42)
+  foeBars(game, ev) {
+    const g = this.view.ctx, dpr = this.view.c.width / innerWidth;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const list = ev.kind === 'outlaw' ? [ev.foe] : ev.nests;
+    for (const e of list) {
+      if (!e || e.hp <= 0) continue;
+      const p = this.stage.project(e.x, e.y, e.r * 2.6 + 40);
+      if (!p) continue;
+      const w = ev.kind === 'outlaw' ? 80 : 48, k = Math.max(0, e.hp / e.maxHp);
+      g.fillStyle = 'rgba(10,8,20,.85)'; g.fillRect(p.x - w / 2 - 2, p.y - 2, w + 4, 8);
+      g.fillStyle = ev.kind === 'outlaw' ? '#ff8a3c' : '#c86aff'; g.fillRect(p.x - w / 2, p.y, w * k, 4);
+      if (ev.kind === 'outlaw') {
+        g.font = '700 13px Barlow, system-ui, sans-serif'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(10,8,20,.9)';
+        g.strokeText(ev.name, p.x, p.y - 6); g.fillStyle = '#ffb36a'; g.fillText(ev.name, p.x, p.y - 6);
+      }
+    }
+  }
+
   // the dungeon's name over a gate the hero stands at; HP bars over a quest event's walker / altar
   labels(game) {
     if (game.state !== 0) for (const ev of game.events || []) {
       if (ev.state !== 'run') continue;
+      if (ev.kind === 'outlaw' || ev.kind === 'nest') { this.foeBars(game, ev); continue; }
       const who = ev.npc || ev.altar, p = this.stage.project(who.x, who.y, ev.npc ? 150 : 130);
       if (!p) continue;
       const g = this.view.ctx, dpr = this.view.c.width / innerWidth, w = 64, k = Math.max(0, who.hp / who.maxHp);

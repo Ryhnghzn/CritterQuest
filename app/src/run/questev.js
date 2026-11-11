@@ -6,7 +6,7 @@
 // sent at the walker / altar carry e.target. Pure logic on the run state (run/run.js).
 import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
-import { START_R, RETRY_AFTER, TOUCH, ESCORT, DEFEND } from '../data/questev.js';
+import { START_R, RETRY_AFTER, TOUCH, ESCORT, DEFEND, OUTLAW, NEST } from '../data/questev.js';
 import { blocked, zoneAt } from './worldmap.js';
 import { spawnGroup } from './field.js';
 
@@ -31,6 +31,8 @@ function resetEvent(ev) {
   ev.state = 'wait'; ev.t = 0; ev.next = 0; ev.wave = 0; ev.away = 0;
   if (ev.kind === 'escort') { ev.npc = { x: ev.route[0][0], y: ev.route[0][1], hp: 1, maxHp: 1, i: 1, waiting: false, hurtT: 0 }; }
   if (ev.kind === 'defend') { ev.altar = { x: ev.start.x, y: ev.start.y, hp: 1, maxHp: 1, hurtT: 0 }; }
+  if (ev.kind === 'outlaw') { ev.foe = null; ev.fled = false; ev.fleeT = 0; ev.lurk = ev.start; }
+  if (ev.kind === 'nest') ev.nests = [];
 }
 
 function clearFoes(run, ev) {
@@ -41,6 +43,24 @@ function begin(run, ev) {
   ev.state = 'run'; ev.t = 0; ev.next = 1.5;
   if (ev.kind === 'escort') { const hp = hpAt(ESCORT.hp, run.level); ev.npc.hp = ev.npc.maxHp = hp; run.showBanner(t('Kawal {name} sampai tujuan!', { name: ev.name })); }
   if (ev.kind === 'defend') { const hp = hpAt(DEFEND.hp, run.level); ev.altar.hp = ev.altar.maxHp = hp; run.showBanner(t('Pertahankan {name}!', { name: ev.name })); }
+  if (ev.kind === 'outlaw') { // it shows itself, with a few of its kind
+    const zone = zoneAt(run.fmap, ev.lurk.x, ev.lurk.y), [o, ...escort] = spawnGroup(run, ev.lurk.x, ev.lurk.y, 1 + OUTLAW.escort, zone, ev.enemy || null);
+    o.hp *= OUTLAW.hp; o.maxHp = o.hp; o.dmg *= OUTLAW.dmg; o.r *= OUTLAW.size; o.xp *= 6;
+    o.elite = true; o.mini = true; o.name = ev.name; o.x = ev.lurk.x; o.y = ev.lurk.y;
+    for (const e of [o, ...escort]) e.ev = ev.key;
+    ev.foe = o;
+    run.showBanner(t('{name} muncul!', { name: ev.name }));
+  }
+  if (ev.kind === 'nest') { // the nests stand where they were; each one an enemy that does not move
+    const zone = zoneAt(run.fmap, ev.start.x, ev.start.y);
+    ev.nests = ev.spots.map((p) => {
+      const [e] = spawnGroup(run, p.x, p.y, 1, zone);
+      e.hp *= NEST.hp; e.maxHp = e.hp; e.dmg = 0; e.speed = 0; e.r = NEST.size; e.elite = false;
+      e.nest = ev.key; e.ev = ev.key; e.mini = true; e.x = p.x; e.y = p.y; e.home = p; e.sendT = rrange(1, NEST.every[0]);
+      return e;
+    });
+    run.showBanner(t('Hancurkan {name}!', { name: ev.name }));
+  }
 }
 
 function fail(run, ev, why) {
@@ -137,23 +157,71 @@ function stepDefend(run, ev, dt) {
   if (ev.t >= DEFEND.time && ev.wave >= W.length && run.enemies.filter((e) => e.ev === ev.key).length <= DEFEND.mop) succeed(run, ev);
 }
 
+const alive = (run, e) => e && e.hp > 0 && run.enemies.includes(e);
+
+function stepOutlaw(run, ev, dt) {
+  const o = ev.foe;
+  if (!alive(run, o)) { succeed(run, ev); return; }
+  if ((run.px - o.x) ** 2 + (run.py - o.y) ** 2 > (FAR * FAR)) { const fled = ev.fled; clearFoes(run, ev); resetEvent(ev); if (fled) ev.lurk = ev.flee; return; } // lost: it hides again (where it fled to)
+  if (!ev.fled && o.hp < o.maxHp * OUTLAW.flee) { // flees to its second hideout
+    ev.fled = true; ev.fleeT = 0; ev.lurk = ev.flee;
+    o.target = { x: ev.flee.x, y: ev.flee.y, hp: 1 }; o.speed *= OUTLAW.fleeSpeed;
+    run.showBanner(t('{name} kabur! Ikuti jejaknya.', { name: ev.name }));
+  }
+  if (o.target) {
+    ev.fleeT += dt;
+    if ((o.x - ev.flee.x) ** 2 + (o.y - ev.flee.y) ** 2 < 90 * 90 || ev.fleeT > 14) { // there (or slipped through the woods)
+      o.x = ev.flee.x; o.y = ev.flee.y; o.target = null; o.speed /= OUTLAW.fleeSpeed;
+      o.hp = Math.min(o.maxHp, o.hp + o.maxHp * OUTLAW.heal);
+    }
+  }
+}
+
+function stepNest(run, ev, dt) {
+  const live = ev.nests.filter((e) => alive(run, e));
+  if (!live.length) { succeed(run, ev); return; }
+  for (const e of live) { e.x = e.home.x; e.y = e.home.y; e.kx = e.ky = 0; } // rooted
+  const foes = run.enemies.filter((e) => e.ev === ev.key && !e.nest).length;
+  for (const e of live) {
+    if ((e.sendT -= dt) > 0) continue;
+    e.sendT = rrange(NEST.every[0], NEST.every[1]);
+    if (foes < NEST.cap) { const p = ringSpot(run, e.x, e.y, [60, 140]); if (p) sendFoes(run, ev, p.x, p.y, NEST.send, null, 0); }
+  }
+  const far = (run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2 > NEST.leave * NEST.leave;
+  ev.away = far ? ev.away + dt : 0;
+  if (ev.away > NEST.leaveT) fail(run, ev, t('Kamu meninggalkan {name}.', { name: ev.name }));
+}
+
+const FAR = 2600; // an outlaw left this far behind slips away (and lurks again)
+// how close the player must come for an event to begin
+const reach = (ev) => (ev.kind === 'outlaw' ? OUTLAW.seen : ev.kind === 'nest' ? NEST.near : START_R);
+
 export function stepEvents(run, dt) {
   for (const ev of run.events || []) {
     if (ev.state === 'done') continue;
     if (ev.cool > 0) { ev.cool -= dt; continue; }
     if (ev.state === 'wait') {
-      if ((run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2 < START_R * START_R) begin(run, ev);
+      const at = ev.kind === 'outlaw' ? ev.lurk : ev.start, r = reach(ev);
+      if ((run.px - at.x) ** 2 + (run.py - at.y) ** 2 < r * r) begin(run, ev);
       continue;
     }
     if (ev.kind === 'escort') stepEscort(run, ev, dt);
     else if (ev.kind === 'defend') stepDefend(run, ev, dt);
+    else if (ev.kind === 'outlaw') stepOutlaw(run, ev, dt);
+    else if (ev.kind === 'nest') stepNest(run, ev, dt);
   }
 }
 
 // the running event's guarded one (for the target arrow / map), else its start
+// an outlaw not yet found: only a circle round where it lurks ({ hint: r })
 export function eventPoint(ev) {
   if (ev.state === 'run' && ev.npc) return { x: ev.npc.x, y: ev.npc.y };
   if (ev.state === 'run' && ev.altar) return { x: ev.altar.x, y: ev.altar.y };
+  if (ev.kind === 'outlaw') {
+    if (ev.state === 'run' && ev.foe && !ev.foe.target) return { x: ev.foe.x, y: ev.foe.y };
+    const h = ev.lurk === ev.flee ? ev.fleeHint : ev.hint;
+    return { x: h.x, y: h.y, hint: OUTLAW.hint };
+  }
   return ev.start;
 }
 

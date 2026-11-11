@@ -16,6 +16,8 @@
 //   event { event, region, name, … } — something happens out in the world (spec §42, run/questev.js):
 //         escort { from: fx on the zone's main road, to?: fx (null: the zone's town), title, look, outfit }
 //         defend { at: [fx, fy] of the zone }
+//         outlaw { at, flee: [fx, fy], enemy?: its kind } — a named elite that flees once
+//         nest   { at, n } — n nests round the place, each sending enemies until destroyed
 // A talk / give in the wild uses town 'wild' and the hidden person's id as npc.
 // reward: { gold, exp } are multipliers of QUEST_REWARD at the player's level; shard: a Pecahan
 // Segel; gear: { rarity } a piece at the player's level; gems: [{ gem?, tier }] (random gem when
@@ -345,5 +347,26 @@ export const SIDE = [
     { kind: 'event', event: 'defend', region: 'ice', at: [0.7, 0.66], name: 'Altar Cahaya' },
     { kind: 'talk', town: 'beku', npc: 'folk3', who: 'Prajurit Eskil', say: 'Cahayanya menyala lagi, terlihat sampai dari tembok kota. Ini hadiah dari kepala penjaga.' },
   ], reward: { gold: 6, exp: 7, marks: 4, gems: [{ tier: 2 }] } },
+  // hunt an outlaw that flees once; destroy nests that keep sending enemies (spec §42)
+  { id: 'b_ekormerah', title: 'Buronan: Si Ekor Merah', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'folk3', who: 'Prajurit Tariq', say: 'Seekor kalajengking raksasa, Si Ekor Merah, menyerang kafilah di Gurun Merah. Jejaknya ada di utara jalan. Hati-hati, ia licik dan suka kabur ke pasir dalam.' },
+    { kind: 'event', event: 'outlaw', region: 'desert', at: [0.55, 0.28], flee: [0.72, 0.62], enemy: 'scorpion', name: 'Si Ekor Merah' },
+    { kind: 'talk', town: 'pasir', npc: 'folk3', who: 'Prajurit Tariq', say: 'Si Ekor Merah tumbang? Kafilah bisa lewat lagi! Ini hadiah dari para pedagang.' },
+  ], reward: { gold: 7, exp: 7, marks: 4, gear: { rarity: 3 } } },
+  { id: 'b_lidahbara', title: 'Buronan: Lidah Bara', steps: [
+    { kind: 'talk', town: 'bara', npc: 'folk3', who: 'Prajurit Karang', say: 'Salamander tua bernama Lidah Bara membakar tambang di lereng barat. Ia bersembunyi di antara batu panas dan kabur kalau terdesak. Buru dia!' },
+    { kind: 'event', event: 'outlaw', region: 'volcano', at: [0.4, 0.7], flee: [0.56, 0.3], enemy: 'salamander', name: 'Lidah Bara' },
+    { kind: 'talk', town: 'bara', npc: 'folk3', who: 'Prajurit Karang', say: 'Para penambang bisa bernapas lega. Ambil ini, ditempa dari bijih tambang itu sendiri.' },
+  ], reward: { gold: 9, exp: 9, marks: 5, gems: [{ tier: 3 }] } },
+  { id: 'n_kalajengking', title: 'Sarang di Bukit Pasir', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'folk4', who: 'Samira', say: 'Di selatan jalan gurun ada bukit pasir yang penuh sarang. Setiap malam makhluk baru merayap keluar. Hancurkan semua sarangnya!' },
+    { kind: 'event', event: 'nest', region: 'desert', at: [0.35, 0.72], n: 4, name: 'Sarang Gurun' },
+    { kind: 'talk', town: 'pasir', npc: 'folk4', who: 'Samira', say: 'Bukitnya sunyi sekarang. Aku bisa lewat tanpa takut. Terima kasih, ini untuk perjalananmu.' },
+  ], reward: { gold: 6, exp: 6, marks: 3, potions: { big: 2, shield: 1 } } },
+  { id: 'n_kawah', title: 'Sarang di Lubang Kawah', steps: [
+    { kind: 'talk', town: 'bara', npc: 'folk4', who: 'Vesta', say: 'Lubang-lubang di kaki gunung berubah jadi sarang. Kalau dibiarkan, Baraapi akan dikepung. Lima sarang, hancurkan semuanya!' },
+    { kind: 'event', event: 'nest', region: 'volcano', at: [0.62, 0.5], n: 5, name: 'Sarang Kawah' },
+    { kind: 'talk', town: 'bara', npc: 'folk4', who: 'Vesta', say: 'Asapnya mereda. Kau menyelamatkan kota ini lebih dari yang kau tahu.' },
+  ], reward: { gold: 9, exp: 9, marks: 5, mats: { core: 3 } } },
 ];
 export const QUEST_IDS = [...MAIN_IDS, ...SIDE.map((q) => q.id)];
