@@ -1273,9 +1273,9 @@ Masalah: gerbang kota besar hanya menawarkan wilayahnya sendiri (Rimbawana → H
 - **Quest "injak wilayah"** tercatat saat pertama masuk zona. Target quest ke kota = gerbang kota itu di dunia.
 - **Tumbang:** bangun di kota terakhir, kehilangan 10% koin (tetap).
 
-### 40.4 Save versi 21
+### 40.4 Save versi 22
 - `world { seed, fog }` — kabut dunia (base64). `regions { [zona]: {} }` hanya penanda zona yang pernah diinjak (kabut lama dibuang karena petanya berubah).
 - `treasures` (per zona, indeks peti) dan `found` tetap; letaknya pindah tapi yang sudah dibuka/ditemukan tetap tercatat.
-- `migrate()` v20 → v21. (Rencana Mount §35 yang juga memakai v21 menyesuaikan ke v22 bila menyusul.)
+- `migrate()` v21 → v22 (v21 sudah dipakai Mount §35).
 - Rencana kerja: `docs/superpowers/plans/2026-11-11-satu-dunia.md`.
 - **Warga kota anime di game (2026-11-11):** warga kota & interior (`render3d/town.js`), NPC tersembunyi di wilayah (`render3d/field.js`), dan potret NPC memakai `art/anime/npc.js` (22 jenis dari `art/hero/npc.js` `archParts`, gerak diam pekerjaan dari rig `npc`), lewat `drawHero` bila `pose.anime`. Penjaga gerbang wilayah kini digambar sebagai warga jenis Penjaga (helm, tombak), bukan Warrior. `?lama` = gaya D. Contoh: `app/npc.html`.
