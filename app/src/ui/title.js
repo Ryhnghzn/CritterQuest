@@ -38,9 +38,9 @@ const FPS = 12;      // redrawn like a sprite animation
 const CHUNK = 3;     // CSS pixels per art pixel
 
 // a figure's look on the title: plain gear, its own hair; the last hero keeps their hair
-function campLook(classId, last) {
-  const base = LOOKS[classId];
-  return last?.classId === classId ? { ...base, hair: last.look.hair, hairColor: last.look.hairColor } : base;
+function campLook(classId, last, front) {
+  const base = LOOKS[classId], mine = last && (last.classId === classId || (front && !ORDER.includes(last.classId)));
+  return mine ? { ...base, hair: last.look.hair, hairColor: last.look.hairColor } : base;
 }
 
 function drawCamp(c, last, t) {
@@ -50,7 +50,9 @@ function drawCamp(c, last, t) {
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
   g.imageSmoothingEnabled = false;
   const fire = artPoint(w, h, ART.fire.x, ART.fire.y);
-  const order = last ? [last.classId, ...ORDER.filter((x) => x !== last.classId)] : ORDER;
+  // the last hero's job takes the front seat (a Pengembara, no job yet: lends their hair to the warrior there)
+  const job = last && ORDER.includes(last.classId) ? last.classId : null;
+  const order = job ? [job, ...ORDER.filter((x) => x !== job)] : ORDER;
   // back seats first, so the front ones overlap them
   [1, 2, 0, 3].forEach((i) => {
     const seat = SEATS[i], cls = order[i], p = artPoint(w, h, seat.x, seat.y);
@@ -60,7 +62,7 @@ function drawCamp(c, last, t) {
     const fg = f.getContext('2d', { willReadFrequently: true });
     fg.setTransform(1, 0, 0, 1, 0, 0); fg.clearRect(0, 0, sw, sh); fg.globalCompositeOperation = 'source-over';
     fg.translate(sw / 2, sh - 3 * k); fg.scale(k * seat.face, k); fg.lineJoin = 'round';
-    drawDoll(fg, cls, campLook(cls, last), { t: t + i * 1.7, sit: true, anime: true, view: 'side' });
+    drawDoll(fg, cls, campLook(cls, last, i === 0), { t: t + i * 1.7, sit: true, anime: true, view: 'side' });
     fg.setTransform(1, 0, 0, 1, 0, 0);
     if (LOOK.pixel) pixelateCanvas(f, LOOK.pixel);
     // firelight: warm toward the fire, plum shadow away from it, a little flicker
