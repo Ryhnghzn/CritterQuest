@@ -323,7 +323,11 @@ export class Town25 {
       b.face ||= makeFacing(look < 0 ? -1 : 1);
       turnTo(b.face, look, t);
       const turning = b.face.cur !== b.face.face;
-      if (b.fresh || turning || (this.frame + i) % 2 === 0) { // redrawn every other frame (every frame mid-turn)
+      // redrawn at LOOK.npcFps (spec §39; ?lama: every other frame), every frame mid-turn
+      const F = LOOK.npcFps, far = F && Math.hypot(x - this.camX, y - this.camY) > F.farDist;
+      const due = F ? t - (b.drawnT ?? -9) >= 1 / (far ? F.far : moving ? F.walk : F.idle) : (this.frame + i) % 2 === 0;
+      if (b.fresh || turning || due) {
+        b.drawnT = t;
         const g = this.canvasOf(b, kN), pose = b.pose, tr = pose2d(b.face, t);
         pose.t = t + n.x; pose.moving = moving; pose.walk = t * 5 * moving;
         g.translate(0, -tr.hop);

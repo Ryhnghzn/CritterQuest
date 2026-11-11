@@ -37,6 +37,10 @@ const MATANG = {
   // townsfolk and monsters alike (the hero is ~40 units tall → ~80 px), levels = colour steps per
   // channel, solid = alpha that counts as body (gets the outline), ink = outline colour
   pixel: { k: 2, levels: 7, solid: 0.8, ink: [19, 11, 26] },
+  // how often townsfolk billboards are redrawn (frames per second of their animation, spec §39):
+  // pixel art at ~8 fps reads as a sprite animation and costs a fraction of redrawing every frame;
+  // far = farther than farDist (game units) from the camera; turning always redraws
+  npcFps: { idle: 8, walk: 12, far: 4, farDist: 520 },
   // the heroes drawn in the anime style (spec §39, art/anime): run per class, front/back views, element
   // effects on the weapon (drawn after the pixel filter so they stay smooth); townsfolk stay as they are
   anime: true,
@@ -46,7 +50,7 @@ const MATANG = {
 const LAMA = {
   saturation: 1, detail: 0, exposure: 1, bloom: { strength: 0.7, radius: 0.45, threshold: 0.82 }, bloomScale: 1,
   bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1, spells: false, shadows: null, mood: null, paintGround: null, illustrated: null,
-  pixel: null, anime: false,
+  pixel: null, anime: false, npcFps: null,
   facing: { turn: 0, hop: 0, lean: 0, dead: 0.05, views: false, viewMin: 0.3, viewBand: 1.25 },
 };
 const old = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lama');

@@ -15,6 +15,7 @@ import { Fireflies } from './fireflies.js';
 import { drawFrame } from './frame.js';
 import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
+import { pixelateCanvas } from './pixelate.js';
 import { dispose } from './dungeon.js';
 import { buildProps, indexProps, gatherNear, inCutaway, bridgeSpots, tilesAround } from './fieldprops.js';
 import { propGeometry, VARIED, vtoon, LIFT, gateMesh, chestMesh, homeMesh, bridgesMesh, riverRibbon, signMesh, additive, glowTex, townGateMesh, fogBank } from './fieldkit.js';
@@ -239,14 +240,26 @@ export class Field25 {
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
     g.setTransform(k, 0, 0, k, (cd.w / 2 - cd.x) * k, (cd.top - cd.y) * k);
     g.lineJoin = 'round';
+    const figure = (fg) => { // the person on the card (guard / hidden NPC)
+      if (cd.guard) { drawGuard(fg, cd.guard, t); return; }
+      cd.pose.t = t + cd.home.x;
+      actor(fg, cd.x, cd.y, null, cd.look, cd.pose, -1, cd.home.scale || 1);
+    };
     if (cd.spot) drawQuestSpot(g, cd.spot, t);
-    else if (cd.guard) drawGuard(g, cd.guard, t);
-    else {
-      const h = cd.home;
-      cd.pose.t = t + h.x;
-      actor(g, cd.x, cd.y, null, cd.look, cd.pose, -1, h.scale || 1);
-      tag(g, cd.who, cd.x, cd.y, t, game.nearHidden === h, h.mark);
-    }
+    else if (LOOK.pixel) { // pixel art like the hero and townsfolk (spec §39); the tag stays sharp
+      const kp = LOOK.pixel.k, f = (cd.fig ||= document.createElement('canvas'));
+      const fw = Math.ceil(cd.w * kp), fh = Math.ceil((cd.top + cd.bottom) * kp);
+      if (f.width !== fw || f.height !== fh) { f.width = fw; f.height = fh; }
+      const fg = f.getContext('2d');
+      fg.setTransform(1, 0, 0, 1, 0, 0); fg.clearRect(0, 0, fw, fh);
+      fg.setTransform(kp, 0, 0, kp, (cd.w / 2 - cd.x) * kp, (cd.top - cd.y) * kp); fg.lineJoin = 'round';
+      figure(fg);
+      pixelateCanvas(f, LOOK.pixel);
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.imageSmoothingEnabled = false;
+      g.drawImage(f, 0, 0, w, h);
+      g.restore();
+    } else figure(g);
+    if (cd.home) tag(g, cd.who, cd.x, cd.y, t, game.nearHidden === cd.home, cd.home.mark);
     cd.tex.needsUpdate = true;
     const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home?.scale || 1);
     cd.mesh.position.set(cd.x * S, (feet - (cd.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);

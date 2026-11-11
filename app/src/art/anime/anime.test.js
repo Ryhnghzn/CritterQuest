@@ -74,6 +74,13 @@ describe('karakter anime (spesifikasi §39)', () => {
     const l = animeLook('mage', { hair: 4, hairColor: 5, gear: { helm: { tier: 3, rarity: 5 }, ring: { tier: 1, rarity: 2 } } });
     expect(l).toMatchObject({ style: 'tail', hair: 'silver', gear: { helm: 5, armor: null, ring: 2 } });
   });
+  it('warga kota anime (contoh npc.html): 22 jenis × 3 arah, diam & berjalan', async () => {
+    const { drawAnimeNpc } = await import('./npc.js');
+    const { ARCHETYPES } = await import('../hero/npc.js');
+    expect(ARCHETYPES).toHaveLength(22);
+    for (const a of ARCHETYPES) for (const view of ['side', 'front', 'back']) for (const moving of [0, 1])
+      drawAnimeNpc(fakeCtx(), a, { outfit: ['#5a7a3a', '#243216'], look: { hair: 5, hairColor: 3 } }, { t: 1.2, moving, walk: 2, view });
+  });
   it('job tak dikenal tidak digambar', () => {
     expect(drawAnime(fakeCtx(), 'bard', {}, {})).toBe(null);
   });

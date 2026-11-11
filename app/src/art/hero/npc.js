@@ -53,6 +53,8 @@ export function archetypeOf(npc) {
 }
 export const ARCHETYPES = Object.keys(ARCH);
 export const idleOf = (arch) => (ARCH[arch] || ARCH.villager)[5];
+// the parts of an archetype: { build, clothes, headwear, beard, prop, idle } (also used by art/anime/npc.js)
+export const archParts = (arch) => { const [build, clothes, headwear, beard, prop, idle] = ARCH[arch] || ARCH.villager; return { build, clothes, headwear, beard, prop, idle }; };
 
 const hex6 = (h) => (h && h.length === 4 ? `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}` : h || '#6a6a6a');
 const PALS = new Map();
