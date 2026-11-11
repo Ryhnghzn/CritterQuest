@@ -43,4 +43,9 @@ export const SPELL3D = {
   poison: { rate: 9, size: 1.6, fps: 7, opacity: 0.6 },
   smoke: { puffs: 12, size: 2.2 },
   arcane: { size: 1.3, fps: 18, glow: 1.5, sparks: 12, sparkSpeed: 2.5, blinkEnd: 0.1, light: { color: 0xa070ff, peak: 14, life: 0.3, dist: 4 } },
+  // enemy shots with a picture (spec §41.2, art/pix/fx.js SHOT_ART): width = shot r × size; turn: drawn along the flight
+  shots: { h: 0.8, fps: 8, glow: 1.25, looks: {
+    maw: { size: 4.6, turn: true }, crystal: { size: 4.2 }, spore: { size: 4 }, scarab: { size: 4.4, turn: true },
+    magma: { size: 5, turn: true }, void: { size: 4.4, turn: true }, spit: { size: 4, turn: true },
+  } },
 };

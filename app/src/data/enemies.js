@@ -167,6 +167,14 @@ export const ENEMIES = {
   },
 };
 
+// What each enemy's shots and slams look like (spec §41.2): a picture in art/pix/fx.js per look,
+// instead of the same glowing ball in every colour. Copied onto the ring / spiral / shot / slam configs.
+export const SHOT_LOOKS = {
+  boss: 'maw', crystalboss: 'crystal', sporeboss: 'spore', tombboss: 'scarab', lavaboss: 'magma', eclipseboss: 'void',
+  spitter: 'spit', frostspitter: 'crystal', icewisp: 'crystal', imp: 'magma', voidspitter: 'void', wraith: 'void',
+};
+for (const [id, look] of Object.entries(SHOT_LOOKS)) for (const k of ['ring', 'spiral', 'shot', 'slam']) if (ENEMIES[id][k]) ENEMIES[id][k].look = look;
+
 // Basic attacks hit a shield; skills (and gear lightning) go through it.
 export const SHIELD_PIERCING = ['spin', 'rain', 'pierce', 'nova', 'chain', 'shadow', 'dagger', 'shout'];
 

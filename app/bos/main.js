@@ -46,3 +46,23 @@ for (const type of BOSSES) {
   );
   list.append(h, row);
 }
+
+// the shots (spec §41.2, art/pix/fx.js SHOT_ART): every frame of each look, enlarged
+import { SHOT_ART } from '../src/art/pix/fx.js';
+import { SHOT_LOOKS } from '../src/data/enemies.js';
+const shotsHead = document.createElement('h2'); shotsHead.textContent = 'Peluru tiap bos & penembak';
+const shotRow = document.createElement('div'); shotRow.className = 'row';
+for (const [look, make] of Object.entries(SHOT_ART)) {
+  const fr = make(1), fig = document.createElement('figure'), c = document.createElement('canvas'), cap = document.createElement('figcaption');
+  const Z = 6, w = Math.max(...fr.map((s) => s.w)), h = Math.max(...fr.map((s) => s.h));
+  c.width = (w + 4) * fr.length * Z; c.height = (h + 4) * Z;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  fr.forEach((s, i) => {
+    const t = document.createElement('canvas'); t.width = s.w; t.height = s.h;
+    t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(s.rgba()), s.w, s.h), 0, 0);
+    g.drawImage(t, (i * (w + 4) + 2) * Z, 2 * Z, s.w * Z, s.h * Z);
+  });
+  cap.textContent = `${look} — ${Object.entries(SHOT_LOOKS).filter(([, l]) => l === look).map(([id]) => ENEMIES[id].name).join(', ')}`;
+  fig.append(c, cap); shotRow.append(fig);
+}
+list.append(shotsHead, shotRow);

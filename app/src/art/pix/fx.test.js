@@ -65,3 +65,18 @@ describe('assassin frames (plan B4)', () => {
     expect(glowing(FX.stab(2)[1])).toBe(opaque(FX.stab(2)[1]));
   });
 });
+
+describe('enemy shots (spec §41.2)', () => {
+  it('every look has frames, each with something in it, the same every time', () => {
+    for (const [look, make] of Object.entries(FX.SHOT_ART)) {
+      const fr = make(2);
+      expect(fr.length, look).toBeGreaterThan(1);
+      for (const sp of fr) expect(opaque(sp), look).toBeGreaterThan(20);
+      expect(Array.from(make(2)[1].px), look).toEqual(Array.from(fr[1].px));
+    }
+  });
+  it('the looks differ from each other', () => {
+    const first = Object.values(FX.SHOT_ART).map((m) => m(1)[0]);
+    for (let i = 0; i < first.length; i++) for (let j = i + 1; j < first.length; j++) expect(Array.from(first[i].px)).not.toEqual(Array.from(first[j].px));
+  });
+});

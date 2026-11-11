@@ -48,6 +48,7 @@ const MAKE = {
   shuriken: () => FX.shuriken(C.detail),
   poison: () => FX.poisonPuff(C.detail),
   aring: () => FX.novaRing(1, C.detail, 'arcane'),
+  ...Object.fromEntries(Object.entries(FX.SHOT_ART).map(([look, make]) => [`s_${look}`, () => make(C.detail)])), // enemy shots (spec §41.2)
 };
 const frames = (id) => FRAMES[id] || (FRAMES[id] = MAKE[id]().map(tex));
 
@@ -375,6 +376,21 @@ export class Spell3D {
       if ((q.t -= dt) > 0) continue;
       this.pending.splice(i, 1);
       this.arcane(game.px, game.py, 30, mul, 1.2);
+    }
+    // enemy shots with a picture (spec §41.2): a billboard following each shot
+    for (const s of game.shots) {
+      const L = s.look && C.shots.looks[s.look];
+      if (!L) continue;
+      live.add(s);
+      let e = this.proj.get(s);
+      if (!e) {
+        const id = `s_${s.look}`;
+        e = this.add(id, s.x, s.y, { ax: 0.5, ay: 0.5, h: C.flyH * C.shots.h, m: (s.r * L.size * S) / frames(id)[0].w, fps: C.shots.fps, loop: true, life: 1e9, glow: C.shots.glow });
+        if (!e) continue;
+        this.proj.set(s, e);
+      }
+      e.x = s.x; e.y = s.y;
+      if (L.turn) e.roll = screenAngle(s.vx, s.vy, yaw);
     }
     // projectiles and meteors that are gone
     for (const [h, e] of this.proj) {

@@ -478,6 +478,7 @@ function hazard(g, h, t) {
     g.setLineDash([]);
     g.beginPath(); g.arc(h.x, h.y, h.r * k, 0, TAU);
     g.fillStyle = 'rgba(255,80,90,.35)'; g.fill();
+    if (h.look) hazardMotif(g, h, k, t);
   }
   g.restore();
 }
@@ -524,10 +525,46 @@ function enemyShots(g, game, t) {
   }
   g.restore();
   for (const s of game.shots) {
+    if (s.look) { shotShape(g, s, t); continue; }
     g.beginPath(); g.arc(s.x, s.y, s.r * 0.75, 0, TAU);
     g.fillStyle = '#fff'; g.fill();
     g.lineWidth = 1.2; g.strokeStyle = s.color || '#ff6b8b'; g.stroke();
   }
+}
+
+// a simple shape per shot look for the flat view (the 2.5D view flies pictures, render3d/spell3d.js)
+function shotShape(g, s, t) {
+  const r = s.r, a = Math.atan2(s.vy, s.vx);
+  g.save(); g.translate(s.x, s.y); g.rotate(a);
+  g.lineWidth = 1.2; g.strokeStyle = '#0c0a0f';
+  const shape = (pts, fill) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x * r, y * r) : g.moveTo(x * r, y * r))); g.closePath(); g.fillStyle = fill; g.fill(); g.stroke(); };
+  switch (s.look) {
+    case 'maw': g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fillStyle = '#7a3ab8'; g.fill(); g.stroke(); shape([[0.2, -0.7], [1.1, -0.3], [0.5, -0.1]], '#f4ecdc'); shape([[0.2, 0.7], [1.1, 0.3], [0.5, 0.1]], '#f4ecdc'); break;
+    case 'crystal': g.rotate(t * 9 - a); shape([[1.4, 0], [0, 0.5], [-1.4, 0], [0, -0.5]], '#9fe0ff'); break;
+    case 'spore': g.rotate(t * 3 - a); for (let i = 0; i < 8; i++) { const b = (i / 8) * TAU; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(b) * r * 1.5, Math.sin(b) * r * 1.5); g.lineWidth = 1.4; g.strokeStyle = '#8ad04a'; g.stroke(); } g.lineWidth = 1.2; g.strokeStyle = '#0c0a0f'; g.beginPath(); g.arc(0, 0, r * 0.8, 0, TAU); g.fillStyle = '#5a9a2a'; g.fill(); g.stroke(); break;
+    case 'scarab': { const w = Math.sin(t * 40) > 0 ? 0.9 : 0.5; shape([[-0.6, -0.2], [0.2, -w], [0.5, -0.2]], 'rgba(200,226,255,.8)'); shape([[-0.6, 0.2], [0.2, w], [0.5, 0.2]], 'rgba(200,226,255,.8)'); g.beginPath(); g.ellipse(0, 0, r, r * 0.7, 0, 0, TAU); g.fillStyle = '#c89a2a'; g.fill(); g.stroke(); break; }
+    case 'magma': shape([[-2.2, 0], [-0.4, -0.7], [-0.4, 0.7]], '#ff8a3c'); g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fillStyle = '#3a2420'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#ff7a2a'; g.stroke(); break;
+    case 'void': g.beginPath(); g.arc(0, 0, r * 1.1, -1.9, 1.9); g.arc(-r * 0.5, 0, r * 0.95, 1.5, -1.5, true); g.closePath(); g.fillStyle = '#1a1028'; g.fill(); g.lineWidth = 1.6; g.strokeStyle = '#a06ad8'; g.stroke(); break;
+    default: g.beginPath(); g.ellipse(0, 0, r * 1.1, r * 0.85, 0, 0, TAU); g.fillStyle = '#6aa23a'; g.fill(); g.stroke();
+  }
+  g.restore();
+}
+
+// what a boss's slam looks like inside its red circle (spec §41.2): teeth, crystals, spores, a sand sigil, cracks, a swirl
+function hazardMotif(g, h, k, t) {
+  const R = h.r, n = 7;
+  g.save(); g.translate(h.x, h.y); g.globalAlpha = 0.35 + 0.45 * k;
+  g.lineWidth = 2; g.lineJoin = 'round';
+  switch (h.look) {
+    case 'maw': g.fillStyle = '#efe6d2'; for (let i = 0; i < 12; i++) { const b = (i / 12) * TAU; g.save(); g.rotate(b); g.beginPath(); g.moveTo(R * 0.98, -5); g.lineTo(R * (0.98 - 0.25 * k), 0); g.lineTo(R * 0.98, 5); g.fill(); g.restore(); } break;
+    case 'crystal': g.fillStyle = '#9fe0ff'; for (let i = 0; i < n; i++) { const b = (i / n) * TAU + 0.3, d = R * 0.55; g.save(); g.translate(Math.cos(b) * d, Math.sin(b) * d); g.beginPath(); g.moveTo(0, 4); g.lineTo(-4, 0); g.lineTo(0, -6 - 10 * k); g.lineTo(4, 0); g.closePath(); g.fill(); g.restore(); } break;
+    case 'spore': g.fillStyle = '#b4e06a'; for (let i = 0; i < 14; i++) { const b = i * 2.4, d = R * ((i * 37) % 10) / 11; g.beginPath(); g.arc(Math.cos(b) * d, Math.sin(b) * d, 2 + k * 2, 0, TAU); g.fill(); } break;
+    case 'scarab': g.strokeStyle = '#e0c27a'; g.beginPath(); g.arc(0, 0, R * 0.7, 0, TAU); g.stroke(); for (let i = 0; i < 8; i++) { const b = (i / 8) * TAU + t; g.beginPath(); g.moveTo(Math.cos(b) * R * 0.55, Math.sin(b) * R * 0.55); g.lineTo(Math.cos(b) * R * 0.85, Math.sin(b) * R * 0.85); g.stroke(); } break;
+    case 'magma': g.strokeStyle = '#ff9a3a'; for (let i = 0; i < 5; i++) { const b = (i / 5) * TAU + 0.4; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(b + 0.25) * R * 0.45, Math.sin(b + 0.25) * R * 0.45); g.lineTo(Math.cos(b) * R * 0.9 * (0.4 + 0.6 * k), Math.sin(b) * R * 0.9 * (0.4 + 0.6 * k)); g.stroke(); } break;
+    case 'void': g.strokeStyle = '#a06ad8'; g.rotate(t * 2); for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(0, 0, R * (0.3 + i * 0.22), (i / 3) * TAU, (i / 3) * TAU + 2.2); g.stroke(); } break;
+    default: break;
+  }
+  g.restore();
 }
 
 // golden ring and glow under an elite

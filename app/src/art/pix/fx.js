@@ -276,3 +276,82 @@ export function poisonPuff(k = 1) {
     return s;
   });
 }
+
+// ---- enemy shots (spec §41.2): one picture per look instead of the same glowing ball ----------
+// Directional ones fly right (spell3d.js turns them along their flight); the rest spin or pulse.
+// Raja Maw: a purple spit glob with fangs at its front and drips trailing
+export function shotMaw(k = 1) {
+  return [0, 1, 2].map((f) => {
+    const s = new PixelSprite(18, 12, k), r = rng(201 + f);
+    for (let i = 0; i < 3; i++) s.paint(ellipse(3 + i * 2.2 + r(), 6 + (r() - 0.5) * 3, 1.4 - i * 0.2 + r() * 0.4, 1.1), 'arcane', { level: 1 + (i > 1 ? 1 : 0), edge: false });
+    s.paint(ellipse(11, 6, 5, 4.2 - f * 0.25), 'arcane', { level: 2, edge: false });
+    s.paint(ellipse(11.5, 5.6, 2.6, 2.2), 'ember', { level: 3, edge: false });
+    for (const y of [3.2, 8.8]) for (let i = 0; i < 3; i++) s.paint(poly([[12 + i * 1.6, y], [13 + i * 1.6, y + (y < 6 ? 2.2 : -2.2)], [14 + i * 1.6, y]]), 'smear', { level: 4, edge: false });
+    return s.outline();
+  });
+}
+// Golem Kristal: a sharp crystal shard turning end over end
+export function shotCrystal(k = 1) {
+  return [0, 1, 2, 3].map((f) => {
+    const s = new PixelSprite(16, 16, k), a = (f / 4) * Math.PI, c = Math.cos(a), sn = Math.sin(a);
+    const P = [[6.5, 0], [0, 2.4], [-6.5, 0], [0, -2.4]].map(([x, y]) => [8 + x * c - y * sn, 8 + x * sn + y * c]);
+    s.paint(poly(P), 'frost', { rim: true });
+    s.paint(capsule(8 - 4 * c, 8 - 4 * sn, 8 + 4 * c, 8 + 4 * sn, 0.5), 'frost', { level: 4, edge: false });
+    return s.outline();
+  });
+}
+// Ratu Spora: a fuzzy spore ball with spikes, pulsing
+export function shotSpore(k = 1) {
+  return [0, 1, 2].map((f) => {
+    const s = new PixelSprite(16, 16, k), R = 4.2 + f * 0.5;
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + f * 0.2; s.paint(capsule(8, 8, 8 + Math.cos(a) * (R + 2.4), 8 + Math.sin(a) * (R + 2.4), 0.9, 0.3), 'poison', { level: 3, edge: false }); }
+    s.paint(ellipse(8, 8, R, R), 'poison', { bias: 0.4 });
+    for (const [x, y] of [[6.5, 6.5], [9.5, 7], [7.5, 9.6]]) s.dot(x, y, 'poison', 4);
+    return s.outline();
+  });
+}
+// Raja Mumi: a golden scarab flying right, wings flickering, glowing teal eyes
+export function shotScarab(k = 1) {
+  return [0, 1].map((f) => {
+    const s = new PixelSprite(18, 14, k);
+    s.paint(ellipse(7, f ? 3.6 : 4.6, 4.6, f ? 2.2 : 1.6), 'bolt', { level: 3, edge: false });
+    s.paint(ellipse(7, f ? 10.4 : 9.4, 4.6, f ? 2.2 : 1.6), 'bolt', { level: 3, edge: false });
+    s.paint(ellipse(8, 7, 5.2, 3.6), 'gold', { rim: true });
+    s.paint(capsule(3.5, 7, 12, 7, 0.35), 'gold', { level: 1, edge: false });
+    s.paint(ellipse(14, 7, 2.2, 2), 'gold', { level: 2 });
+    s.dot(15, 6, 'frost', 4); s.dot(15, 8, 'frost', 4);
+    return s.outline();
+  });
+}
+// Raja Lava: a charred lava rock with glowing cracks and a flame tail
+export function shotMagma(k = 1) {
+  return [0, 1, 2, 3].map((f) => {
+    const s = new PixelSprite(22, 14, k), r = rng(231 + f);
+    for (let i = 0; i < 5; i++) s.paint(ellipse(3 + i * 2 + r() * 2, 7 + (r() - 0.5) * 4, 2.2 - i * 0.15 + r(), 1.5 + r() * 0.6), i > 2 ? 'torch' : 'ember', { level: 2 + (i > 3 ? 1 : 0), edge: false });
+    s.paint(ellipse(15.5, 7, 4.6, 4.2), 'charred', { rim: true });
+    for (let i = 0; i < 3; i++) { const a = r() * TAU; s.paint(capsule(15.5, 7, 15.5 + Math.cos(a) * 3.6, 7 + Math.sin(a) * 3.2, 0.5, 0.3), 'ember', { level: 4, edge: false }); }
+    return s.outline();
+  });
+}
+// Sang Gerhana: a black crescent with a violet rim, horns pointing back
+export function shotVoid(k = 1) {
+  return [0, 1, 2].map((f) => {
+    const s = new PixelSprite(16, 16, k), cut = (x, y) => ((x - 5.5 + f * 0.3) / 5.6) ** 2 + ((y - 8) / 6.2) ** 2 > 1;
+    s.paint(clip(ellipse(8.5, 8, 6, 6.6), cut), 'arcane', { level: 3, edge: false });
+    s.paint(clip(ellipse(8.2, 8, 5, 5.6), cut), 'obsidian', { bias: -0.5 });
+    s.dot(13, 8, 'arcane', 4);
+    return s.outline();
+  });
+}
+// a toad's spit (Katak Ludah and kin): a green glob with drops behind
+export function shotSpit(k = 1) {
+  return [0, 1, 2].map((f) => {
+    const s = new PixelSprite(14, 10, k), r = rng(251 + f);
+    for (let i = 0; i < 2; i++) s.paint(ellipse(2.5 + i * 2 + r(), 5 + (r() - 0.5) * 3, 1.1, 1), 'poison', { level: 3, edge: false });
+    s.paint(ellipse(9, 5, 3.8, 3.2 - f * 0.2), 'poison', { bias: 0.5 });
+    s.dot(10, 4, 'poison', 4);
+    return s.outline();
+  });
+}
+// look id → frames (render3d/spell3d.js)
+export const SHOT_ART = { maw: shotMaw, crystal: shotCrystal, spore: shotSpore, scarab: shotScarab, magma: shotMagma, void: shotVoid, spit: shotSpit };

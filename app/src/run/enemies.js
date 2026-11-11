@@ -73,7 +73,7 @@ function act(run, e, b) {
 
 // by: the enemy type firing it (death dialog)
 export function fire(run, x, y, angle, s, by = null) {
-  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null, by });
+  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null, by, look: s.look || null });
 }
 
 function summon(run, e, s) {
@@ -258,7 +258,7 @@ function stepPattern(run, e, b0, dt, enraged) {
   } else if (p.id === 'slam') {
     const s = b.slam, count = s.count + (enraged ? 2 : 0);
     if (p.fireT <= 0 && p.n < count) {
-      run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.radius, t: s.fuse, max: s.fuse, dmg: s.dmg, by: e.type });
+      run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.radius, t: s.fuse, max: s.fuse, dmg: s.dmg, by: e.type, look: s.look || null });
       p.n++; p.fireT = s.gap * (enraged ? 0.75 : 1);
     } else if (p.n >= count && p.fireT <= 0) done();
   } else if (p.id === 'beam') { // beams from the boss outward, each sweep turned a little further

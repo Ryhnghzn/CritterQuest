@@ -134,6 +134,7 @@ export class Actors {
         for (let k = 1; k <= 4; k++) put(h.x - dx * k * 9, h.y - dy * k * 9, PROJ_H, size * (1 - k * 0.18), col, 0.6 - k * 0.12);
       }
       for (const s of game.shots) {
+        if (this.spells && s.look) { put(s.x, s.y, PROJ_H * 0.8, s.r * 3 + 6, s.color || '#ff6b8b', 0.45); continue; } // the picture flies in spell3d.js; a soft glow behind it
         put(s.x, s.y, PROJ_H * 0.8, s.r * 3.4 + 8, s.color || '#ff6b8b', 1);
         put(s.x, s.y, PROJ_H * 0.8, s.r * 1.4 + 3, '#ffffff', 1);
       }
