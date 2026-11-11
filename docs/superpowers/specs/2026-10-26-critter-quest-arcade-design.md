@@ -1364,6 +1364,8 @@ Save: `difficulty`, `unlocked` (Neraka, Celah), `rift { best, checkpoint }`. Ver
 
 ### 41.4 Proyek D: Job Lanjutan
 
+> Diperbarui oleh §43 (2026-11-11): Job Lanjutan jadi bagian H proyek §43; ujian tidak lagi menunggu tingkat Sulit (§43.8); tiap cabang menambah 2 skill + 1 ultimate + 2 pasif ke pohon skill (§43.2).
+
 - **Syarat:** level 30, lalu **ujian** di Pelatih: arena khusus melawan **Bayangan Diri**, yaitu bos yang memakai skill kelasmu sendiri dan mekanik khasnya, di tingkat Sulit atau lebih. Menang = memilih satu dari dua cabang. Ganti cabang di Pelatih dengan biaya besar.
 - **Cabang mengganti mekanik khas (§31) dan menambah 2 skill + 1 ultimate baru**, bukan hanya menambah angka. Stat dasar naik sedikit (±10%) saja.
 
@@ -1379,7 +1381,7 @@ Save: `difficulty`, `unlocked` (Neraka, Celah), `rift { best, checkpoint }`. Ver
 
 ### 41.5 Urutan & rencana kerja
 1. Proyek A: `docs/superpowers/plans/2026-11-11-musuh-beragam.md`.
-2. Proyek B, C, D: rencana masing-masing ditulis saat proyek sebelumnya selesai dicek pemilik.
+2. Proyek B, C, D: rencana masing-masing ditulis saat proyek sebelumnya selesai dicek pemilik. **Diubah 2026-11-11:** setelah A dan B (keduanya sedang berjalan) dikerjakan §43 (Job & Skill Bertingkat, menggantikan D), lalu C.
 3. Satu Dunia (§40) bagian B7–D tetap berjalan; proyek A hanya menyentuh daftar `enemies` per zona di `data/world.js`, bukan peta.
 
 ## 42. Quest Beragam (permintaan pemilik 2026-11-11)
@@ -1407,3 +1409,122 @@ Masalah: hampir semua quest berpola "bicara → kalahkan X / kumpulkan Y / datan
 - `quests.choices { [questId]: index }` (jawaban Pilihan), `quests.races { [questId]: detik terbaik }`.
 - `migrate()` v22 → v23.
 - Rencana kerja: `docs/superpowers/plans/2026-11-11-quest-beragam.md` (A Kawal & Bertahan · B Buronan & Sarang · C Penyelamatan & Balapan · D Pilihan & Peristiwa dunia).
+
+## 43. Job & Skill Bertingkat (permintaan pemilik 2026-11-11)
+
+Acuan: Dragon Nest (poin skill, level skill, dua halaman skill, dua pilihan ultimate). Masalah: tiap kelas hanya punya 6 skill + 1 ultimate tanpa level, dan kelas dipilih sebelum pemain tahu rasanya. Keputusan pemilik: mulai tanpa job (Pengembara), pilih job lalu bisa ganti dengan biaya, poin skill (SP) dengan level skill, 2 ultimate per job, 2 halaman skill, skill dengan tempo berbeda, dan musuh tetap tidak gampang. Proyek ini **memperbarui §41.4** (Job Lanjutan) dan maju sebelum §41 proyek C (lihat §43.9).
+
+### 43.1 Pengembara & pemilihan job
+- **Buat Karakter:** hanya nama & rambut; pilihan kelas dihapus. Karakter baru = **Pengembara** (`classId: 'novice'`).
+- **Pengembara:** stat dasar `maxHp 110, atk 12, def 1, crit 6, moveSpd 112`, pertumbuhan `maxHp 9, atk 1,3`; serangan biasa tebasan pendek (`arc`, r 40, 90°, jeda 0,5, energi 6). Dua skill tetap (tanpa level): **Ayunan Lebar** (area di sekeliling r 70, 180%, energi 30, cd 3) dan **Guling Serang** (dash 140, 200% ke yang dilewati, energi 20, cd 3). Tanpa mekanik khas, tanpa ultimate, tanpa halaman B. Senjata bawaan Pengembara; selama Pengembara **senjata tidak jatuh** (gear lain tetap). SP tetap terkumpul. **EXP berhenti di level 10** sampai memilih job.
+- **Coba Job** (menu Pelatih Guru Hadi): arena kecil di samping boneka latihan, main sebagai job pilihan (level sama, skill bawaan terpasang level 1, mekanik khas aktif) melawan boneka + gelombang musuh lemah. Gratis, tanpa batas, tanpa hadiah; keluar = kembali Pengembara.
+- **Pilih job** (level ≥ 5, quest "Pilih Jalanmu" dari Guru Hadi): pertama kali **gratis**. Dapat senjata awal kelas itu (rarity biasa, level item = level karakter), mekanik khas, pohon skill (SP terkumpul siap dipakai), halaman A.
+- **Ganti job** (Pelatih, hanya di kota): biaya `(200 + 30 × level) × 1,5^n`, n = jumlah ganti job sebelumnya. Tetap: level, EXP, semua gear (senjata kelas lain tetap di tas), koin, quest. **Per job tersimpan:** susunan SP, halaman A/B, ultimate terpasang, cabang Job Lanjutan. **Poin atribut dikembalikan gratis** tiap ganti job. Pertama kali masuk job yang belum pernah dipakai: senjata awalnya + SP bebas.
+
+### 43.2 Poin skill (SP) & pohon skill
+- **2 SP tiap naik level** (mulai level 2; level 50 = 98 SP). Pohon terisi penuh butuh ±170 SP → harus memilih.
+- SP **menggantikan bakat (§21)**; 8 bakat lama pindah ke tab **Umum** dengan efek & batas sama.
+- Pohon per job, 4 tab (angka di `data/skilltree.js`):
+
+| Tab | Isi | Level | Biaya |
+|---|---|---|---|
+| Aktif | 8 skill job (§43.4), +2 skill cabang | 1–5 | 1 SP untuk level 1–2, 2 SP untuk level 3–5 (8 SP sampai maks) |
+| Ultimate | Luas & Fokus (§43.5), +1 ultimate cabang | 1–3 | 3 SP per level |
+| Pasif | 3 pasif khas job (§43.3), +2 pasif cabang | 1–3 | 2 SP per level |
+| Umum | 8 bakat lama | 1–5 | 1 SP per level |
+
+- Syarat buka = **level karakter** saja (`unlock`), tanpa syarat skill lain. Skill aktif harus level ≥ 1 untuk dipasang.
+- **Level skill aktif:** damage +12% per level (level 5 = 148%); **level 3 dan level 5 memberi efek tambahan** (§43.4). **Level ultimate:** +15% damage per level; level 3: Luas durasi +0,5 dtk, Fokus area +20%.
+- **Atur ulang SP** (Pelatih): `80 + 15 × level`, hanya job yang sedang dipakai. **Gratis** sekali setelah pembaruan dan pertama kali memakai job baru.
+- **Tab Skill:** tab Aktif · Ultimate · Pasif · Umum + sisa SP; tiap baris ikon, nama, titik level (●●●○○), tombol **+**, tombol pasang; di atas daftar dua baris slot A1–A4 & B1–B4 + slot ultimate.
+
+### 43.3 Pasif khas job (efek per level, maks 3)
+| Job | Pasif |
+|---|---|
+| Warrior | **Darah Panas** Murka masuk +15% · **Kulit Baja** damage diterima −4% saat Murka > 50 · **Tebasan Lebar** lebar tebasan biasa +8% |
+| Archer | **Napas Tenang** Bidik terisi +15% · **Kaki Ringan** gerak +4% · **Mata Tajam** kritis +3% ke musuh berjarak > 250 |
+| Mage | **Darah Dingin** Panas turun +15% · **Hemat Mana** energi skill −5% · **Ledakan Besar** area skill +6% |
+| Assassin | **Ingatan Otot** Kombo bertahan +1 dtk · **Bilah Racun** 5% peluang serangan biasa meracuni (3 dtk, 20% ATK tiap 0,5 dtk) · **Lolos Tipis** kritis +10% selama 2 dtk setelah menghindar |
+
+### 43.4 Skill aktif: 8 per job, efek level 3 & 5
+Enam skill lama tetap (angka §31/`data/classes.js` = level 1). Dua skill **tempo** baru per job: buka level 8 dan 12.
+
+**Jenis tempo baru** (`kind` baru di `run/skills.js`):
+- `charge` (isi): tahan → cincin terisi sampai `full` dtk; lepas → kekuatan menurut lama menahan. Penuh = kilatan + bunyi "ting".
+- `channel` (salur): tahan sampai `max` dtk; jalan terus (tick), energi dikuras per detik (`drain`), gerak diperlambat.
+- `chain` (rantai): tahap ① bayar energi; tekan lagi dalam `window` dtk → tahap berikut (maks 3); berhenti = cooldown mulai. Tombol berkedip selama jendela.
+- `parry` (tangkis): jendela `window` dtk; terkena serangan/peluru (selain peluru merah "tak tertangkis") → damage batal + balasan; waktu melambat 0,15 dtk.
+- `turret` / `clone` (pasang): benda/klon tinggal di arena `duration` dtk dengan bilah waktu kecil.
+- `rune` (tanda tertunda): rune berdetak makin cepat lalu meledak setelah `fuse` dtk.
+
+| Job | Skill | Jenis | Level 1 | L3 | L5 |
+|---|---|---|---|---|---|
+| Warrior | Putaran Pedang | area | (lama) | +2 tebasan | pusaran 2 dtk menarik musuh, 40% per tebasan |
+| | Teriakan Baja | buff | (lama) | durasi +2 dtk | gelombang kejut membekukan 0,8 dtk |
+| | Terjang | dash | (lama) | jarak +60 | jejak api 1,5 dtk, 30% tiap 0,25 dtk |
+| | Retakan Bumi | line | (lama) | +2 pilar | pilar terakhir meledak besar (area 90, 300%) |
+| | Kapak Bumerang | proj | (lama) | kapak kedua menyusul | kapak berputar di ujung 0,6 dtk sebelum kembali |
+| | Amarah Perang | buff | (lama) | gerak +20% | Murka langsung +40 |
+| | **Tebasan Raksasa** | charge | tahan s/d 1,2 dtk: tebasan depan, jangkauan 70→160, 200%→700%; penuh = menembus, dorong jauh, memecah perisai Berlapis; energi 40, cd 4 | jangkauan maks +30 | penuh dalam 0,8 dtk |
+| | **Tangkis Baja** | parry | jendela 0,5 dtk; berhasil: gelombang 600% area 90, Murka +30; energi 20, cd 4 | jendela 0,7 dtk | peluru yang ditangkis memantul ke penembaknya |
+| Archer | Hujan Panah | area | (lama) | area +25% | memperlambat 40% |
+| | Panah Naga | proj | (lama) | jejak terbakar +1 dtk | dua naga (±10°) |
+| | Panah Pecah | fan | (lama) | pecah jadi 4 | pecahan memantul sekali |
+| | Lompatan Mundur | dash | (lama) | bisa 2× berturut | Bidik langsung penuh setelah melompat |
+| | Ladang Jebakan | area | (lama) | durasi +2 dtk | meledak di akhir 300% |
+| | Mata Elang | buff | (lama) | damage kritis +20% | panah biasa menembus 1 musuh selama buff |
+| | **Sinar Panah** | channel | tahan s/d 2 dtk: sinar lurus 8×/dtk, 60% tiap tick; gerak −60%; energi 15 + 20/dtk, cd 5 | maks 3 dtk | lebar sinar ×2 di detik terakhir |
+| | **Menara Panah** | turret | menara di titik bidik 8 dtk, tembak musuh terdekat tiap 0,4 dtk, 120%; maks 2; energi 35, cd 6 | tembakan menembus 1 | maks 3 menara |
+| Mage | Nova Es | area | (lama) | beku +0,5 dtk | musuh beku yang mati pecah jadi 4 serpihan es 100% |
+| | Badai Petir | storm | (lama) | +3 sambaran | tiap sambaran menyetrum area 50 |
+| | Meteor | area | (lama) | area +25% | lava 2 dtk, 40% tiap 0,5 dtk |
+| | Teleportasi | dash | (lama) | bisa 2× berturut | ledakan es di titik awal (150%, beku 0,8 dtk) |
+| | Matahari Kecil | proj | (lama) | +3 serpihan | meledak dua kali |
+| | Perisai Mana | buff | (lama) | durasi +2 dtk | meledak 300% area 100 saat habis |
+| | **Bom Waktu** | rune | rune di titik bidik meledak setelah 2 dtk, 800% area 90; tiap pukulan pemain ke musuh di dalam rune +10% (maks +100%); energi 45, cd 6 | meledak setelah 1,5 dtk | rune kedua kecil (400%) 1 dtk kemudian |
+| | **Semburan Api** | channel | tahan s/d 2 dtk: kerucut api jangkauan 120, 10×/dtk, 50% tiap tick; Panas +20/dtk; energi 15 + 15/dtk, cd 4 | kerucut +20° | membakar 2 dtk, 20% tiap 0,5 dtk |
+| Assassin | Langkah Bayangan | dash | (lama) | bisa 2× berturut | bayangan menebas lagi 0,3 dtk kemudian |
+| | Lingkaran Belati | fan | (lama) | +4 belati | belati kembali sekali ke pemain |
+| | Kabut Racun | area | (lama) | area +25% | musuh di dalam kabut menerima +15% damage |
+| | Bom Asap | buff | (lama) | beku +0,5 dtk | kebal 1 dtk saat dilempar |
+| | Shuriken Raksasa | orbit | (lama) | radius +20 | membelah jadi 3 saat dilempar |
+| | Naluri Pembunuh | buff | (lama) | durasi +2 dtk | tiap kill +0,5 dtk (maks +3 dtk) |
+| | **Tarian Tiga Tebasan** | chain | ① melesat menebas 250% · ② putaran 300% area 70 · ③ tusukan menukik 600% + pingsan 1 dtk; jendela 0,8 dtk; energi 35 (tahap ①), cd 5 | jendela 1 dtk | tahap ③ menebar gelombang 300% area 100 |
+| | **Klon Bayangan** | clone | klon 6 dtk meniru serangan biasa 50%; separuh musuh sekitar mengincar klon; energi 40, cd 10 | damage klon 70% | klon meledak 400% area 90 saat habis |
+
+### 43.5 Dua ultimate per job
+- Keduanya buka **level 25**; satu dipasang di tombol 5 (tab Skill), tukar gratis di luar pertarungan; bar isi sama (`ULT`). Ultimate cabang (Job Lanjutan) = pilihan ketiga.
+- **Luas** (yang sekarang): area besar, beberapa detik, damage tersebar. **Fokus** (baru): keluar < 1 dtk, area kecil, total ke satu sasaran ≈ **1,8×** Luas; meleset = bar tetap habis. Fokus punya tanda bidik singkat yang menyala, lalu getar layar keras + waktu melambat sesaat saat kena.
+
+| Job | Luas | Fokus |
+|---|---|---|
+| Warrior | Badai Pedang (lama) | **Hantaman Langit**: melompat ke titik bidik, menghantam dalam 0,6 dtk, 1×5400%, area 70, pingsan 2 dtk; Murka penuh +30% |
+| Archer | Hujan Bintang (lama) | **Panah Penembus Langit**: bidik 0,5 dtk lalu sinar lurus panjang lebar 40, 5400% ke semua di garis; Bidik penuh = pasti kritikal |
+| Mage | Hujan Meteor (lama) | **Matahari Runtuh**: bola di titik bidik menyedot 0,8 dtk lalu meledak 1×6500% area 60; Panas > 80 tidak membuat terlalu panas |
+| Assassin | Tarian Seribu Bayangan (lama) | **Eksekusi Bayangan**: teleport ke belakang musuh yang dibidik, 3 tebasan dalam 0,4 dtk total 5600%, kebal selama jurus; musuh biasa HP < 30% mati seketika; +10% per poin Kombo |
+
+### 43.6 Dua halaman skill (A/B)
+- Halaman A buka saat memilih job; **halaman B buka level 15** (pesan sekali). 4 slot per halaman; satu skill hanya di satu slot.
+- Tukar: **Q** (PC), tombol **⇄** di atas tombol skill (HP). Langsung, tanpa cooldown. Cooldown halaman tersembunyi tetap berjalan; halaman tersembunyi tampil sebagai 4 ikon kecil redup + putaran cooldown, huruf A/B kecil menandai halaman aktif.
+- Tukar halaman **membatalkan** skill `charge`/`channel` yang sedang ditahan dan `chain` yang sedang berjalan. Ultimate tidak ikut berganti. Halaman terakhir diingat per job.
+
+### 43.7 Kontrol skill tempo
+| Jenis | PC | HP (bidik otomatis) |
+|---|---|---|
+| charge | tahan tombol angka, penanda ikut mouse, lepas = tembak, klik kanan = batal | tahan tombol, lepas = tembak ke musuh terdekat di arah gerak |
+| channel | tahan tombol angka, arah ikut mouse, lepas = berhenti | tahan tombol, arah ikut joystick gerak (diam = musuh terdekat) |
+| chain | tekan tombol yang sama lagi | ketuk lagi |
+| parry | langsung | langsung |
+| turret / clone / rune | mode bidik §37 | bidik otomatis: musuh/kelompok terdekat |
+
+### 43.8 Keseimbangan: musuh tidak gampang
+- Proyek ini menambah kekuatan pemain (level skill, 8 slot, pasif, Fokus). **Kurva HP & ATK musuh per level** (`data/balance.js`) naik mengikuti rata-rata tambahan dari SP.
+- **Tes patokan Vitest** (bot build rata-rata, level 10/20/30/40, kesulitan Normal): rombongan biasa selevel mati 4–8 dtk dengan skill; tanpa menghindar pemain kehilangan 40–60% HP melawan satu rombongan elite; bos selevel 60–90 dtk dengan ultimate Fokus. Tes gagal bila angka membuat game terlalu gampang.
+- **Musuh membalas:** elite Berlapis kebal pingsan selama perisai ada; sebagian peluru musuh **merah = tak tertangkis**; musuh mengabaikan klon/menara bila pemain berada < 80 darinya.
+- **Ujian Job Lanjutan** (Bayangan Diri) memakai angka kerasnya sendiri (tidak menunggu tingkat kesulitan §41.3).
+
+### 43.9 Data, save, urutan
+- Data: `data/classes.js` (+`novice`, skill tempo, ultimate Fokus, efek `lv3`/`lv5`), `data/skilltree.js` (biaya SP, pasif, Umum), `data/balance.js` (SP per level, biaya ganti job, kurva musuh). Logika murni + tes: `meta/jobs.js` (pilih/ganti job, biaya, SP, susunan per job), `run/skills.js` + modul jenis tempo di `run/`. Teks dua bahasa (§23).
+- **Save** (versi berikut yang tersedia saat dikerjakan; Quest Beragam memakai v23): `jobs { [classId]: { sp { [id]: level }, pages [[4], [4]], page, ult, branch } }`, `jobChanges`; `skills` dan `talents` dihapus. Validasi: SP terpakai per job ≤ 2 × (level − 1). `migrate()`: `classId` tetap (karakter lama dianggap sudah memilih job), skill yang terpasang jadi level 1 di halaman A, sisa SP bebas, bakat lama dikembalikan jadi SP + pesan sekali "Poin skill dikembalikan, susun lagi di tab Skill".
+- **Bagian kerja** (cek manual tiap bagian): A Pengembara & pilih/ganti job & Coba Job · B SP, pohon, tab Skill, Umum, atur ulang · C level skill & efek L3/L5 · D dua halaman · E skill tempo (per jenis) · F ultimate Fokus · G keseimbangan & tes patokan · H Job Lanjutan (§41.4: ujian, cabang dengan 2 skill + 1 ultimate + 2 pasif; dirinci saat bagian G selesai).
+- **Urutan proyek:** §41 proyek A (musuh beragam) dan B (bos khas), yang sudah berjalan, selesai dulu → **§43** → §41 proyek C (9E). Proyek D §41 digantikan bagian H.
