@@ -23,6 +23,7 @@ import { townDef } from '../data/towns.js';
 import { npcAt } from '../town/town.js';
 import { skyAt } from '../meta/clock.js';
 import { drawDoll } from '../art/doll.js';
+import { archetypeOf, idleOf } from '../art/hero/npc.js';
 import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { tag, plate, questMark } from '../render/paint.js';
@@ -322,16 +323,23 @@ export class Town25 {
       const look = moving ? screenX(vx, vy, yaw) : screenX(hx - x, hy - y, yaw);
       b.face ||= makeFacing(look < 0 ? -1 : 1);
       turnTo(b.face, look, t);
-      const turning = b.face.cur !== b.face.face;
+      // front / back (spec §38–39): walking toward / away from the camera; standing → the front,
+      // except townsfolk at work (LOOK.facing.jobIdles), who stay side-on so the work shows
+      b.job ??= (LOOK.facing.jobIdles || []).includes(idleOf(archetypeOf(n)));
+      const vl = Math.hypot(vx, vy) || 1, wx = moving ? vx / vl : 0, wy = moving ? vy / vl : 0;
+      viewTo(b.face, screenX(wx, wy, yaw), towardCam(wx, wy, yaw), t, !moving && b.job, moving ? null : 'front');
+      const vw = viewNow(b.face, t), side = vw.view === 'side';
+      const turning = b.face.cur !== b.face.face || vw.squash < 1;
       // redrawn at LOOK.npcFps (spec §39; ?lama: every other frame), every frame mid-turn
       const F = LOOK.npcFps, far = F && Math.hypot(x - this.camX, y - this.camY) > F.farDist;
       const due = F ? t - (b.drawnT ?? -9) >= 1 / (far ? F.far : moving ? F.walk : F.idle) : (this.frame + i) % 2 === 0;
       if (b.fresh || turning || due) {
         b.drawnT = t;
         const g = this.canvasOf(b, kN), pose = b.pose, tr = pose2d(b.face, t);
-        pose.t = t + n.x; pose.moving = moving; pose.walk = t * 5 * moving;
+        pose.t = t + n.x; pose.moving = moving; pose.walk = t * 5 * moving; pose.anime = LOOK.anime; // anime townsfolk (§39)
         g.translate(0, -tr.hop);
-        g.scale(DOLL * tr.w, DOLL);
+        g.scale(DOLL * (side ? tr.w : 1) * vw.squash, DOLL);
+        pose.view = vw.view; pose.turn = b.face.cur;
         drawDoll(g, null, b.look, pose);
         pixelateCanvas(b.c, LOOK.pixel);
         b.tex.needsUpdate = true; b.fresh = false;

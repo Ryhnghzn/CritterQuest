@@ -81,6 +81,12 @@ describe('karakter anime (spesifikasi §39)', () => {
     for (const a of ARCHETYPES) for (const view of ['side', 'front', 'back']) for (const moving of [0, 1])
       drawAnimeNpc(fakeCtx(), a, { outfit: ['#5a7a3a', '#243216'], look: { hair: 5, hairColor: 3 } }, { t: 1.2, moving, walk: 2, view });
   });
+  it('di game: drawHero menggambar warga anime bila pose.anime, setinggi warga gaya lama', async () => {
+    const { drawHero } = await import('../hero/index.js');
+    const look = { hair: 2, hairColor: 1, outfit: ['#8a3a2a', '#3a1610'], npc: { role: 'gear', name: 'Pandai' } };
+    const a = drawHero(fakeCtx(), null, look, { t: 1, anime: true }), b = drawHero(fakeCtx(), null, look, { t: 1 });
+    expect(Math.abs(a.head.y - b.head.y)).toBeLessThan(6);
+  });
   it('job tak dikenal tidak digambar', () => {
     expect(drawAnime(fakeCtx(), 'bard', {}, {})).toBe(null);
   });

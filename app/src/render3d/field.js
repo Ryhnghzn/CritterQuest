@@ -16,6 +16,7 @@ import { drawFrame } from './frame.js';
 import { LOOK } from '../data/look.js';
 import { Actors, canvasTexture, billMat } from './actors.js';
 import { pixelateCanvas } from './pixelate.js';
+const GUARD_OUTFIT = ['#3a4a6a', '#141c2e']; // the anime gate guard's colours
 import { dispose } from './dungeon.js';
 import { buildProps, indexProps, gatherNear, inCutaway, bridgeSpots, tilesAround } from './fieldprops.js';
 import { propGeometry, VARIED, vtoon, LIFT, gateMesh, chestMesh, homeMesh, bridgesMesh, riverRibbon, signMesh, additive, glowTex, townGateMesh, fogBank } from './fieldkit.js';
@@ -241,8 +242,15 @@ export class Field25 {
     g.setTransform(k, 0, 0, k, (cd.w / 2 - cd.x) * k, (cd.top - cd.y) * k);
     g.lineJoin = 'round';
     const figure = (fg) => { // the person on the card (guard / hidden NPC)
-      if (cd.guard) { drawGuard(fg, cd.guard, t); return; }
-      cd.pose.t = t + cd.home.x;
+      if (cd.guard) {
+        if (!LOOK.anime) { drawGuard(fg, cd.guard, t); return; }
+        const gd = cd.guard; // anime: the gate guard is the townsfolk 'guard' (helm, spear), not a warrior hero
+        gd.pose.t = t + gd.y * 0.01; gd.pose.anime = true;
+        gd.animeLook ||= { ...gd.look, outfit: GUARD_OUTFIT, npc: { role: 'gate' } };
+        actor(fg, gd.x, gd.y, null, gd.animeLook, gd.pose, gd.facing);
+        return;
+      }
+      cd.pose.t = t + cd.home.x; cd.pose.anime = LOOK.anime;
       actor(fg, cd.x, cd.y, null, cd.look, cd.pose, -1, cd.home.scale || 1);
     };
     if (cd.spot) drawQuestSpot(g, cd.spot, t);

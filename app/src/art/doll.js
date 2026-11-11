@@ -268,10 +268,10 @@ export function drawDoll(g, classId, look, pose = {}) {
 }
 
 // A crisp <canvas> portrait (idle pose) for menus; height in CSS px. Anime heroes (spec §39) get
-// a square, front-facing, pixel-art portrait; NPCs and ?lama keep the style-D 0.8-wide frame.
+// a square, front-facing, pixel-art portrait, and so do anime townsfolk; ?lama keeps the style-D 0.8-wide frame.
 export function portrait(classId, look, height) {
   const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
-  const anime = LOOK.anime && classId;
+  const anime = LOOK.anime && (classId || look.outfit); // anime heroes and townsfolk (spec §39)
   const width = Math.round(height * (anime ? 1 : 0.8));
   const c = document.createElement('canvas');
   c.width = Math.round(width * dpr); c.height = Math.round(height * dpr);
@@ -282,7 +282,7 @@ export function portrait(classId, look, height) {
   g.scale(s, s);
   g.beginPath(); g.ellipse(0, 0, 10, 2.4, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.25)'; g.fill();
   if (anime) {
-    const wings = pickWing({ classId, look, fx: {}, set: -1 });
+    const wings = classId ? pickWing({ classId, look, fx: {}, set: -1 }) : null;
     if (LOOK.pixel) { // pixel art (spec §39): draw half-size, pixelate, blit without smoothing
       const sm = document.createElement('canvas');
       sm.width = sm.height = Math.round(height / 2);

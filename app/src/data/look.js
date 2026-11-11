@@ -32,7 +32,10 @@ const MATANG = {
   // views: front/back poses (C); viewMin = walk speed (0..1) that picks a view; viewBand = how much
   // more toward/away than across the walk must be for front/back (and across than toward for side;
   // in between the view is kept)
-  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25 },
+  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25,
+    // townsfolk whose standing idle is their job (rig.js NPC_IDLE) stay side-on so the work shows;
+    // the others face the camera when standing
+    jobIdles: ['hammer', 'snip', 'sway', 'stance', 'read'] },
   // pixel art characters (spec §39, render3d/pixelate.js): k = pixels per game unit for the hero,
   // townsfolk and monsters alike (the hero is ~40 units tall → ~80 px), levels = colour steps per
   // channel, solid = alpha that counts as body (gets the outline), ink = outline colour
