@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { fogSize, encodeFog, decodeFog, revealFog, fogAt, explored, isFogValid, applyField, fieldDeath, visitTown, teleport, teleportPrice, gateSpots, regionGates, expeditionList, takeExpedition, claimExpedition, dropExpedition } from './world.js';
 import { createCharacter as cc, applyTrip } from './character.js';
-import { buildFieldMap, blocked } from '../run/fieldmap.js';
+import { buildWorld, blocked, zoneAt, armFrac } from '../run/worldmap.js';
+import { WORLD } from '../data/worldmap.js';
 import { REGIONS } from '../data/world.js';
 import { createCharacter } from './character.js';
 import { validateSlot } from './schema.js';
@@ -47,7 +48,7 @@ describe('simpan dari wilayah', () => {
     const c = make();
     c.bounties[0].taken = true;
     const item = { id: 'a', slot: 'helm', classId: null, variant: 0, rarity: 1, itemLevel: 3, base: { maxHp: 9 }, bonuses: [], unique: null, plus: 0, sockets: [] };
-    const fog = encodeFog(new Uint8Array(fogSize(forest).bytes).fill(1));
+    const fog = encodeFog(new Uint8Array(fogSize(WORLD).bytes).fill(1));
     const r = applyField(c, { region: 'forest', fog, exp: 60, gold: 25, kills: 30, killsBy: { slink: 30 }, elites: 1, items: [item], mats: { dust: 2 }, gems: [{ gem: 'ruby', tier: 1 }], hp: 50, potions: pots }, 9);
     expect(r.char.level).toBe(2);
     expect(r.char.gold).toBe(25);
@@ -58,7 +59,8 @@ describe('simpan dari wilayah', () => {
     expect(r.char.records.kills).toBe(30);
     expect(r.char.bounties[0].have).toBe(25);
     expect(r.bountiesDone).toBe(1);
-    expect(r.char.regions.forest.fog).toBe(fog);
+    expect(r.char.world.fog).toBe(fog);
+    expect(r.char.regions.forest).toEqual({});
     expect(r.char.records.trips).toBe(0);
     expect(validateSlot(r.char)).toEqual([]);
   });
@@ -80,15 +82,16 @@ describe('simpan dari wilayah', () => {
 
 describe('gerbang dungeon per karakter', () => {
   it('di pita dungeonnya, tidak terhalang, tetap untuk seed yang sama, beda untuk seed lain', () => {
+    const world = buildWorld();
     for (const r of REGIONS) {
-      const map = buildFieldMap(r);
       const a = gateSpots(r, 12345), b = gateSpots(r, 12345), c = gateSpots(r, 999);
       expect(a).toEqual(b);
       a.forEach((g, i) => {
-        const d = r.dungeons[i];
-        expect(g.x).toBeGreaterThanOrEqual(r.w * d.at[0]);
-        expect(g.x).toBeLessThanOrEqual(r.w * d.at[1]);
-        expect(blocked(map, g.x, g.y, 40)).toBe(false);
+        const d = r.dungeons[i], { fx } = armFrac(r.id, g.x, g.y);
+        expect(zoneAt(world, g.x, g.y)).toBe(r.id);
+        expect(fx).toBeGreaterThanOrEqual(d.at[0] - 0.01);
+        expect(fx).toBeLessThanOrEqual(d.at[1] + 0.01);
+        expect(blocked(world, g.x, g.y, 40)).toBe(false);
       });
       if (a.length) expect(c).not.toEqual(a);
     }
@@ -151,8 +154,8 @@ describe('harta tersimpan', () => {
   it('applyField mencatat peti yang dibuka per wilayah, tanpa ganda', () => {
     const c = make();
     const a = applyField(c, { exp: 0, gold: 0, kills: 0, killsBy: {}, elites: 0, items: [], mats: {}, gems: [], hp: null, potions: c.potions, region: 'forest', fog: '', opened: [2] }, 1);
-    const b = applyField(a.char, { exp: 0, gold: 0, kills: 0, killsBy: {}, elites: 0, items: [], mats: {}, gems: [], hp: null, potions: c.potions, region: 'forest', fog: '', opened: [0, 2] }, 2);
-    expect(b.char.treasures).toEqual({ forest: [0, 2] });
+    const b = applyField(a.char, { exp: 0, gold: 0, kills: 0, killsBy: {}, elites: 0, items: [], mats: {}, gems: [], hp: null, potions: c.potions, region: 'forest', fog: '', opened: [0, 2, { zone: 'ice', idx: 1 }] }, 2);
+    expect(b.char.treasures).toEqual({ forest: [0, 2], ice: [1] });
     expect(validateSlot(b.char)).toEqual([]);
   });
 });

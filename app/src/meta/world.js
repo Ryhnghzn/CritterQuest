@@ -2,7 +2,8 @@
 // FIELD.fogCell square, stored as base64), progress written from a region,
 // and the light penalty for falling there. Pure.
 import { FIELD, TREASURE, TOWNS, TELEPORT, regionById, EXPEDITIONS, EXPEDITION_REWARD, regionOfDungeon } from '../data/world.js';
-import { buildFieldMap, mulberry, sample, blocked } from '../run/fieldmap.js';
+import { mulberry, sample } from '../run/fieldmap.js';
+import { buildWorld, zoneAt, armFrac, zoneToWorld, blocked, freeSpot } from '../run/worldmap.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { addExp, allocate, finalStats } from './character.js';
@@ -13,8 +14,10 @@ import { rollMountDrops } from './stable.js';
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
+// region: anything with w, h (and fogCell — the world's is coarser than the old regions')
+const cellOf = (region) => region.fogCell || FIELD.fogCell;
 export function fogSize(region) {
-  const cols = Math.ceil(region.w / FIELD.fogCell), rows = Math.ceil(region.h / FIELD.fogCell);
+  const cols = Math.ceil(region.w / cellOf(region)), rows = Math.ceil(region.h / cellOf(region));
   return { cols, rows, bytes: Math.ceil((cols * rows) / 8) };
 }
 
@@ -51,7 +54,7 @@ export function fogAt(bytes, cols, cx, cy) {
 
 // Uncovers every cell within `radius` of (x, y); true when something new showed.
 export function revealFog(bytes, region, x, y, radius = FIELD.fogRadius) {
-  const { cols, rows } = fogSize(region), c = FIELD.fogCell;
+  const { cols, rows } = fogSize(region), c = cellOf(region);
   let changed = false;
   for (let cy = Math.max(0, Math.floor((y - radius) / c)); cy <= Math.min(rows - 1, Math.floor((y + radius) / c)); cy++) {
     for (let cx = Math.max(0, Math.floor((x - radius) / c)); cx <= Math.min(cols - 1, Math.floor((x + radius) / c)); cx++) {
@@ -102,11 +105,15 @@ export function applyField(char, part, now, rng = Math.random) {
   for (const [m, n] of Object.entries(part.mats || {})) c.mats[m] += n;
   for (const gm of part.gems || []) c.gems[gm.gem][gm.tier - 1] += 1;
   for (const id of part.found || []) if (!c.found.includes(id)) c.found.push(id);
-  if (part.region && part.opened?.length) {
-    const had = c.treasures[part.region] || [];
-    c.treasures = { ...c.treasures, [part.region]: [...new Set([...had, ...part.opened])].sort((a, b) => a - b) };
+  // opened chests: { zone, idx } (or an index in part.region)
+  for (const o of part.opened || []) {
+    const zone = typeof o === 'number' ? part.region : o.zone, idx = typeof o === 'number' ? o : o.idx;
+    if (!zone) continue;
+    const had = c.treasures[zone] || [];
+    if (!had.includes(idx)) c.treasures = { ...c.treasures, [zone]: [...had, idx].sort((a, b) => a - b) };
   }
-  if (part.region && regionById(part.region)) c.regions = { ...c.regions, [part.region]: { fog: part.fog ?? c.regions[part.region]?.fog ?? '' } };
+  if (part.region && regionById(part.region) && !c.regions[part.region]) c.regions = { ...c.regions, [part.region]: {} };
+  if (typeof part.fog === 'string') c.world = { ...c.world, fog: part.fog };
   countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, region: part.region });
   const mountsFound = rollMountDrops(c, part.mountRolls || { any: 0, eclipse: 0 }, rng);
   c.updatedAt = now;
@@ -134,28 +141,50 @@ export function visitTown(char, townId, now) {
 }
 
 // hidden treasure (spec §25.3)
-// The region's treasure spots: fixed for everyone (from the region seed), off the paths,
-// clear of solids, spread west → east; the last one is the overlord's. Cached per region.
+// Road points of a zone with their fx (spec §40: the zone's arm of the one world), cached.
+const roadCache = new Map();
+function zoneRoads(zone) {
+  if (roadCache.has(zone)) return roadCache.get(zone);
+  const world = buildWorld();
+  const pts = [];
+  for (const p of world.paths) for (const [x, y] of sample(p, 200)) {
+    if (zoneAt(world, x, y) !== zone) continue;
+    const f = armFrac(zone, x, y);
+    pts.push([x, y, f.fx, f.fy]);
+  }
+  roadCache.set(zone, pts);
+  return pts;
+}
+
+// A spot off the roads of a zone, inside the band [lo, hi] of its fx, clear of solids
+// (a point in the band, moved to the nearest free spot, when nothing fits).
+function spotInBand(zone, lo, hi, rng, off, clear) {
+  const world = buildWorld();
+  const near = zoneRoads(zone).filter(([, , fx]) => fx >= lo && fx <= hi);
+  for (let tries = 0; tries < 600 && near.length; tries++) {
+    const [px, py] = near[Math.floor(rng() * near.length)];
+    const a = rng() * Math.PI * 2, d = off[0] + rng() * (off[1] - off[0]);
+    const x = px + Math.cos(a) * d, y = py + Math.sin(a) * d;
+    if (zoneAt(world, x, y) !== zone) continue;
+    const { fx } = armFrac(zone, x, y);
+    if (fx < lo || fx > hi || world.pathDist(x, y) < off[0] * 0.6 || blocked(world, x, y, clear)) continue;
+    return { x: Math.round(x), y: Math.round(y) };
+  }
+  const p = zoneToWorld(zone, (lo + hi) / 2, 0.5);
+  return freeSpot(world, p.x, p.y, clear);
+}
+
+// The zone's treasure spots: fixed for everyone (from the region seed), off the roads,
+// clear of solids, spread from the meadow out to the town; the last one is the overlord's.
 const treasureCache = new Map();
 export function treasureSpots(region) {
   if (treasureCache.has(region.id)) return treasureCache.get(region.id);
-  const map = buildFieldMap(region);
   const rng = mulberry((region.seed * 7919 + 101) >>> 0);
   const [b0, b1] = TREASURE.band, step = (b1 - b0) / TREASURE.count;
-  const pts = map.paths.flatMap((p) => sample(p, 200));
   const out = [];
   for (let i = 0; i < TREASURE.count; i++) {
-    const lo = region.w * (b0 + step * i), hi = region.w * (b0 + step * (i + 1));
-    const near = pts.filter(([x]) => x >= lo && x <= hi);
-    for (let tries = 0; tries < 800 && near.length; tries++) {
-      const [px, py] = near[Math.floor(rng() * near.length)];
-      const a = rng() * Math.PI * 2, d = TREASURE.offPath[0] + rng() * (TREASURE.offPath[1] - TREASURE.offPath[0]);
-      const x = px + Math.cos(a) * d, y = py + Math.sin(a) * d;
-      if (x < lo || x > hi || y < 200 || y > region.h - 200) continue;
-      if (map.pathDist(x, y) < TREASURE.offPath[0] || blocked(map, x, y, 90)) continue;
-      out.push({ idx: i, x: Math.round(x), y: Math.round(y), lord: i === TREASURE.count - 1 });
-      break;
-    }
+    const p = spotInBand(region.id, b0 + step * i, b0 + step * (i + 1), rng, TREASURE.offPath, 90);
+    out.push({ idx: i, zone: region.id, x: p.x, y: p.y, lord: i === TREASURE.count - 1 });
   }
   treasureCache.set(region.id, out);
   return out;
@@ -180,24 +209,13 @@ export function teleport(char, townId, now) {
 // dungeon gates & expeditions (spec §25.5)
 const hash = (s) => [...s].reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7);
 
-// This character's dungeon gates in a region: off a path, in the dungeon's band,
+// This character's dungeon gates in a zone: off a road, in the dungeon's band,
 // clear of anything solid. Deterministic from the character's world seed.
 export function gateSpots(region, seed) {
-  const map = buildFieldMap(region);
   return region.dungeons.map((d) => {
     const rng = mulberry((seed ^ hash(region.id + d.id)) >>> 0);
-    const lo = region.w * d.at[0], hi = region.w * d.at[1];
-    const pts = map.paths.flatMap((p) => sample(p, 200)).filter(([x]) => x >= lo && x <= hi);
-    for (let tries = 0; tries < 500 && pts.length; tries++) {
-      const [px, py] = pts[Math.floor(rng() * pts.length)];
-      const a = rng() * Math.PI * 2, dist = 240 + rng() * 520;
-      const x = Math.round(px + Math.cos(a) * dist), y = Math.round(py + Math.sin(a) * dist);
-      if (x < lo || x > hi || y < 300 || y > region.h - 300) continue;
-      if (blocked(map, x, y, 90) || map.pathDist(x, y) < 150) continue;
-      return { dungeon: d.id, x, y };
-    }
-    const [px, py] = pts[0] || [lo, region.h / 2]; // fallback: right on the path
-    return { dungeon: d.id, x: Math.round(px), y: Math.round(py) };
+    const p = spotInBand(region.id, d.at[0], d.at[1], rng, [240, 760], 90);
+    return { dungeon: d.id, zone: region.id, x: p.x, y: p.y };
   });
 }
 

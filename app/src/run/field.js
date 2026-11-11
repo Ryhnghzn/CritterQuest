@@ -1,27 +1,24 @@
-// Region play (spec §25.1): the same fight as in a dungeon, on an open map.
-// Packs of enemies walk in from just off-screen around the player, stronger
-// toward the east; far stragglers vanish; walking off the west / east edge
-// where the road ends leaves the region. Pure logic on the run state (run/run.js).
+// The open world (spec §25.1, §40): the same fight as in a dungeon, on one connected map.
+// Packs of enemies walk in from just off-screen around the player, of the zone they
+// appear in and stronger farther from Kota Awal; far stragglers vanish; walking into a
+// town's gate enters that town. Pure logic on the run state (run/run.js).
 import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
-import { FIELD, FIELD_SCALE, TREASURE, READY_TOWNS, TOWNS, regionById } from '../data/world.js';
+import { FIELD, FIELD_SCALE, TREASURE, regionById } from '../data/world.js';
+import { WORLD, CROSS_MIX, ECLIPSE } from '../data/worldmap.js';
 import { ENEMIES } from '../data/enemies.js';
 import { dungeonById } from '../data/dungeons.js';
-import { buildFieldMap, pushOut, blocked } from './fieldmap.js';
+import { buildWorld, zoneAt, levelAt, inHub, pushOut, blocked, ensureChunks } from './worldmap.js';
 import { canCrossWater } from './mount.js';
 import { makeElite, addMats, dropGear } from './dungeon.js';
 import { revealFog, treasureSpots } from '../meta/world.js';
 import { GEM_IDS, GEMS } from '../data/forge.js';
 import { HIDDEN_R, REACH_R, DROP_ITEMS } from '../data/quests.js';
 import { HORDE } from '../data/balance.js';
+import { REGIONS } from '../data/world.js';
 
-const clamp01 = (v) => Math.max(0, Math.min(1, v));
-
-// enemy level at x: the region's level range from west to east
-export function fieldLevel(region, x) {
-  const [a, b] = region.levels;
-  return Math.round(a + (b - a) * clamp01(x / region.w));
-}
+// enemy level at a point of the world
+export const fieldLevel = (run, x, y) => levelAt(run.fmap, x, y);
 
 export const fieldScale = (level) => ({
   hp: 1 + FIELD_SCALE.hp * (level - 1),
@@ -29,33 +26,56 @@ export const fieldScale = (level) => ({
   reward: 1 + FIELD_SCALE.reward * (level - 1),
 });
 
-// at: 'west' (from the region's `from` town), 'east', or { x, y } (back out of a dungeon gate)
-// gates: [{ dungeon, x, y, found }] — this character's dungeon gates in the region (meta/world.js)
-// target: { x, y } | null — where the expedition arrow points
-// opened: indexes of this region's treasure chests already opened (spec §25.3)
-export function startField(run, regionId, at = 'west', gates = [], target = null, opened = []) {
-  const region = regionById(regionId);
-  const map = buildFieldMap(region);
-  run.field = true;
+// run.dungeon stands for "where we are" (rewards, theme, records key): the zone the player is in
+function setZone(run, zone) {
+  const region = regionById(zone);
   run.region = region;
-  run.fmap = map;
-  // run.dungeon stands for "where we are" (rewards, theme, records key)
-  run.dungeon = { id: region.id, name: region.name, short: region.name, hpMul: 1, dmgMul: 1, rewardMul: 1, itemLevel: 0, theme: region.theme };
-  run.floor = 1; run.deepest = 0;
-  const p = at === 'east' ? map.end : at === 'west' ? map.start : at;
+  run.inEclipse = zone === 'eclipse';
+  run.dungeon = { id: region.id, name: region.name, short: region.name, hpMul: 1, dmgMul: 1, rewardMul: run.dungeon?.rewardMul ?? 1, itemLevel: 0, theme: region.theme };
+}
+
+// where a town's gate lets you out: a little in front of it
+export function townExit(world, townId) {
+  const g = world.towns[townId];
+  return { x: g.x + g.out[0] * WORLD.spawnBack, y: g.y + g.out[1] * WORLD.spawnBack };
+}
+
+// at: a town id (out of its gate) or { x, y } (back out of a dungeon gate)
+// gates: [{ dungeon, x, y, found }] — this character's dungeon gates (meta/world.js)
+// target: { x, y } | null — where the expedition arrow points
+// opened: { zone: [idx] } — treasure chests already opened (spec §25.3); eclipseOpen: all Seal Shards in
+export function startField(run, at = 'home', gates = [], target = null, opened = {}, eclipseOpen = false) {
+  const world = buildWorld();
+  run.field = true;
+  run.fmap = world;
+  const p = typeof at === 'string' ? townExit(world, at) : at;
   run.px = p.x; run.py = p.y;
+  run.dungeon = null;
+  setZone(run, zoneAt(world, run.px, run.py));
+  run.floor = 1; run.deepest = 0;
+  run.zoneChanged = false;
+  run.townLock = typeof at === 'string' ? at : null; // the gate just left does not take you back in at once
+  run.eclipseOpen = eclipseOpen;
   run.gates = gates.map((g) => ({ ...g }));
   run.gatesFound = [];   // dungeon ids found this visit (written to the save)
   run.nearGate = null;
   run.target = target;
   // state: 'idle' → 'guarded' (guardian out) → 'unlocked' (guardian down) → 'open'
-  run.treasures = treasureSpots(region).map((tr) => ({ ...tr, state: opened.includes(tr.idx) ? 'open' : 'idle', guard: null }));
-  run.treasuresOpened = []; // opened this visit (written to the save)
+  const isOpen = (zone, idx) => Array.isArray(opened) ? opened.includes(idx) && zone === run.region.id : (opened[zone] || []).includes(idx);
+  run.treasures = REGIONS.flatMap((r) => treasureSpots(r).map((tr) => ({ ...tr, state: isOpen(r.id, tr.idx) ? 'open' : 'idle', guard: null })));
+  run.treasuresOpened = []; // [{ zone, idx }] opened this visit (written to the save)
   run.packT = 1.5; run.fogT = 0; run.edgeT = 0;
   run.night = false;
-  if (run.fog) revealFog(run.fog, region, run.px, run.py);
-  run.showBanner(t('{name} · LV {a}–{b}', { name: region.name, a: region.levels[0], b: region.levels[1] }));
+  ensureChunks(world, run.px, run.py, 9);
+  if (run.fog) revealFog(run.fog, WORLD, run.px, run.py);
+  run.place = inHub(run.px, run.py) ? 'hub' : run.region.id;
+  run.showBanner(placeTitle(run));
 }
+
+// the meadow round Kota Awal has its own name; elsewhere the zone and its levels
+const placeTitle = (run) => (run.place === 'hub' ? t('Padang Kota Awal') : zoneTitle(run.region));
+
+export const zoneTitle = (region) => t('{name} · LV {a}–{b}', { name: region.name, a: region.levels[0], b: region.levels[1] });
 
 function pickType(region) {
   const list = Object.entries(region.enemies);
@@ -64,27 +84,41 @@ function pickType(region) {
   return list[0][0];
 }
 
-// A pack just off-screen around the player, away from walls and (mostly) the path.
+// the zone whose enemies come at (x, y): near a crossing, either side's
+function packZone(world, x, y) {
+  for (const c of world.crossings) {
+    if ((c.x - x) ** 2 + (c.y - y) ** 2 > CROSS_MIX * CROSS_MIX) continue;
+    const b = world.borders.find((bl) => bl.id === c.border);
+    return b.between[rand() < 0.5 ? 0 : 1];
+  }
+  return zoneAt(world, x, y);
+}
+
+const nearTownGate = (world, x, y) => Object.values(world.towns).some((g) => (g.x - x) ** 2 + (g.y - y) ** 2 < WORLD.townClear * WORLD.townClear);
+
+// A pack just off-screen around the player, away from walls, towns, the meadow and (mostly) the roads.
 export function spawnPack(run) {
-  const map = run.fmap, region = run.region;
+  const map = run.fmap;
   let x = 0, y = 0, ok = false;
   for (let tries = 0; tries < 10 && !ok; tries++) {
     const a = rand() * Math.PI * 2, d = rrange(FIELD.spawnMin, FIELD.spawnMax);
     x = run.px + Math.cos(a) * d; y = run.py + Math.sin(a) * d;
-    ok = x > FIELD.exitZone + 60 && y > 60 && x < map.w - FIELD.exitZone - 60 && y < map.h - 60 && !blocked(map, x, y, 40);
+    ok = x > 60 && y > 60 && x < map.w - 60 && y < map.h - 60 && !inHub(x, y) && !nearTownGate(map, x, y) && !blocked(map, x, y, 40);
     if (ok && map.pathDist(x, y) < FIELD.pathWidth && rand() < FIELD.pathAvoid) ok = false;
     if (ok && run.hidden.some((h) => (h.x - x) ** 2 + (h.y - y) ** 2 < HIDDEN_R.calm ** 2)) ok = false; // homes stay quiet
+    if (ok && !run.eclipseOpen && zoneAt(map, x, y) === 'eclipse') ok = false;
   }
   if (!ok) return 0;
-  const type = pickType(region);
-  const level = fieldLevel(region, x);
+  const zone = packZone(map, x, y);
+  const type = pickType(regionById(zone));
+  const level = levelAt(map, x, y);
   const sc = fieldScale(level);
   const n = Math.min(rint(FIELD.pack[0], FIELD.pack[1]), FIELD.maxEnemies - run.enemies.length);
   for (let i = 0; i < n; i++) {
     const e = run.spawnEnemy(type);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // §33.3: the horde, weaker one by one
     e.xp = Math.round(ENEMIES[type].xp * sc.reward);
-    e.level = level;
+    e.level = level; e.zone = zone;
     const a = rand() * Math.PI * 2;
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
     pushOut(map, e, e.r);
@@ -94,9 +128,19 @@ export function spawnPack(run) {
 }
 
 export function stepField(run, dt) {
-  const map = run.fmap, region = run.region;
-  // stronger rewards deeper in (coins picked up use the level where the player stands)
-  run.dungeon.rewardMul = fieldScale(fieldLevel(region, run.px)).reward;
+  const map = run.fmap;
+  ensureChunks(map, run.px, run.py, 1); // the chunks ahead, one per step at most
+  // stronger rewards farther out (coins picked up use the level where the player stands)
+  run.dungeon.rewardMul = fieldScale(levelAt(map, run.px, run.py)).reward;
+  // a new zone: its title, and the progress so far is saved under the zone left (main.js)
+  const zone = zoneAt(map, run.px, run.py);
+  if (zone !== run.region.id) {
+    if (zone === 'eclipse' && !run.eclipseOpen) { sealBack(run); return; }
+    run.zoneChanged = run.region.id; // main.js saves the trip so far, then clears it
+    setZone(run, zone);
+  }
+  const place = inHub(run.px, run.py) ? 'hub' : zone;
+  if (place !== run.place) { run.place = place; run.showBanner(placeTitle(run)); }
   run.packT -= dt;
   if (run.packT <= 0) {
     run.packT = run.night ? FIELD.nightPackEvery : FIELD.packEvery;
@@ -108,7 +152,7 @@ export function stepField(run, dt) {
     const e = E[i];
     if (!e.boss && !e.mini && (e.x - run.px) ** 2 + (e.y - run.py) ** 2 > far) { E[i] = E[E.length - 1]; E.pop(); }
   }
-  if (run.fog && (run.fogT -= dt) <= 0) { run.fogT = 0.25; revealFog(run.fog, region, run.px, run.py); }
+  if (run.fog && (run.fogT -= dt) <= 0) { run.fogT = 0.25; revealFog(run.fog, WORLD, run.px, run.py); }
   stepTreasure(run);
   stepQuestPlaces(run);
   // dungeon gates: seen within the fog radius, usable up close (spec §25.5)
@@ -122,23 +166,20 @@ export function stepField(run, dt) {
     }
     if (d2 < FIELD.gateR * FIELD.gateR) run.nearGate = g;
   }
-  // edges: the road's end on the west goes back, on the east on to the next town (closed until
-  // it is built); anywhere else the edge is a wall
+  // town gates: walking into one enters that town (spec §40.3)
   if (run.edgeT > 0) run.edgeT -= dt;
-  const note = (text) => { if (run.edgeT <= 0) { run.edgeT = 3; run.showBanner(text); } };
-  const atRoad = (y) => Math.abs(run.py - y) < FIELD.exitHalf;
-  if (run.px < FIELD.exitZone) {
-    if (atRoad(map.start.y)) run.exit = 'west';
-    else { run.px = FIELD.exitZone + 4; note(t('Jalan ke {name} ada di ujung jalan setapak', { name: TOWNS[region.from].name })); }
-  } else if (run.px > map.w - FIELD.exitZone) {
-    const open = region.to && READY_TOWNS.includes(region.to);
-    if (open && atRoad(map.end.y)) run.exit = 'east';
-    else {
-      run.px = map.w - FIELD.exitZone - 4;
-      note(open ? t('Jalan ke {name} ada di ujung jalan setapak', { name: TOWNS[region.to].name })
-        : region.to ? t('Gerbang {name} masih ditutup', { name: TOWNS[region.to].name }) : t('Tidak ada jalan lagi ke timur'));
-    }
+  for (const g of Object.values(map.towns)) {
+    const d2 = (g.x - run.px) ** 2 + (g.y - run.py) ** 2;
+    if (run.townLock === g.id) { if (d2 > (WORLD.gateR + 80) ** 2) run.townLock = null; continue; }
+    if (d2 < WORLD.gateR * WORLD.gateR) { run.exit = g.id; break; }
   }
+}
+
+// Tanah Gerhana is sealed until all Seal Shards are in: back out of its opening
+function sealBack(run) {
+  const g = run.fmap.pocketGate;
+  run.px = g.x; run.py = g.y - ECLIPSE.half - ECLIPSE.gap - 40;
+  if (run.edgeT <= 0) { run.edgeT = 3; run.showBanner(t('Celah ke Tanah Gerhana tertutup segel. Kumpulkan kelima Pecahan Segel.')); }
 }
 
 export function confineFieldPlayer(run) {
@@ -153,18 +194,18 @@ export function confineFieldPlayer(run) {
 
 export const confineFieldEnemy = (run, e) => pushOut(run.fmap, e, e.r);
 
-// floater text for the region the player is in, e.g. "Hutan Kelam · LV 7"
-export const fieldHere = (run) => `${run.region.name} · LV ${fieldLevel(run.region, run.px)}`;
+// floater text for the zone the player is in, e.g. "Hutan Kelam · LV 7"
+export const fieldHere = (run) => (run.place === 'hub' ? t('Padang Kota Awal') : `${run.region.name} · LV ${levelAt(run.fmap, run.px, run.py)}`);
 
 // hidden treasure (spec §25.3)
 const GUARD_SKIP = ['healer', 'summoner', 'bomber']; // too soft to guard a chest
 
 // The guardian (a crowned, giant version of a regional enemy) and its escort.
 export function spawnGuardian(run, tr) {
-  const region = run.region, rule = tr.lord ? TREASURE.lord : TREASURE.guard;
+  const region = regionById(tr.zone || run.region.id), rule = tr.lord ? TREASURE.lord : TREASURE.guard;
   let type = pickType(region);
   if (GUARD_SKIP.includes(type)) type = Object.keys(region.enemies).find((id) => !GUARD_SKIP.includes(id));
-  const level = fieldLevel(region, tr.x), sc = fieldScale(level);
+  const level = levelAt(run.fmap, tr.x, tr.y), sc = fieldScale(level);
   const g = run.spawnEnemy(type);
   g.x = tr.x + 40; g.y = tr.y + 30;
   g.hp *= sc.hp * rule.hp; g.maxHp = g.hp; g.dmg *= sc.dmg * rule.dmg; g.r *= rule.size;
@@ -186,7 +227,7 @@ export function spawnGuardian(run, tr) {
 
 // What a chest gives: coins, materials, a gem and gear of Grand Chest quality.
 export function openTreasure(run, tr) {
-  const level = fieldLevel(run.region, tr.x), sc = fieldScale(level);
+  const level = levelAt(run.fmap, tr.x, tr.y), sc = fieldScale(level);
   const gold = Math.round((TREASURE.gold.base + TREASURE.gold.perLevel * level) * (tr.lord ? TREASURE.lordGold : 1));
   run.addGold(gold);
   run.addFloater(tr.x, tr.y - 60, t('+{n} koin', { n: gold }), '#ffd166');
@@ -199,8 +240,8 @@ export function openTreasure(run, tr) {
   run.lootLevel = level;
   for (let i = 0; i < (tr.lord ? TREASURE.lordItems : TREASURE.items); i++) dropGear(run, TREASURE.source, tr.x, tr.y + 20);
   tr.state = 'open';
-  run.treasuresOpened.push(tr.idx);
-  run.showBanner(tr.lord ? t('Harta Penguasa {region} terbuka!', { region: run.region.name }) : t('Harta karun ditemukan!'));
+  run.treasuresOpened.push({ zone: tr.zone, idx: tr.idx });
+  run.showBanner(tr.lord ? t('Harta Penguasa {region} terbuka!', { region: regionById(tr.zone || run.region.id).name }) : t('Harta karun ditemukan!'));
   run.addShake?.('medium');
   return { gold, mats, gem, tier, sc };
 }
@@ -237,6 +278,7 @@ export function stepQuestPlaces(run) {
 export function questDrop(run, e, kin) {
   for (const d of run.questDrops) {
     if (d.enemy !== '*' && d.enemy !== e.type && d.enemy !== kin) continue;
+    if (d.region && d.region !== run.region.id) continue; // only falls in its zone
     if ((d.night && !run.night) || rand() >= d.chance * HORDE.reward) continue; // §33.4
     run.questItems[d.item] = (run.questItems[d.item] || 0) + 1;
     run.addFloater(e.x, e.y - 30, `+1 ${DROP_ITEMS[d.item].name}`, DROP_ITEMS[d.item].color);

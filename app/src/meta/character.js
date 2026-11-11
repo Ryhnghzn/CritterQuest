@@ -37,7 +37,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     talents: freshTalents(),
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
-    world: { seed: worldSeed(now, slot) }, found: [], expedition: null,
+    world: { seed: worldSeed(now, slot), fog: '' }, found: [], expedition: null,
     shops: {}, stash: [], treasures: {}, quests: freshQuests(), mounts: freshMounts(),
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),

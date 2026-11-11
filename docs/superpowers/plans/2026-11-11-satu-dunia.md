@@ -19,12 +19,12 @@
 - [x] A5 Antarmuka peta: `blocked`, `pushOut`, `solidsNear`, `pathDist` lintas petak. Tes.
 
 ## Bagian B — Bisa dimainkan (cek manual)
-- [ ] B1 Save v22 (`meta/schema.js`): `world.fog`, `regions` jadi penanda; `migrate()` 21 + tes.
-- [ ] B2 `meta/world.js`: `gateSpots`, `treasureSpots` di koordinat dunia; `applyField` menulis `world.fog`. Tes.
-- [ ] B3 `meta/quests.js`: `hiddenXY`, `spotXY`, `questTarget` di koordinat dunia; target kota = gerbang kota. Tes.
-- [ ] B4 `run/field.js`: `startField(run, at)` di dunia (at = id kota atau {x,y}); musuh per zona + campur di penyeberangan; level `levelAt`; masuk kota lewat gerbang; Gerhana terkunci; pindah zona → `run.zoneChanged`. Tes.
-- [ ] B5 `main.js` + `ui/npc.js`: gerbang kota = "Keluar ke dunia"; simpan saat pindah zona; masuk kota dari gerbang dunia; `?region=` → `?world`.
-- [ ] B6 Renderer: `render3d/field.js` props & benda padat per petak (pakai gambar yang ada), tanah memakai biome di posisi ubin; `render/field.js` 2D cadangan tetap jalan.
+- [x] B1 Save v22 (`meta/schema.js`): `world.fog`, `regions` jadi penanda; `migrate()` 21 + tes.
+- [x] B2 `meta/world.js`: `gateSpots`, `treasureSpots` di koordinat dunia; `applyField` menulis `world.fog`. Tes.
+- [x] B3 `meta/quests.js`: `hiddenXY`, `spotXY`, `questTarget` di koordinat dunia; target kota = gerbang kota. Tes.
+- [x] B4 `run/field.js`: `startField(run, at)` di dunia (at = id kota atau {x,y}); musuh per zona + campur di penyeberangan; level `levelAt`; masuk kota lewat gerbang; Gerhana terkunci; pindah zona → `run.zoneChanged`. Tes.
+- [x] B5 `main.js` + `ui/npc.js`: gerbang kota = "Keluar ke dunia"; simpan saat pindah zona; masuk kota dari gerbang dunia; `?region=` → `?world`.
+- [x] B6 Renderer: `render3d/field.js` props & benda padat per petak (pakai gambar yang ada), tanah memakai biome di posisi ubin; `render/field.js` 2D cadangan tetap jalan.
 - [ ] B7 `npm test`, `npm run build`, server lokal → **cek manual pemilik**.
 
 ## Bagian C — Pembatas & peralihan (cek manual)
@@ -33,6 +33,6 @@
 - [ ] C3 Dataran Kota Awal + gerbang kota di dunia (bangunan gerbang per gaya kota).
 
 ## Bagian D — Peta & rapikan (cek manual)
-- [ ] D1 Peta penuh (M) & peta mini: satu dunia, warna biome, pembatas, jalan, kota, gerbang, kabut.
+- [x] D1 Peta penuh (M) & peta mini: satu dunia, warna biome, pembatas, jalan, kota, gerbang, kabut.
 - [ ] D2 Kamus EN untuk teks baru; perbarui §25 yang usang (rujuk §40); `CLAUDE.md` status.
 - [ ] D3 Bersihkan kode wilayah lama yang tak terpakai (`layout` per wilayah, `exitZone`).

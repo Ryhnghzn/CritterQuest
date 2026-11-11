@@ -18,7 +18,9 @@ import { discover } from './collection.js';
 import { isEquipped } from './gear.js';
 import { addExp } from './character.js';
 import { gateSpots } from './world.js';
-import { mulberry, buildFieldMap } from '../run/fieldmap.js';
+import { buildWorld, zoneToWorld, freeSpot } from '../run/worldmap.js';
+import { WORLD } from '../data/worldmap.js';
+import { mulberry } from '../run/fieldmap.js';
 
 // the data objects themselves (titles & lines get translated in place at start-up), plus main / ch
 const QUESTS = Object.fromEntries([
@@ -302,41 +304,53 @@ export const trackedQuest = (char) => {
 };
 
 // the wild (spec §26.5)
-const spotXY = (id) => { const s = SPOTS[id], r = regionById(s.region); return { x: Math.round(s.at[0] * r.w), y: Math.round(s.at[1] * r.h) }; };
-export const hiddenXY = (h) => { const r = regionById(h.region); return { x: Math.round(h.at[0] * r.w), y: Math.round(h.at[1] * r.h) }; };
+// spec §40: the old region fractions land in the zone's arm of the one world, moved to the
+// nearest free spot (a hut needs room); cached
+const placeCache = new Map();
+function placeXY(key, zone, at, clear) {
+  if (placeCache.has(key)) return placeCache.get(key);
+  const p = zoneToWorld(zone, at[0], at[1]), q = freeSpot(buildWorld(), p.x, p.y, clear);
+  placeCache.set(key, q);
+  return q;
+}
+const spotXY = (id) => placeXY(`spot:${id}`, SPOTS[id].region, SPOTS[id].at, 30);
+export const hiddenXY = (h) => placeXY(`hidden:${h.id}`, h.region, h.at, 90);
 
-// Who lives in a region and is still there (someone who walked off with a quest is gone),
-// with their quest mark: [{ ...def, x, y, mark }]
-export function hiddenIn(char, regionId) {
+// Who lives in a zone (every zone when none is given) and is still there (someone who walked
+// off with a quest is gone), with their quest mark: [{ ...def, x, y, mark }]
+export function hiddenIn(char, regionId = null) {
   const marks = npcMarks(char, 'wild');
-  return HIDDEN.filter((h) => h.region === regionId && !(h.gone && (char.quests.side[h.gone] || char.quests.done.includes(h.gone))))
+  return HIDDEN.filter((h) => (!regionId || h.region === regionId) && !(h.gone && (char.quests.side[h.gone] || char.quests.done.includes(h.gone))))
     .map((h) => ({ ...h, ...hiddenXY(h), mark: marks[h.id] || null }));
 }
 
 // What a region needs to know of the quests being worked on:
 //   spots: places still to stand at [{ spot, x, y }]; drops: quest items that may fall [{ item, enemy, chance, night }]
-export function fieldQuests(char, regionId) {
+//   (every zone when none is given; a drop names its zone: it only falls there)
+export function fieldQuests(char, regionId = null) {
   const spots = [], drops = [];
   for (const a of activeQuests(char)) {
     const s = a.step;
-    if (s?.kind === 'reach') s.spots.forEach((id, i) => { if (SPOTS[id].region === regionId && !(a.state.prog & (1 << i))) spots.push({ spot: id, ...spotXY(id) }); });
-    if (s?.kind === 'drop' && s.region === regionId) drops.push({ item: s.item, enemy: s.enemy, chance: s.chance, night: !!s.night });
+    if (s?.kind === 'reach') s.spots.forEach((id, i) => { if ((!regionId || SPOTS[id].region === regionId) && !(a.state.prog & (1 << i))) spots.push({ spot: id, ...spotXY(id) }); });
+    if (s?.kind === 'drop' && (!regionId || s.region === regionId)) drops.push({ item: s.item, enemy: s.enemy, chance: s.chance, night: !!s.night, region: s.region });
   }
   return { spots, drops };
 }
 
 // where to go (spec §26.3)
-// The tracked quest's target in a region: { kind, x, y, r? } in world units, or null.
+// The tracked quest's target in the world: { kind, x, y, r? } in world units, or null.
 //   gate not yet found → a hint circle (r) that holds the gate somewhere inside;
 //   a hidden person / a place to stand → that point (the nearest unvisited place);
-//   a town at either end of the region → the middle of that edge.
-export function questTarget(char, regionId, from = null) {
+//   a town → its gate in the world (Kota Awal: the middle).
+// regionId: only targets in that zone (null: anywhere)
+export function questTarget(char, regionId = null, from = null) {
   const a = trackedQuest(char);
   const s = a?.step;
-  const region = regionById(regionId);
-  if (!s || !region) return null;
+  if (!s) return null;
+  const inZone = (z) => !regionId || z === regionId;
   if (s.kind === 'gate' || s.kind === 'boss') {
-    if (regionOfDungeon(s.dungeon)?.id !== regionId) return null;
+    const region = regionOfDungeon(s.dungeon);
+    if (!region || !inZone(region.id)) return null;
     const g = gateSpots(region, char.world.seed).find((x) => x.dungeon === s.dungeon);
     if (char.found.includes(s.dungeon)) return { kind: 'gate', x: g.x, y: g.y };
     const rng = mulberry((char.world.seed ^ [...s.dungeon].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7)) >>> 0);
@@ -344,18 +358,16 @@ export function questTarget(char, regionId, from = null) {
     return { kind: 'hint', dungeon: s.dungeon, x: g.x + Math.cos(ang) * d, y: g.y + Math.sin(ang) * d, r: GATE_HINT.r };
   }
   if (s.kind === 'reach') {
-    const left = s.spots.filter((id, i) => SPOTS[id].region === regionId && !(a.state.prog & (1 << i))).map((id) => ({ kind: 'spot', spot: id, ...spotXY(id) }));
+    const left = s.spots.filter((id, i) => inZone(SPOTS[id].region) && !(a.state.prog & (1 << i))).map((id) => ({ kind: 'spot', spot: id, ...spotXY(id) }));
     if (!left.length) return null;
-    const p = from || { x: 0, y: region.h / 2 };
+    const p = from || { x: WORLD.cx, y: WORLD.cy };
     return left.sort((u, v) => Math.hypot(u.x - p.x, u.y - p.y) - Math.hypot(v.x - p.x, v.y - p.y))[0];
   }
   if ((s.kind === 'talk' || s.kind === 'give') && s.town === 'wild') {
     const h = hiddenById(s.npc);
-    return h.region === regionId ? { kind: 'hidden', ...hiddenXY(h) } : null;
+    return inZone(h.region) ? { kind: 'hidden', ...hiddenXY(h) } : null;
   }
   const town = s.kind === 'town' || s.kind === 'talk' || s.kind === 'give' ? s.town : null;
-  const map = town && buildFieldMap(region);
-  if (town && region.to === town) return { kind: 'town', x: map.end.x, y: map.end.y };
-  if (town && region.from === town) return { kind: 'town', x: map.start.x, y: map.start.y };
-  return null;
+  const t = town && buildWorld().towns[town];
+  return t ? { kind: 'town', town, x: t.x, y: t.y } : null;
 }

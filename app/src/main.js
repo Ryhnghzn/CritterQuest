@@ -50,7 +50,8 @@ import { DUNGEONS, dungeonById } from './data/dungeons.js';
 import { startFloor } from './run/dungeon.js';
 import { freshMount } from './run/mount.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
-import { FIELD, TREASURE, TOWNS, TOWN_IDS, REGIONS, regionById, regionOfDungeon } from './data/world.js';
+import { FIELD, TREASURE, TOWNS, TOWN_IDS, REGIONS, regionById, regionOfDungeon, regionOpen } from './data/world.js';
+import { WORLD } from './data/worldmap.js';
 import { applyField, fieldDeath, encodeFog, decodeFog, explored, visitTown, teleport, regionGates, takeExpedition, claimExpedition, dropExpedition } from './meta/world.js';
 import { buyDisplay, buyNight, buyMats, isNight } from './meta/market.js';
 import { deposit, withdraw } from './meta/stash.js';
@@ -437,7 +438,7 @@ function openNpc(npc, message = null) {
     onExpTake: (id) => serve((c, now) => takeExpedition(c, id, now), (r) => t('Ekspedisi diterima: {d}. Gerbangnya kutandai di petamu.', { d: dungeonById(r.char.expedition.dungeon).name })),
     onExpDrop: () => serve(dropExpedition, tr('Ekspedisi dibatalkan.')),
     onExpClaim: (sub = current.expedition && dungeonById(current.expedition.dungeon).name) => serve(claimExpedition, (r) => (rewardPop(tr('Ekspedisi tuntas!'), sub, r.reward, r.levelsGained), { text: t('Ekspedisi tuntas! +{g} koin, +{e} EXP, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, m: r.reward.marks }) + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a' })),
-    onExplore: (id) => explore(id, regionById(id).from === current.location ? 'west' : 'east'),
+    onExplore: () => explore(current.location),
     onTeleport: travel,
     onDeposit: (ids) => serve((c, now) => deposit(c, ids, now), null),
     onWithdraw: (ids) => serve((c, now) => withdraw(c, ids, now), null),
@@ -701,27 +702,24 @@ function setupRunUI() {
   showOverlay(null);
 }
 
-// open world (spec §25.1)
-async function explore(regionId, at = 'west') {
+// open world (spec §25.1, §40): at = a town id (out of its gate) or { x, y }
+async function explore(at = current.location) {
   if (scene === 'town') syncHp();
   await saveCurrent();
   townNpc = null;
   scene = 'run';
   ensureAudio(); playMusic('wilayah');
-  const region = regionById(regionId);
-  if (!current.regions[regionId]) { // first steps in a region count at once (a quest may wait for it)
-    const before = current;
-    current = syncQuests({ ...structuredClone(current), regions: { ...current.regions, [regionId]: { fog: '' } } });
-    questNews(before);
-  }
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
     effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current),
-    region: regionId, at, mount: activeMountSetup(current), fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
+    at, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
+    eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });
+  const region = game.region;
+  markZone(region.id);
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
-  if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
+  if (home && home.id !== region.id && !x.found) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));
   refreshFieldQuests();
   game.liveQuest = liveQuestTarget;
   game.clock = worldClock;
@@ -731,9 +729,17 @@ async function explore(regionId, at = 'west') {
   await loadWorld(R4.needsWarm(game), (step) => R4.warm(game, step), 'foes', region.biome);
 }
 
-// This character's dungeon gates in a region and where the expedition arrow points.
-function gatesAndTarget(region) {
-  const gates = regionGates(current, region);
+// first steps in a zone count at once (a quest may wait for it)
+function markZone(zone) {
+  if (current.regions[zone]) return;
+  const before = current;
+  current = syncQuests({ ...structuredClone(current), regions: { ...current.regions, [zone]: {} } });
+  questNews(before);
+}
+
+// This character's dungeon gates in the whole world and where the expedition arrow points.
+function gatesAndTarget() {
+  const gates = REGIONS.flatMap((r) => regionGates(current, r));
   const x = current.expedition;
   const g = x && gates.find((q) => q.dungeon === x.dungeon);
   return { gates, target: g ? { x: g.x, y: g.y } : null };
@@ -745,7 +751,7 @@ async function openGate(g) {
   await commitField();
   renderDungeonGate($('npc'), g.dungeon, {
     char: current,
-    onEnter: (id, floor) => { dungeonReturn = { region: game.region.id, x: g.x, y: g.y + 110 }; enterDungeon(id, floor); },
+    onEnter: (id, floor) => { dungeonReturn = { region: g.zone || game.region.id, x: g.x, y: g.y + 110 }; enterDungeon(id, floor); },
     onClose: () => resume(),
   });
   sfx.pickCard();
@@ -756,28 +762,31 @@ async function openGate(g) {
 async function commitField() {
   const part = game.takeProgress();
   const before = current;
-  const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now(), Math.random);
+  // what was earned since the last save counts in the zone just left (when that is why we save)
+  const zone = game.zoneChanged || game.region.id;
+  game.zoneChanged = false;
+  const r = applyField(current, { ...part, region: zone, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now(), Math.random);
   tripAttrs = {};
   current = { ...r.char, skills: runSkillIds() };
   fieldSaveT = 0;
   refreshFieldQuests();
   mountNews(before, current, r.mountsFound);
   if (scene === 'run' && game.field && !game.mount.id) game.mount = freshMount(activeMountSetup(current)); // first mount found mid-region: R works right away
+  if (!current.regions[game.region.id]) markZone(game.region.id);
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
   else if (current.quests.main.step !== before.quests.main.step || current.quests.main.ch !== before.quests.main.ch) questNews(before);
   else if (r.bountiesDone > 0) toast(t('{n} tugas selesai. Klaim di Balai Petualang', { n: r.bountiesDone }));
   return saveCurrent();
 }
 
-// Leaving a region: off the west edge (its `from` town), the east edge (its `to`
-// town) or by falling (wake in the last town visited).
+// Leaving the world: into a town's gate, or by falling (wake in the last town visited).
 async function endField(died) {
   screen = 'ending';
   stopMusic();
   const region = game.region;
   await commitField();
   if (!died) {
-    const to = game.exitTo === 'east' ? region.to : region.from;
+    const to = game.exitTo;
     const first = !current.towns.includes(to);
     const before = current;
     current = visitTown(current, to, Date.now());
@@ -817,16 +826,16 @@ function openMap() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden });
   $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
-  $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, game.region) * 100) });
+  $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, WORLD) * 100) });
 }
 
 // Quests in this region (spec §26.5): who lives here, places to find, items that may drop, the target.
 function refreshFieldQuests() {
-  const id = game.region.id, fq = fieldQuests(current, id);
-  game.hidden = hiddenIn(current, id);
+  const fq = fieldQuests(current);
+  game.hidden = hiddenIn(current);
   game.questSpots = fq.spots.filter((s) => !game.reached.includes(s.spot));
   game.questDrops = fq.drops;
-  game.questTarget = questTarget(current, id, { x: game.px, y: game.py });
+  game.questTarget = questTarget(current, null, { x: game.px, y: game.py });
 }
 
 // Someone living in the wild (spec §26.5): save what was earned, then talk.
@@ -848,7 +857,7 @@ async function openWild(h, message = null) {
       const msg = err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : { ...questText(r), ok: true };
       mountNews(before, r.char, r.mounts);
       // rewards / hand-overs change level, potions and the bag: pick the region up again from the save
-      if (r.done || r.given) { explore(game.region.id, { x: game.px, y: game.py }).then(() => toast(msg.text)); return; }
+      if (r.done || r.given) { explore({ x: game.px, y: game.py }).then(() => toast(msg.text)); return; }
       refreshFieldQuests();
       openWild(h, msg);
     },
@@ -932,7 +941,7 @@ async function endRun(died) {
   // back out of a gate in a region (gold portal), or wake in town (spec §25.5)
   const back = !died && dungeonReturn;
   dungeonReturn = null;
-  const go = () => (back ? explore(back.region, { x: back.x, y: back.y }) : enterTown(current, 'gate'));
+  const go = () => (back ? explore({ x: back.x, y: back.y }) : enterTown(current, 'gate'));
   renderResults($('results'), { ...applied, mountGains: gains, trip, newRecord, saveError, cause: died ? game.deathCause() : null },
     { onContinue: applied.ending ? () => { playMusic('epilog'); renderEnding($('ending'), current, go); showMenu('ending'); } : go,
       continueLabel: back ? t('Kembali ke {r}', { r: regionById(back.region).name })
@@ -1200,7 +1209,7 @@ function tickRun(pressed) {
   if (game.field) {
     game.clock = worldClock;
     game.night = phaseOf(worldClock).icon === 'moon';
-    if (game.state === ST.PLAY && (fieldSaveT += STEP) >= FIELD.saveEvery) commitField();
+    if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged)) commitField();
   }
   if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearGate) { openGate(game.nearGate); return false; }
   if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearHidden) { openWild(game.nearHidden); return false; }
@@ -1308,7 +1317,8 @@ window.__seek = (t) => {
     scene = 'run';
     const cls = CLASSES[new URLSearchParams(location.search).get('class')] ? new URLSearchParams(location.search).get('class') : 'warrior';
     const region = new URLSearchParams(location.search).get('region'); // ?region=forest|ice|… tests a region
-    if (region) game.explore({ classId: cls, stats: { ...CLASS_BASE, ...CLASSES[cls].stats }, region, at: 'west', gates: [], opened: [] });
+    const town = region && TOWN_IDS.find((id) => REGIONS.find((r) => r.id === region)?.to === id); // ?region=forest|ice|… starts out of its town
+    if (region) game.explore({ classId: cls, stats: { ...CLASS_BASE, ...CLASSES[cls].stats }, at: town || 'home', gates: [], opened: {} });
     else game.start({ classId: cls, stats: { ...CLASS_BASE, ...CLASSES[cls].stats } });
     showOverlay(null);
     screen = showScreen(null);
@@ -1331,6 +1341,6 @@ window.__game = game;
 window.__input = input; // debug/test hook: lets scripts drive the joystick
 window.__town = () => town; // debug/test hook: live town state
 window.__char = () => current;
-window.__explore = (id) => explore(id); // debug/test hooks: walk out to a region / into a dungeon (loading screen)
+window.__explore = (at) => explore(at); // debug/test hooks: walk out to a region / into a dungeon (loading screen)
 window.__dungeon = (id) => enterDungeon(id);
 window.__avatar = (a) => { R.avatar = a; }; // debug/test hook: dress the run's player (effects screenshots)

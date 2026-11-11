@@ -8,6 +8,9 @@ import { markStyle } from './paint.js';
 import { TOWNS, FIELD } from '../data/world.js';
 import { dungeonById } from '../data/dungeons.js';
 import { fogSize, fogAt } from '../meta/world.js';
+import { regionById } from '../data/world.js';
+import { WORLD } from '../data/worldmap.js';
+import { zoneAt, inHub } from '../run/worldmap.js';
 
 const TAU = Math.PI * 2;
 const statics = new Map(); // `${region}:${width}` → canvas of the whole region
@@ -24,9 +27,43 @@ function line(g, pts, k) {
   g.stroke();
 }
 
+// the one world (spec §40): zone colours, borders with their crossings, rivers, lakes, roads, bridges
+const BORDER_COL = { mountain: '#d8e2ee', river: '#2b5878', canyon: '#0a0806', lava: '#e2561a', cliff: '#050308', town: '#6a5030' };
+function worldLayer(map, w) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = Math.max(1, Math.round((w * map.h) / map.w));
+  const g = c.getContext('2d'), k = c.width / map.w;
+  const step = Math.max(250, 2 / k);
+  for (let y = 0; y < map.h; y += step) for (let x = 0; x < map.w; x += step) {
+    const cx = x + step / 2, cy = y + step / 2;
+    g.fillStyle = inHub(cx, cy) ? '#2a3a22' : regionById(zoneAt(map, cx, cy)).theme.ground[1];
+    g.fillRect(x * k, y * k, step * k + 1, step * k + 1);
+  }
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  map.rivers.forEach((r, i) => { g.strokeStyle = regionById(map.riverZones[i]).theme.water; g.lineWidth = Math.max(1.5, FIELD.riverWidth * k); line(g, r, k); });
+  for (const s of map.fixed) {
+    if (s.kind === 'water') continue;
+    g.fillStyle = s.kind === 'lake' ? LAKE[zoneAt(map, s.x, s.y)] || '#1b3a4a' : BORDER_COL[s.kind] || '#333';
+    g.beginPath(); g.arc(s.x * k, s.y * k, Math.max(1, s.r * k), 0, TAU); g.fill();
+  }
+  for (const road of map.roads) {
+    const main = road.kind === 'main';
+    g.strokeStyle = '#6a5236'; g.lineWidth = Math.max(main ? 2 : 1.2, FIELD.pathWidth * k * 0.8); line(g, road.pts, k);
+    g.strokeStyle = 'rgba(255,230,180,.3)'; g.lineWidth = Math.max(0.6, FIELD.pathWidth * k * 0.25); line(g, road.pts, k);
+  }
+  g.fillStyle = '#8a6238';
+  for (const [x, y] of map.bridges) { g.beginPath(); g.arc(x * k, y * k, Math.max(1.5, FIELD.bridgeHalf * k * 0.8), 0, TAU); g.fill(); }
+  for (const cr of map.crossings) { g.beginPath(); g.arc(cr.x * k, cr.y * k, Math.max(2, 260 * k), 0, TAU); g.fillStyle = cr.kind === 'pass' ? '#8a8a96' : '#8a6238'; g.fill(); }
+  return c;
+}
+
 function staticLayer(map, width) {
   const w = Math.max(1, Math.min(MAX_STATIC, Math.round(width)));
-  const key = `${map.region.id}:${w}`;
+  const key = `${map.world ? 'world' : map.region.id}:${w}`;
+  if (map.world) {
+    if (!statics.has(key)) statics.set(key, worldLayer(map, w));
+    return statics.get(key);
+  }
   if (statics.has(key)) return statics.get(key);
   const c = document.createElement('canvas');
   c.width = w; c.height = Math.max(1, Math.round((w * map.h) / map.w));
@@ -59,8 +96,9 @@ function staticLayer(map, width) {
 }
 
 // one pixel per fog cell, dark where unexplored; scaled up smoothly for soft edges
+const fogGrid = (map) => (map.world ? WORLD : map.region);
 function fogLayer(map, fog) {
-  const { cols, rows } = fogSize(map.region);
+  const { cols, rows } = fogSize(fogGrid(map));
   if (!fogCanvas || fogCanvas.width !== cols || fogCanvas.height !== rows) {
     fogCanvas = document.createElement('canvas');
     fogCanvas.width = cols; fogCanvas.height = rows;
@@ -69,7 +107,7 @@ function fogLayer(map, fog) {
   // only repaint when the fog changed (cheap hash over the bytes)
   let h = 0;
   for (let i = 0; i < fog.length; i++) h = (Math.imul(h, 31) + fog[i]) | 0;
-  const key = `${map.region.id}:${h}`;
+  const key = `${map.world ? 'world' : map.region.id}:${h}`;
   if (key === fogKey) return fogCanvas;
   fogKey = key;
   const fg = fogCanvas.getContext('2d');
@@ -151,8 +189,12 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
   g.drawImage(staticLayer(map, full), sx(0), sy(0), full, fullH);
   if (fog) g.drawImage(fogLayer(map, fog), sx(0), sy(0), full, fullH);
   const pulse = 0.5 + 0.5 * Math.sin((opts.t ?? performance.now() / 1000) * 5);
-  townMarker(g, sx(0) + 6, sy(map.start.y), TOWNS[region.from].name, -1, opts.labels);
-  if (region.to) townMarker(g, sx(map.w) - 6, sy(map.end.y), TOWNS[region.to].name, 1, opts.labels);
+  if (map.world) {
+    for (const tw of Object.values(map.towns)) townMarker(g, sx(tw.x), sy(tw.y), TOWNS[tw.id].name, tw.x > map.w / 2 ? 1 : -1, opts.labels);
+  } else {
+    townMarker(g, sx(0) + 6, sy(map.start.y), TOWNS[region.from].name, -1, opts.labels);
+    if (region.to) townMarker(g, sx(map.w) - 6, sy(map.end.y), TOWNS[region.to].name, 1, opts.labels);
+  }
   // dungeon gates already found
   for (const gt of opts.gates || []) {
     if (!gt.found) continue;
@@ -162,9 +204,9 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
     if (opts.labels) { const d = dungeonById(gt.dungeon); label(g, d.short || d.name, x, y - 16, '#e9d8ff', 'center', 12); }
   }
   // treasure chests (spec §25.3): once their spot is uncovered; opened ones dimmed
-  const { cols } = fogSize(region);
+  const fg = fogGrid(map), { cols } = fogSize(fg), cell = fg.fogCell || FIELD.fogCell;
   for (const tr of opts.treasures || []) {
-    if (fog && !fogAt(fog, cols, Math.floor(tr.x / FIELD.fogCell), Math.floor(tr.y / FIELD.fogCell))) continue;
+    if (fog && !fogAt(fog, cols, Math.floor(tr.x / cell), Math.floor(tr.y / cell))) continue;
     const x = sx(tr.x), y = sy(tr.y);
     if (x < ox - 10 || x > ox + w + 10 || y < oy - 10 || y > oy + h + 10) continue;
     const k = opts.labels ? 1 : 0.6, open = tr.state === 'open';
@@ -176,7 +218,7 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
   }
   // hidden homes (spec §26.5): once their spot is uncovered, with their quest mark
   for (const hd of opts.hidden || []) {
-    if (fog && !fogAt(fog, cols, Math.floor(hd.x / FIELD.fogCell), Math.floor(hd.y / FIELD.fogCell))) continue;
+    if (fog && !fogAt(fog, cols, Math.floor(hd.x / cell), Math.floor(hd.y / cell))) continue;
     const x = sx(hd.x), y = sy(hd.y);
     if (x < ox - 10 || x > ox + w + 10 || y < oy - 10 || y > oy + h + 10) continue;
     const k = opts.labels ? 1 : 0.65;
@@ -222,7 +264,7 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
       g.restore();
     }
   }
-  if (opts.labels && opts.title !== false) label(g, `${region.name} · LV ${region.levels[0]}–${region.levels[1]}`, ox + w / 2, oy + 18, '#f3e2b8', 'center', 16);
+  if (opts.labels && opts.title !== false && region) label(g, `${region.name} · LV ${region.levels[0]}–${region.levels[1]}`, ox + w / 2, oy + 18, '#f3e2b8', 'center', 16);
   if (player) {
     const px = sx(player.x), py = sy(player.y), r = opts.labels ? 6 : 3;
     g.beginPath(); g.arc(px, py, r + 3 + pulse * (opts.labels ? 6 : 3), 0, TAU); g.fillStyle = `rgba(143,255,192,${(0.35 - pulse * 0.25).toFixed(2)})`; g.fill();

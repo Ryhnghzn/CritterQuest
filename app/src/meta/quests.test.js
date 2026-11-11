@@ -6,7 +6,8 @@ import { validateSlot } from './schema.js';
 import { MAIN, SHARDS, GATE_HINT } from '../data/quests.js';
 import { regionById } from '../data/world.js';
 import { INVENTORY_MAX } from '../data/balance.js';
-import { mulberry, buildFieldMap } from '../run/fieldmap.js';
+import { mulberry } from '../run/fieldmap.js';
+import { buildWorld, blocked as worldBlocked, zoneToWorld, zoneAt } from '../run/worldmap.js';
 
 const make = (over = {}) => ({ ...createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'archer' }, 1000), ...over });
 const trip = (over = {}) => ({ dungeon: 'shadow', exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: false, hp: 100, potions: { ...make().potions }, ...over });
@@ -143,9 +144,9 @@ describe('penanda tujuan', () => {
   it('kota tujuan di ujung wilayah', () => {
     const c = make();
     c.quests.main = { ch: 1, step: 0, prog: 0 };
-    const map = buildFieldMap(regionById('forest'));
-    expect(questTarget(c, 'forest')).toEqual({ kind: 'town', x: map.end.x, y: map.end.y });
-    expect(questTarget(make(), 'forest')).toMatchObject({ kind: 'town', x: map.start.x }); // ch1 starts at home (west)
+    const { towns } = buildWorld();
+    expect(questTarget(c, 'forest')).toEqual({ kind: 'town', town: 'rimba', x: towns.rimba.x, y: towns.rimba.y });
+    expect(questTarget(make())).toMatchObject({ kind: 'town', town: 'home', x: towns.home.x }); // ch1 starts at home (the middle)
   });
 });
 
@@ -154,7 +155,6 @@ import { abandonQuest, trackQuest, trackedQuest, hiddenIn, fieldQuests, canGive,
 import { ENEMIES } from '../data/enemies.js';
 import { TOWN_DEFS } from '../data/towns.js';
 import { UNIQUES } from '../data/items.js';
-import { blocked } from '../run/fieldmap.js';
 import { treasureSpots } from './world.js';
 import { dropItem } from './itemgen.js';
 import { makeItem } from './itemgen.js';
@@ -200,7 +200,7 @@ describe('side quest', () => {
 
   it('kumpul: barang quest dari wilayah', () => {
     let c = talk(make(), 's_kunyit', 'wild', 'kunyit').char;
-    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'glowcap', enemy: 'bomber', chance: 0.4, night: false }]);
+    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'glowcap', enemy: 'bomber', chance: 0.4, night: false, region: 'forest' }]);
     expect(fieldQuests(c, 'ice').drops).toEqual([]);
     c = field(c, { region: 'forest', questItems: { glowcap: 3 } });
     expect(c.quests.side.s_kunyit.prog).toBe(3);
@@ -281,7 +281,7 @@ describe('side quest', () => {
   it('penanda: penghuni tersembunyi & titik terdekat', () => {
     let c = talk(make(), 's_resi', 'wild', 'resi').char;
     c = trackQuest(c, 's_resi', 1).char;
-    const t1 = questTarget(c, 'forest', { x: 0, y: 6000 });
+    const t1 = questTarget(c, 'forest', zoneToWorld('forest', 0, 0.5));
     expect(t1).toMatchObject({ kind: 'spot', spot: 'stone1' });
     c.quests.side.s_resi = { step: 3, prog: 0 };
     expect(questTarget(c, 'forest')).toMatchObject({ kind: 'hidden', ...hiddenXY(HIDDEN.find((h) => h.id === 'resi')) });
@@ -308,13 +308,14 @@ describe('data quest', () => {
   it('16 tempat tersembunyi (4 per wilayah) & titik quest: tidak di benda padat, jauh dari peti', () => {
     for (const r of ['forest', 'ice', 'desert', 'volcano']) expect(HIDDEN.filter((h) => h.region === r)).toHaveLength(4);
     for (const h of HIDDEN) {
-      const region = regionById(h.region), map = buildFieldMap(region), p = hiddenXY(h);
-      expect(blocked(map, p.x, p.y, HIDDEN_R.solid + 20), h.id).toBe(false);
+      const region = regionById(h.region), p = hiddenXY(h);
+      expect(worldBlocked(buildWorld(), p.x, p.y, HIDDEN_R.solid + 20), h.id).toBe(false);
+      expect(zoneAt(buildWorld(), p.x, p.y), h.id).toBe(h.region);
       for (const tr of treasureSpots(region)) expect(Math.hypot(tr.x - p.x, tr.y - p.y), h.id).toBeGreaterThan(500);
     }
     for (const [id, s] of Object.entries(SPOTS)) {
-      const region = regionById(s.region), map = buildFieldMap(region);
-      expect(blocked(map, s.at[0] * region.w, s.at[1] * region.h, 40), id).toBe(false);
+      const p = zoneToWorld(s.region, s.at[0], s.at[1]);
+      expect(zoneAt(buildWorld(), p.x, p.y), id).toBe(s.region);
     }
   });
 
@@ -356,7 +357,7 @@ describe('side quest kota', () => {
 
   it('kumpul malam hari dari musuh apa pun', () => {
     const c = talk(make(), 't_akar', 'rimba', 'potion').char;
-    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'firefly', enemy: '*', chance: 0.12, night: true }]);
+    expect(fieldQuests(c, 'forest').drops).toEqual([{ item: 'firefly', enemy: '*', chance: 0.12, night: true, region: 'forest' }]);
   });
 
   it('bunuh varian: Katak Salju dihitung lewat kin di Padang Es saja', () => {

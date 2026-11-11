@@ -152,3 +152,42 @@ export function tilesAround(x, y, R, TS, out) {
 }
 
 export const RIVER_W = FIELD.riverWidth;
+
+// ---- the one world (spec §40) ----
+const ZONE_BIOME = { forest: 'forest', ice: 'ice', desert: 'desert', volcano: 'volcano', eclipse: 'eclipse' };
+// borders that stand up: snowy mountain rocks, the black cliffs round Tanah Gerhana
+const BORDER_PROP = { mountain: { biome: 'ice', kind: 'rock', k: 0.55 }, cliff: { biome: 'eclipse', kind: 'floatrock', k: 0.5 } };
+
+// The props of one chunk of the world: [{ x, y, r, v, kind, biome, tint }], each in the biome of
+// its own zone (a crossing shows both sides' trees). Fixed solids (borders) are taken by the
+// chunk holding their centre, so none is drawn twice. Cached on the chunk.
+export function chunkProps(world, chunk, opts = {}) {
+  if (chunk.props) return chunk.props;
+  const out = [];
+  for (const s of chunk.solids) {
+    const biome = ZONE_BIOME[s.zone] || 'forest', kind = propKind(biome, s);
+    if (kind) out.push({ x: s.x, y: s.y, r: s.r, v: s.v ?? hash01(s.y, s.x), kind, biome, tint: 0.85 + (s.v ?? 0.5) * 0.3 });
+  }
+  for (const p of out.slice()) { // undergrowth & standing tufts at the feet of forest trees (plan A5, C4)
+    if (p.biome !== 'forest' || (p.kind !== 'oak' && p.kind !== 'pine')) continue;
+    if (p.v <= 0.45) { const a = p.v * 40, d = p.r * 1.25; out.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d * 0.8, r: p.r * 0.42, v: (p.v * 13) % 1, kind: 'bush', biome: 'forest', tint: p.tint }); }
+    if (opts.tufts) for (let i = 0; i < 3; i++) {
+      const a = p.v * 23 + i * 2.1, d = p.r * (1.05 + ((p.v * 7 + i * 0.37) % 1) * 0.9);
+      out.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d * 0.8, r: 8 + ((p.v * 11 + i) % 1) * 4, v: (p.v * 17 + i * 0.31) % 1, kind: 'tuft', biome: 'forest', tint: p.tint });
+    }
+  }
+  const C = world.chunkSize;
+  for (const s of world.fixedIn[chunk.iy * world.cols + chunk.ix] || []) {
+    const bp = BORDER_PROP[s.kind];
+    if (!bp || Math.floor(s.x / C) !== chunk.ix || Math.floor(s.y / C) !== chunk.iy) continue;
+    // a ridge: one big rock on the line and two smaller ones beside it
+    const v = hash01(s.x, s.y);
+    out.push({ x: s.x, y: s.y, r: s.r * bp.k, v, kind: bp.kind, biome: bp.biome, tint: 0.8 + v * 0.3 });
+    for (const k of [-1, 1]) {
+      const a = v * 9 + k * 1.9, d = s.r * 0.55;
+      out.push({ x: s.x + Math.cos(a) * d, y: s.y + Math.sin(a) * d, r: s.r * bp.k * 0.6, v: (v * 7 + k) % 1 || 0.3, kind: bp.kind, biome: bp.biome, tint: 0.75 + v * 0.3 });
+    }
+  }
+  chunk.props = out;
+  return out;
+}

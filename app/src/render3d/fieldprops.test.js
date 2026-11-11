@@ -65,3 +65,27 @@ describe('bridges & tiles', () => {
     expect(out.slice(0, 2)).toEqual([0, 0]);
   });
 });
+
+describe('props satu dunia (§40)', async () => {
+  const { chunkProps } = await import('./fieldprops.js');
+  const { buildWorld, buildChunk, zoneToWorld, chunkIndex } = await import('../run/worldmap.js');
+  const world = buildWorld();
+  it('tiap prop memakai biome zonanya; pohon hutan dapat semak', () => {
+    const p = zoneToWorld('forest', 0.5, 0.3), key = chunkIndex(world, p.x, p.y);
+    const c = buildChunk(world, key % world.cols, Math.floor(key / world.cols));
+    const props = chunkProps(world, c, { tufts: true });
+    expect(props.length).toBeGreaterThan(c.solids.length * 0.5);
+    expect(props.every((q) => q.biome)).toBe(true);
+    expect(props.some((q) => q.kind === 'bush')).toBe(true);
+    expect(chunkProps(world, c)).toBe(props);
+  });
+  it('punggung gunung jadi batu, sekali saja per petak pemiliknya', () => {
+    const ridge = world.fixed.filter((s) => s.kind === 'mountain' && s.x >= 0 && s.y >= 0 && s.x < world.w && s.y < world.h);
+    let n = 0;
+    for (let iy = 0; iy < world.rows; iy++) for (let ix = 0; ix < world.cols; ix++) {
+      if (!world.fixedIn[iy * world.cols + ix].some((s) => s.kind === 'mountain')) continue;
+      n += chunkProps(world, { ix, iy, solids: [] }).filter((q) => q.biome === 'ice' && q.kind === 'rock').length;
+    }
+    expect(n).toBe(ridge.length * 3);
+  });
+});

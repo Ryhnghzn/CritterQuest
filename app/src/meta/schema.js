@@ -16,11 +16,12 @@ import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.j
 import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
 import { isFogValid } from './world.js';
+import { WORLD } from '../data/worldmap.js';
 import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts, storyMounts } from './stable.js';
 
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -121,6 +122,13 @@ export const MIGRATIONS = {
     if (isObj(out.quests) && Array.isArray(out.quests.done) && isObj(out.records)) storyMounts(out);
     return out;
   },
+  // v22 (spec §40): one connected world — one fog for the world (the old regions' fog no longer
+  // fits), regions only mark the zones set foot in.
+  21: (d) => ({
+    ...d, version: 22,
+    world: isObj(d.world) ? { ...d.world, fog: '' } : d.world,
+    regions: isObj(d.regions) ? Object.fromEntries(Object.keys(d.regions).map((id) => [id, {}])) : d.regions,
+  }),
   17: (d) => ({ ...d, version: 18, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
   14: (d) => ({ ...d, version: 15, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
 };
@@ -208,11 +216,11 @@ export function validateSlot(d) {
   need(isInt(d.marks, 0), 'marks');
   need(TOWN_IDS.includes(d.location) && Array.isArray(d.towns) && d.towns.every((id) => TOWN_IDS.includes(id))
     && new Set(d.towns).size === d.towns.length && d.towns.includes(d.location), 'location/towns');
-  need(isObj(d.world) && isInt(d.world.seed, 0), 'world');
+  need(isObj(d.world) && isInt(d.world.seed, 0) && isFogValid(d.world.fog, WORLD), 'world');
   need(Array.isArray(d.found) && d.found.every((id) => DUNGEON_IDS.includes(id)) && new Set(d.found).size === d.found.length, 'found');
   need(d.expedition === null || (isObj(d.expedition) && Object.hasOwn(EXPEDITIONS, d.expedition.dungeon)
     && isInt(d.expedition.need, 1) && isInt(d.expedition.have, 0, d.expedition.need)), 'expedition');
-  need(isObj(d.regions) && Object.entries(d.regions).every(([id, r]) => REGION_IDS.includes(id) && isObj(r) && isFogValid(r.fog, regionById(id))), 'regions');
+  need(isObj(d.regions) && Object.entries(d.regions).every(([id, r]) => REGION_IDS.includes(id) && isObj(r)), 'regions');
   need(Array.isArray(d.bounties) && d.bounties.length === BOUNTY_COUNT && d.bounties.every((b) => isObj(b)
     && Object.hasOwn(BOUNTY_KINDS, b.kind) && (b.target === null || typeof b.target === 'string')
     && isInt(b.need, 1) && isInt(b.have, 0, b.need) && typeof b.taken === 'boolean' && (b.taken || b.have === 0)), 'bounties');

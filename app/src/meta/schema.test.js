@@ -269,8 +269,18 @@ describe('save versi 2', () => {
     const { mounts, ...rest } = structuredClone(fresh());
     const r = readSlot({ ...rest, version: 20 });
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(21);
+    expect(r.data.version).toBe(22);
     expect(r.data.mounts).toEqual({ owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } });
+    expect(validateSlot(r.data)).toEqual([]);
+  });
+
+  it('migrasi v21 → v22: satu kabut dunia, wilayah jadi penanda', () => {
+    const v21 = structuredClone(fresh());
+    v21.version = 21; v21.world = { seed: 5 }; v21.regions = { forest: { fog: 'AAAA' }, ice: { fog: '' } };
+    const r = readSlot(v21);
+    expect(r.status).toBe('ok');
+    expect(r.data.world).toEqual({ seed: 5, fog: '' });
+    expect(r.data.regions).toEqual({ forest: {}, ice: {} });
     expect(validateSlot(r.data)).toEqual([]);
   });
 

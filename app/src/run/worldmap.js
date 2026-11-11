@@ -6,6 +6,7 @@
 import { FIELD, REGIONS, regionById } from '../data/world.js';
 import { WORLD, ARMS, ARM_IDS, BORDERS, BORDER_WIGGLE, BORDER_STEP, ECLIPSE, ROADS, WATERS, RUINS_PER_CHUNK, HUB_TREES } from '../data/worldmap.js';
 import { mulberry, sample, distToLine } from './fieldmap.js';
+import { MOUNT } from '../data/mounts.js';
 
 const CELL = 200;
 const PER = WORLD.chunk / CELL;          // cells per chunk side
@@ -186,7 +187,7 @@ export function buildWorld(seed = WORLD.seed) {
   // the road on from Baraapi round its wall to the Gerhana opening and into the pocket
   {
     const g = townGate('volcano'), E = ECLIPSE, mx = (E.x0 + E.x1) / 2;
-    roads.push({ kind: 'eclipse', zone: 'eclipse', pts: [[g.x, g.y], [g.x - 1500, g.y + 300], [g.x - 1700, g.y + 2200], [mx, E.y0 - 900], [mx, E.y0], [mx, E.y0 + 2600]] });
+    roads.push({ kind: 'eclipse', zone: 'eclipse', pts: [[g.x, g.y], [g.x - 1500, g.y + 300], [g.x - 1700, g.y + 2200], [mx, E.y0 - 900], [mx, E.y0], [mx + 600, E.y0 + 2600], [mx - 500, E.y1 - 900]] });
   }
   // ring roads: town → the outer crossing → the neighbouring town; the inner crossing joins both main roads
   for (const bl of borders) {
@@ -284,7 +285,7 @@ export function buildWorld(seed = WORLD.seed) {
     }
   }
   const world = {
-    world: true, seed, w: WORLD.w, h: WORLD.h, cols, rows, borders, crossings, towns, roads, paths, rivers: rivers.map((r) => r.pts),
+    world: true, seed, w: WORLD.w, h: WORLD.h, cols, rows, chunkSize: WORLD.chunk, borders, crossings, towns, roads, paths, rivers: rivers.map((r) => r.pts),
     riverZones: rivers.map((r) => r.zone), bridges, lakes, fixed, fixedIn, pathDist, pocketGate,
     chunks: new Map(), // key iy * cols + ix → chunk, in use order (oldest first)
   };
@@ -438,16 +439,26 @@ export function blocked(world, x, y, r) {
   return false;
 }
 
-export function pushOut(world, o, r) {
+// Pushes a circle (o.x, o.y, radius r) out of solids and inside the world's edge.
+// fly: flying mounts pass over rivers, lakes and the great river border (spec §35.1)
+const WET = new Set(['water', 'lake', 'river']);
+export function pushOut(world, o, r, fly = false) {
   for (const s of solidsNear(world, o.x, o.y)) {
+    if (fly && WET.has(s.kind)) continue;
     const dx = o.x - s.x, dy = o.y - s.y, min = s.r + r, d2 = dx * dx + dy * dy;
     if (d2 >= min * min) continue;
-    const d = Math.sqrt(d2) || 0.01;
+    const d = Math.sqrt(d2);
+    if (d < 0.01) { o.x = s.x + min; o.y = s.y; continue; } // dead centre: any direction will do
     o.x = s.x + (dx / d) * min; o.y = s.y + (dy / d) * min;
   }
   const e = FIELD.edge;
   o.x = Math.max(e, Math.min(world.w - e, o.x));
   o.y = Math.max(e, Math.min(world.h - e, o.y));
+}
+
+// Landing (knocked off a flying mount over water): push out until standing on dry land.
+export function landAt(world, o, r) {
+  for (let i = 0; i < MOUNT.landTries && blocked(world, o.x, o.y, r); i++) pushOut(world, o, r);
 }
 
 // the nearest free spot to (x, y) for something of radius r (deterministic spiral)

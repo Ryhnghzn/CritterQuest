@@ -274,6 +274,8 @@ export default {
   'Satu ekspedisi sekaligus. Gerbangnya ditandai di peta dan panah emas menunjuk ke sana.': 'One expedition at a time. Its gate is marked on the map and a golden arrow points the way.',
   'Ekspedisi: {d}. Gerbangnya di {r} ({a}/{b} lantai)': 'Expedition: {d}. Its gate is in {r} ({a}/{b} floors)',
   'Keluar ke wilayah:': 'Head out into a region:',
+  'Keluar ke dunia': 'Head out into the world',
+  'Wilayah:': 'Regions:',
   'gerbang {a}/{b}': 'gates {a}/{b}',
   'Ekspedisi: bersihkan {n} lantai ({a}/{b})': 'Expedition: clear {n} floors ({a}/{b})',
   'Pulang lewat portal emas membawamu kembali ke gerbang ini.': 'Leaving through the golden portal brings you back to this gate.',

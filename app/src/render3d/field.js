@@ -24,7 +24,9 @@ import { groundTile, drawField, fieldDecorLights, targetArrow, gateGlow, gateGua
 import { drawQuestSpot } from '../render/hideout.js';
 import { actor, tag } from '../render/paint.js';
 import { t as tf } from '../i18n.js';
-import { FIELD, TOWNS } from '../data/world.js';
+import { FIELD, TOWNS, regionById } from '../data/world.js';
+import { chunkProps } from './fieldprops.js';
+import { zoneAt, inHub, chunksNear } from '../run/worldmap.js';
 import { dungeonById } from '../data/dungeons.js';
 import { skyAt } from '../meta/clock.js';
 import { SHAKE_PX } from '../data/fx.js';
@@ -35,6 +37,8 @@ const TILE_R = 1150;       // tiles kept within this of the camera point
 const PROP_R = 1350;       // props streamed within this of the hero…
 const REFILL = 350;        // …refilled after moving this far
 const CAP = 700;           // instances per kind at most
+const BIOME_ZONE = { forest: 'forest', ice: 'ice', desert: 'desert', volcano: 'volcano', eclipse: 'eclipse' };
+const BORDER_STEP_PAD = 1600; // a border's bends lie this far apart at most
 const EDGE = { forest: '#070b08', ice: '#080c12', desert: '#120c08', volcano: '#0a0605', eclipse: '#06030c' };
 const FOG_DAY = { forest: 0x24342c, ice: 0x4a5a72, desert: 0x5a3e2c, volcano: 0x34160e, eclipse: 0x1a0c2e };
 const FOG_NIGHT = 0x06070f;
@@ -99,6 +103,8 @@ export class Field25 {
 
   // a region: built once
   buildRegion(game) {
+    if (game.fmap.world) { this.buildWorld(game); return; }
+    this.world = null;
     const sc = this.scene, map = game.fmap, region = map.region, biome = region.biome || 'forest';
     if (this.regionGroup) { sc.remove(this.regionGroup); dispose(this.regionGroup); for (const k of this.kinds.values()) k.mesh.geometry.dispose(); }
     const G = this.regionGroup = new THREE.Group(); sc.add(G);
@@ -198,6 +204,181 @@ export class Field25 {
     this.tint();
   }
 
+  // ---- the one world (spec §40) ----
+  // the biome a point shows (the meadow round Kota Awal is forest green)
+  biomeAt(x, y) { return inHub(x, y) ? 'forest' : regionById(zoneAt(this.world, x, y)).biome; }
+
+  // the ground painter's view of the world in one biome: no solids (they stand in 3D), its theme
+  ghostOf(biome) {
+    let gh = this.ghosts.get(biome);
+    if (gh) return gh;
+    const zone = Object.keys(BIOME_ZONE).find((z) => BIOME_ZONE[z] === biome) || 'forest', region = regionById(zone);
+    const painted = !!LOOK.paintGround?.biomes.includes(biome);
+    const theme = painted ? Object.assign(Object.create(region.theme), { path: groundPattern(this.tiles[0].c.getContext('2d'), BIOME_GROUND[biome].path[0], 1, BIOME_GROUND[biome].path[1]) }) : region.theme;
+    const fmap = Object.assign(Object.create(this.world), { region: Object.assign(Object.create(region), { theme }), cols: 1, rows: 1, grid: [[]], solids: [], start: null, end: null });
+    const tile = painted ? { canvas: groundCanvas(BIOME_GROUND[biome].ground, 1), T: GROUND_P } : groundTile(this.tileK, region.theme.ground, biome);
+    gh = { fmap, gates: [], treasures: [], hidden: [], questSpots: [], painted, tile, biome };
+    this.ghosts.set(biome, gh);
+    return gh;
+  }
+
+  buildWorld(game) {
+    const sc = this.scene, map = game.fmap;
+    if (this.regionGroup) { sc.remove(this.regionGroup); dispose(this.regionGroup); for (const k of this.kinds.values()) k.mesh.geometry.dispose(); }
+    const G = this.regionGroup = new THREE.Group(); sc.add(G);
+    this.mapRef = map; this.world = map;
+    this.ghosts = new Map();
+    this.tileK = sharp('ground', this.stage.lite);
+    this.biome = this.biomeAt(game.px, game.py);
+    this.painted = !!LOOK.paintGround?.biomes.includes(this.biome);
+    this.base.material.color.set(EDGE[this.biome] || EDGE.forest);
+    for (const tl of this.tiles) {
+      tl.used = tl.ready = false; tl.mesh.visible = false; tl.pats = {};
+      const side = Math.ceil(TS * this.tileK);
+      if (tl.c.width !== side) { tl.c.width = tl.c.height = side; tl.tex.dispose(); }
+    }
+    this.props = []; this.kinds = new Map(); this.index = null;
+    const sh = new THREE.CircleGeometry(1, 14); sh.rotateX(-Math.PI / 2);
+    this.shadows = new THREE.InstancedMesh(sh, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), CAP * 3);
+    this.shadows.count = 0; this.shadows.frustumCulled = false; G.add(this.shadows);
+    this.fillAt = null;
+    // small rivers (lava on the volcano), bridges, lake glows: per zone
+    const lavaZ = (z) => z === 'volcano';
+    const byLava = [[], []];
+    map.rivers.forEach((r, i) => byLava[lavaZ(map.riverZones[i]) ? 1 : 0].push(r));
+    this.river = null;
+    for (const lava of [0, 1]) {
+      if (!byLava[lava].length) continue;
+      const col = lava ? new THREE.Color(0xff6a20).multiplyScalar(1.3) : new THREE.Color(0x4a90b0);
+      const m = new THREE.Mesh(riverRibbon(byLava[lava], lava ? FIELD.riverWidth * 0.62 : FIELD.riverWidth - 14), additive(col, lava ? 0.45 : 0.1));
+      G.add(m);
+      if (lava) this.river = m;
+      const spots = bridgeSpots(map.bridges.filter(([x, y]) => lavaZ(zoneAt(map, x, y)) === !!lava), byLava[lava]);
+      const br = bridgesMesh(spots, !!lava);
+      if (br) G.add(br);
+    }
+    // the great river border and the lava border glow like the rivers; bridges at the river's crossings
+    for (const bl of map.borders) {
+      if (bl.kind !== 'river' && bl.kind !== 'lava') continue;
+      const lava = bl.kind === 'lava';
+      G.add(new THREE.Mesh(riverRibbon([bl.pts], bl.half * 2 - 20), additive(lava ? new THREE.Color(0xff6a20).multiplyScalar(1.4) : new THREE.Color(0x5aa0c0), lava ? 0.5 : 0.14)));
+    }
+    const crossBridges = map.crossings.filter((c) => c.kind === 'bridge' || c.kind === 'rope').map((c) => {
+      const bl = map.borders.find((b) => b.id === c.border);
+      return { x: c.x, y: c.y, a: Math.atan2(bl.d[1], bl.d[0]), rope: c.kind === 'rope' };
+    });
+    for (const rope of [false, true]) {
+      const spots = crossBridges.filter((b) => b.rope === rope);
+      if (!spots.length) continue;
+      const br = bridgesMesh(spots, rope); // rope bridges over the canyon: dark planks
+      G.add(br);
+    }
+    this.lakeGlows = [];
+    for (const l of map.lakes) {
+      if (l.zone === 'ice') continue; // frozen: no sheen
+      const lava = l.zone === 'volcano', ecl = l.zone === 'eclipse', col = lava ? 0xff7a2a : ecl ? 0x8a50ff : 0x5ab0d0;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(l.r * 2.3 * S, l.r * 2.3 * S), additive(new THREE.Color(col).multiplyScalar(lava ? 1.5 : 1), lava ? 0.7 : ecl ? 0.4 : 0.14, glowTex()));
+      m.rotation.x = -Math.PI / 2; m.position.set(l.x * S, 0.05, l.y * S); m.userData.ph = l.x * 0.01; m.userData.pulse = lava || ecl;
+      G.add(m); this.lakeGlows.push(m);
+    }
+    // town gates standing in the world (the town lies behind each), a warm light in them
+    this.exitGlows = []; this.gateLamps = []; this.fogLayers = [];
+    for (const tw of Object.values(map.towns)) {
+      const biome = tw.zone ? regionById(tw.zone).biome : 'forest';
+      const gm = townGateMesh(biome, 110, tw.zone ? FIELD.gateWall : 200);
+      gm.position.set(tw.x * S, 0, tw.y * S);
+      gm.rotation.y = Math.atan2(-tw.out[1], tw.out[0]); // the town side (−x of the mesh) away from the world
+      G.add(gm); this.gateLamps.push(...gm.userData.lamps);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(220 * S, 220 * S), additive(new THREE.Color(0xffb860).multiplyScalar(1.4), 0.5, glowTex()));
+      m.rotation.x = -Math.PI / 2; m.position.set(tw.x * S, 0.06, tw.y * S); G.add(m); this.exitGlows.push(m);
+      const s1 = signMesh(TOWNS[tw.id].name, 1);
+      s1.position.set((tw.x + tw.out[0] * 170 + tw.out[1] * 150) * S, 0, (tw.y + tw.out[1] * 170 - tw.out[0] * 150) * S); G.add(s1);
+    }
+    this.gateGroup = new THREE.Group(); G.add(this.gateGroup); this.gatesRef = null;
+    this.chestGroup = new THREE.Group(); G.add(this.chestGroup); this.chestRef = null;
+    this.homeGroup = new THREE.Group(); G.add(this.homeGroup); this.homeRef = null; this.spotRef = null;
+    this.cards = [];
+    this.tint();
+  }
+
+  // a prop kind in a biome: one InstancedMesh, made the first time it is needed
+  kindOf(p) {
+    const key = p.key ||= `${p.biome}|${propKey(p)}`;
+    let K = this.kinds.get(key);
+    if (K) return K;
+    const kind = p.kind, variant = VARIED.has(kind) ? Math.floor(p.v * 7) % 3 : 0, biome = p.biome;
+    let mesh;
+    if (ILLUSTRATED.has(kind) && illustratedIn(biome)) {
+      const ill = illustrated(kind, biome, variant);
+      mesh = new THREE.InstancedMesh(ill.geo, ill.mat, CAP); mesh.customDepthMaterial = ill.depth;
+    } else {
+      const { geo, rim, smooth } = propGeometry(kind, biome, variant);
+      mesh = new THREE.InstancedMesh(geo, vtoon(rim, !smooth, PROP_KIND[kind] || null), CAP);
+    }
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.setColorAt(0, _c.setScalar(1));
+    mesh.count = 0; mesh.frustumCulled = false;
+    this.regionGroup.add(mesh);
+    K = { mesh, cap: CAP, ids: new Int32Array(CAP), k: new Float32Array(CAP), n: 0, lift: LIFT[kind] || 0, sink: SINK[kind] ?? 2.4, list: null };
+    this.kinds.set(key, K);
+    return K;
+  }
+
+  // the props of the chunks round (x, y), those within reach placed into their meshes
+  refillWorld(x, y) {
+    this.fillAt = this.fillAt || { x: 0, y: 0 };
+    this.fillAt.x = x; this.fillAt.y = y;
+    const props = this.props; props.length = 0;
+    for (const c of chunksNear(this.world, x, y)) for (const p of chunkProps(this.world, c, { tufts: !!LOOK.illustrated })) props.push(p);
+    for (const K of this.kinds.values()) { K.n = 0; K.list = props; }
+    let ns = 0;
+    for (let i = 0; i < props.length; i++) {
+      const p = props[i], R = PROP_R + p.r;
+      if ((p.x - x) ** 2 + (p.y - y) ** 2 > R * R) continue;
+      const K = this.kindOf(p);
+      K.list = props;
+      if (K.n >= K.cap) continue;
+      const j = K.n++;
+      K.ids[j] = i; K.k[j] = -1;
+      K.mesh.setColorAt(j, _c.setScalar(p.tint));
+      if (ns < this.shadows.instanceMatrix.count) {
+        const r = p.r * (p.kind === 'floatrock' ? 0.8 : p.kind === 'stone' || p.kind === 'column' ? 0.9 : 1.15) * S;
+        _o.position.set((p.x + p.r * 0.15) * S, 0.02, (p.y + p.r * 0.2) * S); _o.rotation.set(0, 0, 0); _o.scale.set(r, 1, r * 0.75); _o.updateMatrix();
+        this.shadows.setMatrixAt(ns++, _o.matrix);
+      }
+    }
+    this.shadows.count = ns; this.shadows.instanceMatrix.needsUpdate = true;
+    this.shadows.visible = !(LOOK.shadows && !this.stage.lite);
+    for (const K of this.kinds.values()) { K.mesh.count = K.n; if (K.mesh.instanceColor) K.mesh.instanceColor.needsUpdate = true; }
+  }
+
+  // borders painted into the ground: the great river, the canyon, the lava flow, the rock under the ridges
+  paintBorders(g, r, t) {
+    const pad = 900;
+    for (const bl of this.world.borders) {
+      const pts = bl.pts;
+      let near = false;
+      for (const [x, y] of pts) if (x > r.x0 - pad - BORDER_STEP_PAD && x < r.x1 + pad + BORDER_STEP_PAD && y > r.y0 - pad - BORDER_STEP_PAD && y < r.y1 + pad + BORDER_STEP_PAD) { near = true; break; }
+      if (!near) continue;
+      const w = bl.half * 2;
+      g.lineCap = 'round'; g.lineJoin = 'round';
+      const stroke = (width, style) => { g.lineWidth = width; g.strokeStyle = style; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); };
+      if (bl.kind === 'river') { stroke(w + 50, '#3a3a30'); stroke(w, '#1c4a66'); stroke(w * 0.55, '#24607e'); stroke(w * 0.12, 'rgba(200,235,255,.18)'); }
+      else if (bl.kind === 'canyon') { stroke(w + 60, '#5a3a22'); stroke(w, '#120a06'); stroke(w * 0.5, '#030201'); }
+      else if (bl.kind === 'lava') { stroke(w + 70, '#1a1210'); stroke(w, '#7a1e08'); stroke(w * 0.6, '#e2561a'); stroke(w * 0.2, `rgba(255,${200 + Math.round(Math.sin(t) * 20)},120,.7)`); }
+      else if (bl.kind === 'mountain') { // rocky ground under the ridge, open at its passes
+        for (const s of this.world.fixed) if (s.border === bl.id && s.x > r.x0 - s.r * 2 && s.x < r.x1 + s.r * 2 && s.y > r.y0 - s.r * 2 && s.y < r.y1 + s.r * 2) {
+          g.beginPath(); g.arc(s.x, s.y, s.r * 1.25, 0, TAU); g.fillStyle = 'rgba(70,74,86,.55)'; g.fill();
+          g.beginPath(); g.arc(s.x, s.y, s.r * 0.9, 0, TAU); g.fillStyle = 'rgba(220,230,240,.35)'; g.fill();
+        }
+      }
+    }
+    for (const s of this.world.fixed) { // the pocket's black cliffs
+      if (s.kind !== 'cliff' || s.x < r.x0 - s.r * 2 || s.x > r.x1 + s.r * 2 || s.y < r.y0 - s.r * 2 || s.y > r.y1 + s.r * 2) continue;
+      g.beginPath(); g.arc(s.x, s.y, s.r * 1.2, 0, TAU); g.fillStyle = 'rgba(12,6,20,.8)'; g.fill();
+    }
+  }
+
   buildGates(game) {
     const P = this.gateGroup;
     while (P.children.length) { const o = P.children.pop(); dispose(o); }
@@ -280,8 +461,18 @@ export class Field25 {
     g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
     g.lineJoin = 'round';
     const r = this.rect; r.x0 = x0; r.y0 = y0; r.x1 = x0 + TS; r.y1 = y0 + TS;
-    drawField(g, this.ghost, tl.pat, t, r);
-    if (this.painted) this.groundShade(g, r);
+    if (this.world) { // the biome under the tile's middle (plan §40 C2 blends at the crossings)
+      const biome = this.biomeAt(x0 + TS / 2, y0 + TS / 2), gh = this.ghostOf(biome);
+      let pat = tl.pats[biome];
+      if (!pat) { pat = tl.pats[biome] = g.createPattern(gh.tile.canvas, 'repeat'); pat.setTransform(new DOMMatrix().scale(gh.tile.T / gh.tile.canvas.width)); }
+      if (LOOK.detail > 0) setDetail(tl.mesh.material, gh.painted ? 'none' : GROUND_KIND[biome] || 'soil');
+      drawField(g, gh, pat, t, r);
+      this.paintBorders(g, r, t);
+      if (gh.painted) this.groundShade(g, r);
+    } else {
+      drawField(g, this.ghost, tl.pat, t, r);
+      if (this.painted) this.groundShade(g, r);
+    }
     tl.tex.needsUpdate = true; tl.ready = true;
     tl.mesh.position.set((x0 + TS / 2) * S, 0, (y0 + TS / 2) * S);
     tl.mesh.visible = true;
@@ -320,6 +511,7 @@ export class Field25 {
 
   // props near the hero
   refill(x, y) {
+    if (this.world) { this.refillWorld(x, y); return; }
     this.fillAt = this.fillAt || { x: 0, y: 0 };
     this.fillAt.x = x; this.fillAt.y = y;
     for (const K of this.kinds.values()) K.n = 0;
@@ -347,7 +539,7 @@ export class Field25 {
     for (const K of this.kinds.values()) {
       let changed = false;
       for (let j = 0; j < K.n; j++) {
-        const p = this.props[K.ids[j]], goal = playing && inCutaway(p.x - px, p.y - py, yaw, zk) ? 0 : 1;
+        const p = (K.list || this.props)[K.ids[j]], goal = playing && inCutaway(p.x - px, p.y - py, yaw, zk) ? 0 : 1;
         const old = K.k[j], nk = old < 0 ? goal : old + (goal - old) * Math.min(1, dt * 9);
         if (old >= 0 && Math.abs(nk - old) < 0.002) continue;
         K.k[j] = nk; changed = true;
@@ -395,7 +587,8 @@ export class Field25 {
     const lite = game.vfx?.mul < 1;
     if (lite !== st.lite) { st.setQuality(lite); this.mapRef = null; }
     const playing = game.state !== 0;
-    const tx = playing ? game.px : game.fmap.start.x + Math.sin(t * 0.07) * 160, ty = playing ? game.py : game.fmap.start.y + Math.cos(t * 0.05) * 120;
+    const home = game.fmap.start || { x: game.px, y: game.py };
+    const tx = playing ? game.px : home.x + Math.sin(t * 0.07) * 160, ty = playing ? game.py : home.y + Math.cos(t * 0.05) * 120;
     let snap = false;
     if (Math.hypot(tx - this.camX, ty - this.camY) > 600) { this.camX = tx; this.camY = ty; snap = true; } // entering, warping: jump
     if (game.fmap !== this.mapRef) { this.camX = tx; this.camY = ty; this.buildRegion(game); snap = true; }
@@ -410,6 +603,10 @@ export class Field25 {
     st.look(this.camX, this.camY);
     this.base.position.x = this.camX * S; this.base.position.z = this.camY * S;
 
+    if (this.world && this.frame % 20 === 0) { // the light, fog and sky follow the biome round the hero
+      const b = this.biomeAt(this.camX, this.camY);
+      if (b !== this.biome) { this.biome = b; this.painted = !!LOOK.paintGround?.biomes.includes(b); this.base.material.color.set(EDGE[b] || EDGE.forest); }
+    }
     this.tilesFor(game, t, snap);
     const hx = playing ? game.px : this.camX, hy = playing ? game.py : this.camY;
     if (!this.fillAt || (hx - this.fillAt.x) ** 2 + (hy - this.fillAt.y) ** 2 > REFILL * REFILL) this.refill(hx, hy);
@@ -480,8 +677,8 @@ export class Field25 {
   }
 
   animate(game, t, lite) {
-    if (this.river) this.river.material.opacity = this.biome === 'volcano' ? 0.42 + Math.sin(t * 1.3) * 0.08 : this.river.material.opacity;
-    for (const m of this.lakeGlows) if (this.biome === 'volcano' || this.biome === 'eclipse') m.scale.setScalar(1 + Math.sin(t * 1.1 + m.userData.ph) * 0.04);
+    if (this.river) this.river.material.opacity = this.world || this.biome === 'volcano' ? 0.42 + Math.sin(t * 1.3) * 0.08 : this.river.material.opacity;
+    for (const m of this.lakeGlows) if (m.userData.pulse || (!this.world && (this.biome === 'volcano' || this.biome === 'eclipse'))) m.scale.setScalar(1 + Math.sin(t * 1.1 + m.userData.ph) * 0.04);
     for (const m of this.fogLayers) m.userData.map.offset.y = t * m.userData.speed;
     for (const m of this.gateLamps) m.material.opacity = 0.5 + Math.sin(t * 9 + m.id) * 0.06 + Math.sin(t * 23) * 0.04;
     for (const m of this.exitGlows) { const k = 1 + Math.sin(t * 2.2) * 0.06; m.scale.set(k, k, 1); m.material.opacity = 0.42 + Math.sin(t * 2.2) * 0.1; }

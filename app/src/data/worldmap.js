@@ -18,6 +18,7 @@ export const WORLD = {
   gateR: 130,                // walk this close to a town gate to enter the town
   spawnBack: 260,            // leaving a town: appear this far in front of its gate
   armFill: 0.82,             // an arm's content spreads over this part of its width
+  fogCell: 250,              // the world's fog of war: one bit per square of this size
 };
 
 // arm: the zone, the way out from the middle, the town at its end (distance from the middle)

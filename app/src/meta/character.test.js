@@ -30,7 +30,7 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 21, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 22, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
       mats: { dust: 0, crystal: 0, core: 0 },
@@ -44,7 +44,7 @@ describe('createCharacter', () => {
       ],
       marks: 0,
       location: 'home', towns: ['home'], regions: {},
-      world: { seed: NOW % 2147483647 }, found: [], expedition: null, shops: {}, stash: [], treasures: {},
+      world: { seed: NOW % 2147483647, fog: '' }, found: [], expedition: null, shops: {}, stash: [], treasures: {},
       quests: { main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null },
       mounts: { owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } },
       hp: null, potions: pots(), belt: ['red', 'big', 'shield', 'rage'],

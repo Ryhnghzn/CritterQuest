@@ -3,54 +3,38 @@ vi.mock('../core/audio.js', () => ({ sfx: new Proxy({}, { get: () => () => {} })
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { REGIONS, FIELD, regionById } from '../data/world.js';
-import { buildFieldMap, blocked, sample, pushOut, landAt } from './fieldmap.js';
-import { fieldLevel, fieldScale, spawnPack, spawnGuardian, questDrop } from './field.js';
+import { WORLD, ECLIPSE } from '../data/worldmap.js';
+import { buildWorld, blocked, pushOut, landAt, zoneToWorld, zoneAt, townGate } from './worldmap.js';
+import { fieldScale, spawnPack, spawnGuardian, questDrop, townExit } from './field.js';
 import { fire } from './enemies.js';
 import { HORDE } from '../data/balance.js';
 import { TREASURE } from '../data/world.js';
 import { fogSize } from '../meta/world.js';
 
+const world = buildWorld();
 const forest = regionById('forest');
-const setup = (o = {}) => ({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, region: 'forest', ...o });
+// out of Rimbawana's gate, in the forest
+const setup = (o = {}) => ({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, at: 'rimba', ...o });
 const idle = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, potion: -1 };
+// a spot on the forest's main road, halfway out
+const mid = () => { const r = world.roads.find((q) => q.kind === 'main' && q.zone === 'forest'); return r.pts[Math.floor(r.pts.length / 2)]; };
 
-describe('peta wilayah', () => {
-  it('keempat wilayah dibangun cepat & tetap sama (seed)', () => {
-    const t0 = Date.now();
-    for (const r of REGIONS) {
-      const m = buildFieldMap(r);
-      expect(m.solids.length).toBeGreaterThan(1000);
-      expect(buildFieldMap(r)).toBe(m);
-    }
-    expect(Date.now() - t0).toBeLessThan(4000);
-  });
-  it('semua jalan bebas rintangan (jembatan menyeberangi sungai); sungai menghalangi', () => {
-    for (const r of REGIONS) {
-      const map = buildFieldMap(r);
-      for (const p of map.paths) for (const [x, y] of sample(p, 50)) {
-        if (x < 60 || x > r.w - 60 || y < 60 || y > r.h - 60) continue;
-        expect(blocked(map, x, y, 12)).toBe(false);
-      }
-      const water = map.solids.find((s) => s.kind === 'water' && map.bridges.every(([bx, by]) => Math.hypot(bx - s.x, by - s.y) > 400));
-      if (water) expect(blocked(map, water.x, water.y, 12)).toBe(true);
-      expect(blocked(map, map.start.x, map.start.y, 12)).toBe(false);
-    }
-  });
-});
-
-describe('mode wilayah', () => {
-  it('level musuh naik dari barat ke timur', () => {
-    expect(fieldLevel(forest, 0)).toBe(1);
-    expect(fieldLevel(forest, forest.w)).toBe(15);
+describe('mode dunia', () => {
+  it('level musuh naik dari Kota Awal ke kota besar', () => {
+    const g = new Game();
+    g.explore(setup());
+    expect(g.region.id).toBe('forest');
     expect(fieldScale(1)).toEqual({ hp: 1, dmg: 1, reward: 1 });
     expect(fieldScale(26).hp).toBeCloseTo(6, 5);
   });
-  it('mulai di tepi barat, kelompok musuh muncul di luar layar & dibatasi', () => {
+  it('mulai di depan gerbang kota, kelompok musuh muncul di luar layar & dibatasi', () => {
     const g = new Game();
     g.explore(setup());
     expect(g.state).toBe(ST.PLAY);
     expect(g.field).toBe(true);
-    g.px = 6000; g.py = g.fmap.paths[0][5][1];
+    const out = townExit(world, 'rimba');
+    expect([g.px, g.py]).toEqual([out.x, out.y]);
+    [g.px, g.py] = mid();
     for (let i = 0; i < 30; i++) spawnPack(g);
     expect(g.enemies.length).toBeLessThanOrEqual(FIELD.maxEnemies);
     expect(g.enemies.length).toBeGreaterThan(0);
@@ -59,10 +43,17 @@ describe('mode wilayah', () => {
       expect(e.level).toBeGreaterThanOrEqual(1);
     }
   });
+  it('dataran Kota Awal tenang: tidak ada kawanan, namanya sendiri', () => {
+    const g = new Game();
+    g.explore(setup({ at: 'home' }));
+    expect(g.place).toBe('hub');
+    for (let i = 0; i < 30; i++) spawnPack(g);
+    expect(g.enemies).toHaveLength(0);
+  });
   it('kawanan 5–10, HP × HORDE.hp (spec §33.3)', () => {
     const g = new Game();
     g.explore(setup());
-    g.px = 6000; g.py = g.fmap.paths[0][5][1];
+    [g.px, g.py] = mid();
     let n = 0;
     for (let i = 0; i < 20 && !n; i++) n = spawnPack(g);
     expect(n).toBeGreaterThanOrEqual(FIELD.pack[0]);
@@ -76,7 +67,8 @@ describe('mode wilayah', () => {
     const g = new Game();
     g.explore(setup());
     g.enemies.length = 0;
-    spawnGuardian(g, { x: 6000, y: g.fmap.paths[0][5][1], lord: false });
+    const [mx, my] = mid();
+    spawnGuardian(g, { x: mx, y: my, zone: 'forest', lord: false });
     const [guard, ...escort] = g.enemies;
     const plain = g.spawnEnemy(guard.type).maxHp, sc = fieldScale(guard.level);
     expect(guard.maxHp).toBeCloseTo(plain * sc.hp * TREASURE.guard.hp);
@@ -93,7 +85,7 @@ describe('mode wilayah', () => {
   it('musuh yang tertinggal jauh hilang', () => {
     const g = new Game();
     g.explore(setup());
-    g.px = 6000; g.py = g.fmap.paths[0][5][1];
+    [g.px, g.py] = mid();
     spawnPack(g);
     const n = g.enemies.length;
     g.enemies[0].x = g.px + FIELD.despawn + 200;
@@ -101,48 +93,50 @@ describe('mode wilayah', () => {
     g.step(1 / 60);
     expect(g.enemies.length).toBe(n - 1);
   });
-  it('keluar di tepi barat (kota asal) dan tepi timur (kota tujuan)', () => {
+  it('berjalan ke gerbang kota mana pun = masuk kota itu', () => {
     const g = new Game();
-    g.explore(setup());
+    g.explore(setup({ at: 'home' }));
     g.intent = idle; g.packT = 99;
-    g.px = FIELD.exitZone - 5;
+    const t = world.towns.beku;
+    g.px = t.x; g.py = t.y;
     g.step(1 / 60);
     expect(g.state).toBe(ST.OVER);
-    expect(g.exitTo).toBe('west');
-    const h = new Game();
-    h.explore(setup());
-    h.intent = idle; h.packT = 99;
-    h.px = forest.w - FIELD.exitZone + 5; h.py = h.fmap.end.y;
-    h.step(1 / 60);
-    expect(h.state).toBe(ST.OVER);
-    expect(h.exitTo).toBe('east');
+    expect(g.exitTo).toBe('beku');
   });
-  it('tepi di luar ujung jalan adalah dinding, bukan jalan ke kota', () => {
+  it('keluar dari kota tidak langsung masuk lagi, sampai menjauh dulu', () => {
     const g = new Game();
     g.explore(setup());
     g.intent = idle; g.packT = 99;
-    g.px = FIELD.exitZone - 5; g.py = g.fmap.start.y + FIELD.exitHalf + 200;
+    const t = world.towns.rimba;
+    g.px = t.x + t.out[0] * 60; g.py = t.y + t.out[1] * 60;
     g.step(1 / 60);
     expect(g.state).toBe(ST.PLAY);
-    expect(g.px).toBeGreaterThanOrEqual(FIELD.exitZone);
-    const h = new Game();
-    h.explore({ ...setup(), at: 'east' });
-    h.intent = idle; h.packT = 99;
-    h.px = forest.w - FIELD.exitZone + 5; h.py = h.fmap.end.y - FIELD.exitHalf - 200;
-    h.step(1 / 60);
-    expect(h.state).toBe(ST.PLAY);
-    expect(h.px).toBeLessThanOrEqual(forest.w - FIELD.exitZone);
+    g.px = t.x + t.out[0] * 600; g.py = t.y + t.out[1] * 600; g.step(1 / 60);
+    g.px = t.x; g.py = t.y; g.step(1 / 60);
+    expect(g.exitTo).toBe('rimba');
   });
-  it('masuk dari timur tidak langsung keluar lagi', () => {
+  it('pindah zona: judul baru & tanda simpan; Tanah Gerhana tersegel sampai 5 pecahan', () => {
     const g = new Game();
-    g.explore({ ...setup(), at: 'east' });
+    g.explore(setup({ at: 'home' }));
     g.intent = idle; g.packT = 99;
-    g.step(1 / 60);
-    expect(g.state).toBe(ST.PLAY);
-    expect(g.px).toBeGreaterThan(forest.w * 0.9);
+    const p = zoneToWorld('ice', 0.2, 0.5);
+    g.px = p.x; g.py = p.y; g.step(1 / 60);
+    expect(g.region.id).toBe('ice');
+    expect(['forest', 'desert', 'volcano']).toContain(g.zoneChanged); // the meadow's quadrant left behind
+    expect(g.place).toBe('ice');
+    const e = zoneToWorld('eclipse', 0.5, 0.5);
+    g.px = e.x; g.py = e.y; g.step(1 / 60);
+    expect(g.region.id).not.toBe('eclipse');
+    expect(g.py).toBeLessThan(ECLIPSE.y0);
+    const h = new Game();
+    h.explore(setup({ at: 'home', eclipseOpen: true }));
+    h.intent = idle; h.packT = 99;
+    h.px = e.x; h.py = e.y; h.step(1 / 60);
+    expect(h.region.id).toBe('eclipse');
+    expect(h.inEclipse).toBe(true);
   });
   it('membuka kabut di sekitar pemain', () => {
-    const fog = new Uint8Array(fogSize(forest).bytes);
+    const fog = new Uint8Array(fogSize(WORLD).bytes);
     const g = new Game();
     g.explore(setup({ fog }));
     expect(fog.some((b) => b)).toBe(true);
@@ -166,7 +160,7 @@ describe('mode wilayah', () => {
     expect(g.takeProgress().mountRolls).toEqual({ any: 2, eclipse: 0 });
     expect(g.takeProgress().mountRolls).toEqual({ any: 0, eclipse: 0 });
     const h = new Game();
-    h.explore(setup({ region: 'eclipse' }));
+    h.explore(setup({ at: zoneToWorld('eclipse', 0.5, 0.5), eclipseOpen: true }));
     h.killEnemy({ ...h.spawnEnemy('boss'), boss: true });
     expect(h.result().mountRolls).toEqual({ any: 0, eclipse: 1 });
     const d = new Game();
@@ -176,20 +170,21 @@ describe('mode wilayah', () => {
   });
   it('gerbang dungeon: ditemukan dari dekat, bisa dimasuki bila berdiri di dekatnya', () => {
     const g = new Game();
-    g.explore(setup({ gates: [{ dungeon: 'shadow', x: 3000, y: 6000, found: false }] }));
+    const [gx, gy] = mid();
+    g.explore(setup({ gates: [{ dungeon: 'shadow', x: gx, y: gy, found: false }] }));
     g.intent = idle; g.packT = 99;
-    g.px = 3000 - FIELD.fogRadius + 20; g.py = 6000;
+    g.px = gx - FIELD.fogRadius + 20; g.py = gy;
     g.step(1 / 60);
     expect(g.gatesFound).toEqual(['shadow']);
     expect(g.nearGate).toBe(null);
-    g.px = 3000 - 40;
+    g.px = gx - 40;
     g.step(1 / 60);
     expect(g.nearGate?.dungeon).toBe('shadow');
   });
   it('mulai di depan gerbang bila diminta', () => {
     const g = new Game();
-    g.explore(setup({ at: { x: 4000, y: 5000 } }));
-    expect([g.px, g.py]).toEqual([4000, 5000]);
+    g.explore(setup({ at: { x: 14000, y: 35000 } }));
+    expect([g.px, g.py]).toEqual([14000, 35000]);
   });
 });
 
@@ -197,15 +192,17 @@ describe('harta karun & mini bos (§25.3)', () => {
   it('setiap wilayah punya harta di tempat tetap, di luar jalan, tidak tertutup benda padat', async () => {
     const { treasureSpots } = await import('../meta/world.js');
     const { TREASURE } = await import('../data/world.js');
+    const { armFrac } = await import('./worldmap.js');
     for (const r of REGIONS) {
-      const spots = treasureSpots(r), map = buildFieldMap(r);
+      const spots = treasureSpots(r);
       expect(spots).toHaveLength(TREASURE.count);
       expect(spots.filter((s) => s.lord)).toHaveLength(1);
       for (const s of spots) {
-        expect(blocked(map, s.x, s.y, 40)).toBe(false);
-        expect(map.pathDist(s.x, s.y)).toBeGreaterThanOrEqual(TREASURE.offPath[0]);
+        expect(blocked(world, s.x, s.y, 40)).toBe(false);
+        expect(zoneAt(world, s.x, s.y)).toBe(r.id);
       }
-      expect(spots.map((s) => s.x)).toEqual([...spots.map((s) => s.x)].sort((a, b) => a - b));
+      const fx = spots.map((s) => armFrac(r.id, s.x, s.y).fx);
+      expect(fx).toEqual([...fx].sort((a, b) => a - b));
     }
   });
 
@@ -214,7 +211,7 @@ describe('harta karun & mini bos (§25.3)', () => {
     const g = new Game();
     g.explore(setup());
     g.intent = idle; g.packT = 999; g.god = true;
-    const tr = g.treasures[0];
+    const tr = g.treasures.find((q) => q.zone === 'forest' && q.idx === 0);
     g.px = tr.x - TREASURE.triggerR + 40; g.py = tr.y;
     g.step(1 / 60);
     expect(tr.state).toBe('guarded');
@@ -229,18 +226,19 @@ describe('harta karun & mini bos (§25.3)', () => {
     expect(['unlocked', 'open']).toContain(tr.state);
     for (let i = 0; i < 10; i++) g.step(1 / 60);
     expect(tr.state).toBe('open');
-    expect(g.treasuresOpened).toEqual([0]);
+    expect(g.treasuresOpened).toEqual([{ zone: 'forest', idx: 0 }]);
     expect(g.gemsFound.length).toBeGreaterThan(0);
     expect(g.gold).toBeGreaterThan(0);
   });
 
   it('peti yang sudah dibuka tidak memunculkan penjaga lagi', () => {
     const g = new Game();
-    g.explore(setup({ opened: [0, 1, 2, 3] }));
+    g.explore(setup({ opened: { forest: [0, 1, 2, 3] } }));
     g.intent = idle; g.packT = 999;
-    g.px = g.treasures[3].x; g.py = g.treasures[3].y + 30;
+    const last = g.treasures.find((q) => q.zone === 'forest' && q.idx === 3);
+    g.px = last.x; g.py = last.y + 30;
     g.step(1 / 60);
-    expect(g.treasures.every((t) => t.state === 'open')).toBe(true);
+    expect(g.treasures.filter((t) => t.zone === 'forest').every((t) => t.state === 'open')).toBe(true);
     expect(g.enemies).toHaveLength(0);
   });
 });
@@ -336,7 +334,7 @@ const rideNow = (g) => {
 };
 
 describe('terbang di atas air (§35.1)', () => {
-  const lakeMap = () => { const map = buildFieldMap(forest); return { map, lake: map.solids.find((s) => s.kind === 'lake') }; };
+  const lakeMap = () => ({ map: world, lake: world.lakes.map((l) => world.fixed.find((s) => s.kind === 'lake' && s.x === l.x)).find(Boolean) });
   it('pushOut biasa mendorong keluar danau, terbang tidak', () => {
     const { map, lake } = lakeMap();
     const a = { x: lake.x, y: lake.y }, b = { x: lake.x, y: lake.y };
@@ -344,9 +342,11 @@ describe('terbang di atas air (§35.1)', () => {
     expect(Math.hypot(a.x - lake.x, a.y - lake.y)).toBeGreaterThanOrEqual(lake.r);
     expect(b).toEqual({ x: lake.x, y: lake.y });
   });
-  it('terbang tetap ditahan pohon & batu', () => {
+  it('terbang tetap ditahan pohon & batu', async () => {
     const { map } = lakeMap();
-    const tree = map.solids.find((s) => s.kind === 'tree');
+    const [mx, my] = mid();
+    const { chunksNear } = await import('./worldmap.js');
+    const tree = chunksNear(map, mx, my).flatMap((c) => c.solids).find((s) => s.kind === 'tree');
     const o = { x: tree.x + 1, y: tree.y };
     pushOut(map, o, 12, true);
     expect(Math.hypot(o.x - tree.x, o.y - tree.y)).toBeGreaterThanOrEqual(tree.r + 12 - 0.01);
@@ -359,7 +359,7 @@ describe('terbang di atas air (§35.1)', () => {
   });
   it('Game: Naga menyeberang, jatuh di atas air → di darat', () => {
     const g = exploreGame({ mount: { id: 'dragon', rarity: 5, fly: true, skin: 0 } }); rideNow(g);
-    const lake = g.fmap.solids.find((s) => s.kind === 'lake');
+    const lake = lakeMap().lake;
     g.px = lake.x; g.py = lake.y; g.enemies.length = 0; g.step(1 / 60);
     expect(Math.hypot(g.px - lake.x, g.py - lake.y)).toBeLessThan(lake.r);
     g.invuln = 0; g.dodgeInv = 0; g.hurtPlayer(5); g.step(1 / 60);

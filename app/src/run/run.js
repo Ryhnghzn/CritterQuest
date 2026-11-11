@@ -20,7 +20,7 @@ import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
-import { landAt } from './fieldmap.js';
+import { landAt } from './worldmap.js';
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
 import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
@@ -165,13 +165,14 @@ export class Game {
     this.deathT = 0;
   }
 
-  // A region of the open world instead of a dungeon (spec §25.1).
-  // setup.region: region id; setup.at: 'west' | 'east'; setup.fog: Uint8Array (revealed in place)
+  // The open world instead of a dungeon (spec §25.1, §40).
+  // setup.at: a town id (out of its gate) or { x, y }; setup.fog: Uint8Array of the world (revealed in place);
+  // setup.opened: { zone: [idx] }; setup.eclipseOpen: Tanah Gerhana unsealed
   explore(setup) {
-    this.reset({ ...setup, eclipse: setup.region === 'eclipse' });
+    this.reset(setup);
     this.mount = freshMount(setup.mount || null);
     this.fog = setup.fog || null;
-    startField(this, setup.region, setup.at, setup.gates, setup.target, setup.opened);
+    startField(this, setup.at, setup.gates, setup.target, setup.opened, setup.eclipseOpen);
     this.state = ST.PLAY;
   }
 

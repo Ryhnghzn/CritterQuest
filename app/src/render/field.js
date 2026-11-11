@@ -92,12 +92,29 @@ export function groundTile(scale, [c0, c1], biome = 'forest') {
 // static dressing, built once per region
 function bucketKey(x, y) { return `${Math.floor(x / DCELL)},${Math.floor(y / DCELL)}`; }
 
+// the one world (spec §40): floor decals made per bucket when first seen (always the same)
+class LazyDecals {
+  constructor(seed) { this.seed = seed; this.m = new Map(); }
+  get(key) {
+    let list = this.m.get(key);
+    if (list) return list;
+    const [bx, by] = key.split(',').map(Number);
+    const r = seeded((Math.imul(bx + 7919, 73856093) ^ Math.imul(by + 104729, 19349663) ^ this.seed) >>> 0 || 1);
+    list = [];
+    const n = Math.round((DCELL * DCELL) / 11000 * (0.6 + r() * 0.8));
+    for (let i = 0; i < n; i++) list.push({ x: (bx + r()) * DCELL, y: (by + r()) * DCELL, k: r(), s: 0.7 + r() * 0.7 });
+    if (this.m.size > 3000) this.m.delete(this.m.keys().next().value);
+    this.m.set(key, list);
+    return list;
+  }
+}
+
 function dressOf(map) {
-  const id = map.region.id;
+  const id = map.world ? 'world' : map.region.id;
   if (cache.has(id)) return cache.get(id);
-  const r = seeded(map.region.seed * 7919 + 17);
-  const decals = new Map(); // bucket → [{ x, y, k, s }]
-  const n = Math.round((map.w * map.h) / 11000);
+  const r = seeded((map.world ? map.seed : map.region.seed) * 7919 + 17);
+  const decals = map.world ? new LazyDecals(map.seed) : new Map(); // bucket → [{ x, y, k, s }]
+  const n = map.world ? 0 : Math.round((map.w * map.h) / 11000);
   for (let i = 0; i < n; i++) {
     const d = { x: r() * map.w, y: r() * map.h, k: r(), s: 0.7 + r() * 0.7 };
     const key = bucketKey(d.x, d.y);
@@ -546,6 +563,7 @@ function townGateParts(map) {
   let list = gateParts.get(map);
   if (list) return list;
   list = [];
+  if (!map.start) return list; // the one world: town gates stand up in 3D
   for (const [x, y, on] of [[FIELD.exitZone - 30, map.start.y, true], [map.w - FIELD.exitZone + 30, map.end.y, !!map.region.to]]) {
     if (!on) continue;
     for (const s of [-1, 1]) {
@@ -563,6 +581,7 @@ export function gateGuards(map) {
   let list = guardsOf.get(map);
   if (list) return list;
   list = [];
+  if (!map.start) return list;
   for (const [x, y, dir, on] of [[FIELD.exitZone + 34, map.start.y, 1, true], [map.w - FIELD.exitZone - 34, map.end.y, -1, !!map.region.to]]) {
     if (on) for (const s of [-1, 1]) list.push({ guard: true, x, y: y + s * (FIELD.exitHalf + 26), facing: dir, look: GUARD_LOOK, pose: { t: 0, moving: 0, walk: 0 } });
   }
@@ -675,7 +694,7 @@ function gate(g, gt, t, near) {
 // the frame
 // Draws the region below the actors. rect: visible world rect { x0, y0, x1, y1 }.
 export function drawField(g, game, ground, t, rect) {
-  const map = game.fmap, region = map.region, theme = region.theme, biome = region.biome || 'forest';
+  const map = game.fmap, region = map.region || game.region, theme = region.theme, biome = region.biome || 'forest';
   const d = dressOf(map);
   const vis = (x, y, m) => x > rect.x0 - m && x < rect.x1 + m && y > rect.y0 - m && y < rect.y1 + m;
   // the land past the edge
@@ -688,7 +707,7 @@ export function drawField(g, game, ground, t, rect) {
   // floor (only the visible part)
   const fx0 = Math.max(0, rect.x0), fy0 = Math.max(0, rect.y0), fx1 = Math.min(map.w, rect.x1), fy1 = Math.min(map.h, rect.y1);
   if (fx1 > fx0 && fy1 > fy0) { g.fillStyle = ground; g.fillRect(fx0, fy0, fx1 - fx0, fy1 - fy0); }
-  for (const ru of map.ruins) if (vis(ru.x, ru.y, ru.r + 40)) ruinFloor(g, ru, biome);
+  for (const ru of ruinsOf(map, rect)) if (vis(ru.x, ru.y, ru.r + 40)) ruinFloor(g, ru, biome);
   // paths: dark verge, dirt, worn ruts
   g.lineCap = 'round'; g.lineJoin = 'round';
   for (const p of map.paths) {
@@ -705,15 +724,17 @@ export function drawField(g, game, ground, t, rect) {
   for (const list of buckets(d.decals, rect, 10)) for (const dc of list) if (vis(dc.x, dc.y, 10)) decal(g, dc, biome, t);
   // signposts and the light at the exits
   const from = TOWNS[region.from], to = TOWNS[region.to];
-  if (vis(map.start.x, map.start.y, 200)) exitGlow(g, FIELD.exitZone, map.start.y, t, -1);
-  if (to && vis(map.end.x, map.end.y, 200)) exitGlow(g, map.w - FIELD.exitZone, map.end.y, t, 1);
-  if (vis(map.start.x, map.start.y, 200)) signpost(g, FIELD.exitZone + 110, map.start.y - FIELD.exitHalf - 40, tf('Ke {name}', { name: from.name }), -1);
-  if (to && vis(map.end.x, map.end.y, 200)) signpost(g, map.w - FIELD.exitZone - 110, map.end.y - FIELD.exitHalf - 40, tf('Ke {name}', { name: to.name }), 1);
+  if (map.start && vis(map.start.x, map.start.y, 200)) exitGlow(g, FIELD.exitZone, map.start.y, t, -1);
+  if (to && map.end && vis(map.end.x, map.end.y, 200)) exitGlow(g, map.w - FIELD.exitZone, map.end.y, t, 1);
+  if (map.start && vis(map.start.x, map.start.y, 200)) signpost(g, FIELD.exitZone + 110, map.start.y - FIELD.exitHalf - 40, tf('Ke {name}', { name: from.name }), -1);
+  if (to && map.end && vis(map.end.x, map.end.y, 200)) signpost(g, map.w - FIELD.exitZone - 110, map.end.y - FIELD.exitHalf - 40, tf('Ke {name}', { name: to.name }), 1);
   // solids & gates in y order (trees overlap what stands behind them)
   spires.length = 0; // eclipse crystals seen this frame (their glow is added in fieldDecorLights)
   if (!stamp || stamp.length < map.solids.length) stamp = new Uint32Array(Math.max(map.solids.length, 1024));
   frame = (frame + 1) >>> 0 || 1;
   const list = [];
+  if (map.world && !map.grid) worldSolids(map, rect, list, vis); // the 2D fallback of the one world
+  else {
   const CELL = map.w / map.cols;
   const cx0 = Math.max(0, Math.floor((rect.x0 - 120) / CELL)), cx1 = Math.min(map.cols - 1, Math.floor((rect.x1 + 120) / CELL));
   const cy0 = Math.max(0, Math.floor((rect.y0 - 60) / CELL)), cy1 = Math.min(map.rows - 1, Math.floor((rect.y1 + 160) / CELL));
@@ -727,6 +748,7 @@ export function drawField(g, game, ground, t, rect) {
         if (vis(s.x, s.y, s.r * 2 + 30)) list.push(s);
       }
     }
+  }
   }
   for (const gt of game.gates || []) if (vis(gt.x, gt.y, 160)) list.push({ gate: gt, y: gt.y });
   for (const p of townGateParts(map)) if (vis(p.x, p.y, 200)) list.push(p);
@@ -767,6 +789,35 @@ export function drawField(g, game, ground, t, rect) {
   if (biome === 'eclipse') eclipseMotes(g, rect, t);
 }
 
+// the one world: ruins and solids of the chunks already built that overlap the rect
+function* chunksIn(map, rect) {
+  const C = map.chunkSize;
+  for (let iy = Math.max(0, Math.floor((rect.y0 - 200) / C)); iy <= Math.min(map.rows - 1, Math.floor((rect.y1 + 200) / C)); iy++) {
+    for (let ix = Math.max(0, Math.floor((rect.x0 - 200) / C)); ix <= Math.min(map.cols - 1, Math.floor((rect.x1 + 200) / C)); ix++) {
+      const c = map.chunks.get(iy * map.cols + ix);
+      if (c) yield [c, iy * map.cols + ix];
+    }
+  }
+}
+const NO_RUINS = [];
+function ruinsOf(map, rect) {
+  if (!map.world) return map.ruins;
+  if (!map.chunks) return NO_RUINS;
+  const out = [];
+  for (const [c] of chunksIn(map, rect)) out.push(...c.ruins);
+  return out;
+}
+function worldSolids(map, rect, list, vis) {
+  const seen = new Set();
+  for (const [c, key] of chunksIn(map, rect)) {
+    for (const s of c.solids) if (vis(s.x, s.y, s.r * 2 + 30)) list.push(s);
+    for (const s of map.fixedIn[key]) {
+      if (s.kind === 'water' || s.kind === 'lake' || seen.has(s) || !vis(s.x, s.y, s.r * 2 + 30)) continue;
+      seen.add(s); list.push({ ...s, kind: 'rock', r: s.r * 0.6 });
+    }
+  }
+}
+
 // eclipse: flecks of violet light drifting slowly upward through the view (from t only)
 function eclipseMotes(g, rect, t) {
   const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
@@ -784,10 +835,10 @@ function eclipseMotes(g, rect, t) {
 // lights of the region itself (visible ones only): ruin runes, exit lanterns,
 // dungeon gates, and the glow of lava lakes & rivers on the volcano.
 export function fieldDecorLights(game, t, out, rect) {
-  const map = game.fmap, biome = map.region.biome;
+  const map = game.fmap, biome = (map.region || game.region).biome;
   const vis = (x, y, m) => !rect || (x > rect.x0 - m && x < rect.x1 + m && y > rect.y0 - m && y < rect.y1 + m);
-  for (const ru of map.ruins) if (vis(ru.x, ru.y, ru.r + 120)) out.push({ x: ru.x, y: ru.y, r: ru.r + 80, rgb: biome === 'volcano' ? '255,140,60' : '150,140,255', tint: 0.035 + Math.sin(t * 1.3 + ru.x) * 0.01 });
-  for (const [x, y, on] of [[FIELD.exitZone, map.start.y, true], [map.w - FIELD.exitZone, map.end.y, !!map.region.to]]) {
+  for (const ru of ruinsOf(map, rect || { x0: 0, y0: 0, x1: map.w, y1: map.h })) if (vis(ru.x, ru.y, ru.r + 120)) out.push({ x: ru.x, y: ru.y, r: ru.r + 80, rgb: biome === 'volcano' ? '255,140,60' : '150,140,255', tint: 0.035 + Math.sin(t * 1.3 + ru.x) * 0.01 });
+  if (map.start) for (const [x, y, on] of [[FIELD.exitZone, map.start.y, true], [map.w - FIELD.exitZone, map.end.y, !!map.region.to]]) {
     if (!on || !vis(x, y, 300)) continue; // the gate's two lanterns
     for (const s of [-1, 1]) out.push({ x, y: y + s * (FIELD.exitHalf + 4) - 64, r: 150 + Math.sin(t * 9 + s) * 8, rgb: '255,170,80', tint: 0.12 });
   }

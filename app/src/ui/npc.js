@@ -127,14 +127,16 @@ function buildNpc(box, npc, ctx) {
       const where = regionOfDungeon(x.dungeon);
       body.append(el('div', 'note exphint', t('Ekspedisi: {d}. Gerbangnya di {r} ({a}/{b} lantai)', { d: dungeonById(x.dungeon).name, r: where.name, a: x.have, b: x.need })));
     }
+    // one world (spec §40): the gate leads out into it; the zones as a guide (levels, gates found)
     const regs = el('div', 'regions');
-    regs.append(el('span', 'note', tr('Keluar ke wilayah:')));
-    for (const r of REGIONS.filter((q) => (q.from === char.location || q.to === char.location) && regionOpen(q, shards(char)))) {
-      const b = button('', 'btn small region', () => ctx.onExplore(r.id));
+    const out = button(t('Keluar ke dunia'), 'btn region', () => ctx.onExplore());
+    out.dataset.region = 'world';
+    regs.append(out, el('span', 'note', tr('Wilayah:')));
+    for (const r of REGIONS.filter((q) => regionOpen(q, shards(char)))) {
+      const row = el('div', 'regionrow');
       const gates = r.dungeons.filter((d) => char.found.includes(d.id)).length;
-      b.append(el('span', null, r.name), el('small', null, `LV ${r.levels[0]}–${r.levels[1]}${r.dungeons.length ? ` · ${t('gerbang {a}/{b}', { a: gates, b: r.dungeons.length })}` : ''}`));
-      b.dataset.region = r.id;
-      regs.append(b);
+      row.append(el('span', null, r.name), el('small', null, `LV ${r.levels[0]}–${r.levels[1]}${r.dungeons.length ? ` · ${t('gerbang {a}/{b}', { a: gates, b: r.dungeons.length })}` : ''}`));
+      regs.append(row);
     }
     body.append(regs);
   } else if (npc.role === 'weapons' || npc.role === 'armor' || npc.role === 'jewelry') {
