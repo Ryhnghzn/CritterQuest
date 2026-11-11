@@ -47,3 +47,23 @@ export const NEST = {
   cap: 14,                           // most of its enemies alive at once
   leave: 1100, leaveT: 5,            // walking this far away for this long resets it
 };
+
+// Penyelamatan: a camp with guards round a cage; beat the guards, then open the cage
+export const RESCUE = {
+  near: 700,                         // the guards rise this close to the camp
+  guards: 6, eliteGuards: 1,         // guards (of the zone), of them elites
+  guardHp: 1.6,                      // × a pack enemy's HP (guards are not the horde)
+  openR: 80,                         // walk this close to the opened cage to free the captive
+  leave: 1100, leaveT: 5,            // walking this far away for this long resets the camp
+  fence: 300,                        // the camp's fence of stakes (radius, drawn only)
+};
+
+// Balapan: rings of light along a road, against the clock
+export const RACE = {
+  every: 900,                        // a ring every this far along the route
+  ringR: 120,                        // passing this close takes a ring
+  // medals by average speed over the route (units per second): bronze can be walked,
+  // silver needs a quick run or a mount, gold a good mount
+  pace: { bronze: 135, silver: 200, gold: 260 },
+  bonus: { bronze: 0.5, silver: 1, gold: 2 }, // × QUEST_REWARD gold at the player's level, paid at the finish
+};

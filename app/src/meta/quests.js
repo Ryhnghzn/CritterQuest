@@ -19,7 +19,7 @@ import { isEquipped } from './gear.js';
 import { addExp } from './character.js';
 import { gateSpots } from './world.js';
 import { buildWorld, zoneToWorld, freeSpot, roadRoute } from '../run/worldmap.js';
-import { OUTLAW, NEST } from '../data/questev.js';
+import { OUTLAW, NEST, RACE } from '../data/questev.js';
 import { WORLD } from '../data/worldmap.js';
 import { mulberry } from '../run/fieldmap.js';
 
@@ -349,7 +349,18 @@ export function eventOf(questId, step, s) {
     const route = roadRoute(buildWorld(), s.region, s.from, s.to ?? null);
     return { ...base, start: { x: route[0][0], y: route[0][1] }, route, look: s.look, outfit: s.outfit, title: s.title };
   }
+  if (s.event === 'race') { // rings along a stretch of road; medal times from its length
+    const route = roadRoute(buildWorld(), s.region, s.from, s.to ?? null);
+    let len = 0;
+    for (let i = 1; i < route.length; i++) len += Math.hypot(route[i][0] - route[i - 1][0], route[i][1] - route[i - 1][1]);
+    const step = Math.max(1, Math.round(RACE.every / Math.max(1, len / Math.max(1, route.length - 1))));
+    const rings = route.filter((_, i) => i % step === 0);
+    if (rings[rings.length - 1] !== route[route.length - 1]) rings.push(route[route.length - 1]);
+    const times = Object.fromEntries(Object.entries(RACE.pace).map(([m, v]) => [m, Math.round((len / v) * 10) / 10]));
+    return { ...base, start: { x: rings[0][0], y: rings[0][1] }, rings, times, len };
+  }
   const start = placeXY(`event:${key}`, s.region, s.at, s.event === 'nest' ? 200 : 120);
+  if (s.event === 'rescue') return { ...base, start, look: s.look, outfit: s.outfit, title: s.title };
   if (s.event === 'outlaw') { // the map shows only a circle, a little off where it lurks (fixed per quest)
     const flee = placeXY(`event:${key}:flee`, s.region, s.flee, 120);
     const off = (p, k) => { const a = (k * 2.399963) % (Math.PI * 2); return { x: p.x + Math.cos(a) * OUTLAW.hint * 0.45, y: p.y + Math.sin(a) * OUTLAW.hint * 0.45 }; };

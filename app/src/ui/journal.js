@@ -35,7 +35,7 @@ export function stepText(s) {
       if (s.enemy === '*') return t('Kumpulkan {n} {item} dari musuh di {r} pada malam hari', { n: s.n, item: DROP_ITEMS[s.item].name, r: regionById(s.region).name });
       return t('Kumpulkan {n} {item} dari {enemy} di {r}', { n: s.n, item: DROP_ITEMS[s.item].name, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name });
     case 'event': {
-      const text = { escort: 'Kawal {name} di {r}', defend: 'Pertahankan {name} di {r}', outlaw: 'Buru {name} di {r}', nest: 'Hancurkan {name} di {r}' }[s.event];
+      const text = { escort: 'Kawal {name} di {r}', defend: 'Pertahankan {name} di {r}', outlaw: 'Buru {name} di {r}', nest: 'Hancurkan {name} di {r}', rescue: 'Bebaskan {name} di {r}', race: 'Balapan {name} di {r}' }[s.event];
       return t(text, { name: s.name, r: regionById(s.region).name });
     }
     case 'guard': return s.lord ? t('Kalahkan Penguasa {r} (peti harta terakhir)', { r: regionById(s.region).name }) : t('Kalahkan {n} penjaga harta di {r}', { n: s.n || 1, r: regionById(s.region).name });

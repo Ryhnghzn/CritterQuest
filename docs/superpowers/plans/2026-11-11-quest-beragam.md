@@ -14,4 +14,8 @@
 - [x] B2 Sarang: musuh diam ber-HP (`e.nest`), mengirim musuh berkala (batas 14), gagal bila ditinggal; mesh sarang 3D.
 - [x] B3 4 quest (Si Ekor Merah, Lidah Bara, Sarang Gurun, Sarang Kawah) + kamus EN + tes.
 ## Bagian C — Penyelamatan & Balapan (2 + 2 quest; save v23 untuk rekor)
+- [x] C1 Save v23: `quests.choices`, `quests.races` + migrate() 22 + tes.
+- [x] C2 Penyelamatan: kamp (pagar, kandang), 6 penjaga (1 elite), kandang terbuka saat penjaga habis, masuk kandang = bebas.
+- [x] C3 Balapan: cincin di jalan utama tiap 900, waktu medali dari panjang rute (perunggu bisa jalan kaki, emas perlu mount), hadiah koin per medali, rekor di save, jam di layar.
+- [x] C4 4 quest (Ayah Kai, Murid Pandai Kaca, Jalur Pemburu, Balapan Kafilah) + kamus EN + tes.
 ## Bagian D — Pilihan (langkah `choice`, 2 quest) & Peristiwa dunia (3 jenis)

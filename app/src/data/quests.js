@@ -18,6 +18,8 @@
 //         defend { at: [fx, fy] of the zone }
 //         outlaw { at, flee: [fx, fy], enemy?: its kind } — a named elite that flees once
 //         nest   { at, n } — n nests round the place, each sending enemies until destroyed
+//         rescue { at, title, look, outfit } — a camp: beat its guards, then open the cage
+//         race   { from, to?: fx on the zone's main road } — rings against the clock (medals)
 // A talk / give in the wild uses town 'wild' and the hidden person's id as npc.
 // reward: { gold, exp } are multipliers of QUEST_REWARD at the player's level; shard: a Pecahan
 // Segel; gear: { rarity } a piece at the player's level; gems: [{ gem?, tier }] (random gem when
@@ -368,5 +370,26 @@ export const SIDE = [
     { kind: 'event', event: 'nest', region: 'volcano', at: [0.62, 0.5], n: 5, name: 'Sarang Kawah' },
     { kind: 'talk', town: 'bara', npc: 'folk4', who: 'Vesta', say: 'Asapnya mereda. Kau menyelamatkan kota ini lebih dari yang kau tahu.' },
   ], reward: { gold: 9, exp: 9, marks: 5, mats: { core: 3 } } },
+  // free a captive from a guarded camp; race the rings along a road (spec §42)
+  { id: 'r_kai', title: 'Ayah Kai', steps: [
+    { kind: 'talk', town: 'beku', npc: 'folk2', who: 'Kai', say: 'Ayahku pergi berburu dan tidak pulang. Kata orang, makhluk es membawanya ke kamp mereka di utara danau. Tolong, bawa Ayah pulang!' },
+    { kind: 'event', event: 'rescue', region: 'ice', at: [0.38, 0.22], name: 'Ayah Kai', title: 'Pemburu', look: L(1, 2), outfit: ['#7a5a3a', '#54402a'] },
+    { kind: 'talk', town: 'beku', npc: 'folk2', who: 'Kai', say: 'AYAH! Ayah pulang! Kakak benar-benar pahlawan. Ini, kelereng es kesayanganku. Ambil saja!' },
+  ], reward: { gold: 5, exp: 6, marks: 4, gems: [{ tier: 2 }] } },
+  { id: 'r_seruni', title: 'Murid Pandai Kaca', steps: [
+    { kind: 'talk', town: 'bara', npc: 'folk1', who: 'Seruni', say: 'Muridku mencari pasir kaca di lereng dan ditangkap gerombolan makhluk api. Mereka mengurungnya di kamp dekat kawah. Bebaskan dia!' },
+    { kind: 'event', event: 'rescue', region: 'volcano', at: [0.3, 0.35], name: 'Murid Seruni', title: 'Peniup Kaca', look: L(2, 4), outfit: ['#d6603a', '#a83e26'] },
+    { kind: 'talk', town: 'bara', npc: 'folk1', who: 'Seruni', say: 'Ia pulang dengan pipi gosong tapi selamat. Terima kasih. Kaca terbaikku, untukmu.' },
+  ], reward: { gold: 9, exp: 9, marks: 5, gear: { rarity: 3 } } },
+  { id: 'c_raka', title: 'Jalur Pemburu', steps: [
+    { kind: 'talk', town: 'rimba', npc: 'folk0', who: 'Raka', say: 'Pemburu sejati tahu jalan hutan secepat angin. Ikuti cincin cahaya di jalan utama, sebelum waktunya habis. Dengan tunggangan, lebih seru!' },
+    { kind: 'event', event: 'race', region: 'forest', from: 0.2, to: 0.55, name: 'Jalur Pemburu' },
+    { kind: 'talk', town: 'rimba', npc: 'folk0', who: 'Raka', say: 'Cepat juga kau! Catatanmu kutulis di papan pemburu. Coba kalahkan sendiri lain kali.' },
+  ], reward: { gold: 3, exp: 4, marks: 3, potions: { wind: 3 } } },
+  { id: 'c_ali', title: 'Balapan Kafilah', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'folk2', who: 'Ali', say: 'Setiap tahun ada balapan di jalan kafilah! Lewati semua cincin cahaya secepat mungkin. Kalau dapat emas, aku traktir kurma!' },
+    { kind: 'event', event: 'race', region: 'desert', from: 0.3, to: 0.65, name: 'Jalur Kafilah' },
+    { kind: 'talk', town: 'pasir', npc: 'folk2', who: 'Ali', say: 'Wuih, debunya sampai ke sini! Hebat! Ini kurmanya… eh, maksudku hadiahnya.' },
+  ], reward: { gold: 5, exp: 5, marks: 3, potions: { wind: 2, rage: 2 } } },
 ];
 export const QUEST_IDS = [...MAIN_IDS, ...SIDE.map((q) => q.id)];

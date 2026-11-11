@@ -21,7 +21,7 @@ import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts, storyMounts } from './stable.js';
 
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -124,6 +124,8 @@ export const MIGRATIONS = {
   },
   // v22 (spec §40): one connected world — one fog for the world (the old regions' fog no longer
   // fits), regions only mark the zones set foot in.
+  // v23 (spec §42): varied quests — the answer picked in a choice step, the best race times.
+  22: (d) => ({ ...d, version: 23, quests: isObj(d.quests) ? { ...d.quests, choices: {}, races: {} } : d.quests }),
   21: (d) => ({
     ...d, version: 22,
     world: isObj(d.world) ? { ...d.world, fog: '' } : d.world,
@@ -141,7 +143,7 @@ export const freshTalents = () => Object.fromEntries(TALENT_IDS.map((id) => [id,
 export const freshMats = () => Object.fromEntries(MAT_IDS.map((id) => [id, 0]));
 export const freshGems = () => Object.fromEntries(GEM_IDS.map((id) => [id, Array(GEM_TIERS).fill(0)]));
 
-export const freshQuests = () => ({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null });
+export const freshQuests = () => ({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null, choices: {}, races: {} });
 
 export const freshDungeonRecords = () => Object.fromEntries(DUNGEON_IDS.map((id) => [id, { bestFloor: 0, clears: 0 }]));
 
@@ -255,7 +257,9 @@ export function validateSlot(d) {
     && (q.main.ch === MAIN.length ? q.main.step === 0 : isInt(q.main.step, 0, MAIN[q.main.ch].steps.length - 1))
     && isObj(q.side) && Object.entries(q.side).every(([id, st]) => sideDef(id) && isObj(st) && isInt(st.step, 0, sideDef(id).steps.length - 1) && isInt(st.prog, 0))
     && Array.isArray(q.done) && q.done.every((id) => QUEST_IDS.includes(id)) && new Set(q.done).size === q.done.length
-    && (q.track === null || QUEST_IDS.includes(q.track)), 'quests');
+    && (q.track === null || QUEST_IDS.includes(q.track))
+    && isObj(q.choices) && Object.entries(q.choices).every(([id, i]) => QUEST_IDS.includes(id) && isInt(i, 0, 3))
+    && isObj(q.races) && Object.entries(q.races).every(([id, sec]) => QUEST_IDS.includes(id) && typeof sec === 'number' && sec > 0 && Number.isFinite(sec)), 'quests');
   need(isObj(d.treasures) && Object.entries(d.treasures).every(([id, list]) => REGION_IDS.includes(id) && Array.isArray(list)
     && list.every((i) => isInt(i, 0, TREASURE.count - 1)) && new Set(list).size === list.length), 'treasures');
   need(isObj(d.shops) && Object.entries(d.shops).every(([k, v]) => /^[a-z]+:[a-z]+$/.test(k) && TOWN_IDS.includes(k.split(':')[0])

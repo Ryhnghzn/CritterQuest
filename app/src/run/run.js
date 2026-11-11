@@ -136,7 +136,7 @@ export class Game {
     this.time = 0; this.kills = 0;
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
     this.questItems = {}; this.reached = []; this.questSpots = []; this.questDrops = []; this.hidden = []; this.nearHidden = null; // quests (spec §26.5)
-    this.events = []; this.eventsDone = []; // quest events in the world (spec §42, run/questev.js)
+    this.events = []; this.eventsDone = []; this.raceTimes = []; // quest events in the world (spec §42, run/questev.js)
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
@@ -184,7 +184,7 @@ export class Game {
   takeProgress() {
     const out = {
       exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy },
-      questItems: { ...this.questItems }, reached: this.reached.splice(0), events: this.eventsDone.splice(0),
+      questItems: { ...this.questItems }, reached: this.reached.splice(0), events: this.eventsDone.splice(0), races: this.raceTimes.splice(0),
       items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions }, mountRolls: { ...this.mountRolls },
     };
     this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.questItems = {};

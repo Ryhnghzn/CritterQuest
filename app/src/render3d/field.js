@@ -26,13 +26,42 @@ import { actor, tag } from '../render/paint.js';
 import { t as tf } from '../i18n.js';
 import { FIELD, TOWNS, regionById } from '../data/world.js';
 import { chunkProps } from './fieldprops.js';
-import { START_R, DEFEND } from '../data/questev.js';
+import { START_R, DEFEND, RESCUE } from '../data/questev.js';
+import { MEDAL } from '../run/questev.js';
 import { zoneAt, inHub, chunksNear } from '../run/worldmap.js';
 import { dungeonById } from '../data/dungeons.js';
 import { skyAt } from '../meta/clock.js';
 import { SHAKE_PX } from '../data/fx.js';
 
 const TAU = Math.PI * 2;
+// a camp (spec §42): a ring of stakes round a wooden cage whose door lifts when the guards fall
+function campMesh() {
+  const G = new THREE.Group(), wood = new THREE.MeshLambertMaterial({ color: 0x5a3d25 }), dark = new THREE.MeshLambertMaterial({ color: 0x3a2616 });
+  for (let i = 0; i < 18; i++) { // the fence (open toward the south)
+    if (i === 4 || i === 5) continue;
+    const a = (i / 18) * Math.PI * 2, st = new THREE.Mesh(new THREE.CylinderGeometry(4 * S, 5 * S, 60 * S, 5), dark);
+    st.position.set(Math.cos(a) * RESCUE.fence * S, 30 * S, Math.sin(a) * RESCUE.fence * S); st.rotation.z = Math.cos(a) * 0.12; G.add(st);
+  }
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(90 * S, 8 * S, 70 * S), wood); roof.position.y = 96 * S; G.add(roof);
+  for (const [x, z] of [[-42, -32], [42, -32], [-42, 32], [42, 32]]) { const p = new THREE.Mesh(new THREE.BoxGeometry(8 * S, 96 * S, 8 * S), wood); p.position.set(x * S, 48 * S, z * S); G.add(p); }
+  for (let i = -3; i <= 3; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(2.4 * S, 2.4 * S, 92 * S, 5), dark); b.position.set(i * 12 * S, 46 * S, -32 * S); G.add(b); } // back bars
+  const door = new THREE.Group(); // the front bars, raised when unlocked
+  for (let i = -3; i <= 3; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(2.4 * S, 2.4 * S, 92 * S, 5), dark); b.position.set(i * 12 * S, 46 * S, 34 * S); door.add(b); }
+  G.add(door); G.userData.door = door;
+  const fire = new THREE.Mesh(new THREE.PlaneGeometry(160 * S, 160 * S), additive(new THREE.Color(0xff9a40), 0.35, glowTex()));
+  fire.rotation.x = -Math.PI / 2; fire.position.set(150 * S, 0.06, 120 * S); G.add(fire);
+  return G;
+}
+// a race ring (spec §42): an upright hoop of light facing the camera
+function ringMesh() {
+  const G = new THREE.Group();
+  const band = new THREE.Mesh(new THREE.TorusGeometry(70 * S, 7 * S, 8, 32), additive(new THREE.Color(0xffd24a).multiplyScalar(1.4), 0.9));
+  band.position.y = 80 * S; G.add(band);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(180 * S, 180 * S), additive(new THREE.Color(0xffd24a), 0.3, glowTex()));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = 0.06; G.add(glow);
+  G.userData.band = band;
+  return G;
+}
 // a quest nest (spec §42): a dark mound ringed with spines round a pulsing core
 function nestMesh() {
   const G = new THREE.Group();
@@ -444,6 +473,11 @@ export class Field25 {
       if (ev.kind === 'escort') this.cards.push(this.card({ walker: ev, x: ev.npc.x, y: ev.npc.y, look: { ...ev.look, outfit: ev.outfit }, who: { name: ev.name, title: ev.title, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 }));
       if (ev.kind === 'defend') { const m = altarMesh(); m.position.set(ev.altar.x * S, 0, ev.altar.y * S); m.userData.ev = ev; P.add(m); }
       if (ev.kind === 'nest') ev.spots.forEach((p, i) => { const m = nestMesh(); m.position.set(p.x * S, 0, p.y * S); m.userData.nest = { ev, i }; P.add(m); });
+      if (ev.kind === 'rescue') {
+        const m = campMesh(); m.position.set(ev.start.x * S, 0, ev.start.y * S); m.userData.camp = ev; P.add(m);
+        this.cards.push(this.card({ captive: ev, x: ev.start.x, y: ev.start.y + 6, look: { ...ev.look, outfit: ev.outfit }, who: { name: ev.name, title: ev.title, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 }));
+      }
+      if (ev.kind === 'race') ev.rings.forEach(([x, y], i) => { const m = ringMesh(); m.position.set(x * S, 0, y * S); m.userData.ring = { ev, i }; P.add(m); });
     }
   }
   card(o) {
@@ -465,7 +499,7 @@ export class Field25 {
     g.setTransform(k, 0, 0, k, (cd.w / 2 - cd.x) * k, (cd.top - cd.y) * k);
     g.lineJoin = 'round';
     const figure = (fg) => { // the person on the card (guard / hidden NPC / escorted walker)
-      if (cd.walker) { cd.pose.t = t; actor(fg, cd.x, cd.y, null, cd.look, cd.pose, cd.face); return; }
+      if (cd.walker || cd.captive) { cd.pose.t = t; actor(fg, cd.x, cd.y, null, cd.look, cd.pose, cd.face || 1); return; }
       if (cd.guard) {
         if (!LOOK.anime) { drawGuard(fg, cd.guard, t); return; }
         const gd = cd.guard; // anime: the gate guard is the townsfolk 'guard' (helm, spear), not a warrior hero
@@ -492,7 +526,7 @@ export class Field25 {
       g.restore();
     } else figure(g);
     if (cd.home) tag(g, cd.who, cd.x, cd.y, t, game.nearHidden === cd.home, cd.home.mark);
-    if (cd.walker) tag(g, cd.who, cd.x, cd.y, t, false, null);
+    if (cd.walker || cd.captive) tag(g, cd.who, cd.x, cd.y, t, false, null);
     cd.tex.needsUpdate = true;
     const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home?.scale || 1);
     cd.mesh.position.set(cd.x * S, (feet - (cd.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
@@ -758,6 +792,17 @@ export class Field25 {
       u.core.material.color.setRGB(hit ? 1 : 0.85, hit ? 1 : 0.25, hit ? 1 : 0.9);
       u.glow.material.opacity = (ev.state === 'run' ? 0.5 : 0.25) + Math.sin(t * 3 + i) * 0.1;
     }
+    for (const m of this.homeGroup.children) { // a camp's cage door; race rings: only those ahead, the next one bright
+      if (m.userData.camp) { const ev = m.userData.camp, open = ev.unlocked || ev.state === 'done'; m.userData.door.position.y = (open ? 70 : 0) * S; m.userData.door.visible = ev.state !== 'done'; }
+      const rr = m.userData.ring;
+      if (!rr) continue;
+      const { ev, i } = rr, next = ev.state === 'run' ? ev.ring : 0;
+      m.visible = ev.state !== 'done' && (ev.state === 'run' ? i >= next : i === 0);
+      if (!m.visible) continue;
+      const on = i === next, k = on ? 1 + Math.sin(t * 5) * 0.08 : 0.8;
+      m.scale.setScalar(k); m.rotation.y = this.stage.yaw;
+      m.userData.band.material.opacity = on ? 0.95 : 0.35;
+    }
     for (const cd of this.cards) { // walkers move every frame, not only when repainted
       if (!cd.walker) continue;
       const n = cd.walker.npc, feet = n.y + 10;
@@ -767,7 +812,7 @@ export class Field25 {
     const every = lite ? 4 : 2;
     for (let i = 0; i < this.cards.length; i++) {
       const cd = this.cards[i], d2 = (cd.x - this.camX) ** 2 + (cd.y - this.camY) ** 2;
-      cd.mesh.visible = d2 < 1100 * 1100 && !(cd.walker && cd.walker.state === 'done');
+      cd.mesh.visible = d2 < 1100 * 1100 && !(cd.walker && cd.walker.state === 'done') && !(cd.captive && cd.captive.state === 'done');
       if (cd.mesh.visible && ((this.frame + i) % every === 0 || !cd.c.width)) this.paintCard(cd, game, t, lite);
     }
   }
@@ -794,7 +839,7 @@ export class Field25 {
       g.beginPath(); g.ellipse(x - e.r * 0.2, y - e.r * 0.15, e.r * 0.6, e.r * 0.25, 0, 0, TAU); g.fillStyle = 'rgba(220,180,120,.45)'; g.fill();
     }
     for (const ev of game.events || []) { // where a quest event starts (spec §42): a turning ring of gold
-      if (ev.kind === 'outlaw' || ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue;
+      if (ev.kind === 'outlaw' || ev.kind === 'race' || ev.kind === 'rescue' || ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue;
       const pulse = 0.5 + 0.5 * Math.sin(t * 3);
       g.save(); g.translate(ev.start.x, ev.start.y); g.scale(1, 0.7);
       g.setLineDash([18, 12]); g.lineDashOffset = -t * 30; g.lineWidth = 4; g.strokeStyle = `rgba(255,210,74,${(0.55 + pulse * 0.35).toFixed(2)})`;
@@ -839,6 +884,15 @@ export class Field25 {
         g.fillStyle = 'rgba(255,210,74,.9)'; g.fillRect(p.x - w / 2, p.y + 6, w * Math.min(1, ev.t / DEFEND.time), 1.5);
       }
       if (ev.npc?.waiting) { g.font = '600 12px Barlow, system-ui, sans-serif'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(10,8,20,.9)'; g.strokeText(tf('menunggumu…'), p.x, p.y - 6); g.fillStyle = '#f3e2b8'; g.fillText(tf('menunggumu…'), p.x, p.y - 6); }
+    }
+    const race = game.state !== 0 && (game.events || []).find((e) => e.kind === 'race' && e.state === 'run');
+    if (race) { // the race clock, top centre
+      const g = this.view.ctx, dpr = this.view.c.width / innerWidth, x = innerWidth / 2, y = 64;
+      const goal = race.t <= race.times.gold ? ['gold', '#ffd24a'] : race.t <= race.times.silver ? ['silver', '#d8dce8'] : ['bronze', '#d08a4a'];
+      const text = `${race.t.toFixed(1)} s  ·  ${tf(MEDAL[goal[0]])} ≤ ${race.times[goal[0]].toFixed(0)} s  ·  ${race.ring}/${race.rings.length - 1}`;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.font = '700 18px Barlow, system-ui, sans-serif'; g.textAlign = 'center'; g.lineWidth = 4; g.strokeStyle = 'rgba(10,8,20,.9)';
+      g.strokeText(text, x, y); g.fillStyle = goal[1]; g.fillText(text, x, y);
     }
     const gt = game.nearGate;
     if (!gt || game.state === 0) return;

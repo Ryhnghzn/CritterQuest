@@ -114,6 +114,10 @@ export function applyField(char, part, now, rng = Math.random) {
   }
   if (part.region && regionById(part.region) && !c.regions[part.region]) c.regions = { ...c.regions, [part.region]: {} };
   if (typeof part.fog === 'string') c.world = { ...c.world, fog: part.fog };
+  for (const r of part.races || []) { // best race times (spec §42)
+    const best = c.quests.races?.[r.quest];
+    c.quests.races = { ...c.quests.races, [r.quest]: best ? Math.min(best, r.sec) : r.sec };
+  }
   countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, events: part.events, region: part.region });
   const mountsFound = rollMountDrops(c, part.mountRolls || { any: 0, eclipse: 0 }, rng);
   c.updatedAt = now;

@@ -320,7 +320,7 @@ export const NPC_LINE_EN = {
 
 // quests (spec §26): titles and what people say, keyed by the Indonesian text
 // the people and places of quest events (spec §42)
-const EVENT_EN = { 'Si Ekor Merah': 'Redtail', 'Lidah Bara': 'Embertongue', 'Sarang Gurun': 'the Desert Nests', 'Sarang Kawah': 'the Crater Nests', 'Peziarah Tua': 'Old Pilgrim', Peziarah: 'Pilgrim', 'Murid Liv': "Liv's Apprentice", 'Pemahat Muda': 'Young Sculptor', 'Pos Jaga': 'the Watchpost', 'Altar Cahaya': 'the Altar of Light' };
+const EVENT_EN = { 'Ayah Kai': "Kai's Father", Pemburu: 'Hunter', 'Murid Seruni': "Seruni's Apprentice", 'Peniup Kaca': 'Glassblower', 'Jalur Pemburu': "the Hunter's Trail", 'Jalur Kafilah': 'the Caravan Road', 'Si Ekor Merah': 'Redtail', 'Lidah Bara': 'Embertongue', 'Sarang Gurun': 'the Desert Nests', 'Sarang Kawah': 'the Crater Nests', 'Peziarah Tua': 'Old Pilgrim', Peziarah: 'Pilgrim', 'Murid Liv': "Liv's Apprentice", 'Pemahat Muda': 'Young Sculptor', 'Pos Jaga': 'the Watchpost', 'Altar Cahaya': 'the Altar of Light' };
 const QUEST_TITLE_EN = {
   "Bayangan di Bawah Tanah": "Shadows Below",
   "Gerhana": "Eclipse",
@@ -336,6 +336,10 @@ const QUEST_TITLE_EN = {
   "Buronan: Lidah Bara": "Wanted: Embertongue",
   "Sarang di Bukit Pasir": "Nests in the Dunes",
   "Sarang di Lubang Kawah": "Nests in the Crater Holes",
+  "Ayah Kai": "Kai's Father",
+  "Murid Pandai Kaca": "The Glassmaker's Apprentice",
+  "Jalur Pemburu": "The Hunter's Trail",
+  "Balapan Kafilah": "The Caravan Race",
 };
 export const QUEST_LINE_EN = {
   "Lima pecahan… Hangatnya terasa sampai ke tulangku. Tapi lihat langit di timur, Nak. Gerhana itu tidak menunggu. Retakan sudah terbuka di balik Baraapi: Tanah Gerhana. Di ujungnya berdiri menaranya. Pergilah, dan akhiri ini.": "Five shards… I can feel their warmth in my bones. But look at the eastern sky, child. The eclipse will not wait. A rift has opened beyond Emberfall: the Eclipse Lands. Its spire stands at the far end. Go, and end this.",
@@ -366,6 +370,14 @@ export const QUEST_LINE_EN = {
   "Bukitnya sunyi sekarang. Aku bisa lewat tanpa takut. Terima kasih, ini untuk perjalananmu.": "The dune is quiet now. I can pass without fear. Thank you, this is for your travels.",
   "Lubang-lubang di kaki gunung berubah jadi sarang. Kalau dibiarkan, Baraapi akan dikepung. Lima sarang, hancurkan semuanya!": "The holes at the foot of the mountain have turned into nests. Left alone, Emberfall will be surrounded. Five nests, destroy them all!",
   "Asapnya mereda. Kau menyelamatkan kota ini lebih dari yang kau tahu.": "The smoke is clearing. You saved this town more than you know.",
+  "Ayahku pergi berburu dan tidak pulang. Kata orang, makhluk es membawanya ke kamp mereka di utara danau. Tolong, bawa Ayah pulang!": "My dad went hunting and never came back. People say the ice creatures took him to their camp north of the lake. Please, bring Dad home!",
+  "AYAH! Ayah pulang! Kakak benar-benar pahlawan. Ini, kelereng es kesayanganku. Ambil saja!": "DAD! Dad's home! You're a real hero. Here, my favourite ice marble. You can have it!",
+  "Muridku mencari pasir kaca di lereng dan ditangkap gerombolan makhluk api. Mereka mengurungnya di kamp dekat kawah. Bebaskan dia!": "My apprentice went looking for glass sand on the slope and was taken by a band of fire creatures. They locked her in a camp near the crater. Free her!",
+  "Ia pulang dengan pipi gosong tapi selamat. Terima kasih. Kaca terbaikku, untukmu.": "She came home with sooty cheeks, but safe. Thank you. My finest glasswork, for you.",
+  "Pemburu sejati tahu jalan hutan secepat angin. Ikuti cincin cahaya di jalan utama, sebelum waktunya habis. Dengan tunggangan, lebih seru!": "A true hunter knows the forest roads as fast as the wind. Follow the rings of light along the main road before time runs out. Even better on a mount!",
+  "Cepat juga kau! Catatanmu kutulis di papan pemburu. Coba kalahkan sendiri lain kali.": "You're quick! I'll write your time on the hunters' board. Try to beat it yourself next time.",
+  "Setiap tahun ada balapan di jalan kafilah! Lewati semua cincin cahaya secepat mungkin. Kalau dapat emas, aku traktir kurma!": "Every year there's a race on the caravan road! Pass every ring of light as fast as you can. If you get gold, the dates are on me!",
+  "Wuih, debunya sampai ke sini! Hebat! Ini kurmanya… eh, maksudku hadiahnya.": "Whoa, the dust reached all the way here! Amazing! Here are the dates… er, I mean your prize.",
 };
 
 // side quests & people in the wild (spec §26.5)

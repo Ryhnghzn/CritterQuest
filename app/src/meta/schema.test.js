@@ -232,7 +232,7 @@ describe('save versi 2', () => {
     delete v16.quests;
     const r = readSlot(v16);
     expect(r.status).toBe('ok');
-    expect(r.data.quests).toEqual({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null });
+    expect(r.data.quests).toEqual({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null, choices: {}, races: {} });
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, main: { ch: 0, step: 99, prog: 0 } } })).toContain('quests');
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, done: ['mars'] } })).toContain('quests');
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, side: { mars: { step: 0, prog: 0 } } } })).toContain('quests');
@@ -269,9 +269,19 @@ describe('save versi 2', () => {
     const { mounts, ...rest } = structuredClone(fresh());
     const r = readSlot({ ...rest, version: 20 });
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(22);
+    expect(r.data.version).toBe(23);
     expect(r.data.mounts).toEqual({ owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } });
     expect(validateSlot(r.data)).toEqual([]);
+  });
+
+  it('migrasi v22 → v23: jawaban pilihan & rekor balapan kosong (§42)', () => {
+    const v22 = structuredClone(fresh());
+    v22.version = 22; delete v22.quests.choices; delete v22.quests.races;
+    const r = readSlot(v22);
+    expect(r.status).toBe('ok');
+    expect(r.data.quests.choices).toEqual({});
+    expect(r.data.quests.races).toEqual({});
+    expect(validateSlot({ ...r.data, quests: { ...r.data.quests, races: { mars: 3 } } })).toContain('quests');
   });
 
   it('migrasi v21 → v22: satu kabut dunia, wilayah jadi penanda', () => {

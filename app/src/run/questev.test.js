@@ -167,3 +167,50 @@ describe('quest event: Buronan & Sarang (§42)', async () => {
     expect(h.enemies.filter((e) => e.ev === e2.key)).toHaveLength(0);
   });
 });
+
+describe('quest event: Penyelamatan & Balapan (§42)', async () => {
+  const { RESCUE, RACE } = await import('../data/questev.js');
+  const { raceMedal } = await import('./questev.js');
+  const { applyField } = await import('../meta/world.js');
+  it('kamp: penjaga muncul, kandang terkunci sampai semua tumbang, lalu dibuka → berhasil', () => {
+    const g = game(), d = evOf('r_kai');
+    setEvents(g, [d]);
+    const ev = g.events[0];
+    g.px = d.start.x + RESCUE.near - 50; g.py = d.start.y; run(g, 0.1);
+    expect(ev.state).toBe('run');
+    expect(ev.guards).toHaveLength(RESCUE.guards);
+    g.px = d.start.x; g.py = d.start.y; run(g, 0.2);
+    expect(ev.state).toBe('run'); // still locked
+    for (const e of ev.guards) e.hp = 0;
+    run(g, 0.3);
+    expect(ev.state).toBe('done');
+    expect(g.eventsDone).toEqual([d.key]);
+  });
+  it('balapan: cincin di sepanjang jalan, medali dari waktu, rekor tersimpan; terlalu lambat → gagal', () => {
+    const d = evOf('c_raka');
+    expect(d.rings.length).toBeGreaterThan(4);
+    expect(d.times.gold).toBeLessThan(d.times.silver);
+    expect(d.times.silver).toBeLessThan(d.times.bronze);
+    expect(raceMedal(d, d.times.gold - 1)).toBe('gold');
+    expect(raceMedal(d, d.times.bronze + 1)).toBe(null);
+    const g = game();
+    setEvents(g, [d]);
+    const ev = g.events[0];
+    g.px = d.start.x; g.py = d.start.y; run(g, 0.1);
+    expect(ev.state).toBe('run');
+    const gold0 = g.gold;
+    for (let i = 1; i < d.rings.length; i++) { g.px = d.rings[i][0]; g.py = d.rings[i][1]; run(g, 1 / 60); }
+    expect(ev.state).toBe('done');
+    expect(ev.medal).toBe('gold');
+    expect(g.gold).toBeGreaterThan(gold0);
+    const c = createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'warrior' }, 1);
+    const r = applyField(c, { ...g.takeProgress(), region: 'forest', potions: c.potions }, 2);
+    expect(r.char.quests.races.c_raka).toBeLessThan(d.times.gold);
+    const h = game();
+    setEvents(h, [d]);
+    h.px = d.start.x; h.py = d.start.y; run(h, 0.1);
+    run(h, d.times.bronze + 1, () => { h.enemies.length = 0; });
+    expect(h.events[0].state).toBe('wait');
+    expect(RACE.ringR).toBeGreaterThan(0);
+  });
+});

@@ -6,7 +6,8 @@
 // sent at the walker / altar carry e.target. Pure logic on the run state (run/run.js).
 import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
-import { START_R, RETRY_AFTER, TOUCH, ESCORT, DEFEND, OUTLAW, NEST } from '../data/questev.js';
+import { START_R, RETRY_AFTER, TOUCH, ESCORT, DEFEND, OUTLAW, NEST, RESCUE, RACE } from '../data/questev.js';
+import { QUEST_REWARD } from '../data/quests.js';
 import { blocked, zoneAt } from './worldmap.js';
 import { spawnGroup } from './field.js';
 
@@ -33,6 +34,8 @@ function resetEvent(ev) {
   if (ev.kind === 'defend') { ev.altar = { x: ev.start.x, y: ev.start.y, hp: 1, maxHp: 1, hurtT: 0 }; }
   if (ev.kind === 'outlaw') { ev.foe = null; ev.fled = false; ev.fleeT = 0; ev.lurk = ev.start; }
   if (ev.kind === 'nest') ev.nests = [];
+  if (ev.kind === 'rescue') { ev.unlocked = false; ev.guards = []; }
+  if (ev.kind === 'race') { ev.ring = 1; ev.medal = null; }
 }
 
 function clearFoes(run, ev) {
@@ -61,6 +64,18 @@ function begin(run, ev) {
     });
     run.showBanner(t('Hancurkan {name}!', { name: ev.name }));
   }
+  if (ev.kind === 'rescue') { // the guards rise round the cage
+    const zone = zoneAt(run.fmap, ev.start.x, ev.start.y);
+    for (let i = 0; i < RESCUE.guards; i++) {
+      const a = (i / RESCUE.guards) * Math.PI * 2, p = { x: ev.start.x + Math.cos(a) * 170, y: ev.start.y + Math.sin(a) * 170 };
+      const [e] = spawnGroup(run, p.x, p.y, 1, zone);
+      e.hp *= RESCUE.guardHp; e.maxHp = e.hp; e.ev = ev.key; e.mini = true;
+      if (i < RESCUE.eliteGuards) { e.elite = true; e.hp *= 3; e.maxHp = e.hp; e.r *= 1.3; }
+      ev.guards.push(e);
+    }
+    run.showBanner(t('Kalahkan penjaga kamp, lalu bebaskan {name}!', { name: ev.name }));
+  }
+  if (ev.kind === 'race') run.showBanner(t('Balapan dimulai! Lewati semua cincin cahaya.'));
 }
 
 function fail(run, ev, why) {
@@ -192,9 +207,44 @@ function stepNest(run, ev, dt) {
   if (ev.away > NEST.leaveT) fail(run, ev, t('Kamu meninggalkan {name}.', { name: ev.name }));
 }
 
+function stepRescue(run, ev, dt) {
+  if (!ev.unlocked && !ev.guards.some((e) => alive(run, e))) { ev.unlocked = true; run.showBanner(t('Penjaga tumbang! Buka kandangnya.')); }
+  if (ev.unlocked && (run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2 < RESCUE.openR * RESCUE.openR) {
+    ev.freedAt = { x: ev.start.x, y: ev.start.y }; // the captive runs off home (drawn by the field)
+    succeed(run, ev);
+    run.showBanner(t('{name} bebas! Ia berlari pulang.', { name: ev.name }));
+    return;
+  }
+  const far = (run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2 > RESCUE.leave * RESCUE.leave;
+  ev.away = far ? ev.away + dt : 0;
+  if (ev.away > RESCUE.leaveT) fail(run, ev, t('Kamu meninggalkan {name}.', { name: ev.name }));
+}
+
+// the medal a time earns on this course (null: too slow)
+export const raceMedal = (ev, sec) => (sec <= ev.times.gold ? 'gold' : sec <= ev.times.silver ? 'silver' : sec <= ev.times.bronze ? 'bronze' : null);
+
+function stepRace(run, ev, dt) {
+  ev.t += dt;
+  const [x, y] = ev.rings[ev.ring];
+  if ((run.px - x) ** 2 + (run.py - y) ** 2 < RACE.ringR * RACE.ringR) {
+    ev.ring++;
+    if (ev.ring >= ev.rings.length) { // the finish: a medal, a purse, the time kept
+      ev.medal = raceMedal(ev, ev.t);
+      const purse = Math.round((QUEST_REWARD.gold.base + QUEST_REWARD.gold.perLevel * run.level) * RACE.bonus[ev.medal]);
+      run.addGold(purse);
+      run.raceTimes.push({ quest: ev.quest, sec: Math.round(ev.t * 10) / 10 });
+      succeed(run, ev);
+      run.showBanner(t('Finis! {sec} detik · {medal}', { sec: ev.t.toFixed(1), medal: t(MEDAL[ev.medal]) }));
+      return;
+    }
+  }
+  if (ev.t > ev.times.bronze) fail(run, ev, t('Waktu habis! Kembali ke garis mulai untuk mencoba lagi.'));
+}
+export const MEDAL = { gold: 'Emas', silver: 'Perak', bronze: 'Perunggu' };
+
 const FAR = 2600; // an outlaw left this far behind slips away (and lurks again)
 // how close the player must come for an event to begin
-const reach = (ev) => (ev.kind === 'outlaw' ? OUTLAW.seen : ev.kind === 'nest' ? NEST.near : START_R);
+const reach = (ev) => (ev.kind === 'outlaw' ? OUTLAW.seen : ev.kind === 'nest' ? NEST.near : ev.kind === 'rescue' ? RESCUE.near : START_R);
 
 export function stepEvents(run, dt) {
   for (const ev of run.events || []) {
@@ -209,6 +259,8 @@ export function stepEvents(run, dt) {
     else if (ev.kind === 'defend') stepDefend(run, ev, dt);
     else if (ev.kind === 'outlaw') stepOutlaw(run, ev, dt);
     else if (ev.kind === 'nest') stepNest(run, ev, dt);
+    else if (ev.kind === 'rescue') stepRescue(run, ev, dt);
+    else if (ev.kind === 'race') stepRace(run, ev, dt);
   }
 }
 
@@ -222,6 +274,7 @@ export function eventPoint(ev) {
     const h = ev.lurk === ev.flee ? ev.fleeHint : ev.hint;
     return { x: h.x, y: h.y, hint: OUTLAW.hint };
   }
+  if (ev.kind === 'race' && ev.state === 'run') { const [x, y] = ev.rings[ev.ring]; return { x, y }; }
   return ev.start;
 }
 
