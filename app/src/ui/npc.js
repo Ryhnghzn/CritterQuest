@@ -23,6 +23,8 @@ import { questDef, shards } from '../meta/quests.js';
 import { rewardChips, giveLines } from './journal.js';
 import { SIDE_MAX } from '../data/quests.js';
 import { renderStableList, renderStableShop } from './stable.js';
+import { npcBust } from '../art/bust.js';
+import { LOOK } from '../data/look.js';
 import { tr, t, num } from '../i18n.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
@@ -76,7 +78,11 @@ function buildNpc(box, npc, ctx) {
   const role = el('span', 'pill', npc.title || tr(TITLES[npc.role]));
   role.style.setProperty('--c', npc.outfit[0]);
   info.append(el('div', 'nm', npc.name), role);
-  head.append(stage(npc.object ? iconCanvas('zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
+  if (!npc.object && LOOK.anime) { // a big chest-up portrait over the line, as if talking face to face
+    head.classList.add('bust');
+    head.style.setProperty('--c', npc.outfit[0]);
+    head.append(npcBust({ ...npc.look, outfit: npc.outfit }, 220), info);
+  } else head.append(stage(npc.object ? iconCanvas('zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
   // a quest step said here (spec §26.3) speaks first; the shop stays below it
   const offer = ctx.quests?.[0];
   side.append(head, el('div', 'npcline', `“${offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));

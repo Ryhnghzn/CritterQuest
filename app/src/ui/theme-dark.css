@@ -475,3 +475,14 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
   #prompt{min-height:59px}
   #belt{zoom:.96}
 }
+
+/* ═══════════ talk panel: a big chest-up portrait (ui/npc.js, art/bust.js) ═══════════ */
+#ui .npchead.bust{position:relative;display:block;align-self:stretch;height:220px;overflow:hidden;margin:-4px -4px 0;
+  background:radial-gradient(70% 90% at 50% 100%,color-mix(in srgb,var(--c) 45%,transparent),transparent 70%),linear-gradient(180deg,rgba(10,7,12,0),rgba(10,7,12,.35));
+  border-bottom:1px solid var(--cq-gold-d);animation:cq-bustin .35s ease-out both}
+#ui .npchead.bust canvas{position:absolute;left:50%;bottom:0;transform:translateX(-50%);transform-origin:50% 100%;animation:cq-breathe 3.2s ease-in-out infinite;image-rendering:pixelated}
+#ui .npchead.bust .info{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 8px;background:linear-gradient(180deg,transparent,rgba(8,6,10,.92) 60%);text-align:left}
+@keyframes cq-bustin{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes cq-breathe{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.012,1.018)}}
+@media (prefers-reduced-motion:reduce){#ui .npchead.bust,#ui .npchead.bust canvas{animation:none}}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#ui .npchead.bust{height:190px}}
