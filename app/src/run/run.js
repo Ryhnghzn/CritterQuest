@@ -178,7 +178,7 @@ export class Game {
     this.reset(setup);
     this.mount = freshMount(setup.mount || null);
     this.fog = setup.fog || null;
-    startField(this, setup.at, setup.gates, setup.target, setup.opened, setup.eclipseOpen);
+    startField(this, setup.at, setup.gates, setup.target, setup.opened, setup.eclipseOpen, setup.gate ?? null);
     this.state = ST.PLAY;
   }
 

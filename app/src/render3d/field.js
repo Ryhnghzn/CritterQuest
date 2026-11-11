@@ -27,6 +27,7 @@ import { t as tf } from '../i18n.js';
 import { FIELD, TOWNS, regionById } from '../data/world.js';
 import { chunkProps } from './fieldprops.js';
 import { START_R, DEFEND, RESCUE, HAPPEN } from '../data/questev.js';
+import { WORLD, ECLIPSE, CROSS_BLEND } from '../data/worldmap.js';
 import { MEDAL } from '../run/questev.js';
 import { zoneAt, inHub, chunksNear } from '../run/worldmap.js';
 import { dungeonById } from '../data/dungeons.js';
@@ -34,6 +35,62 @@ import { skyAt } from '../meta/clock.js';
 import { SHAKE_PX } from '../data/fx.js';
 
 const TAU = Math.PI * 2;
+// a town's wall (spec §40 C3): a ring of stone with crenels and towers, open at its gates, and the
+// roofs of the houses showing over it. gates: the angles of the openings (radians, world x/y)
+const WALL_STYLE = {
+  forest: { stone: 0x6a6458, roof: [0x8a3a2a, 0x6a2a20, 0x4a5a2a] }, ice: { stone: 0x8a96a8, roof: [0x2a4a6a, 0x3a3a5a, 0xa8b8c8] },
+  desert: { stone: 0xb08a5a, roof: [0xc8a070, 0x8a5a3a, 0xd8c8a8] }, volcano: { stone: 0x4a3a34, roof: [0x5a2a1a, 0x2a2220, 0x7a3a1a] },
+  eclipse: { stone: 0x3a2e4a, roof: [0x4a2a6a, 0x2a1a3a, 0x6a4a8a] },
+};
+function townWallMesh(r, gates, biome, houses, seed) {
+  const G = new THREE.Group(), st = WALL_STYLE[biome] || WALL_STYLE.forest, stone = new THREE.MeshLambertMaterial({ color: st.stone });
+  const gap = 150 / r, n = Math.max(12, Math.round((Math.PI * 2 * r) / 70));
+  const near = (a) => gates.some((g) => Math.abs(Math.atan2(Math.sin(a - g), Math.cos(a - g))) < gap);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    if (near(a)) continue;
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(((Math.PI * 2 * r) / n + 4) * S, 64 * S, 22 * S), stone);
+    seg.position.set(Math.cos(a) * r * S, 32 * S, Math.sin(a) * r * S); seg.rotation.y = -a + Math.PI / 2; G.add(seg);
+    if (i % 2 === 0) { const cr = new THREE.Mesh(new THREE.BoxGeometry(14 * S, 12 * S, 24 * S), stone); cr.position.set(Math.cos(a) * r * S, 70 * S, Math.sin(a) * r * S); cr.rotation.y = -a + Math.PI / 2; G.add(cr); }
+    if (i % Math.max(3, Math.round(n / 8)) === 0) {
+      const tw = new THREE.Mesh(new THREE.CylinderGeometry(26 * S, 30 * S, 96 * S, 8), stone); tw.position.set(Math.cos(a) * r * S, 48 * S, Math.sin(a) * r * S); G.add(tw);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(32 * S, 40 * S, 8), new THREE.MeshLambertMaterial({ color: st.roof[0] })); cap.position.set(Math.cos(a) * r * S, 116 * S, Math.sin(a) * r * S); G.add(cap);
+    }
+  }
+  for (let i = 0; i < houses; i++) { // roofs over the wall
+    const h1 = Math.sin((seed + i) * 12.9898) * 43758.5453, u = h1 - Math.floor(h1), h2 = Math.sin((seed + i) * 78.233) * 12543.123, v = h2 - Math.floor(h2);
+    const a = u * Math.PI * 2, d = (0.25 + v * 0.5) * r, w = 60 + v * 40;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w * S, 70 * S, w * 0.8 * S), new THREE.MeshLambertMaterial({ color: 0x5a4a3a }));
+    body.position.set(Math.cos(a) * d * S, 35 * S, Math.sin(a) * d * S); body.rotation.y = u * 3; G.add(body);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(w * 0.78 * S, 50 * S, 4), new THREE.MeshLambertMaterial({ color: st.roof[i % st.roof.length] }));
+    roof.position.set(Math.cos(a) * d * S, 95 * S, Math.sin(a) * d * S); roof.rotation.y = u * 3 + Math.PI / 4; G.add(roof);
+  }
+  return G;
+}
+// a stone bridge over the great river (spec §40 C1): an arched deck along local x, low walls
+function stoneBridgeMesh(len) {
+  const G = new THREE.Group(), stone = new THREE.MeshLambertMaterial({ color: 0x8a8478 }), dark = new THREE.MeshLambertMaterial({ color: 0x5a5650 });
+  const n = 9, w = 150;
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n, x = (k - 0.5) * len, y = Math.sin(k * Math.PI) * 26;
+    const deck = new THREE.Mesh(new THREE.BoxGeometry((len / n + 2) * S, 14 * S, w * S), stone); deck.position.set(x * S, (y + 7) * S, 0); G.add(deck);
+    for (const z of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry((len / n + 2) * S, 22 * S, 12 * S), dark); rail.position.set(x * S, (y + 24) * S, z * (w / 2 - 6) * S); G.add(rail); }
+  }
+  for (const x of [-0.5, 0.5]) for (const z of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(22 * S, 50 * S, 22 * S), dark); p.position.set(x * len * S, 25 * S, z * (w / 2 - 6) * S); G.add(p); }
+  return G;
+}
+// a rope bridge over the canyon: sagging planks, rope rails, posts at both ends
+function ropeBridgeMesh(len) {
+  const G = new THREE.Group(), wood = new THREE.MeshLambertMaterial({ color: 0x6a4a2a }), rope = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
+  const n = Math.round(len / 26), w = 110, sag = (k) => -Math.sin(k * Math.PI) * 24 + 10;
+  for (let i = 0; i < n; i++) { const k = (i + 0.5) / n, p = new THREE.Mesh(new THREE.BoxGeometry(18 * S, 5 * S, w * S), wood); p.position.set((k - 0.5) * len * S, sag(k) * S, 0); p.rotation.z = (i % 3 - 1) * 0.04; G.add(p); }
+  for (const z of [-1, 1]) {
+    const pts = []; for (let i = 0; i <= 16; i++) { const k = i / 16; pts.push(new THREE.Vector3((k - 0.5) * len * S, (sag(k) + 34) * S, z * (w / 2) * S)); }
+    G.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 1.6 * S, 4), rope));
+    for (const x of [-0.5, 0.5]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(5 * S, 6 * S, 64 * S, 6), wood); post.position.set(x * len * S, 32 * S, z * (w / 2) * S); G.add(post); }
+  }
+  return G;
+}
 // a camp (spec §42): a ring of stakes round a wooden cage whose door lifts when the guards fall
 function campMesh() {
   const G = new THREE.Group(), wood = new THREE.MeshLambertMaterial({ color: 0x5a3d25 }), dark = new THREE.MeshLambertMaterial({ color: 0x3a2616 });
@@ -322,15 +379,19 @@ export class Field25 {
       const lava = bl.kind === 'lava';
       G.add(new THREE.Mesh(riverRibbon([bl.pts], bl.half * 2 - 20), additive(lava ? new THREE.Color(0xff6a20).multiplyScalar(1.4) : new THREE.Color(0x5aa0c0), lava ? 0.5 : 0.14)));
     }
-    const crossBridges = map.crossings.filter((c) => c.kind === 'bridge' || c.kind === 'rope').map((c) => {
+    // the crossings (spec §40 C1): a stone bridge over the great river, a rope bridge over the canyon,
+    // each spanning the whole band along its normal; a signpost on each side naming the land ahead
+    for (const c of map.crossings) {
       const bl = map.borders.find((b) => b.id === c.border);
-      return { x: c.x, y: c.y, a: Math.atan2(bl.d[1], bl.d[0]), rope: c.kind === 'rope' };
-    });
-    for (const rope of [false, true]) {
-      const spots = crossBridges.filter((b) => b.rope === rope);
-      if (!spots.length) continue;
-      const br = bridgesMesh(spots, rope); // rope bridges over the canyon: dark planks
-      G.add(br);
+      if (c.kind === 'bridge' || c.kind === 'rope') {
+        const m = c.kind === 'rope' ? ropeBridgeMesh(bl.half * 2 + 160) : stoneBridgeMesh(bl.half * 2 + 140);
+        m.position.set(c.x * S, 0, c.y * S); m.rotation.y = -Math.atan2(bl.n[1], bl.n[0]); G.add(m);
+      }
+      for (const side of [-1, 1]) {
+        const ahead = bl.between[side > 0 ? 0 : 1], d = bl.half + (c.kind === 'pass' ? 260 : 200);
+        const sx = c.x + bl.n[0] * d * side + bl.d[0] * 120, sy = c.y + bl.n[1] * d * side + bl.d[1] * 120;
+        const sg = signMesh(tf('Ke {name}', { name: regionById(ahead).name }), 1); sg.position.set(sx * S, 0, sy * S); G.add(sg);
+      }
     }
     this.lakeGlows = [];
     for (const l of map.lakes) {
@@ -342,16 +403,30 @@ export class Field25 {
     }
     // town gates standing in the world (the town lies behind each), a warm light in them
     this.exitGlows = []; this.gateLamps = []; this.fogLayers = [];
-    for (const tw of Object.values(map.towns)) {
+    for (const road of map.roads) { // where each main road leaves the meadow: which town lies ahead
+      if (road.kind !== 'main') continue;
+      const p = road.pts.find(([x, y]) => Math.hypot(x - WORLD.cx, y - WORLD.cy) > WORLD.hub + 150);
+      if (!p) continue;
+      const town = Object.values(map.towns).find((tw) => tw.zone === road.zone), sg = signMesh(tf('Ke {name}', { name: TOWNS[town.id].name }), 1);
+      sg.position.set((p[0] + 110) * S, 0, (p[1] - 110) * S); G.add(sg);
+    }
+    for (const tw of Object.values(map.towns)) { // each town walled round, a gate (Kota Awal: four) in its wall
       const biome = tw.zone ? regionById(tw.zone).biome : 'forest';
-      const gm = townGateMesh(biome, 110, tw.zone ? FIELD.gateWall : 200);
-      gm.position.set(tw.x * S, 0, tw.y * S);
-      gm.rotation.y = Math.atan2(-tw.out[1], tw.out[0]); // the town side (−x of the mesh) away from the world
-      G.add(gm); this.gateLamps.push(...gm.userData.lamps);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(220 * S, 220 * S), additive(new THREE.Color(0xffb860).multiplyScalar(1.4), 0.5, glowTex()));
-      m.rotation.x = -Math.PI / 2; m.position.set(tw.x * S, 0.06, tw.y * S); G.add(m); this.exitGlows.push(m);
-      const s1 = signMesh(TOWNS[tw.id].name, 1);
-      s1.position.set((tw.x + tw.out[0] * 170 + tw.out[1] * 150) * S, 0, (tw.y + tw.out[1] * 170 - tw.out[0] * 150) * S); G.add(s1);
+      const home = tw.id === 'home', g0 = tw.gates[0];
+      const cx = home ? tw.x : g0.x - g0.out[0] * (WORLD.townSolid + 120), cy = home ? tw.y : g0.y - g0.out[1] * (WORLD.townSolid + 120);
+      const r = home ? WORLD.homeR - 18 : Math.hypot(g0.x - cx, g0.y - cy) - 18;
+      const wall = townWallMesh(r, tw.gates.map((g) => Math.atan2(g.y - cy, g.x - cx)), biome, home ? 9 : 7, tw.id.length * 7);
+      wall.position.set(cx * S, 0, cy * S); G.add(wall);
+      for (const g of tw.gates) {
+        const gm = townGateMesh(biome, 110, 50);
+        gm.position.set(g.x * S, 0, g.y * S);
+        gm.rotation.y = Math.atan2(-g.out[1], g.out[0]); // the town side (−x of the mesh) away from the world
+        G.add(gm); this.gateLamps.push(...gm.userData.lamps);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(220 * S, 220 * S), additive(new THREE.Color(0xffb860).multiplyScalar(1.4), 0.5, glowTex()));
+        m.rotation.x = -Math.PI / 2; m.position.set(g.x * S, 0.06, g.y * S); G.add(m); this.exitGlows.push(m);
+        const s1 = signMesh(TOWNS[tw.id].name, 1);
+        s1.position.set((g.x + g.out[0] * 170 + g.out[1] * 150) * S, 0, (g.y + g.out[1] * 170 - g.out[0] * 150) * S); G.add(s1);
+      }
     }
     this.gateGroup = new THREE.Group(); G.add(this.gateGroup); this.gatesRef = null;
     this.chestGroup = new THREE.Group(); G.add(this.chestGroup); this.chestRef = null;
@@ -409,6 +484,71 @@ export class Field25 {
     this.shadows.count = ns; this.shadows.instanceMatrix.needsUpdate = true;
     this.shadows.visible = !(LOOK.shadows && !this.stage.lite);
     for (const K of this.kinds.values()) { K.mesh.count = K.n; if (K.mesh.instanceColor) K.mesh.instanceColor.needsUpdate = true; }
+  }
+
+  // The parts of a tile that lie in another biome than its middle (spec §40 C2): across each border
+  // that passes through it (a polygon from the border's line out to its far side), inside / outside
+  // the Gerhana pocket, inside the meadow round Kota Awal. → [{ biome, clip(g), rule? }]
+  otherSides(r, biome) {
+    const W = this.world, out = [], pad = 400, mid = { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 };
+    const midZone = zoneAt(W, mid.x, mid.y), midHub = inHub(mid.x, mid.y);
+    for (const bl of W.borders) {
+      const pts = bl.pts;
+      let i0 = -1, i1 = -1;
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+        if (Math.max(ax, bx) < r.x0 - pad || Math.min(ax, bx) > r.x1 + pad || Math.max(ay, by) < r.y0 - pad || Math.min(ay, by) > r.y1 + pad) continue;
+        if (i0 < 0) i0 = i - 1;
+        i1 = i;
+      }
+      if (i0 < 0 || midHub) continue;
+      const [b0, b1] = bl.between;
+      if (midZone !== b0 && midZone !== b1) continue;
+      const side = midZone === b0 ? 1 : -1, other = midZone === b0 ? b1 : b0, far = 4000;
+      const run = pts.slice(Math.max(0, i0 - 1), Math.min(pts.length, i1 + 2));
+      out.push({ biome: regionById(other).biome, clip: (g) => {
+        run.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+        for (let i = run.length - 1; i >= 0; i--) g.lineTo(run[i][0] + bl.n[0] * far * side, run[i][1] + bl.n[1] * far * side);
+        g.closePath();
+      } });
+    }
+    const E = ECLIPSE; // the pocket
+    if (r.x1 > E.x0 && r.x0 < E.x1 && r.y1 > E.y0) {
+      const inside = midZone === 'eclipse';
+      out.push({ biome: inside ? 'volcano' : 'eclipse', rule: inside ? 'evenodd' : 'nonzero', clip: (g) => {
+        if (inside) g.rect(r.x0 - 10, r.y0 - 10, r.x1 - r.x0 + 20, r.y1 - r.y0 + 20);
+        g.rect(E.x0, E.y0, E.x1 - E.x0, WORLD.h - E.y0 + 100);
+      } });
+    }
+    const hx = WORLD.cx, hy = WORLD.cy, R = WORLD.hub; // the meadow (forest green) and the arms round it
+    if (Math.hypot(Math.max(r.x0 - hx, 0, hx - r.x1), Math.max(r.y0 - hy, 0, hy - r.y1)) < R && !(midHub && Math.hypot(r.x0 - hx, r.y0 - hy) < R && Math.hypot(r.x1 - hx, r.y1 - hy) < R && Math.hypot(r.x0 - hx, r.y1 - hy) < R && Math.hypot(r.x1 - hx, r.y0 - hy) < R)) {
+      if (!midHub) out.push({ biome: 'forest', clip: (g) => g.arc(hx, hy, R, 0, Math.PI * 2) });
+      else for (const z of ['ice', 'desert', 'volcano']) out.push({ biome: regionById(z).biome, rule: 'evenodd', clip: (g) => { // outside the meadow, in that quadrant
+        const d = { ice: [0, -1], desert: [1, 0], volcano: [0, 1] }[z], far = R * 3;
+        g.moveTo(hx, hy); g.lineTo(hx + (d[0] - d[1]) * far, hy + (d[1] + d[0]) * far); g.lineTo(hx + (d[0] + d[1]) * far, hy + (d[1] - d[0]) * far); g.closePath();
+        g.moveTo(hx + R, hy); g.arc(hx, hy, R, 0, Math.PI * 2);
+      } });
+    }
+    return out;
+  }
+  // round a crossing the two grounds run into each other in patches (snow creeping into the grass…)
+  crossBlend(g, r, patOf) {
+    const W = this.world;
+    for (const c of W.crossings) {
+      if (c.x < r.x0 - CROSS_BLEND || c.x > r.x1 + CROSS_BLEND || c.y < r.y0 - CROSS_BLEND || c.y > r.y1 + CROSS_BLEND) continue;
+      const bl = W.borders.find((b) => b.id === c.border);
+      for (let i = 0; i < 26; i++) {
+        const u = Math.sin((c.x + i * 37.1) * 12.9898) * 43758.5453, v = Math.sin((c.y + i * 91.7) * 78.233) * 12543.123;
+        const a = u - Math.floor(u), b = v - Math.floor(v), side = i % 2 ? 1 : -1; // a patch of this side's ground on the other side
+        const d = 40 + a * CROSS_BLEND, along = (b - 0.5) * CROSS_BLEND * 1.6;
+        const x = c.x - bl.n[0] * d * side + bl.d[0] * along, y = c.y - bl.n[1] * d * side + bl.d[1] * along;
+        const zone = bl.between[side > 0 ? 1 : 0];
+        g.globalAlpha = 0.55 * (1 - d / (CROSS_BLEND + 40));
+        g.fillStyle = patOf(regionById(zone).biome);
+        g.beginPath(); g.ellipse(x, y, 30 + a * 50, 20 + b * 34, a * 3, 0, Math.PI * 2); g.fill();
+      }
+      g.globalAlpha = 1;
+    }
   }
 
   // borders painted into the ground: the great river, the canyon, the lava flow, the rock under the ridges
@@ -539,12 +679,17 @@ export class Field25 {
     g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
     g.lineJoin = 'round';
     const r = this.rect; r.x0 = x0; r.y0 = y0; r.x1 = x0 + TS; r.y1 = y0 + TS;
-    if (this.world) { // the biome under the tile's middle (plan §40 C2 blends at the crossings)
+    if (this.world) { // the biome under the tile's middle, then the other side of any border through it (plan §40 C2)
       const biome = this.biomeAt(x0 + TS / 2, y0 + TS / 2), gh = this.ghostOf(biome);
-      let pat = tl.pats[biome];
-      if (!pat) { pat = tl.pats[biome] = g.createPattern(gh.tile.canvas, 'repeat'); pat.setTransform(new DOMMatrix().scale(gh.tile.T / gh.tile.canvas.width)); }
+      const patOf = (b) => { let p = tl.pats[b]; if (!p) { const q = this.ghostOf(b); p = tl.pats[b] = g.createPattern(q.tile.canvas, 'repeat'); p.setTransform(new DOMMatrix().scale(q.tile.T / q.tile.canvas.width)); } return p; };
       if (LOOK.detail > 0) setDetail(tl.mesh.material, gh.painted ? 'none' : GROUND_KIND[biome] || 'soil');
-      drawField(g, gh, pat, t, r);
+      drawField(g, gh, patOf(biome), t, r);
+      for (const part of this.otherSides(r, biome)) { // the far side of a border, the Gerhana pocket, the meadow's edge
+        g.save(); g.beginPath(); part.clip(g); g.clip(part.rule || 'nonzero');
+        drawField(g, this.ghostOf(part.biome), patOf(part.biome), t, r);
+        g.restore();
+      }
+      this.crossBlend(g, r, patOf);
       this.paintBorders(g, r, t);
       if (gh.painted) this.groundShade(g, r);
     } else {

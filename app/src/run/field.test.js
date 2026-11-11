@@ -384,3 +384,23 @@ describe('rombongan musuh khusus (spec §41.1)', () => {
     expect(spawnGroup(g, g.px + 300, g.py, 9, 'forest', 'voidtwin').length).toBe(2);
   });
 });
+
+describe('Kota Awal bertembok (§40 C3)', () => {
+  it('tembok padat, 4 gerbang terbuka; masuk lewat gerbang mana pun, keluar lewat gerbang yang sama', () => {
+    const home = world.towns.home;
+    expect(home.gates).toHaveLength(4);
+    expect(blocked(world, home.x, home.y, 12)).toBe(true);
+    for (let i = 0; i < 4; i++) {
+      const out = townExit(world, 'home', i);
+      expect(blocked(world, out.x, out.y, 12)).toBe(false);
+      const g = new Game();
+      g.explore(setup({ at: 'home', gate: i }));
+      expect([g.px, g.py]).toEqual([out.x, out.y]);
+      g.intent = idle; g.packT = 99;
+      const other = home.gates[(i + 1) % 4];
+      g.px = other.x; g.py = other.y; g.step(1 / 60);
+      expect(g.exitTo).toBe('home');
+      expect(g.exitGate).toBe((i + 1) % 4);
+    }
+  });
+});

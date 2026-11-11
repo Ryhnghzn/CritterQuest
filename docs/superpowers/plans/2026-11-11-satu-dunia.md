@@ -28,11 +28,11 @@
 - [ ] B7 `npm test`, `npm run build`, server lokal → **cek manual pemilik**.
 
 ## Bagian C — Pembatas & peralihan (cek manual)
-- [ ] C1 Gambar pembatas: punggung gunung salju, sungai besar + jembatan batu, ngarai + jembatan gantung, sungai lava + tebing, tebing hitam Gerhana.
-- [ ] C2 Tanah berbaur di penyeberangan; papan nama di tiap penyeberangan & simpang.
-- [ ] C3 Dataran Kota Awal + gerbang kota di dunia (bangunan gerbang per gaya kota).
+- [x] C1 Gambar pembatas: punggung gunung salju, sungai besar + jembatan batu, ngarai + jembatan gantung, sungai lava + tebing, tebing hitam Gerhana.
+- [x] C2 Tanah berbaur di penyeberangan; papan nama di tiap penyeberangan & simpang.
+- [x] C3 Dataran Kota Awal + gerbang kota di dunia (bangunan gerbang per gaya kota). Kota Awal bertembok dengan 4 gerbang (jalan utama berangkat dari gerbangnya; keluar lewat gerbang terakhir dipakai); kota besar bertembok dengan atap rumah; benda padat kota sebesar temboknya.
 
 ## Bagian D — Peta & rapikan (cek manual)
 - [x] D1 Peta penuh (M) & peta mini: satu dunia, warna biome, pembatas, jalan, kota, gerbang, kabut.
-- [ ] D2 Kamus EN untuk teks baru; perbarui §25 yang usang (rujuk §40); `CLAUDE.md` status.
-- [ ] D3 Bersihkan kode wilayah lama yang tak terpakai (`layout` per wilayah, `exitZone`).
+- [x] D2 Kamus EN untuk teks baru; perbarui §25 yang usang (rujuk §40); `CLAUDE.md` status.
+- [ ] D3 Bersihkan kode wilayah lama yang tak terpakai (`layout` per wilayah, `exitZone`). **Ditunda:** `run/fieldmap.js` dan jalur wilayah lama di renderer masih dipakai tes & sebagai cadangan; dibersihkan saat tak ada sesi lain yang memakainya.

@@ -665,6 +665,8 @@ Tujuan: target jangka pendek di setiap perjalanan dan bonus permanen kecil untuk
 
 ## 25. Dunia Terbuka: Wilayah, Kota Besar & Pedagang (langkah 9D, 2026-10-27)
 
+> **Catatan 2026-11-11:** tata letak wilayah di bagian ini (empat peta terpisah 20000 × 12000 dari gerbang Kota Awal, keluar di tepi barat/timur) sudah **digantikan §40 Satu Dunia Tersambung**. Isi lain (rentang level, musuh biome, pedagang, harta & mini bos, gerbang dungeon per karakter, ekspedisi) tetap berlaku, ditempatkan di dunia lewat `zoneToWorld`.
+
 Keputusan pemilik (2026-10-27):
 - **Perjalanan:** wilayah tersambung. Gerbang kota mengarah ke peta wilayah biome, dan di ujung wilayah ada kota besar.
 - **Urutan wilayah bebas.** Setiap wilayah punya **rentang level tetap**:

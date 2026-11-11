@@ -157,6 +157,10 @@ export const RIVER_W = FIELD.riverWidth;
 const ZONE_BIOME = { forest: 'forest', ice: 'ice', desert: 'desert', volcano: 'volcano', eclipse: 'eclipse' };
 // borders that stand up: snowy mountain rocks, the black cliffs round Tanah Gerhana
 const BORDER_PROP = { mountain: { biome: 'ice', kind: 'rock', k: 0.55 }, cliff: { biome: 'eclipse', kind: 'floatrock', k: 0.5 } };
+// borders whose edges are lined with rocks (spec §40 C1): the canyon's lips, the lava flow's crust,
+// a few stones on the great river's banks. every: the part of the band's circles that get one
+const BORDER_EDGE = { canyon: { k: 0.32, every: 1, out: 1.08 }, lava: { k: 0.26, every: 0.6, out: 1.12 }, river: { k: 0.22, every: 0.3, out: 1.25 } };
+const EDGE_BIOME = { canyon: ['desert', 'volcano'], lava: ['volcano', 'forest'], river: ['ice', 'desert'] };
 
 // The props of one chunk of the world: [{ x, y, r, v, kind, biome, tint }], each in the biome of
 // its own zone (a crossing shows both sides' trees). Fixed solids (borders) are taken by the
@@ -178,8 +182,21 @@ export function chunkProps(world, chunk, opts = {}) {
   }
   const C = world.chunkSize;
   for (const s of world.fixedIn[chunk.iy * world.cols + chunk.ix] || []) {
+    if (Math.floor(s.x / C) !== chunk.ix || Math.floor(s.y / C) !== chunk.iy) continue;
+    const be = BORDER_EDGE[s.kind];
+    if (be) { // rocks along both edges of the band
+      const bl = world.borders.find((b) => b.id === s.border);
+      if (!bl) continue;
+      for (const side of [-1, 1]) {
+        const v = hash01(s.x + side * 7, s.y);
+        if (v > be.every) continue;
+        const d = s.r * be.out;
+        out.push({ x: s.x + bl.n[0] * d * side, y: s.y + bl.n[1] * d * side, r: s.r * be.k * (0.7 + v * 0.6), v, kind: 'rock', biome: EDGE_BIOME[s.kind][side > 0 ? 1 : 0], tint: 0.7 + v * 0.3 });
+      }
+      continue;
+    }
     const bp = BORDER_PROP[s.kind];
-    if (!bp || Math.floor(s.x / C) !== chunk.ix || Math.floor(s.y / C) !== chunk.iy) continue;
+    if (!bp) continue;
     // a ridge: one big rock on the line and two smaller ones beside it
     const v = hash01(s.x, s.y);
     out.push({ x: s.x, y: s.y, r: s.r * bp.k, v, kind: bp.kind, biome: bp.biome, tint: 0.8 + v * 0.3 });

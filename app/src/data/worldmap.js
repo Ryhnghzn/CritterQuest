@@ -15,6 +15,8 @@ export const WORLD = {
   edge: 300,                 // nothing grows this close to the world's edge
   townSolid: 650,            // the town's wall behind its gate (radius)
   townClear: 1100,           // no trees / rocks this close to a town gate
+  homeR: 430,                // Kota Awal: a walled round town in the meadow, a gate on each side at this radius…
+  homeWall: 390,             // …its wall (solid) this big
   gateR: 130,                // walk this close to a town gate to enter the town
   spawnBack: 260,            // leaving a town: appear this far in front of its gate
   armFill: 0.82,             // an arm's content spreads over this part of its width

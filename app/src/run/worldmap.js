@@ -160,11 +160,14 @@ export function buildWorld(seed = WORLD.seed) {
   const rr = (a, b) => a + rng() * (b - a);
   const borders = BORDERS.map((b) => borderLine(b, rng));
   const crossings = borders.flatMap((b) => b.crossings);
-  // towns: the gate at the end of each arm (Kota Awal's in the middle), the wall behind it
-  const towns = { home: { id: 'home', zone: null, x: WORLD.cx, y: WORLD.cy, out: [0, 1] } };
+  // towns: a gate at the end of each arm with the town's wall behind it; Kota Awal walled round in
+  // the middle with a gate toward each arm (gates: [{ x, y, out }], out = the way out of the town;
+  // main: the gate used when nothing else says which)
+  const homeGates = ARM_IDS.map((z) => { const d = ARMS[z].dir; return { x: WORLD.cx + d[0] * WORLD.homeR, y: WORLD.cy + d[1] * WORLD.homeR, out: [...d], zone: z }; });
+  const towns = { home: { id: 'home', zone: null, x: WORLD.cx, y: WORLD.cy, out: [0, 1], gates: homeGates, main: ARM_IDS.indexOf('volcano') } };
   for (const zone of ARM_IDS) {
-    const g = townGate(zone), arm = ARMS[zone];
-    towns[arm.town] = { id: arm.town, zone, x: g.x, y: g.y, out: [-arm.dir[0], -arm.dir[1]] };
+    const g = townGate(zone), arm = ARMS[zone], out = [-arm.dir[0], -arm.dir[1]];
+    towns[arm.town] = { id: arm.town, zone, x: g.x, y: g.y, out, gates: [{ x: g.x, y: g.y, out }], main: 0 };
   }
   // main roads: the middle → each town, wandering inside the arm
   const roads = [];
@@ -172,7 +175,7 @@ export function buildWorld(seed = WORLD.seed) {
   for (const zone of ARM_IDS) {
     const arm = ARMS[zone], g = townGate(zone), l = left(arm.dir);
     const n = Math.round((arm.dist - WORLD.hub * 0.4) / ROADS.bend);
-    const pts = [[WORLD.cx, WORLD.cy]];
+    const hg = homeGates[ARM_IDS.indexOf(zone)], pts = [[hg.x, hg.y]]; // from Kota Awal's gate on this side
     let off = 0;
     for (let i = 1; i < n; i++) {
       const along = WORLD.hub * 0.4 + (arm.dist - WORLD.hub * 0.4) * (i / n);
@@ -234,9 +237,10 @@ export function buildWorld(seed = WORLD.seed) {
   for (const line of [[[E.x0, WORLD.h + 400], [E.x0, E.y0]], [[E.x0, E.y0], [E.x1, E.y0]], [[E.x1, E.y0], [E.x1, WORLD.h + 400]]]) {
     for (const [x, y] of sample(line, E.half * 0.8)) if (Math.hypot(x - pocketGate.x, y - pocketGate.y) > E.gap + E.half) fixed.push({ x, y, r: E.half, kind: E.kind, border: 'eclipse' });
   }
+  fixed.push({ x: WORLD.cx, y: WORLD.cy, r: WORLD.homeWall, kind: 'town', town: 'home' }); // Kota Awal's wall
   for (const t of Object.values(towns)) {
     if (t.id === 'home') continue;
-    fixed.push({ x: t.x - t.out[0] * (WORLD.townSolid + 120), y: t.y - t.out[1] * (WORLD.townSolid + 120), r: WORLD.townSolid, kind: 'town', town: t.id });
+    fixed.push({ x: t.x - t.out[0] * (WORLD.townSolid + 120), y: t.y - t.out[1] * (WORLD.townSolid + 120), r: WORLD.townSolid + 85, kind: 'town', town: t.id }); // up to the drawn wall, just inside the gate
   }
   // small rivers across each arm, bridged where a road crosses
   const rivers = [], bridges = [];

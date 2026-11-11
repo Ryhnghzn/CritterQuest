@@ -37,8 +37,9 @@ function setZone(run, zone) {
 }
 
 // where a town's gate lets you out: a little in front of it
-export function townExit(world, townId) {
-  const g = world.towns[townId];
+// gate: which of the town's gates (Kota Awal has four; null: its main one)
+export function townExit(world, townId, gate = null) {
+  const tw = world.towns[townId], g = tw.gates[gate ?? tw.main] || tw.gates[tw.main];
   return { x: g.x + g.out[0] * WORLD.spawnBack, y: g.y + g.out[1] * WORLD.spawnBack };
 }
 
@@ -46,17 +47,18 @@ export function townExit(world, townId) {
 // gates: [{ dungeon, x, y, found }] — this character's dungeon gates (meta/world.js)
 // target: { x, y } | null — where the expedition arrow points
 // opened: { zone: [idx] } — treasure chests already opened (spec §25.3); eclipseOpen: all Seal Shards in
-export function startField(run, at = 'home', gates = [], target = null, opened = {}, eclipseOpen = false) {
+// gate: the town's gate to step out of (the one last walked in through; null: its main one)
+export function startField(run, at = 'home', gates = [], target = null, opened = {}, eclipseOpen = false, gate = null) {
   const world = buildWorld();
   run.field = true;
   run.fmap = world;
-  const p = typeof at === 'string' ? townExit(world, at) : at;
+  const p = typeof at === 'string' ? townExit(world, at, gate) : at;
   run.px = p.x; run.py = p.y;
   run.dungeon = null;
   setZone(run, zoneAt(world, run.px, run.py));
   run.floor = 1; run.deepest = 0;
   run.zoneChanged = false;
-  run.townLock = typeof at === 'string' ? at : null; // the gate just left does not take you back in at once
+  run.townLock = typeof at === 'string' ? { id: at, gate: gate ?? world.towns[at].main } : null; // the gate just left does not take you back in at once
   run.eclipseOpen = eclipseOpen;
   run.gates = gates.map((g) => ({ ...g }));
   run.gatesFound = [];   // dungeon ids found this visit (written to the save)
@@ -184,10 +186,14 @@ export function stepField(run, dt) {
   }
   // town gates: walking into one enters that town (spec §40.3)
   if (run.edgeT > 0) run.edgeT -= dt;
-  for (const g of Object.values(map.towns)) {
-    const d2 = (g.x - run.px) ** 2 + (g.y - run.py) ** 2;
-    if (run.townLock === g.id) { if (d2 > (WORLD.gateR + 80) ** 2) run.townLock = null; continue; }
-    if (d2 < WORLD.gateR * WORLD.gateR) { run.exit = g.id; break; }
+  for (const tw of Object.values(map.towns)) {
+    tw.gates.forEach((g, gi) => {
+      if (run.exit) return;
+      const d2 = (g.x - run.px) ** 2 + (g.y - run.py) ** 2, lock = run.townLock;
+      if (lock && lock.id === tw.id && lock.gate === gi) { if (d2 > (WORLD.gateR + 80) ** 2) run.townLock = null; return; } // the gate just left
+      if (d2 < WORLD.gateR * WORLD.gateR) { run.exit = tw.id; run.exitGate = gi; }
+    });
+    if (run.exit) break;
   }
 }
 

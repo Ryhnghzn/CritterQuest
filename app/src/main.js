@@ -646,6 +646,7 @@ const heroOf = (c) => ({ classId: c.classId, look: avatarOf(c).look });
 async function story(...ids) {
   for (const id of ids) await playCutscene(id, heroOf(current));
 }
+const lastGate = {}; // town → the gate walked in through (spec §40 C3)
 const bossSeen = new Set(); // a boss's entrance plays once per session (retries skip it)
 // a scene in the middle of a fight or a walk: pause, play, go on
 async function sceneInPlay(scene) {
@@ -763,7 +764,7 @@ async function explore(at = current.location) {
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
     effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), ult: equippedUlt(current),
-    at, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
+    at, gate: typeof at === 'string' ? lastGate[at] ?? null : null, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
     eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });
   const region = game.region;
@@ -837,6 +838,7 @@ async function endField(died) {
   await commitField();
   if (!died) {
     const to = game.exitTo;
+    lastGate[to] = game.exitGate ?? null; // out through the same gate next time (Kota Awal has four)
     const first = !current.towns.includes(to);
     const before = current;
     current = visitTown(current, to, Date.now());
