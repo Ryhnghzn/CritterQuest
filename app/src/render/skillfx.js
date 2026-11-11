@@ -6,6 +6,7 @@
 //   drawBuffAura   — the player's look while a buff skill runs
 //   drawEnemyMarks — ice crystals / dizzy stars / vines on struck enemies
 //   heroScale / drawTraitHero / drawFocusAim — the class signature peaks (spec §31.8)
+import { skillPool } from '../data/branches.js';
 import { PALETTES } from '../data/fx.js';
 import { ECHO_RARITY, ECHO_EVERY, RAINBOW_RARITY, RAINBOW, ULT_TINT, TRAIT_FX } from '../data/skillfx.js';
 import { RARITIES } from '../data/items.js';
@@ -700,7 +701,7 @@ export function drawUltTint(g, game, rect) {
   }
 }
 
-const buffDuration = (game) => CLASSES[game.classId]?.skills.find((s) => s.id === game.buffSid)?.duration ?? 1;
+const buffDuration = (game) => (CLASSES[game.classId] ? skillPool(CLASSES[game.classId], game.branch) : []).find((s) => s.id === game.buffSid)?.duration ?? 1;
 
 // Opacity for the player doll (Bom Asap fades it to a silhouette).
 export function playerAlpha(game) {

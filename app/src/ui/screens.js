@@ -63,14 +63,17 @@ function scrollSpots(root, from = null) {
 }
 
 // In-game yes/no dialog → Promise<boolean>.
-export function confirmDialog(text, yesLabel = 'YA') {
-  const box = $('confirm');
+// noLabel: the second button's text for a two-way choice (Job Lanjutan's branches), else "Batal"
+export function confirmDialog(text, yesLabel = 'YA', noLabel = null) {
+  const box = $('confirm'), no = $('confirmno'), noText = no.textContent;
   $('confirmtext').textContent = tr(text);
   $('confirmyes').textContent = tr(yesLabel);
+  if (noLabel) no.textContent = noLabel;
   box.classList.remove('hidden');
   return new Promise((resolve) => {
     const done = (v) => () => {
       box.classList.add('hidden');
+      if (noLabel) no.textContent = noText;
       $('confirmyes').onclick = $('confirmno').onclick = null;
       resolve(v);
     };

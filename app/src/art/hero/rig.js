@@ -182,6 +182,12 @@ MOVES.assassin.tripledance = MOVES.assassin.shadow; MOVES.assassin.shadowclone =
 // the focused ultimates (spec §43.5) borrow a move too
 MOVES.warrior.skyfall = MOVES.warrior.quake; MOVES.archer.skypierce = MOVES.archer.pierce; MOVES.mage.sunfall = MOVES.mage.meteor; MOVES.assassin.execution = MOVES.assassin.shadow;
 
+// Job Lanjutan (spec §43.10): the branch skills borrow their job's moves
+Object.assign(MOVES.warrior, { bloodrage: MOVES.warrior.warcry, rageleap: MOVES.warrior.charge, ragnarok: MOVES.warrior.bladestorm, holyguard: MOVES.warrior.shout, judgment: MOVES.warrior.quake, sanctuary: MOVES.warrior.shout });
+Object.assign(MOVES.archer, { headshot: MOVES.archer.pierce, steadyaim: MOVES.archer.hawk, deatheye: MOVES.archer.pierce, wolf: MOVES.archer.trap, runvolley: MOVES.archer.volley, huntwave: MOVES.archer.trap });
+Object.assign(MOVES.mage, { firestorm: MOVES.mage.meteor, burnout: MOVES.mage.nova, supernova: MOVES.mage.nova, rewind: MOVES.mage.blink, timefield: MOVES.mage.chain, timestop: MOVES.mage.nova });
+Object.assign(MOVES.assassin, { vanish: MOVES.assassin.smoke, shadowstrike: MOVES.assassin.shadow, shadoweclipse: MOVES.assassin.shadow, bladevortex: MOVES.assassin.shuriken, slashrain: MOVES.assassin.fan, thousandcuts: MOVES.assassin.thousandshadows });
+
 // how long the renderer plays a skill's move (seconds)
 export function moveDuration(classId, skillId, skillDur = 0) {
   const M = MOVES[classId]?.[skillId];

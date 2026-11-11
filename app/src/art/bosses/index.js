@@ -11,8 +11,10 @@ import * as spore from './spore.js';
 import * as mummy from './mummy.js';
 import * as crystal from './crystal.js';
 import * as eclipse from './eclipse.js';
+import * as shadow from './shadow.js';
 
-export const BOSS_ART = { boss: maw, crystalboss: crystal, sporeboss: spore, tombboss: mummy, lavaboss: lava, eclipseboss: eclipse };
+export const BOSS_ART = { boss: maw, crystalboss: crystal, sporeboss: spore, tombboss: mummy, lavaboss: lava, eclipseboss: eclipse, shadowself: shadow };
+export { setShadowLook } from './shadow.js';
 export { AURAS as BOSS_AURAS, BOSS_K };
 // the billboard box around the feet, game units (with DOLL_SCALE): x ∈ [−hx, hx], y ∈ [−ht, hb]
 export const BOSS_BOX = { hx: 112, ht: 140, hb: 14 };

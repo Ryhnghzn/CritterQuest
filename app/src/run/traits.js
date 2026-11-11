@@ -4,6 +4,7 @@
 import { CLASSES } from '../data/classes.js';
 import { tr } from '../i18n.js';
 import { frenzyFx } from './skillfx.js';
+import { heatBlast } from './branch.js';
 
 const MODS = { arcR: 0, arcDeg: 0, lifesteal: 0, dmgTaken: 1, skillDmg: 0, locked: false, slow: 0, slowImmune: false };
 
@@ -27,7 +28,7 @@ export function traitStep(run, dt, moving, attacking) {
       if (t.on > 0) {
         t.on -= dt;
         if (t.on <= 0) { t.on = 0; run.applyBuffs(); }
-      } else if (t.v > 0) {
+      } else if (t.v > 0 && !pv(run, 'rageKeep')) { // Berserker: Murka never drains (spec §43.10)
         t.idle += dt;
         const over = t.idle - c.idleAfter;
         if (over > 0) t.v = Math.max(0, t.v - c.decay * Math.min(dt, over));
@@ -67,12 +68,21 @@ function rageAdd(run, c, n) {
   }
 }
 
+// Panas reached the top: skills lock for a while. Penyihir Api: shorter, and a blast around you (spec §43.10)
+function overheat(run, c, t) {
+  t.v = 0; t.lock = c.overheat.duration * (1 - pv(run, 'overheatShort'));
+  run.showBanner(tr('KEPANASAN!'));
+  heatBlast(run);
+}
+// the Kombo cap: 5, or 10 for the Penari Pedang
+export const comboMax = (run, c = cfg(run)) => c.max + pv(run, 'comboMax');
+
 // Panas added while channelling (Semburan Api); overheats like a cast does.
 export function traitHeat(run, n) {
   const c = cfg(run), t = run.trait;
   if (c?.id !== 'heat' || !t || t.lock > 0) return;
   t.v += n;
-  if (t.v >= c.max) { t.v = 0; t.lock = c.overheat.duration; run.showBanner(tr('KEPANASAN!')); }
+  if (t.v >= c.max) overheat(run, c, t);
 }
 
 // Murka added at once (Amarah Perang L5); nothing for the other jobs.
@@ -94,7 +104,7 @@ export function traitBasicHit(run) {
   else if (c.id === 'combo') {
     const t = run.trait;
     t.idle = 0;
-    if (++t.hits >= c.hitsPer) { t.hits = 0; t.v = Math.min(c.max, t.v + 1); }
+    if (++t.hits >= c.hitsPer) { t.hits = 0; t.v = Math.min(comboMax(run, c), t.v + 1); }
   }
 }
 
@@ -125,17 +135,14 @@ export function traitCast(run, skill) {
   switch (c.id) {
     case 'heat':
       t.v += skill.cost * c.perCost;
-      if (t.v >= c.max) {
-        t.v = 0; t.lock = c.overheat.duration;
-        run.showBanner(tr('KEPANASAN!'));
-      }
+      if (t.v >= c.max) overheat(run, c, t);
       return 1;
     case 'focus':
       if (skill.focusFill) { t.v = c.max; t.focus = true; } // Lompatan Mundur L5 fills the bar (spec §43.4)
       return 1;
     case 'combo': {
       const n = t.v;
-      if (n >= c.max) castExecute = c.executeBelow;
+      if (n >= comboMax(run, c)) castExecute = c.executeBelow;
       t.v = 0; t.hits = 0;
       return 1 + c.perPoint * n;
     }
@@ -143,11 +150,18 @@ export function traitCast(run, skill) {
   return 1;
 }
 
+// Penari Pedang: basic attacks speed up with every Kombo point (1 = unchanged)
+export function comboTempo(run) {
+  const k = pv(run, 'comboSpd'), c = cfg(run);
+  return k && c?.id === 'combo' && run.trait ? 1 + k * run.trait.v : 1;
+}
+
 export function traitLevel(run) {
   const c = cfg(run), t = run.trait;
   if (!c || !t) return 0;
   if (c.id === 'rage') return t.on > 0 ? t.on / c.frenzy.duration : t.v / c.max;
-  if (c.id === 'heat' && t.lock > 0) return t.lock / c.overheat.duration;
+  if (c.id === 'heat' && t.lock > 0) return Math.min(1, t.lock / c.overheat.duration);
+  if (c.id === 'combo') return t.v / comboMax(run, c);
   return t.v / c.max;
 }
 
@@ -160,7 +174,7 @@ export function traitMods(run) {
     m.arcR = c.arcR[0] + (c.arcR[1] - c.arcR[0]) * k;
     m.arcDeg = c.arcDeg[0] + (c.arcDeg[1] - c.arcDeg[0]) * k;
     m.lifesteal = c.lifesteal * k;
-    m.dmgTaken = 1 - c.dmgTaken * k;
+    m.dmgTaken = pv(run, 'rageNoArmor') ? 1 : 1 - c.dmgTaken * k; // Berserker gives up the armour
     m.slowImmune = run.trait.on > 0;
     if (run.trait.on > 0 || run.trait.v > c.max / 2) m.dmgTaken *= 1 - pv(run, 'rageArmor'); // Kulit Baja
   } else if (c && run.trait && c.id === 'heat') {

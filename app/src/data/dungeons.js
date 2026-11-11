@@ -1,3 +1,4 @@
+import { BRANCH } from './branches.js';
 // The themed dungeons (spec §18.3, §25.4), in order of difficulty. Each has
 // 5 floors of waves, its own boss on floor 5, a difficulty step and a look.
 //   mix: enemy type → count (a boss always comes first); every: seconds between spawns
@@ -104,5 +105,18 @@ export const DUNGEONS = [
   },
 ];
 export const DUNGEON_IDS = DUNGEONS.map((d) => d.id);
-export const dungeonById = (id) => DUNGEONS.find((d) => d.id === id) || DUNGEONS[0];
+// The Job Lanjutan trial arena (spec §43.10): not a real dungeon (no records, not on any board). Floor 5
+// holds Bayangan Diri alone; the run starts there, so beating it ends the trip as a full clear.
+const TRIAL_FLOOR = { waves: [{ mix: { shadowself: 1 }, every: 1 }] };
+export const TRIAL_DUNGEON = {
+  ...DUNGEONS[0], id: 'trial', name: 'Ujian Cabang', short: 'Ujian', hpMul: BRANCH.trial.hpMul, dmgMul: BRANCH.trial.dmgMul, rewardMul: 0, itemLevel: 0,
+  floors: [TRIAL_FLOOR, TRIAL_FLOOR, TRIAL_FLOOR, TRIAL_FLOOR, TRIAL_FLOOR],
+};
+// the arena set to a character level: harder for every level above BRANCH.level
+export function trialAt(level) {
+  const k = 1 + BRANCH.trial.perLevel * Math.max(0, level - BRANCH.level);
+  TRIAL_DUNGEON.hpMul = BRANCH.trial.hpMul * k; TRIAL_DUNGEON.dmgMul = BRANCH.trial.dmgMul * k;
+  return TRIAL_DUNGEON;
+}
+export const dungeonById = (id) => (id === 'trial' ? TRIAL_DUNGEON : DUNGEONS.find((d) => d.id === id) || DUNGEONS[0]);
 export const BOSS_TYPES = ['boss', 'crystalboss', 'sporeboss', 'tombboss', 'lavaboss', 'eclipseboss'];

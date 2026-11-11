@@ -1,4 +1,5 @@
 // Pilih Slot: three save slots — open, create, or delete (spec §3).
+import { branchOf } from '../meta/jobs.js';
 import { el, button, svgIcon, stage, pressable } from './screens.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { portrait, OUTFIT } from '../art/doll.js';
@@ -18,7 +19,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
       const st = stage(portrait(c.classId, c.look, 104), color);
       const lv = el('span', 'lvbadge', `LV ${c.level}`);
       st.append(lv);
-      const cls = el('span', 'pill', CLASSES[c.classId].name);
+      const br = branchOf(c), cls = el('span', 'pill', br ? `${CLASSES[c.classId].name} · ${br.name}` : CLASSES[c.classId].name); // Job Lanjutan (spec §43.10)
       cls.style.setProperty('--c', color);
       const rec = el('div', 'ds');
       // deepest dungeon reached

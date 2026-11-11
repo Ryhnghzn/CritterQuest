@@ -151,4 +151,5 @@ const ECLIPSE = {
   },
 };
 
+ECLIPSE.shadowself = (g, r) => ECLIPSE.eclipseboss(g, r); // Bayangan Diri (spec §43.10): the 2D stand-in; the anime one is art/bosses/shadow.js
 export const ECLIPSE_ART = ECLIPSE;

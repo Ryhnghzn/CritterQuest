@@ -1,5 +1,6 @@
 // Panel Karakter (C, in town and in the dungeon): portrait, level, attribute
 // points (spec §14.1), stats and records.
+import { branchOf } from '../meta/jobs.js';
 import { el, button, svgIcon, stage, keepView } from './screens.js';
 import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
@@ -64,7 +65,8 @@ function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, 
   const fill = el('i');
   fill.style.transform = `scaleX(${maxed ? 1 : char.exp / need})`;
   meter.append(fill);
-  const cls = el('span', 'pill', CLASSES[char.classId].name);
+  const br = branchOf(char), cls = el('span', 'pill', br ? `${CLASSES[char.classId].name} · ${br.name}` : CLASSES[char.classId].name); // Job Lanjutan (spec §43.10)
+  if (br) cls.style.color = br.color;
   cls.style.setProperty('--c', color);
   const line = el('div', 'note');
   line.append(maxed ? tr('Level maks') : `EXP ${char.exp} / ${need}`, ' · ');

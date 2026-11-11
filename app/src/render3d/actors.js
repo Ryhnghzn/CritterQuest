@@ -19,6 +19,8 @@ import { pickWing } from '../art/anime/wingpick.js';
 import { gaitRate } from '../art/hero/rig.js';
 import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
 import { auraBack, auraFront, bestRarity } from '../art/aura.js';
+import { branchAura } from '../art/branchaura.js';
+import { branchById } from '../data/branches.js';
 import { moveDuration } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DODGE } from '../data/balance.js';
@@ -275,6 +277,8 @@ export class Actors {
       g.restore();
     }
     auraFront(g, 0, 0, game.fx, bestRarity(a.look.gear), t, { ...opt, level: game.level, facing: this.facing, enemies: game.enemies, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });
+    const br = game.branch && branchById(game.classId, game.branch); // Job Lanjutan (spec §43.10)
+    if (br) branchAura(g, 0, 0, br.color, t, lite);
     pixelateCanvas(c, LOOK.pixel); // pixel art (spec §39); nothing with ?lama
     if (this.fxList?.length) { drawFx(g, this.fxList, new DOMMatrix()); this.fxList = null; }
     this.heroTex.needsUpdate = true;

@@ -7,8 +7,11 @@ import { expToNext, levelCap } from '../meta/character.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
 import { passiveCrit, poisonFoe, dotFoe } from './passives.js';
+import { PASSIVE_RULES } from '../data/skilltree.js';
 import { tryParry, cancelHeld } from './tempo.js';
 import { decoyFor, runeFeed } from './summons.js';
+import { takeAmbush, branchDmg, branchBasicHit, timeSlow, timeReflect, noteRewind } from './branch.js';
+import { skillPool } from '../data/branches.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -125,7 +128,7 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0 }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null }) {
     resetRng();
     this.classId = classId;
     this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
@@ -143,7 +146,10 @@ export class Game {
     this.aimPX = 0; this.aimPY = 0;
     this.energy = ENERGY.start; this.noEnergyT = 0;
     this.summons = []; this.chain = null; this.held = null; this.parryT = 0; this.focusMark = null; // tempo skills (spec §43.4), focus ultimates (§43.5)
-    const pool = CLASSES[classId].skills;
+    this.branch = branch; // Job Lanjutan (spec §43.10): its skills join the pool
+    const pool = skillPool(CLASSES[classId], branch);
+    this.ambushT = 0; this.rewindLog = []; this.rewindT = 0; this.moving = false;
+    this.hasRewind = pool.some((s) => s.kind === 'rewind'); // Putar Balik notes the path only when it can be worn
     this.levels = levels; // skill id → level (spec §43): each worn skill is built at its level (run/skilllevel.js)
     // two pages of four (spec §43.6): skillDefs / skillCd / skillCdMax are the page in use; both pages' cooldowns run
     const build = (ids) => { const d = (ids || []).map((id) => (id ? leveled(pool.find((s) => s.id === id), levels[id] || 1) : null)); while (d.length < 4) d.push(null); return d.slice(0, 4); };
@@ -238,7 +244,7 @@ export class Game {
 
   // Skills changed mid-trip (spec §31.6): a skill put into a slot starts on its full cooldown. page: 0 = A, 1 = B
   setSkills(ids, page = 0) {
-    const pool = CLASSES[this.classId].skills, defs = this.pageDefs[page], cd = this.pageCd[page], max = this.pageCdMax[page];
+    const pool = skillPool(CLASSES[this.classId], this.branch), defs = this.pageDefs[page], cd = this.pageCd[page], max = this.pageCdMax[page];
     ids.forEach((id, i) => {
       if ((defs[i]?.id ?? null) === id) return;
       defs[i] = id ? leveled(pool.find((s) => s.id === id), this.levels?.[id] || 1) : null;
@@ -333,6 +339,8 @@ export class Game {
     stepAttack(this, this.intent, dt);
     if (this.intent.swap) this.swapPage(); // Q / ⇄ (spec §43.6)
     stepSkills(this, this.intent, dt);
+    noteRewind(this, dt); // Putar Balik remembers where you were
+    if (this.ambushT > 0) this.ambushT -= dt;
     const mv = this.intent.move;
     traitStep(this, dt, mv.x !== 0 || mv.y !== 0 || (this.dodgeT > 0 && !this.skillDash), !!(this.intent.attack || this.intent.auto));
     this.stepPotion(dt);
@@ -432,9 +440,11 @@ export class Game {
   damageEnemy(h, e) {
     if (e.hidden) return; // a sand worm under the sand
     const s = this.stats;
-    const crit = h.crit || rand() * 100 < s.crit + passiveCrit(this, e); // h.crit: Bidik's focus shot never rolls
+    const ambush = takeAmbush(this); // Bayangan (spec §43.10): the first hit after a dodge / dash
+    const crit = ambush || h.crit || rand() * 100 < s.crit + passiveCrit(this, e); // h.crit: Bidik's focus shot never rolls
     const fx = this.fx;
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
+    dmg *= branchDmg(this, e, h, ambush);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     if (h.breakShield) { e.armor = 0; if (e.ward) e.ward = 0; } // Tebasan Raksasa at full
@@ -446,9 +456,10 @@ export class Game {
     e.hp -= affixHit(this, e, dmg); // an elite's Berlapis shield soaks first (run/affix.js)
     if (h.execute && e.hp > 0 && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) { e.hp = 0; executeFx(this, e); } // Kombo at max (spec §31.5, §31.8)
     const basic = BASIC_FX.has(h.fx) && !h.skill;
-    const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
+    const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0) + (this.skillBuffT > 0 ? this.skillBuff?.lifesteal || 0 : 0); // + Amuk Darah // read before the hit can trigger Mengamuk
     traitDealt(this);
-    if (basic) traitBasicHit(this);
+    if (basic) { traitBasicHit(this); branchBasicHit(this, e); }
+    if (h.skill && fx.skillBurn && rand() < fx.skillBurn) dotFoe(this, e, PASSIVE_RULES.burn); // Pemantik
     if (basic && fx.poisonChance && rand() < fx.poisonChance) poisonFoe(this, e); // Bilah Racun (spec §43.3)
     if (basic) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy * (1 + (fx.energy || 0)));
     if (h.knock && !e.boss) { // push away from (or pull toward) the area's centre
@@ -528,8 +539,9 @@ export class Game {
         const z = Math.sin(e.wob) * 0.7, c = Math.cos(z), s = Math.sin(z);
         [vx, vy] = [vx * c - vy * s, vx * s + vy * c];
       }
-      e.x += (vx + e.kx) * dt;
-      e.y += (vy + e.ky) * dt;
+      const slowK = timeSlow(this, e); // Penyihir Waktu's aura
+      e.x += (vx * slowK + e.kx) * dt;
+      e.y += (vy * slowK + e.ky) * dt;
       e.kx *= 0.86; e.ky *= 0.86;
       if (this.field) confineFieldEnemy(this, e); else confineEnemy(this, e);
       // touch damage
@@ -548,7 +560,8 @@ export class Game {
   // onHit: { slow: [k, s] } | { poison | burn: [k × damage per second, s] } (biome enemies, spec §25.4)
   // by: enemy type that dealt it (death dialog)
   hurtPlayer(raw, onHit = null, by = null, src = null) {
-    if (tryParry(this, src)) return false; // Tangkis Baja (run/tempo.js); src: the shot / hazard, if any
+    if (tryParry(this, src)) return false;
+    if (timeReflect(this, src)) return false; // Penyihir Waktu: a shot turned back // Tangkis Baja (run/tempo.js); src: the shot / hazard, if any
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
     if (by) this.lastFoe = by;
     let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul * traitMods(this).dmgTaken;

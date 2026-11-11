@@ -9,7 +9,8 @@ import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints } from '../meta/character.js';
-import { jobOf, spRespecPrice, spTotal, spFree, jobChangePrice } from '../meta/jobs.js';
+import { jobOf, spRespecPrice, spTotal, spFree, jobChangePrice, branchOf, branchesOf, branchChangePrice } from '../meta/jobs.js';
+import { BRANCH } from '../data/branches.js';
 import { CLASSES, JOB_IDS } from '../data/classes.js';
 import { JOB_PICK_LEVEL } from '../data/balance.js';
 import { dungeonById } from '../data/dungeons.js';
@@ -347,7 +348,37 @@ function jobPanel(char, ctx) {
     row.append(ic, txt, act);
     list.append(row);
   }
+  if (!novice) branchRows(char, ctx, list);
   return list;
+}
+
+// Job Lanjutan (spec §43.10): from BRANCH.level the trial against Bayangan Diri; after it, change branch here.
+// ctx: onBranchTrial(), onChangeBranch(id)
+function branchRows(char, ctx, list) {
+  const now = branchOf(char), price = branchChangePrice(char);
+  list.append(el('div', 'label', now ? t('Job Lanjutan: {b}. Ganti cabang tanpa ujian ulang.', { b: now.name })
+    : char.level >= BRANCH.level ? tr('Job Lanjutan: kalahkan Bayangan Diri — dirimu sendiri — lalu pilih satu cabang.')
+      : t('Job Lanjutan terbuka di level {n}: ujian melawan Bayangan Diri.', { n: BRANCH.level })));
+  for (const b of branchesOf(char.classId)) {
+    const row = el('div', `shoprow${now?.id === b.id ? ' worn' : ''}`);
+    const ic = el('span', 'sic brdot'); ic.style.background = b.color; ic.style.color = b.color;
+    const name = el('b', null, b.name); name.style.color = b.color;
+    const txt = el('div', 'stx'); txt.append(name, el('span', null, b.desc), el('span', 'meta', `${b.skills.map((s) => s.name).join(' · ')} · ${b.ult.name}`));
+    const act = el('span', 'skbtns');
+    if (now?.id === b.id) act.append(el('span', 'have', tr('Cabang sekarang')));
+    else if (now) {
+      const ch = button(String(price), 'btn small buy', () => ctx.onChangeBranch(b.id)); ch.prepend(el('span', 'coin')); ch.dataset.changebranch = b.id;
+      ch.disabled = char.gold < price;
+      act.append(ch);
+    }
+    row.append(ic, txt, act);
+    list.append(row);
+  }
+  if (!now) {
+    const go = button(tr('Mulai Ujian'), 'btn', () => ctx.onBranchTrial()); go.dataset.branchtrial = '1';
+    go.disabled = char.level < BRANCH.level;
+    list.append(go);
+  }
 }
 
 function trainerList(char, onUpgrade, onRespec, onTalentRespec) {

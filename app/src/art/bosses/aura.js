@@ -74,4 +74,13 @@ function eclipse(g, x0, y0, s, t, ph, front) {
   }
   if (!front) for (let i = 0; i < 32; i++) { const a = (i / 32) * TAU - t * 0.3, R = 110 * s; px(g, x0 + Math.cos(a) * R, y0 + Math.sin(a) * R * 0.22, i % 4 ? '#3a2458' : '#ffe08a', 2); }
 }
-export const AURAS = { lavaboss: lava, crystalboss: crystal, boss: maw, sporeboss: spore, tombboss: mummy, eclipseboss: eclipse };
+// Bayangan Diri: black-violet flames licking up from the feet, bright sparks in phase 2
+function shadowself(g, x0, y0, s, t, ph, front) {
+  const n = front ? (ph > 1 ? 46 : 26) : 30;
+  for (let i = 0; i < n; i++) {
+    const k = rise(t, i, 0.22 + (i % 5) * 0.04), sx = Math.sin(i * 8.3) * (front ? 70 : 110) * s * (1 - k * 0.4);
+    px(g, x0 + sx, y0 - k * (front ? 330 : 220) * s, k < 0.35 ? '#c79bff' : k < 0.7 ? '#7a3ae0' : '#2a0a4a', k < 0.4 && i % 3 === 0 ? 2 : 1);
+  }
+  if (!front) for (let i = 0; i < 28; i++) { const a = (i / 28) * TAU - t * 0.3, R = (95 + 12 * Math.sin(t * 2 + i)) * s; px(g, x0 + Math.cos(a) * R, y0 + Math.sin(a) * R * 0.25 - 2, i % 2 ? 'rgba(30,8,60,.9)' : 'rgba(120,60,220,.7)', 3); }
+}
+export const AURAS = { lavaboss: lava, crystalboss: crystal, boss: maw, sporeboss: spore, tombboss: mummy, eclipseboss: eclipse, shadowself };

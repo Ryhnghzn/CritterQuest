@@ -5,7 +5,8 @@
 import { el, button } from './screens.js';
 import { iconCanvas } from '../art/sprites.js';
 import { CLASSES } from '../data/classes.js';
-import { wornIds, equippedUlt, spFree, nextCost, treeRows } from '../meta/jobs.js';
+import { wornIds, equippedUlt, spFree, nextCost, treeRows, branchOf, jobOf } from '../meta/jobs.js';
+import { skillPool } from '../data/branches.js';
 import { PAGE_B_LEVEL } from '../data/balance.js';
 import { tr, t, num } from '../i18n.js';
 
@@ -31,13 +32,14 @@ export function renderSkillTab(char, opts, redraw) {
   const wrap = el('div', 'cpbody');
   const skills = el('div', 'panel skills');
   const cls = CLASSES[char.classId], canEdit = !!opts.editable, canTree = !!opts.treeEditable;
-  const byId = (id) => cls.skills.find((s) => s.id === id);
+  const pool = skillPool(cls, jobOf(char).branch), byId = (id) => pool.find((s) => s.id === id), br = branchOf(char);
   const pageB = char.level >= PAGE_B_LEVEL && char.classId !== 'novice'; // spec §43.6
   const worn = [...wornIds(char, 0), ...wornIds(char, 1)], ult = equippedUlt(char), free = spFree(char), rows = treeRows(char);
   if (!canEdit) { picked.slot = null; picked.skill = null; }
 
   const head = el('div', 'attrhead');
   head.append(el('b', null, tr('Poin Skill')), el('span', free > 0 ? 'pts on' : 'pts', t('{n} SP', { n: free })));
+  if (br) { const tag = el('span', 'brtag', br.title); tag.style.color = br.color; tag.title = br.desc; head.append(tag); } // Job Lanjutan (spec §43.10)
   skills.append(head, el('span', 'note', canTree ? tr('2 SP tiap naik level. Atur ulang di Pelatih.') : tr('SP hanya bisa dibagi di kota; skill tetap bisa dipasang.')));
 
   const slots = el('div', 'slots');
@@ -96,6 +98,7 @@ export function renderSkillTab(char, opts, redraw) {
     ic.append(iconCanvas(d.icon || (isSkill ? d.id : r.kind === 'ult' ? d.icon : 'hst'), 30));
     const txt = el('span', 'stx');
     txt.append(el('b', null, d.name), dots(r.level, r.max), el('span', null, d.desc));
+    if (r.branch) { const bt = el('span', 'brtag', br.name); bt.style.color = br.color; txt.append(bt); }
     if (isSkill) txt.append(el('span', 'meta', t('Energi {e} · jeda {cd} dtk', { e: d.cost, cd: num(d.cd) })));
     if (d.up) d.up.forEach((u, k) => txt.append(el('span', `lvup${r.level >= (k ? 5 : 3) ? ' on' : ''}`, `L${k ? 5 : 3} · ${u}`))); // spec §43.4
     const act = el('span', 'skbtns');

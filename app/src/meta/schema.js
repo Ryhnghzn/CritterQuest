@@ -13,6 +13,7 @@ import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js'
 import { SETTING_CHOICES, SETTING_DEFAULTS } from '../data/settings.js';
 import { UMUM_IDS } from '../data/skilltree.js';
 import { newJob, nodeOf, spSpent, spTotal } from './jobs.js';
+import { branchById } from '../data/branches.js';
 import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
 import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
@@ -215,13 +216,14 @@ function validateItem(it) {
 // learned, the ultimate learned, no more SP spent than the level gives.
 function validJob(classId, j, level) {
   if (!isObj(j) || !isObj(j.sp) || !Array.isArray(j.pages) || j.pages.length !== 2) return false;
-  for (const [id, lv] of Object.entries(j.sp)) { const n = nodeOf(classId, id); if (!n || !isInt(lv, 1, n.max)) return false; }
+  if (!(j.branch === null || branchById(classId, j.branch))) return false; // Job Lanjutan (spec §43.10)
+  for (const [id, lv] of Object.entries(j.sp)) { const n = nodeOf(classId, id, j.branch); if (!n || !isInt(lv, 1, n.max)) return false; }
   const worn = j.pages.flat();
   if (!j.pages.every((p) => Array.isArray(p) && p.length === SKILL_SLOTS)) return false;
   const ids = worn.filter((id) => id !== null);
-  if (new Set(ids).size !== ids.length || !ids.every((id) => nodeOf(classId, id)?.kind === 'skill' && j.sp[id] > 0)) return false;
-  if (!(j.page === 0 || j.page === 1) || typeof j.freeRespec !== 'boolean' || j.branch !== null) return false;
-  if (j.ult !== null && !(nodeOf(classId, j.ult)?.kind === 'ult' && j.sp[j.ult] > 0)) return false;
+  if (new Set(ids).size !== ids.length || !ids.every((id) => nodeOf(classId, id, j.branch)?.kind === 'skill' && j.sp[id] > 0)) return false;
+  if (!(j.page === 0 || j.page === 1) || typeof j.freeRespec !== 'boolean') return false;
+  if (j.ult !== null && !(nodeOf(classId, j.ult, j.branch)?.kind === 'ult' && j.sp[j.ult] > 0)) return false;
   return !isInt(level, 1) || spSpent(j, classId) <= spTotal(level);
 }
 

@@ -6,10 +6,11 @@ import { AUTO_ATTACK_MARGIN, CDR_MAX, ENERGY, ULT, SKILL_SLOTS, TEMPO } from '..
 import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx, focusShotFx } from './skillfx.js';
-import { traitMods, traitCast, traitCastExecute, traitFocusShot, traitRage } from './traits.js';
+import { traitMods, traitCast, traitCastExecute, traitFocusShot, traitRage, comboTempo } from './traits.js';
 import { isHeld, beginHeld, stepHeld, openParry } from './tempo.js';
 import { summon, stepSummons } from './summons.js';
 import { castFocus } from './focus.js';
+import { armAmbush, castRewind } from './branch.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -32,7 +33,7 @@ export function stepAttack(run, intent, dt) {
   const a = CLASSES[run.classId].attack;
   if (!attackWanted(run, intent)) return;
 
-  run.atkCd += a.interval * TEMPO.attackInterval / run.stats.atkSpd; // spec §33.1
+  run.atkCd += a.interval * TEMPO.attackInterval / (run.stats.atkSpd * comboTempo(run)); // spec §33.1; Penari Pedang
   run.attackT = ATTACK_POSE;
   const angle = Math.atan2(run.aimY, run.aimX);
   if (a.kind === 'arc') {
@@ -52,7 +53,7 @@ export function stepAttack(run, intent, dt) {
       speed: a.speed * TEMPO.projSpeed, range: a.range, r: shot ? a.r * shot.size : a.r, mult: a.mult,
       pierce: (shot ? shot.pierce : a.pierce) + (run.skillBuffT > 0 ? run.skillBuff?.pierceBasic || 0 : 0), explode: a.explode, fx: a.fx, // Mata Elang L5
     });
-    if (focus) { proj.crit = true; focusShotFx(run, angle); }
+    if (focus) { proj.crit = true; proj.snipe = true; focusShotFx(run, angle); } // snipe: Penembak Jitu's range bonus
     run.hits.push(proj);
   }
   sfx.attack(a.fx);
@@ -165,6 +166,7 @@ function castSkill(run, s) {
         follow: !!s.follow, freeze: s.freeze ?? 0, fx: s.look || s.id,
       }));
       run.hits[run.hits.length - 1].knock = s.knock || 0;
+      if (s.burn) run.hits[run.hits.length - 1].burn = s.burn; // Badai Api L5
       if (s.vuln) run.hits[run.hits.length - 1].vuln = s.vuln; // Kabut Racun L5: the foes inside take more
       if (s.after) later(run, s.after, x, y, s.duration ?? 0, s.look || s.id);           // L5: a vortex / lava stays
       if (s.finale) later(run, { ...s.finale, duration: 0.35 }, x, y, s.duration ?? 0, 'boom'); // L5: a big blast at the end
@@ -180,6 +182,7 @@ function castSkill(run, s) {
           speed: s.speed, range: s.range, r: s.r, mult: s.mult, pierce: s.pierce, explode: s.explode || null, fx: s.look || s.id,
           delay: (s.delay || 0) + wait, boomerang: !!s.boomerang, pull: s.pull || 0, trail: s.trail || null, split: s.split || null,
         });
+        if (s.crit) p.crit = true; // Tembakan Kepala L5
         if (s.pause) p.pause = s.pause; // a boomerang waits spinning at the far end (Kapak Bumerang L5)
         run.hits.push(p);
       }
@@ -226,6 +229,7 @@ function castSkill(run, s) {
       run.skillDash = true; // skill dashes never clear Bidik
       run.dodgeX = run.aimX * dir; run.dodgeY = run.aimY * dir;
       run.dodgeInv = Math.max(run.dodgeInv, s.duration + 0.1);
+      armAmbush(run); // Bayangan: a dash counts like a dodge
       if (s.mult > 0) {
         const sw = makeSweep({ x: run.px, y: run.py, r: s.r, mult: s.mult, duration: s.duration + 0.05, follow: true, fx: s.look || s.id });
         if (s.resetOnKill) sw.resetSid = s.id; // a kill makes the skill ready again (Terjang)
@@ -256,15 +260,19 @@ function castSkill(run, s) {
     case 'buff':
       run.buffT = s.duration;
       run.dmgTakenMul = s.dmgTaken;
-      if (s.atk || s.atkSpd || s.crit || s.critDmg || s.moveSpd || s.pierceBasic || s.killExtend) {
-        run.skillBuff = { atk: s.atk, atkSpd: s.atkSpd, crit: s.crit, critDmg: s.critDmg, moveSpd: s.moveSpd, pierceBasic: s.pierceBasic, killExtend: s.killExtend, extended: 0 };
+      if (s.atk || s.atkSpd || s.crit || s.critDmg || s.moveSpd || s.pierceBasic || s.killExtend || s.lifesteal) {
+        run.skillBuff = { atk: s.atk, atkSpd: s.atkSpd, crit: s.crit, critDmg: s.critDmg, moveSpd: s.moveSpd, pierceBasic: s.pierceBasic, killExtend: s.killExtend, lifesteal: s.lifesteal, extended: 0 };
         run.skillBuffT = s.duration;
         run.applyBuffs();
       }
       if (s.blast) blast(run, s.blast);
       if (s.rage) traitRage(run, s.rage);                                           // Amarah Perang L5: Murka at once
       if (s.invuln) run.dodgeInv = Math.max(run.dodgeInv, s.invuln);                  // Bom Asap L5
+      if (s.ambush) run.ambushT = s.invuln || 1.5;                                  // Menghilang: the next hit is an ambush
       if (s.endBlast) later(run, { ...s.endBlast, duration: 0.35, follow: true }, run.px, run.py, s.duration, 'nova'); // Perisai Mana L5
+      break;
+    case 'rewind': // Putar Balik (spec §43.10, run/branch.js)
+      castRewind(run, s);
       break;
     default:
       throw new Error(`unknown skill kind ${s.kind}`);

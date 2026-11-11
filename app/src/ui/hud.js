@@ -10,7 +10,7 @@ import { activeQuests } from '../meta/quests.js';
 import { stepText } from './journal.js';
 import { tr, t } from '../i18n.js';
 import { CLASSES } from '../data/classes.js';
-import { traitLevel } from '../run/traits.js';
+import { traitLevel, comboMax } from '../run/traits.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -40,8 +40,9 @@ export function updateHUD(game) {
     if (combo) {
       tp.style.setProperty('--c', tc.color);
       tp.title = tr('Kombo');
-      const pips = tp.children;
-      for (let i = 0; i < pips.length; i++) pips[i].classList.toggle('on', i < v);
+      const pips = tp.children, max = comboMax(game, tc); // 10 for the Penari Pedang (spec §43.10)
+      while (pips.length < max) { const p = document.createElement('i'); p.className = 'pip'; tp.appendChild(p); }
+      for (let i = 0; i < pips.length; i++) { pips[i].classList.toggle('on', i < v); pips[i].classList.toggle('hidden', i >= max); }
     } else {
       const hot = tc.id === 'heat' ? tr_.lock > 0 : tr_.on > 0;
       const text = tc.id === 'heat' ? (tr_.lock > 0 ? t('Kepanasan {s}s', { s: tr_.lock.toFixed(1) }) : t('Panas {n}', { n: v }))

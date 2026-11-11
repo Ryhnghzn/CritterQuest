@@ -40,7 +40,7 @@ export function benchGame(c, dungeon = 'shadow', floor = 1) {
   resetRng();
   const g = new Game();
   g.start({ classId: c.classId, stats: finalStats(c), level: c.level, dungeon, floor,
-    effects: mergeFx(mergeFx(gearEffects(c), umumFx(c)), passiveFx(c)), skills: wornIds(c, 0), levels: jobOf(c).sp,
+    effects: mergeFx(mergeFx(gearEffects(c), umumFx(c)), passiveFx(c)), skills: wornIds(c, 0), levels: jobOf(c).sp, branch: jobOf(c).branch,
     ult: leveled(equippedUlt(c), levelOf(c, equippedUlt(c)?.id), true) });
   g.spawnT = 1e9; g.queueI = g.queue.length; g.wave = 99; g.god = false;
   return g;

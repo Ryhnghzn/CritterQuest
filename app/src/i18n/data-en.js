@@ -7,10 +7,11 @@ import { getLang } from '../i18n.js';
 import { CLASSES } from '../data/classes.js';
 import { RARITIES, SLOTS, VARIANTS, BONUSES, EFFECTS, UNIQUES, CHESTS } from '../data/items.js';
 import { ENEMIES, AFFIXES } from '../data/enemies.js';
-import { DUNGEONS } from '../data/dungeons.js';
+import { DUNGEONS, TRIAL_DUNGEON } from '../data/dungeons.js';
 import { POTIONS } from '../data/potions.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { UMUM, PASSIVES } from '../data/skilltree.js';
+import { BRANCHES } from '../data/branches.js';
 import { UPGRADES } from '../data/shop.js';
 import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
@@ -240,7 +241,7 @@ const ENEMY_EN = {
   'Sang Gerhana': 'The Eclipse', 'Lendir Hampa': 'Void Slime', 'Kelelawar Gerhana': 'Eclipse Bat', 'Katak Hampa': 'Void Frog', 'Golem Gerhana': 'Eclipse Golem', 'Hantu Gerhana': 'Eclipse Wraith',
   Lendir: 'Ooze', Kelelawar: 'Bat', Golem: 'Golem', 'Lendir Kecil': 'Oozeling', 'Katak Ludah': 'Spitting Toad', 'Babi Batu': 'Stone Boar',
   'Dukun Tengkorak': 'Skull Shaman', 'Peri Lumut': 'Moss Wisp', 'Jamur Bom': 'Bomb Shroom', 'Kura Baja': 'Iron Tortoise',
-  'Raja Maw': 'King Maw', 'Golem Kristal': 'Crystal Golem', 'Ratu Spora': 'Spore Queen', 'Raja Lava': 'Lava King',
+  'Bayangan Diri': 'Shadow Self', 'Raja Maw': 'King Maw', 'Golem Kristal': 'Crystal Golem', 'Ratu Spora': 'Spore Queen', 'Raja Lava': 'Lava King',
   'Serigala Bayang': 'Shadow Wolf', 'Lendir Beku': 'Frost Ooze', 'Katak Salju': 'Snow Toad', 'Golem Es': 'Ice Golem', 'Roh Es': 'Frost Wisp',
   'Lendir Pasir': 'Sand Ooze', 'Burung Nasar': 'Vulture', Kalajengking: 'Scorpion', 'Cacing Pasir': 'Sandworm',
   'Lendir Magma': 'Magma Ooze', 'Jamur Bara': 'Ember Shroom', 'Imp Api': 'Fire Imp', 'Raja Mumi': 'Mummy King',
@@ -249,7 +250,7 @@ const ENEMY_EN = {
 };
 const AFFIX_EN = { Cepat: 'Swift', Berlapis: 'Armored', Pemanggil: 'Summoner', Berduri: 'Thorned', Meledak: 'Volatile', Beraura: 'Searing', Penjelajah: 'Blinking' };
 const PHASE_NAME_EN = { 'Matahari Hitam': 'Black Sun', 'GERHANA!': 'ECLIPSE!', 'KEHAMPAAN!': 'THE VOID!',
-  'LAPAR!': 'RAVENOUS!', 'RETAK!': 'SHATTERING!', 'MEKAR!': 'IN FULL BLOOM!', 'KUTUKAN FIRAUN!': "PHARAOH'S CURSE!", 'LANTAI MENDIDIH!': 'THE FLOOR BOILS!' }; // boss phase 2 (spec §41.2)
+  'LAPAR!': 'RAVENOUS!', 'RETAK!': 'SHATTERING!', 'MEKAR!': 'IN FULL BLOOM!', 'KUTUKAN FIRAUN!': "PHARAOH'S CURSE!", 'LANTAI MENDIDIH!': 'THE FLOOR BOILS!', 'BAYANGAN MENGAMUK!': 'THE SHADOW RAGES!' }; // boss phase 2 (spec §41.2)
 const DUNGEON_EN = {
   'Menara Gerhana': ['Eclipse Spire', 'Spire'], 'Ruang Bawah Tanah Bayangan': ['Shadow Crypt', 'Shadow'], 'Gua Kristal': ['Crystal Cave', 'Crystal'],
   'Hutan Jamur Busuk': ['Rotting Mushroom Forest', 'Fungus'], 'Benteng Lava': ['Lava Fortress', 'Lava'], 'Makam Pasir': ['Sand Tomb', 'Tomb'],
@@ -607,6 +608,53 @@ const WILD_EN = {
   "Kakiku terjepit… aku bisa merangkak pulang, tapi tolong kabari Ignis di Baraapi. Dia pasti mencariku.": "My leg is pinned… I can crawl home, but please tell Ignis in Emberfall. He must be looking for me.",
   "Bara masih hidup? Aku segera menjemputnya! Ini, dari tabungan kami para penambang.": "Bara's alive? I'll go fetch him right away! Here, from our miners' savings.",
 };
+// Job Lanjutan (spec §43.10): branch name → [name, title, desc]; their skills / passives below
+const BRANCH_EN = {
+  Berserker: ['Berserker', 'The Berserker', 'Rage never drains; the closer to death the harder you hit (up to +40% at 20% HP), but Rage no longer reduces damage taken.'],
+  Paladin: ['Paladin', 'The Paladin', 'Every basic slash adds a holy shield of 1% max HP (up to 20%); heal 1% HP per second; slashes push foes back.'],
+  'Penembak Jitu': ['Sharpshooter', 'The Sharpshooter', 'Focus fills 50% faster; the Focus shot deals +1% damage per 4 units of distance to the target.'],
+  Pemburu: ['Hunter', 'The Hunter', '25% of basic arrows ricochet to another foe (chain lightning); +15% damage while moving.'],
+  'Penyihir Api': ['Pyromancer', 'The Pyromancer', 'Full Heat bursts around you (600%, area 150) and overheating is 50% shorter; skill cooldowns +10%.'],
+  'Penyihir Waktu': ['Chronomancer', 'The Chronomancer', 'Foes within 150 move 30% slower; 6% of enemy shots are reflected.'],
+  Bayangan: ['Shade', 'The Shade', 'For 1.5 seconds after a dodge or dash, the first hit is a sure crit ×1.5.'],
+  'Penari Pedang': ['Blade Dancer', 'The Blade Dancer', 'Combo up to 10 (not 5); attack speed +3% per Combo point; a broken Combo is lost entirely.'],
+};
+const BRANCH_SKILL_EN = {
+  'Amuk Darah': 'Blood Frenzy', 'ATK & kecepatan serang +40%, menghisap 3% damage selama 8 detik; damage diterima +20%.': 'ATK & attack speed +40%, 3% lifesteal for 8 seconds; damage taken +20%.', 'Menghisap 6%': 'Lifesteal 6%',
+  'Lompatan Amuk': 'Rampage Leap', 'Menerjang 260 px, 600% ke yang dilewati, kebal. Membunuh = siap lagi.': 'Charge 260 px, 600% to everything passed, invulnerable. A kill = ready again.', 'Gelombang 300% di akhir': 'A 300% wave at the end',
+  Ragnarok: 'Ragnarok', 'Badai amuk 2 detik di sekitar: 8×400%, menarik musuh.': 'A 2-second storm of fury around you: 8×400%, pulls foes in.',
+  'Perlindungan Suci': 'Divine Guard', 'Damage diterima −60% selama 6 detik.': 'Damage taken −60% for 6 seconds.', 'Gelombang suci 300% saat dipakai': 'A 300% holy wave on cast',
+  'Palu Penghakiman': 'Hammer of Judgment', 'Palu cahaya jatuh di titik bidik: 500% area 90, membekukan 0,6 detik.': 'A hammer of light falls at the aim point: 500% in an area of 90, freezes 0.6 seconds.', 'Palu kedua 1 detik kemudian': 'A second hammer 1 second later',
+  'Tanah Suci': 'Sanctuary', 'Lingkaran suci 3 detik mengikutimu: 6×250%; damage diterima −50%.': 'A holy circle follows you for 3 seconds: 6×250%; damage taken −50%.',
+  'Tembakan Kepala': 'Headshot', 'Membidik 0,4 detik lalu panah 700% menembus 2 musuh.': 'Aim for 0.4 seconds, then a 700% arrow piercing 2 foes.', 'Menembus +2': 'Pierce +2', 'Pasti kritikal': 'Always crits',
+  'Fokus Mantap': 'Steady Aim', 'Kritis +40% dan damage kritis +50% selama 6 detik.': 'Crit +40% and crit damage +50% for 6 seconds.', 'Bidik langsung penuh': 'Focus fills at once',
+  'Mata Maut': 'Eye of Death', 'Membidik 0,6 detik lalu sinar maut panjang selebar 46: 7000% ke semua di garis.': 'Aim for 0.6 seconds, then a long deadly beam 46 wide: 7000% to everything on the line.',
+  'Panggil Serigala': 'Call the Wolf', 'Serigala bayangan menemanimu 12 detik, menerkam di sekitarnya 80%; separuh musuh mengincarnya.': 'A shadow wolf fights beside you for 12 seconds, pouncing around it for 80%; half the foes go for it.', 'Damage 110%': 'Damage 110%', 'Melolong 400% saat habis': 'Howls for 400% when it ends',
+  'Hujan Lari': 'Running Volley', '7 panah menyebar 40°, masing-masing 160%, bisa sambil berlari.': '7 arrows over 40°, 160% each, fired on the run.', '+3 panah': '+3 arrows', 'Panah menembus 1 musuh': 'Arrows pierce 1 foe',
+  'Gelombang Buru': 'Hunting Wave', 'Delapan pilar duri meletus berurutan ke arah bidik, masing-masing 300%, memperlambat.': 'Eight thorn pillars erupt one after another toward the aim, 300% each, slowing.',
+  'Badai Api': 'Firestorm', 'Pusaran api di titik bidik 2 detik: 6×160%.': 'A fire vortex at the aim point for 2 seconds: 6×160%.',
+  'Bakar Habis': 'Burnout', 'Ledakan api di sekitarmu: 500% area 130, mendorong.': 'A fire blast around you: 500% in an area of 130, pushes back.', 'Area +20%': 'Area +20%', 'Lantai api 2 detik, 40% tiap 0,5 detik': 'Burning floor for 2 seconds, 40% every 0.5 seconds',
+  Supernova: 'Supernova', 'Matahari meledak di sekitarmu: 2000% area 220, mendorong jauh.': 'A sun bursts around you: 2000% in an area of 220, pushes far.',
+  'Putar Balik': 'Rewind', 'Kembali ke tempat & HP 3 detik lalu (HP tidak pernah turun), lalu ledakan waktu 200%.': 'Return to where you were and your HP 3 seconds ago (HP never goes down), then a 200% time burst.', 'Jeda −3 detik': 'Cooldown −3 seconds', 'Ledakan membekukan 1 detik': 'The burst freezes for 1 second',
+  'Medan Waktu': 'Time Field', 'Medan di titik bidik 4 detik: 8×40%, musuh di dalamnya hampir berhenti.': 'A field at the aim point for 4 seconds: 8×40%, foes inside nearly stop.', 'Musuh di dalam menerima +20% damage': 'Foes inside take +20% damage',
+  'Hentikan Waktu': 'Time Stop', 'Waktu berhenti di sekitarmu: 200% area 260, semua musuh membeku 4 detik.': 'Time stops around you: 200% in an area of 260, every foe frozen for 4 seconds.',
+  Menghilang: 'Vanish', 'Kebal 1,5 detik dan pukulan pertama sesudahnya serangan bayangan.': 'Invulnerable for 1.5 seconds, and the first hit after is a shadow strike.', 'Jeda −2 detik': 'Cooldown −2 seconds', 'Gerak +40% selama menghilang': 'Move +40% while vanished',
+  'Serangan Bayangan': 'Shadow Strike', 'Melesat 200 px, 600% ke yang dilewati, kebal.': 'Dash 200 px, 600% to everything passed, invulnerable.',
+  'Gerhana Bayangan': 'Shadow Eclipse', 'Teleport ke belakang musuh yang dibidik, 4 tebasan dalam 0,4 detik total 7000%, kebal; musuh biasa ber-HP < 35% mati seketika.': 'Teleport behind the aimed foe, 4 slashes in 0.4 seconds for 7000% in total, invulnerable; normal foes under 35% HP die at once.',
+  'Pusaran Pedang': 'Blade Vortex', 'Pedang mengitarimu 3 detik, 140% tiap 0,2 detik, lalu dilempar menembus 400%.': 'Blades circle you for 3 seconds, 140% every 0.2 seconds, then fly out piercing for 400%.',
+  'Hujan Tebasan': 'Slash Rain', '9 belati menyebar 60°, masing-masing 180%.': '9 daggers over 60°, 180% each.',
+  'Seribu Sayatan': 'Thousand Cuts', 'Menari 2,5 detik sambil menyayat semua di sekitar: 20×120%, kebal.': 'Dance for 2.5 seconds cutting everything around: 20×120%, invulnerable.',
+};
+const BRANCH_PASSIVE_EN = {
+  'Haus Darah': ['Bloodthirst', 'Low-HP damage bonus +15% per level'], 'Kulit Tebal': ['Thick Hide', 'Max HP +5% per level'],
+  Iman: ['Faith', 'Heal +0.3% HP per second per level'], Benteng: ['Bulwark', 'DEF +2 per level'],
+  'Jarak Jauh': ['Long Shot', 'Damage to foes farther than 250 +10% per level'], Sabar: ['Patience', 'Focus fills +20% per level'],
+  Lincah: ['Nimble', 'Attack speed +4% per level'], Pelacak: ['Tracker', 'Damage while moving +5% per level'],
+  Pemantik: ['Igniter', '8% per level for skills to burn (2 seconds, 20% every 0.5 seconds)'], 'Jantung Api': ['Fire Heart', 'Skill damage +4% per level'],
+  Percepat: ['Haste', 'Skill cooldowns −3% per level'], 'Tangkis Waktu': ['Time Parry', 'Shots reflected +6% per level'],
+  Gorok: ['Cutthroat', 'Crit damage +8% per level'], 'Selubung Malam': ['Night Veil', 'Shadow strikes +15% per level'],
+  Irama: ['Rhythm', 'Attack speed +1% per Combo point per level'], Tajam: ['Keen', 'Crit +2 per level'],
+};
 const WILD_NAME_EN = {"Resi Sunyi": "Silent Sage", "Penjaga Kawah": "Crater Keeper", "Pak Gaharu": "Old Gaharu"};
 const DROP_EN = {"Jamur Bercahaya": "Glowcap", "Sisik Cacing": "Worm Scale", "Lendir Kental": "Thick Goo", "Bunga Kunang": "Firefly Blossom", "Bara Abadi": "Everlasting Ember"};
 
@@ -640,12 +688,18 @@ export function localizeData() {
   for (const a of Object.values(AFFIXES)) swap(a, 'name', AFFIX_EN);
   for (const e of Object.values(ENEMIES)) { swap(e, 'name', ENEMY_EN); for (const ph of e.phases || []) swap(ph, 'name', PHASE_NAME_EN); }
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }
+  [TRIAL_DUNGEON.name, TRIAL_DUNGEON.short] = ['Branch Trial', 'Trial']; // Job Lanjutan (spec §43.10)
   for (const p of Object.values(POTIONS)) { const en = POTION_EN[p.name]; if (en) [p.name, p.desc] = en; }
   for (const m of Object.values(MATS)) swap(m, 'name', MAT_EN);
   for (const g of Object.values(GEMS)) swap(g, 'name', GEM_EN);
   swapAll(GEM_TIER_NAMES, GEM_TIER_EN);
   for (const tl of UMUM) { const en = TALENT_EN[tl.name]; if (en) [tl.name, tl.desc] = en; }
   for (const p of Object.values(PASSIVES).flat()) { const en = PASSIVE_EN[p.name]; if (en) [p.name, p.desc] = en; }
+  for (const b of Object.values(BRANCHES).flat()) {
+    const en = BRANCH_EN[b.name]; if (en) [b.name, b.title, b.desc] = en;
+    for (const sk of [...b.skills, b.ult]) { swap(sk, 'name', BRANCH_SKILL_EN); swap(sk, 'desc', BRANCH_SKILL_EN); if (sk.up) sk.up = sk.up.map((u) => BRANCH_SKILL_EN[u] ?? SKILL_EN[u] ?? u); }
+    for (const p of b.passives) { const pe = BRANCH_PASSIVE_EN[p.name]; if (pe) [p.name, p.desc] = pe; }
+  }
   for (const u of Object.values(UPGRADES)) { const en = UPGRADE_EN[u.name]; if (en) [u.name, u.desc] = en; }
   for (const a of ATTRS) swap(a, 'desc', ATTR_EN);
   for (const p of PHASES) swap(p, 'name', PHASE_EN);

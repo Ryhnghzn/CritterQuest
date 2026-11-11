@@ -4,6 +4,15 @@
 
 // skill id → { el: palette (data/fx.js PALETTES), n: main burst size, rate: particles/s while alive }
 export const SKILL_FX = {
+  // Job Lanjutan (spec §43.10)
+  bloodrage: { el: 'blood', n: 26, rate: 24 }, rageleap: { el: 'blood', n: 12, rate: 120 }, ragnarok: { el: 'blood', n: 34, rate: 150 },
+  holyguard: { el: 'holy', n: 24, rate: 10 }, judgment: { el: 'holy', n: 30, dust: 20 }, sanctuary: { el: 'holy', n: 30, rate: 60 },
+  headshot: { el: 'holy', n: 18, rate: 90, charge: 70 }, steadyaim: { el: 'holy', n: 18, rate: 6 }, deatheye: { el: 'holy', n: 44, rate: 90 },
+  wolf: { el: 'shadow', n: 18, rate: 30 }, runvolley: { el: 'steel', n: 14, rate: 24 }, huntwave: { el: 'steel', n: 26, dust: 30 },
+  firestorm: { el: 'fire', n: 24, rate: 60 }, burnout: { el: 'fire', n: 36 }, supernova: { el: 'fire', n: 60, rate: 40 },
+  rewind: { el: 'ice', n: 24, rate: 60 }, timefield: { el: 'ice', n: 20, rate: 30 }, timestop: { el: 'ice', n: 50 },
+  vanish: { el: 'shadow', n: 26, rate: 20 }, shadowstrike: { el: 'shadow', n: 12, rate: 120 }, shadoweclipse: { el: 'shadow', n: 44, rate: 80 },
+  bladevortex: { el: 'steel', n: 12, rate: 50 }, slashrain: { el: 'steel', n: 14, rate: 24 }, thousandcuts: { el: 'shadow', n: 34, rate: 140 },
   // Pengembara (spec §43.1): plain steel
   // tempo skills (spec §43.4)
   greatslash: { el: 'steel', n: 18, rate: 60 },

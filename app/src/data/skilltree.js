@@ -38,7 +38,7 @@ export const PASSIVES = {
   ],
 };
 // A Bilah Racun hit: poison for `time` seconds, `mult` × ATK every `every` seconds; Lolos Tipis lasts `time`
-export const PASSIVE_RULES = { poison: { time: 3, every: 0.5, mult: 0.2 }, closeCall: { time: 2 }, farCrit: 250 };
+export const PASSIVE_RULES = { poison: { time: 3, every: 0.5, mult: 0.2 }, burn: { time: 2, every: 0.5, mult: 0.2 }, closeCall: { time: 2 }, farCrit: 250 };
 
 // Umum: the old talents (spec §21), unchanged effects. stat: pct = fraction of the stat, add = flat;
 // fx: added to the run's effect values (same keys as gear effects).

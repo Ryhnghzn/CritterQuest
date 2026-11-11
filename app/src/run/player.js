@@ -2,6 +2,7 @@
 // `intent` comes from the input layer once per fixed step:
 //   { move: {x, y} (length ≤ 1), aimAt: {x, y} world point | null (auto-aim), dodge: bool, … }
 // Also keeps run.aimPX/aimPY: the world point skills target (mouse, auto target, or ahead).
+import { armAmbush } from './branch.js';
 import { DODGE, AUTO_AIM_RANGE, TEMPO } from '../data/balance.js';
 import { PASSIVE_RULES } from '../data/skilltree.js';
 import { confinePlayer } from './dungeon.js';
@@ -18,6 +19,7 @@ const AIM_AHEAD = 120; // skill target point when there is nothing to aim at
 export function stepPlayer(run, intent, dt) {
   const mx = intent.move.x, my = intent.move.y;
   const moving = mx * mx + my * my > 0.0001;
+  run.moving = moving; // Pemburu's damage on the move (run/branch.js)
   run.moveX = mx; run.moveY = my;
 
   // aim: mouse point, else nearest enemy in range, else movement, else keep
@@ -46,6 +48,7 @@ export function stepPlayer(run, intent, dt) {
     run.dodgeCd = DODGE.cooldown * run.dodgeCdMul;
     run.dodgeInv = DODGE.invuln;
     if (run.fx?.dodgeCrit) run.closeCallT = PASSIVE_RULES.closeCall.time; // Lolos Tipis (spec §43.3)
+    armAmbush(run); // Bayangan (spec §43.10)
     sfx.dodge();
   }
   if (run.dodgeInv > 0) run.dodgeInv -= dt; // the dodge frame itself counts

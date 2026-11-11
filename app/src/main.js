@@ -34,7 +34,8 @@ import { MOUNT_IDS } from './data/mounts.js';
 import { mountGainText } from './ui/stable.js';
 import { MAJESTIC_BY_ID } from './render/world.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
-import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf, newJob, pickJob, changeJob, jobChangePrice, levelOf } from './meta/jobs.js';
+import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf, newJob, pickJob, changeJob, jobChangePrice, levelOf, pickBranch, changeBranch, branchChangePrice, branchesOf, canTrial } from './meta/jobs.js';
+import { setShadowLook } from './art/bosses/index.js';
 import { leveled } from './run/skilllevel.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
@@ -48,7 +49,7 @@ import { drawCampfire } from './art/titlebg.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
 import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL, ULT } from './data/balance.js';
-import { DUNGEONS, dungeonById } from './data/dungeons.js';
+import { DUNGEONS, dungeonById, trialAt } from './data/dungeons.js';
 import { startFloor, makeElite } from './run/dungeon.js';
 import { freshMount } from './run/mount.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
@@ -444,6 +445,16 @@ function openNpc(npc, message = null) {
       else openNpc(townNpc);
     },
     onTryJob: (id) => tryJob(id),
+    // Job Lanjutan (spec §43.10): the trial, then a branch; change it later for a price
+    onBranchTrial: async () => {
+      if (await confirmDialog(tr('Lawan Bayangan Diri — dirimu sendiri, jauh lebih kuat. Tanpa hadiah, tanpa risiko; menang = pilih cabang. Siap?'), tr('Mulai Ujian'))) branchTrial();
+      else openNpc(townNpc);
+    },
+    onChangeBranch: async (id) => {
+      const b = branchesOf(current.classId).find((x) => x.id === id);
+      if (await confirmDialog(t('Ganti cabang ke {b} seharga {n} koin? SP cabang lama dikembalikan.', { b: b.name, n: branchChangePrice(current) }), tr('Ganti'))) serve((c, now) => changeBranch(c, id, now), t('Kini kau {title}.', { title: b.title }));
+      else openNpc(townNpc);
+    },
     onBountyClaim: (i, sub = bountyText(current.bounties[i])) => serve((c, now) => claimBounty(c, i, Math.random, now), (r) => (rewardPop(tr('Tugas selesai!'), sub, { ...r.reward, mats: { dust: r.reward.dust } }, r.levelsGained), {
       text: t('Tugas selesai! +{g} koin, +{e} EXP, +{d} {dust}, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, d: r.reward.dust, dust: MATS.dust.name, m: r.reward.marks })
         + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a',
@@ -726,6 +737,40 @@ async function tryJob(id) {
   await enterDungeon('shadow', 1);
 }
 
+// The Job Lanjutan trial (spec §43.10): the real character, alone with its shadow on floor 5 of the trial
+// arena. Like the training arena nothing is saved; a win (the floor cleared) offers the two branches.
+async function branchTrial() {
+  if (!canTrial(current)) return;
+  if (scene === 'town') syncHp();
+  await saveCurrent();
+  const real = current, t0 = structuredClone(real);
+  t0.hp = null; t0.potions = structuredClone(real.potions);
+  trial = { real, branch: true };
+  current = t0;
+  setShadowLook(t0.classId, avatarOf(t0).look);
+  trialAt(t0.level);
+  toast(tr('Ujian Cabang: kalahkan bayanganmu sendiri!'));
+  await enterDungeon('trial', 5);
+}
+// after a won trial: one of the two branches (asked again until one is picked)
+async function chooseBranch() {
+  const [a, b] = branchesOf(current.classId);
+  for (;;) {
+    const first = await confirmDialog(t('Bayanganmu tumbang! Pilih jalanmu:\n\n{a} — {da}\n\n{b} — {db}', { a: a.name, da: a.desc, b: b.name, db: b.desc }), a.name, b.name);
+    const pick = first ? a : b;
+    if (await confirmDialog(t('Jadi {title}? Ganti cabang nanti di Pelatih berbayar.', { title: pick.title }), tr('Pilih'))) {
+      const r = pickBranch(current, pick.id, Date.now());
+      if (!r.ok) return;
+      current = r.char;
+      await saveCurrent();
+      sfx.heart();
+      updateTownHUD(current, town);
+      showRewardPop({ title: pick.title, sub: tr('Skill, ultimate, dan pasif cabang ada di Karakter → Skill.') });
+      return;
+    }
+  }
+}
+
 async function enterDungeon(dungeon = 'shadow', floor = 1) {
   if (scene === 'town') syncHp();
   await saveCurrent();
@@ -736,7 +781,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
   });
   tripAttrs = {};
   setupRunUI();
@@ -764,7 +809,7 @@ async function explore(at = current.location) {
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
     at, gate: typeof at === 'string' ? lastGate[at] ?? null : null, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
     eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });
@@ -981,10 +1026,12 @@ function drawTownMinimap() {
 // apply rewards/penalty, auto-save, show Hasil Perjalanan (spec §13.4).
 async function endRun(died) {
   if (trial) { // back from the training arena: the real character, as it was
+    const won = trial.branch && !died && game.cleared;
     current = trial.real; trial = null;
     stopMusic();
-    toast(tr('Latihan selesai.'));
+    if (!won) toast(tr(game.dungeon.id === 'trial' ? 'Ujian gagal. Coba lagi kapan pun di Pelatih.' : 'Latihan selesai.'));
     enterTown(current, 'gate');
+    if (won) setTimeout(() => chooseBranch(), 700);
     return;
   }
   if (game.field) { endField(died); return; }
@@ -1115,6 +1162,7 @@ const cheatActions = {
     await saveCurrent();
     toast(tr(msg)); drawCheat();
   },
+  branchWin: () => { if (scene === 'town' && canTrial(current)) { toggleCheat(); chooseBranch(); } else toast(tr('Perlu job, level 30+, belum bercabang, di kota.')); },
   gold: (n) => cheatChar((c) => { c.gold += n; }, t('+{n} koin', { n })),
   level: (n) => cheatChar((c) => { c.level = Math.min(CHAR_LEVEL_MAX, c.level + n); c.exp = 0; }, 'Level naik'),
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),

@@ -160,7 +160,7 @@ export class Renderer {
   }
 
   drawRoom(g, game, t, visible) {
-    drawRoom(g, game.room, game.dungeon.theme, this.grounds[game.dungeon.id], t, visible);
+    drawRoom(g, game.room, game.dungeon.theme, (this.grounds[game.dungeon.id] || this.grounds.shadow), t, visible);
     runeCircle(g, t, game.floorClear);
     if (game.portals) for (const p of game.portals) portalBase(g, p, game.clearT, t);
   }

@@ -276,19 +276,35 @@ export const ENEMIES = {
     meteor: { count: 3, r: 100, fuse: 1.4, gap: 0.5, spread: 40, dmg: 40 },
     pools: { count: 4, max: 6, near: [100, 240], r: 70, life: 40, dmg: 8, tick: 0.5, onHit: { burn: [0.3, 2] } },
   },
+  // Bayangan Diri (spec §43.10): the Job Lanjutan trial — your own shadow, fast and relentless. Only in
+  // the trial arena (data/dungeons.js TRIAL_DUNGEON); drawn as your hero in art/bosses/shadow.js.
+  shadowself: {
+    name: 'Bayangan Diri', boss: true, hp: 1300, speed: 70, dmg: 30, r: 28, xp: 0, sprite: 'shadowself', score: 0,
+    ai: 'boss', every: 1.9, enrageAt: 0.5, enragedEvery: 1.2,
+    patterns: ['charge', 'ring', 'clones', 'slam'],
+    phases: [
+      { at: 1, patterns: ['charge', 'ring', 'clones', 'slam', 'charge'] },
+      { at: 0.5, name: 'BAYANGAN MENGAMUK!', patterns: ['charge', 'clones', 'spiral', 'slam', 'charge', 'ring'] },
+    ],
+    ring: { count: 16, speed: 160, dmg: 14, waves: 3, gap: 0.35, r: 7, color: '#b07cff' },
+    spiral: { arms: 3, time: 2.2, every: 0.1, speed: 170, dmg: 12, turn: 2.4, r: 6, color: '#c79bff' },
+    slam: { count: 4, gap: 0.35, fuse: 0.75, radius: 75, dmg: 30 },
+    clones: { count: 3, dist: 170, warn: 0.7, ring: { count: 12, speed: 160, dmg: 12, r: 6, color: '#b07cff' } },
+    windup: 0.5, dash: { speed: 600, time: 0.45 }, rest: 0.35,
+  },
 };
 
 // What each enemy's shots and slams look like (spec §41.2): a picture in art/pix/fx.js per look,
 // instead of the same glowing ball in every colour. Copied onto the ring / spiral / shot / slam configs.
 export const SHOT_LOOKS = {
-  boss: 'maw', crystalboss: 'crystal', sporeboss: 'spore', tombboss: 'scarab', lavaboss: 'magma', eclipseboss: 'void',
+  boss: 'maw', crystalboss: 'crystal', sporeboss: 'spore', tombboss: 'scarab', lavaboss: 'magma', eclipseboss: 'void', shadowself: 'void',
   spitter: 'spit', frostspitter: 'crystal', icewisp: 'crystal', imp: 'magma', voidspitter: 'void', wraith: 'void',
 };
 for (const [id, look] of Object.entries(SHOT_LOOKS)) for (const k of ['ring', 'spiral', 'shot', 'slam', 'meteor', 'shrooms', 'cloud', 'pools', 'shardrain', 'eruption', 'curse']) if (ENEMIES[id][k]) ENEMIES[id][k].look = look;
-for (const [id, k] of [['boss', 'clones'], ['tombboss', 'sandstorm']]) ENEMIES[id][k][k === 'clones' ? 'ring' : 'shot'].look = SHOT_LOOKS[id];
+for (const [id, k] of [['boss', 'clones'], ['tombboss', 'sandstorm'], ['shadowself', 'clones']]) ENEMIES[id][k][k === 'clones' ? 'ring' : 'shot'].look = SHOT_LOOKS[id];
 
 // Red shots that no parry can stop (spec §43.8): every dungeon boss's spiral. Drawn with a red glow.
-export const UNPARRYABLE = { boss: ['spiral'], crystalboss: ['spiral'], sporeboss: ['spiral'], tombboss: ['spiral'], lavaboss: ['spiral'], eclipseboss: ['spiral'] };
+export const UNPARRYABLE = { boss: ['spiral'], crystalboss: ['spiral'], sporeboss: ['spiral'], tombboss: ['spiral'], lavaboss: ['spiral'], eclipseboss: ['spiral'], shadowself: ['spiral'] };
 for (const [id, keys] of Object.entries(UNPARRYABLE)) for (const k of keys) if (ENEMIES[id][k]) Object.assign(ENEMIES[id][k], { unparryable: true, color: '#ff2a3a' });
 
 // Basic attacks hit a shield; skills (and gear lightning) go through it.
