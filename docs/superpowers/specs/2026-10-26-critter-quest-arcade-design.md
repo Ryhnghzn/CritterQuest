@@ -1437,6 +1437,7 @@ Acuan: Dragon Nest (poin skill, level skill, dua halaman skill, dua pilihan ulti
 
 - Syarat buka = **level karakter** saja (`unlock`), tanpa syarat skill lain. Skill aktif harus level ≥ 1 untuk dipasang.
 - **Level skill aktif:** damage +12% per level (level 5 = 148%); **level 3 dan level 5 memberi efek tambahan** (§43.4). **Level ultimate:** +15% damage per level; level 3: Luas durasi +0,5 dtk, Fokus area +20%.
+- **Skill bawaan gratis (keputusan 2026-11-11):** dua skill job yang terbuka di level 1 mulai di **level 1 tanpa biaya SP** dan terpasang di A1/A2, karena karakter level 1 belum punya SP dan karakter lama bisa memakai 4 skill dengan sedikit SP. Atur ulang SP kembali ke susunan itu. Save §43 = **v25** (v24 dipakai buku monster §41.1).
 - **Atur ulang SP** (Pelatih): `80 + 15 × level`, hanya job yang sedang dipakai. **Gratis** sekali setelah pembaruan dan pertama kali memakai job baru.
 - **Tab Skill:** tab Aktif · Ultimate · Pasif · Umum + sisa SP; tiap baris ikon, nama, titik level (●●●○○), tombol **+**, tombol pasang; di atas daftar dua baris slot A1–A4 & B1–B4 + slot ultimate.
 
