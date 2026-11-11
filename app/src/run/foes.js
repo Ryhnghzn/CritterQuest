@@ -93,7 +93,7 @@ export function reflectShot(run, h, e, b) {
   const diff = Math.abs(Math.atan2(Math.sin(from - e.face), Math.cos(from - e.face)));
   if (diff > (b.arc * Math.PI) / 360) return false;
   const r = b.reflect, a = Math.atan2(run.py - e.y, run.px - e.x);
-  run.shots.push({ x: h.x, y: h.y, vx: Math.cos(a) * r.speed, vy: Math.sin(a) * r.speed, r: r.r, dmg: r.dmg, life: 4, color: r.color, onHit: null, by: e.type, look: r.look });
+  run.shots.push({ x: h.x, y: h.y, vx: Math.cos(a) * r.speed, vy: Math.sin(a) * r.speed, r: r.r, dmg: r.dmg * (e.dmg / b.dmg), life: 4, color: r.color, onHit: null, by: e.type, look: r.look }); // made outside the enemy's step: scaled here like its touch
   run.pulses.push({ x: h.x, y: h.y, r: 26, t: 0.25, max: 0.25, color: '207,239,255' });
   h.dead = true;
   return true;
@@ -155,7 +155,7 @@ export function mortar(run, e, b) {
   if (e.mode === 'wind') {
     if (e.modeT <= 0) {
       const l = b.lob;
-      run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: l.radius, t: l.fuse, max: l.fuse, dmg: l.dmg * (e.dmg / b.dmg), onHit: l.onHit, by: e.type, look: 'magma', shell: { x: e.x, y: e.y } });
+      run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: l.radius, t: l.fuse, max: l.fuse, dmg: l.dmg, onHit: l.onHit, by: e.type, look: 'magma', shell: { x: e.x, y: e.y } }); // scaled by run.js scaleMade
       e.mode = 'walk'; e.actT = b.every;
     }
     return STILL;

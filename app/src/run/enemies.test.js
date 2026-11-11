@@ -473,3 +473,21 @@ describe('Kembar Hampa (spec §41.1)', () => {
     expect(g.enemies.includes(a) || g.enemies.includes(c)).toBe(false);
   });
 });
+
+describe('kekuatan serangan musuh §41.1 ikut foePower (spec §43 G)', () => {
+  it('peluru meriam dikali foePower sekali; pantulan cermin seperti damage sentuhnya', async () => {
+    const { foePower } = await import('./run.js');
+    const g = start();
+    const m = place(g, 'mortar', 300, 0);
+    step(g, secs(ENEMIES.mortar.windup) + 2);
+    const shell = g.hazards.find((h) => h.by === 'mortar');
+    expect(shell.dmg).toBeCloseTo(ENEMIES.mortar.lob.dmg * foePower(g, m));
+    const mg = place(g, 'mirrorguard', 200, 0);
+    step(g, secs(ENEMIES.mirrorguard.windup) + 2);
+    g.hits.push({ kind: 'proj', x: 150, y: 0, vx: 400, vy: 0, angle: 0, speed: 400, range: 900, dist: 0, r: 4, mult: 1, pierce: 0, hitSet: new Set(), fx: 'arrow', trailT: 0 });
+    step(g, 10);
+    const back = g.shots.find((s) => s.by === 'mirrorguard');
+    expect(back.dmg).toBeCloseTo(ENEMIES.mirrorguard.reflect.dmg * (mg.dmg / ENEMIES.mirrorguard.dmg));
+    expect(back.dmg).toBeGreaterThan(ENEMIES.mirrorguard.reflect.dmg * 2);
+  });
+});
