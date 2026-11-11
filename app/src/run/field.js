@@ -8,6 +8,7 @@ import { FIELD, FIELD_SCALE, TREASURE, regionById } from '../data/world.js';
 import { WORLD, CROSS_MIX, ECLIPSE } from '../data/worldmap.js';
 import { ENEMIES } from '../data/enemies.js';
 import { affixCount } from './affix.js';
+import { initMiniMove } from './minimove.js';
 import { dungeonById } from '../data/dungeons.js';
 import { buildWorld, zoneAt, levelAt, inHub, pushOut, blocked, ensureChunks } from './worldmap.js';
 import { canCrossWater } from './mount.js';
@@ -220,6 +221,7 @@ export function spawnGuardian(run, tr) {
   g.hp *= sc.hp * rule.hp; g.maxHp = g.hp; g.dmg *= sc.dmg * rule.dmg; g.r *= rule.size;
   g.xp = Math.round(ENEMIES[type].xp * sc.reward * rule.hp * 0.5);
   g.level = level; g.elite = true; g.mini = true; g.lord = tr.lord;
+  initMiniMove(g, tr.zone || run.region.id); // one move of the zone's dungeon boss (spec §41.2)
   pushOut(run.fmap, g, g.r);
   for (let i = 0; i < rule.escort; i++) {
     const e = run.spawnEnemy(type);

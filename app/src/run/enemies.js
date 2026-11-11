@@ -238,7 +238,7 @@ function boss(run, e, b, dt) {
   return toward(e, run.px, run.py, e.speed);
 }
 
-function stepPattern(run, e, b0, dt, enraged) {
+export function stepPattern(run, e, b0, dt, enraged) {
   const p = e.pat, b = p.cfg || b0;
   p.t += dt; p.fireT -= dt;
   const done = () => { e.pat = null; e.actT = enraged ? b0.enragedEvery : b0.every; };

@@ -239,3 +239,11 @@ export const AFFIXES = {
 };
 // how many traits: 1, or 2 from world level / dungeon floor on
 export const AFFIX_COUNT = { base: 1, more: 2, level: 25, floor: 4 };
+
+// Treasure guardians in the open world borrow one signature move of their zone's dungeon boss
+// (spec §41.2): zone → boss. every: seconds between uses; dmgMul: × (guardian touch damage ÷ boss
+// touch damage), so the move hits as hard as the guardian does, a little softer.
+export const MINI_MOVES = {
+  zones: { forest: 'sporeboss', ice: 'crystalboss', desert: 'tombboss', volcano: 'lavaboss', eclipse: 'boss' },
+  every: [5, 7], dmgMul: 0.8, lord: 0.6, // lords (the big guardians) use it more often: every × lord
+};

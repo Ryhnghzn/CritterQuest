@@ -3,6 +3,7 @@
 import { rand, rrange } from '../core/rng.js';
 import { ENEMIES, AFFIXES, AFFIX_COUNT } from '../data/enemies.js';
 import { fire } from './enemies.js';
+import { miniStep } from './minimove.js';
 
 const TAU = Math.PI * 2;
 const IDS = Object.keys(AFFIXES);
@@ -37,6 +38,7 @@ const has = (e, id) => !!e.affixes?.includes(id);
 
 // Once per step for a living elite (before its behaviour moves it).
 export function affixStep(run, e, dt) {
+  if (e.sig) miniStep(run, e, dt); // a treasure guardian's borrowed boss move (run/minimove.js)
   if (!e.affixes?.length) return;
   if (has(e, 'armored') && e.armor < e.armorMax) {
     e.armorIdle += dt;
