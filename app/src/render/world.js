@@ -13,7 +13,7 @@ import { DROP_BEAM } from '../data/itemfx.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { RARITIES, MYTHIC } from '../data/items.js';
 import { drawDoll } from '../art/doll.js';
-import { MAJESTIC_MOUNTS, drawMajesticRidden, drawSummonRing } from '../art/mounts.js';
+import { MAJESTIC_MOUNTS, drawMajesticRidden, drawSummonRing, drawSummonBar } from '../art/mounts.js';
 import { MOUNT } from '../data/mounts.js';
 import { ATTACK_POSE } from '../run/skills.js';
 import { DODGE } from '../data/balance.js';
@@ -229,7 +229,7 @@ export class Renderer {
       if (dodging) g.rotate(game.dodgeX * 0.25);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8)
       const mounted = game.field && game.mount.state !== 'none', riding = mounted && game.mount.state === 'riding';
-      if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
+      if (mounted && !riding) { drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale); drawSummonBar(g, game.mount.t / MOUNT.summon); }
       const attack = Math.max(0, game.attackT / ATTACK_POSE);
       if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
       this.lastAttackT = game.attackT;

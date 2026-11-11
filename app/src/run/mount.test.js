@@ -62,10 +62,22 @@ describe('mount (§35.1)', () => {
     expect(dismount(m, 'hit')).toBe(false);
     expect(m.lock).toBe(0);
   });
-  it('wantsAction: serang (yang benar-benar jadi), skill, ultimate, menghindar', () => {
-    const idle = { dodge: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false };
-    expect(wantsAction(idle, false)).toBe(false);
-    expect(wantsAction(idle, true)).toBe(true);
-    for (const k of ['dodge', 'skill1', 'skill4', 'ult']) expect(wantsAction({ ...idle, [k]: true }, false)).toBe(true);
+  it('wantsAction: hanya serang sungguhan, atau skill / ultimate / menghindar yang siap', () => {
+    const idle = { attack: false, auto: false, dodge: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false };
+    const ready = { skill: [true, true, true, true], dodge: true, ult: true };
+    const none = { skill: [false, false, false, false], dodge: false, ult: false };
+    expect(wantsAction(idle, ready)).toBe(false);
+    expect(wantsAction({ ...idle, auto: true }, ready)).toBe(false); // serang otomatis tidak menurunkan
+    expect(wantsAction({ ...idle, attack: true }, none)).toBe(true);
+    for (const k of ['dodge', 'skill1', 'skill4', 'ult']) {
+      expect(wantsAction({ ...idle, [k]: true }, ready)).toBe(true);
+      expect(wantsAction({ ...idle, [k]: true }, none)).toBe(false); // tekan yang tak bisa jalan: tetap menunggang
+    }
+  });
+  it('kena pukul saat memanggil: batal tanpa kunci', () => {
+    const m = freshMount(HORSE); startSummon(m);
+    expect(dismount(m, 'hit')).toBe(true);
+    expect(m.state).toBe('none');
+    expect(m.lock).toBe(0);
   });
 });

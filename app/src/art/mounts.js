@@ -124,6 +124,15 @@ export function drawMajesty(g, m, pose, r = 30) {
 
 // The summon (spec §35.1): a gold rune ring opens on the ground, light pours down and the
 // mount rises out of it. k: 0..1 over the summon; draw the mount with drawSummonMount.
+// small progress bar above the head while the mount is being called (spec §35.1); k 0 → 1
+export function drawSummonBar(g, k) {
+  const w = 30, h = 4, y = -52;
+  g.save();
+  g.fillStyle = 'rgba(20,16,28,.85)'; g.fillRect(-w / 2 - 1, y - 1, w + 2, h + 2);
+  g.fillStyle = '#ffd166'; g.fillRect(-w / 2, y, w * Math.max(0, Math.min(1, k)), h);
+  g.restore();
+}
+
 export function drawSummonRing(g, k, t, r = 34) {
   const open = Math.min(1, k * 2.2), fade = k > 0.85 ? (1 - k) / 0.15 : 1, rr = r * (0.4 + open * 0.8);
   g.save(); g.globalCompositeOperation = 'lighter';

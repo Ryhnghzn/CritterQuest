@@ -18,8 +18,8 @@ export function skillCooldown(stats, skill) {
   return skill.cd * (1 - Math.min(stats.cdr, CDR_MAX) / 100);
 }
 
-// the basic attack would really fire this step (also asked by the mount, run/run.js)
-export const attackWanted = (run, intent) => intent.attack || (intent.auto && run.nearestEnemy(attackReach(CLASSES[run.classId].attack)) !== null);
+// the basic attack would really fire this step; auto mode never swings while mounted (spec §35.1)
+export const attackWanted = (run, intent) => intent.attack || (intent.auto && run.mount?.state === 'none' && run.nearestEnemy(attackReach(CLASSES[run.classId].attack)) !== null);
 
 export function stepAttack(run, intent, dt) {
   if (run.attackT > 0) run.attackT -= dt;

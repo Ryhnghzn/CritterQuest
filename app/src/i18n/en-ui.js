@@ -9,6 +9,7 @@ export default {
   'Pilih Petualang': 'Choose Adventurer',
   'Tiga slot, progres tersimpan otomatis.': 'Three slots, progress saves automatically.',
   Kembali: 'Back',
+  'Beli & pilih mount': 'Buy & choose mounts',
   Jeda: 'Paused',
   Lanjut: 'Resume',
   Menyerah: 'Give Up',

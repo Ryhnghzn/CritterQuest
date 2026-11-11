@@ -20,7 +20,7 @@ import { moveDuration } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DODGE } from '../data/balance.js';
 import { MOUNT } from '../data/mounts.js';
-import { drawMajesticRidden, drawSummonRing } from '../art/mounts.js';
+import { drawMajesticRidden, drawSummonRing, drawSummonBar } from '../art/mounts.js';
 import { ATTACK_POSE } from '../run/skills.js';
 import { Spell3D } from './spell3d.js';
 
@@ -248,10 +248,14 @@ export class Actors {
       if (game.dodgeT > 0) g.rotate(screenX(game.dodgeX, game.dodgeY, yaw) * 0.25);
       g.translate(0, -turn.hop); g.rotate(turn.lean);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
-      if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
+      if (mounted && !riding) { drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale); drawSummonBar(g, game.mount.t / MOUNT.summon); }
       if (riding) { // the mount is always drawn side-on; turn.w carries the paper-turn facing (spec §38)
         g.scale(turn.w, 1);
-        drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: a.classId, look: a.look }, drawDoll);
+        // the rider keeps the on-foot style (anime + wings + element effects out of the pixel filter)
+        this.rideWings = wings;
+        this.rideDoll ||= (gg, c2, l, p) => drawDoll(gg, c2, l, { ...p, anime: LOOK.anime, view: 'side', wings: this.rideWings });
+        if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []);
+        try { drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: a.classId, look: a.look }, this.rideDoll); } finally { setFxSink(null); }
       } else {
         g.scale(DOLL_SCALE * (side ? turn.w : 1) * vw.squash * hs, DOLL_SCALE * hs);
         if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []); // element effects: kept out of the pixel filter

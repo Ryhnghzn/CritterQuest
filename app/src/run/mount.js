@@ -24,16 +24,19 @@ export function stepMount(m, dt) {
   return 'rode';
 }
 
-// reason: 'action' (attack / skill / dodge: no lock), 'hit' (knocked off: locked), 'leave'
+// reason: 'action' (attack / skill / dodge: no lock), 'hit' (knocked off while riding: locked), 'leave'
 export function dismount(m, reason) {
   if (m.state === 'none') return false;
+  const wasRiding = m.state === 'riding';
   m.state = 'none'; m.t = 0;
-  if (reason === 'hit') m.lock = MOUNT.fallLock;
+  if (reason === 'hit' && wasRiding) m.lock = MOUNT.fallLock; // a hit during a summon only cancels it
   return true;
 }
 
 export const mountSpeedMul = (m) => (m.state === 'riding' ? MOUNT.speed[m.rarity] : 1);
 export const canCrossWater = (m) => m.state === 'riding' && m.fly;
 
-// an action that knocks the rider off; attackWanted: the attack would really fire this step
-export const wantsAction = (intent, attackWanted) => attackWanted || intent.dodge || intent.skill1 || intent.skill2 || intent.skill3 || intent.skill4 || intent.ult;
+// A press that knocks the rider off. Only a real attack press counts (never auto-attack), and only
+// presses that can act: can = { skill: [bool x4], dodge, ult } readiness from run/run.js.
+export const wantsAction = (intent, can) => !!(intent.attack || (intent.dodge && can.dodge) || (intent.ult && can.ult)
+  || [intent.skill1, intent.skill2, intent.skill3, intent.skill4].some((p, i) => p && can.skill[i]));

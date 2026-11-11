@@ -762,6 +762,7 @@ async function commitField() {
   fieldSaveT = 0;
   refreshFieldQuests();
   mountNews(before, current, r.mountsFound);
+  if (scene === 'run' && game.field && !game.mount.id) game.mount = freshMount(activeMountSetup(current)); // first mount found mid-region: R works right away
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
   else if (current.quests.main.step !== before.quests.main.step || current.quests.main.ch !== before.quests.main.ch) questNews(before);
   else if (r.bountiesDone > 0) toast(t('{n} tugas selesai. Klaim di Balai Petualang', { n: r.bountiesDone }));

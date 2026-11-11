@@ -1138,7 +1138,9 @@ Wilayah 20.000 × 12.000 px masih terasa jauh walau tempo §33 sudah naik. Mount
 - **Musuh tetap mengejar dan menyerang** pemain yang menunggang. Mount untuk menghindari pertarungan, bukan untuk kebal.
 - **Turun otomatis:**
   - Tekan serang / skill / ultimate / menghindar → turun, dan aksi itu langsung dijalankan di langkah yang sama (input tidak hilang).
-  - Kena pukul → jatuh, tombol R terkunci **3 dtk** (cincin jeda di ikon).
+  - Serang otomatis tidak menurunkan (dan tidak menyerang selama menunggang atau memanggil); hanya tekanan serang yang sungguhan.
+  - Tekanan yang tidak bisa jalan tidak menurunkan: slot skill kosong atau masih jeda, ultimate belum siap, menghindar masih jeda.
+  - Kena pukul → jatuh, tombol R terkunci **3 dtk** (cincin jeda di ikon). Kena pukul saat baru memanggil hanya membatalkan panggilan, tanpa kunci.
   - Turun di atas air (mount terbang) → didorong ke tepi daratan terdekat.
 - Ramuan bisa diminum tanpa turun.
 
@@ -1177,7 +1179,7 @@ Kebalikan bahasa gambar monster, supaya mount selalu terbaca sebagai teman pahla
 - **`run/mount.js`** (logika murni + tes): keadaan `none → summoning → riding`; `startSummon`, `stepMount`, `dismount(reason)`, `mountSpeed()`, `canCrossWater()`. Dipanggil dari `run/run.js` (gerak, aksi, kena pukul) dan `run/field.js`.
 - **`run/fieldmap.js`:** `pushOut(map, o, r, { fly })` melewatkan solid `water`/`lake` bila `fly`; fungsi tepi daratan terdekat untuk turun di atas air.
 - **`meta/stable.js`** (logika murni + tes): beli mount/warna, pilih aktif, `mountBonus(char)`, hadiah quest & jatuhan bos dengan jaminan. Jatuhan bos lewat `applyTrip`; hadiah quest lewat alur quest yang sudah ada. Bonus disuntikkan ke perhitungan yang sudah ada (emas, EXP, magnet, ramuan, material, peluang gear, HP maks).
-- **Save v21:** `char.mounts = { owned: { horse: [0] }, active: 'horse', skin: { horse: 0 }, pity: { basilisk: 0, nightmare: 0 } }` (`owned`: id → daftar indeks warna). `migrate()` v20→v21: isi kosong, lalu berikan mount yang haknya sudah didapat (bab 1 selesai → Kuda; Sang Gerhana kalah → Naga; `s_salju` selesai → Griffin; semua quest sampingan → Paus Langit). Tes migrasi & validasi.
+- **Save v21:** `char.mounts = { owned: { horse: [0] }, active: 'horse', skin: { horse: 0 }, pity: { tiger: 0, pegasus: 0 } }` (`owned`: id → daftar indeks warna; `pity` dibuat dari mount ber-source 'drop'). `migrate()` v20→v21: isi kosong, lalu berikan mount yang haknya sudah didapat (bab 1 selesai → Kuda; Sang Gerhana kalah → Naga; `s_salju` selesai → Griffin; semua quest sampingan → Paus Langit). Tes migrasi & validasi.
 - **Gambar:** `render3d/actors.js` `drawHero` memakai `drawMajesticRidden` saat menunggang (dengan `drawMajesty`; animasi panggil dari `drawSummonRing`); kanvas billboard pemain diperbesar hanya selama menunggang; mount terbang melayang dengan bayangan di tanah. Bar panggil di atas kepala; debu saat naik/turun (RNG efek sendiri, bukan RNG simulasi). Tampilan 2D lama (`?2d`) ikut memakai `drawMajesticRidden`.
 - **Input & HUD:** <kbd>R</kbd> di `core/input.js`; ikon kuda + cincin jeda di HUD HP; tombol tersembunyi sampai mount pertama didapat.
 - **Teks:** semua dibungkus `tr()`/`t()`, kamus EN di `src/i18n/`.

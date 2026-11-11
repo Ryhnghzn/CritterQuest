@@ -545,6 +545,38 @@ describe('mount di wilayah (§35.1)', () => {
     expect(g.mount.state).toBe('none');
     expect(g.mountFxT).toBe(0);
   });
+  it('mode otomatis dengan musuh 300 px (dalam jangkauan pemanah): tetap menunggang', () => {
+    const g = exploreGame({ ...setup('archer'), mount: HORSE }); rideNow(g);
+    g.intent = { ...g.intent, auto: true }; g.invuln = 999;
+    for (let i = 0; i < 20; i++) { g.enemies.length = 0; const e = g.spawnEnemy('slink'); e.x = g.px + 300; e.y = g.py; g.step(1 / 60); }
+    expect(g.mount.state).toBe('riding');
+  });
+  it('mode otomatis saat memanggil dengan musuh dekat: panggilan selesai', () => {
+    const g = exploreGame({ ...setup('archer'), mount: HORSE }); g.invuln = 999;
+    g.intent = { ...g.intent, mount: true, auto: true };
+    for (let i = 0; i < 70; i++) { g.enemies.length = 0; const e = g.spawnEnemy('slink'); e.x = g.px + 40; e.y = g.py; g.step(1 / 60); if (i === 0) g.intent = { ...g.intent, mount: false }; }
+    expect(g.mount.state).toBe('riding');
+  });
+  it('menekan slot skill kosong atau menghindar yang belum siap: tidak menurunkan', () => {
+    const g = exploreGame({ mount: HORSE }); rideNow(g); g.enemies.length = 0;
+    g.skillDefs[3] = null;
+    g.intent = { ...g.intent, skill4: true }; g.step(1 / 60);
+    expect(g.mount.state).toBe('riding');
+    g.intent = { ...g.intent, skill4: false, dodge: true }; g.dodgeCd = 5; g.step(1 / 60);
+    expect(g.mount.state).toBe('riding');
+  });
+  it('kena pukul saat memanggil: batal, tanpa kunci R', () => {
+    const g = exploreGame({ mount: HORSE });
+    g.intent = { ...g.intent, mount: true }; g.enemies.length = 0; g.step(1 / 60);
+    g.invuln = 0; g.dodgeInv = 0; g.hurtPlayer(5);
+    expect(g.mount.state).toBe('none');
+    expect(g.mount.lock).toBe(0);
+  });
+  it('mati saat menunggang: debu tidak membeku', () => {
+    const g = exploreGame({ mount: HORSE }); rideNow(g);
+    g.mountFxT = 0.3; g.stats.hp = 1; g.invuln = 0; g.dodgeInv = 0; g.hurtPlayer(999);
+    expect(g.mountFxT).toBe(0);
+  });
   it('dungeon: mount tidak pernah aktif', () => {
     const g = new Game(); g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, mount: HORSE });
     expect(g.mount.id).toBe(null);

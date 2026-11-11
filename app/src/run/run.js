@@ -10,7 +10,7 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
-import { stepAttack, stepSkills, skillCooldown, chargeUlt, attackWanted } from './skills.js';
+import { stepAttack, stepSkills, skillCooldown, chargeUlt } from './skills.js';
 import { stepHits } from './hits.js';
 import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods } from './traits.js';
 import { FX } from '../data/dungeon.js';
@@ -89,7 +89,7 @@ export class Game {
 
   // Pause → Menyerah: ends the trip; the caller treats it like dying (spec §13.4).
   surrender() {
-    dismount(this.mount, 'leave');
+    dismount(this.mount, 'leave'); this.mountFxT = 0;
     this.surrendered = true;
     this.state = ST.OVER;
   }
@@ -271,6 +271,16 @@ export class Game {
     }
   }
 
+  // which presses could really act now (a press that cannot act does not knock the rider off)
+  mountCan() {
+    const locked = traitMods(this).locked;
+    return {
+      skill: this.skillDefs.map((s, i) => !locked && !!s && this.skillCd[i] <= 0 && this.energy >= s.cost),
+      dodge: this.dodgeCd <= 0 && this.dodgeT <= 0,
+      ult: !!this.ult && this.ultCharge >= ULT.max,
+    };
+  }
+
   // fixed step
   step(dt) {
     if (this.state !== ST.PLAY) return;
@@ -278,7 +288,7 @@ export class Game {
     if (this.mountFxT > 0) this.mountFxT = Math.max(0, this.mountFxT - dt);
     if (this.field) { // mount (spec §35.1): knocked off before the action so the press is not lost
       const m = this.mount, it = this.intent;
-      if (m.state !== 'none' && wantsAction(it, attackWanted(this, it))) { if (isRiding(m)) this.mountFxT = MOUNT.fxTime; dismount(m, 'action'); this.afterDismount(); }
+      if (m.state !== 'none' && wantsAction(it, this.mountCan())) { if (isRiding(m)) this.mountFxT = MOUNT.fxTime; dismount(m, 'action'); this.afterDismount(); }
       if (it.mount && m.state === 'none') startSummon(m);
       if (stepMount(m, dt) === 'rode') { this.mountFxT = MOUNT.fxTime; sfx.chime(); }
     }
@@ -619,7 +629,7 @@ export class Game {
       return;
     }
     this.stats.hp = 0;
-    dismount(this.mount, 'leave');
+    dismount(this.mount, 'leave'); this.mountFxT = 0;
     this.diedOf = { foe: foe ?? this.lastFoe, dot };
     this.state = ST.OVER;
     sfx.gameover();
