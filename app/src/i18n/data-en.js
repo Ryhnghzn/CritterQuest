@@ -180,9 +180,11 @@ const ENEMY_EN = {
   'Serigala Bayang': 'Shadow Wolf', 'Lendir Beku': 'Frost Ooze', 'Katak Salju': 'Snow Toad', 'Golem Es': 'Ice Golem', 'Roh Es': 'Frost Wisp',
   'Lendir Pasir': 'Sand Ooze', 'Burung Nasar': 'Vulture', Kalajengking: 'Scorpion', 'Cacing Pasir': 'Sandworm',
   'Lendir Magma': 'Magma Ooze', 'Jamur Bara': 'Ember Shroom', 'Imp Api': 'Fire Imp', 'Raja Mumi': 'Mummy King',
+  'Katak Rawa': 'Bog Toad', 'Semak Penyergap': 'Lurking Bramble', 'Roh Embun': 'Mist Wraith', 'Penjaga Cermin': 'Mirror Warden', // spec §41.1
 };
 const AFFIX_EN = { Cepat: 'Swift', Berlapis: 'Armored', Pemanggil: 'Summoner', Berduri: 'Thorned', Meledak: 'Volatile', Beraura: 'Searing', Penjelajah: 'Blinking' };
-const PHASE_NAME_EN = { 'Matahari Hitam': 'Black Sun', 'GERHANA!': 'ECLIPSE!', 'KEHAMPAAN!': 'THE VOID!' };
+const PHASE_NAME_EN = { 'Matahari Hitam': 'Black Sun', 'GERHANA!': 'ECLIPSE!', 'KEHAMPAAN!': 'THE VOID!',
+  'LAPAR!': 'RAVENOUS!', 'RETAK!': 'SHATTERING!', 'MEKAR!': 'IN FULL BLOOM!', 'KUTUKAN FIRAUN!': "PHARAOH'S CURSE!", 'LANTAI MENDIDIH!': 'THE FLOOR BOILS!' }; // boss phase 2 (spec §41.2)
 const DUNGEON_EN = {
   'Menara Gerhana': ['Eclipse Spire', 'Spire'], 'Ruang Bawah Tanah Bayangan': ['Shadow Crypt', 'Shadow'], 'Gua Kristal': ['Crystal Cave', 'Crystal'],
   'Hutan Jamur Busuk': ['Rotting Mushroom Forest', 'Fungus'], 'Benteng Lava': ['Lava Fortress', 'Lava'], 'Makam Pasir': ['Sand Tomb', 'Tomb'],

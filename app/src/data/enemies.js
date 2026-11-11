@@ -98,6 +98,15 @@ export const ENEMIES = {
     slam: { count: 3, gap: 0.45, fuse: 0.9, radius: 70, dmg: 26 },
     windup: 0.9, dash: { speed: 420, time: 0.6 }, rest: 0.6,
     summon: { type: 'mini', count: 4, max: 8 },
+    // signature moves (spec §41.2): Telan pulls toward its mouth then bites; Bayang Kembar: shadows
+    // appear around the player and each fires a ring. Phase 2 at 50%: "LAPAR!"
+    signature: ['gulp', 'clones'],
+    phases: [
+      { at: 1, patterns: ['gulp', 'clones', 'ring', 'charge'] },
+      { at: 0.5, name: 'LAPAR!', patterns: ['gulp', 'clones', 'clones', 'ring', 'charge', 'summon'] },
+    ],
+    gulp: { r: 95, pull: 150, fuse: 1.8, dmg: 36 },
+    clones: { count: 2, dist: 170, warn: 0.8, ring: { count: 12, speed: 150, dmg: 11, r: 6, color: '#c26bd8' } },
   },
   // Golem Kristal (Gua Kristal): crystal shards in rings, slams, charges.
   crystalboss: {
@@ -109,6 +118,15 @@ export const ENEMIES = {
     slam: { count: 4, gap: 0.4, fuse: 0.85, radius: 75, dmg: 28 },
     windup: 0.8, dash: { speed: 460, time: 0.55 }, rest: 0.7,
     summon: { type: 'shielder', count: 2, max: 4 },
+    // Prisma: crystals around the player, beams flaring between them in turn; Hujan Serpih: rows of
+    // shards sweeping toward the player. Phase 2: "RETAK!"
+    signature: ['prism', 'shardrain'],
+    phases: [
+      { at: 1, patterns: ['prism', 'shardrain', 'ring', 'slam'] },
+      { at: 0.5, name: 'RETAK!', patterns: ['prism', 'shardrain', 'shardrain', 'spiral', 'prism'] },
+    ],
+    prism: { count: 3, dist: 150, w: 18, fuse: 0.9, gap: 0.35, flashes: 6, dmg: 26 },
+    shardrain: { rows: 8, step: 38, width: 2, gapW: 34, r: 22, fuse: 0.8, gap: 0.14, dmg: 22 },
   },
   // Ratu Spora (Hutan Jamur Busuk): spore spirals, calls bombers.
   sporeboss: {
@@ -120,6 +138,16 @@ export const ENEMIES = {
     slam: { count: 3, gap: 0.5, fuse: 0.9, radius: 70, dmg: 24 },
     windup: 0.9, dash: { speed: 400, time: 0.6 }, rest: 0.6,
     summon: { type: 'bomber', count: 3, max: 6 },
+    // Ladang Jamur: mushrooms swell around the player and burst; Awan Racun: a slow cloud that
+    // follows the player. Phase 2: "MEKAR!" — poison pools that stay.
+    signature: ['shrooms', 'cloud'],
+    phases: [
+      { at: 1, patterns: ['shrooms', 'cloud', 'spiral', 'summon'] },
+      { at: 0.5, name: 'MEKAR!', patterns: ['pools', 'shrooms', 'cloud', 'spiral', 'shrooms'] },
+    ],
+    shrooms: { count: 5, near: [60, 200], r: 44, fuse: 2.6, dmg: 26, onHit: { poison: [0.35, 3] } },
+    cloud: { r: 70, life: 6, dmg: 6, tick: 0.5, follow: 42, onHit: { poison: [0.3, 2] } },
+    pools: { count: 3, max: 6, near: [120, 260], r: 80, life: 30, dmg: 7, tick: 0.5, onHit: { poison: [0.3, 2] } },
   },
   // Raja Mumi (Makam Pasir): sand rings and spirals, buried slams, calls scorpions.
   tombboss: {
@@ -131,6 +159,15 @@ export const ENEMIES = {
     slam: { count: 5, gap: 0.35, fuse: 0.85, radius: 80, dmg: 30 },
     windup: 0.8, dash: { speed: 440, time: 0.55 }, rest: 0.6,
     summon: { type: 'scorpion', count: 2, max: 4 },
+    // Kutukan: a mark follows the player, stops, then bursts; Badai Pasir: wind pushes the player
+    // while scarabs fly with it. Phase 2: "KUTUKAN FIRAUN!" — calls its guards more often.
+    signature: ['curse', 'sandstorm'],
+    phases: [
+      { at: 1, patterns: ['curse', 'sandstorm', 'ring', 'slam'] },
+      { at: 0.5, name: 'KUTUKAN FIRAUN!', patterns: ['summon', 'curse', 'sandstorm', 'curse', 'spiral'] },
+    ],
+    curse: { r: 90, fuse: 3, follow: 2.3, dmg: 34 },
+    sandstorm: { time: 3, push: 70, every: 0.14, spread: 260, shot: { speed: 220, dmg: 10, r: 6, color: '#e8c070' } },
   },
   // Sang Gerhana (Menara Gerhana, spec §26.7): three phases by HP —
   //   1 Matahari Hitam: rings, spirals, sweeping beams;
@@ -164,6 +201,16 @@ export const ENEMIES = {
     slam: { count: 5, gap: 0.35, fuse: 0.8, radius: 85, dmg: 32 },
     windup: 0.75, dash: { speed: 480, time: 0.55 }, rest: 0.6,
     summon: { type: 'charger', count: 2, max: 4 },
+    // Erupsi: three lava cracks crawling out from it; Meteor: big circles crashing down on the
+    // player. Phase 2: "LANTAI MENDIDIH!" — lava pools that stay.
+    signature: ['eruption', 'meteor'],
+    phases: [
+      { at: 1, patterns: ['eruption', 'meteor', 'ring', 'charge'] },
+      { at: 0.5, name: 'LANTAI MENDIDIH!', patterns: ['pools', 'eruption', 'meteor', 'meteor', 'spiral'] },
+    ],
+    eruption: { lines: 3, spread: 0.5, steps: 9, step: 34, r: 24, fuse: 0.7, gap: 0.12, dmg: 26, onHit: { burn: [0.3, 2.5] } },
+    meteor: { count: 3, r: 100, fuse: 1.4, gap: 0.5, spread: 40, dmg: 40 },
+    pools: { count: 4, max: 6, near: [100, 240], r: 70, life: 40, dmg: 8, tick: 0.5, onHit: { burn: [0.3, 2] } },
   },
 };
 
@@ -173,7 +220,8 @@ export const SHOT_LOOKS = {
   boss: 'maw', crystalboss: 'crystal', sporeboss: 'spore', tombboss: 'scarab', lavaboss: 'magma', eclipseboss: 'void',
   spitter: 'spit', frostspitter: 'crystal', icewisp: 'crystal', imp: 'magma', voidspitter: 'void', wraith: 'void',
 };
-for (const [id, look] of Object.entries(SHOT_LOOKS)) for (const k of ['ring', 'spiral', 'shot', 'slam']) if (ENEMIES[id][k]) ENEMIES[id][k].look = look;
+for (const [id, look] of Object.entries(SHOT_LOOKS)) for (const k of ['ring', 'spiral', 'shot', 'slam', 'meteor', 'shrooms', 'cloud', 'pools', 'shardrain', 'eruption', 'curse']) if (ENEMIES[id][k]) ENEMIES[id][k].look = look;
+for (const [id, k] of [['boss', 'clones'], ['tombboss', 'sandstorm']]) ENEMIES[id][k][k === 'clones' ? 'ring' : 'shot'].look = SHOT_LOOKS[id];
 
 // Basic attacks hit a shield; skills (and gear lightning) go through it.
 export const SHIELD_PIERCING = ['spin', 'rain', 'pierce', 'nova', 'chain', 'shadow', 'dagger', 'shout'];

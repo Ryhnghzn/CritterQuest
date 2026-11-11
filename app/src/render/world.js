@@ -464,6 +464,17 @@ function hazard(g, h, t) {
     g.fillRect(0, -h.w / 2, len * k, h.w);
     g.strokeStyle = 'rgba(255,120,130,.8)'; g.lineWidth = 1.5; g.setLineDash([6, 5]);
     g.strokeRect(0, -h.w / 2, len, h.w);
+  } else if (h.kind === 'zone') { // a lingering cloud or pool (spec §41.2): poison green or lava orange, breathing
+    const col = h.look === 'magma' ? '255,110,40' : '140,230,90', life = Math.min(1, h.t / 0.6, (h.max - h.t) / 0.4);
+    const grd = g.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.r);
+    grd.addColorStop(0, `rgba(${col},${0.42 * life})`); grd.addColorStop(0.75, `rgba(${col},${0.26 * life})`); grd.addColorStop(1, `rgba(${col},0)`);
+    g.beginPath(); g.arc(h.x, h.y, h.r * (1 + Math.sin(t * 3 + h.x) * 0.04), 0, TAU); g.fillStyle = grd; g.fill();
+    g.lineWidth = 1.5; g.strokeStyle = `rgba(${col},${0.6 * life})`; g.setLineDash([5, 6]); g.lineDashOffset = -t * 12; g.stroke();
+    for (let i = 0; i < 6; i++) { const a = i * 2.4 + t * 0.7, d = h.r * (0.2 + ((i * 37) % 10) / 14); g.beginPath(); g.arc(h.x + Math.cos(a) * d, h.y + Math.sin(a) * d, 2.5 + Math.sin(t * 4 + i) * 1.2, 0, TAU); g.fillStyle = `rgba(${col},${0.7 * life})`; g.fill(); }
+  } else if (h.kind === 'push') { // a gust of sand (Badai Pasir): streaks blowing past the player
+    const a = Math.atan2(h.vy, h.vx), life = Math.min(1, h.t / 0.4);
+    g.translate(h.x, h.y); g.rotate(a); g.strokeStyle = `rgba(232,200,120,${0.55 * life})`; g.lineWidth = 2;
+    for (let i = 0; i < 14; i++) { const y = ((i * 53) % 280) - 140, x = (((t * 420 + i * 97) % 520) - 260); g.beginPath(); g.moveTo(x, y); g.lineTo(x + 46, y); g.stroke(); }
   } else if (h.kind === 'hole') { // a black hole: dark core, purple swirl closing in
     const grd = g.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.r);
     grd.addColorStop(0, 'rgba(0,0,0,.95)'); grd.addColorStop(0.45, `rgba(40,10,70,${0.6 + 0.3 * k})`); grd.addColorStop(1, 'rgba(120,60,220,0)');
@@ -488,6 +499,7 @@ function hazardEdge(g, h, t) {
   g.save();
   g.lineWidth = 1.5; g.strokeStyle = `rgba(255,120,130,${0.55 + 0.35 * Math.sin(t * 20) ** 2})`;
   g.setLineDash([7, 5]); g.lineDashOffset = -t * 30;
+  if (h.kind === 'push') { g.restore(); return; } // a gust has no edge
   if (h.kind === 'line') {
     const a = Math.atan2(h.y2 - h.y, h.x2 - h.x), len = Math.hypot(h.x2 - h.x, h.y2 - h.y);
     g.translate(h.x, h.y); g.rotate(a);

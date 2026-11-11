@@ -168,7 +168,7 @@ describe('Raja Maw', () => {
 
   it('marah di bawah 50% HP: pola lebih rapat', () => {
     const { g, b } = run('ring');
-    b.hp = b.maxHp * 0.3;
+    b.hp = b.maxHp * 0.3; b.phase = 1; // already in phase 2 ("LAPAR!", spec §41.2): no phase change this step
     step(g);
     expect(g.shots.length).toBe(ENEMIES.boss.ring.count + 6);
   });
