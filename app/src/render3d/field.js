@@ -26,12 +26,26 @@ import { actor, tag } from '../render/paint.js';
 import { t as tf } from '../i18n.js';
 import { FIELD, TOWNS, regionById } from '../data/world.js';
 import { chunkProps } from './fieldprops.js';
+import { START_R, DEFEND } from '../data/questev.js';
 import { zoneAt, inHub, chunksNear } from '../run/worldmap.js';
 import { dungeonById } from '../data/dungeons.js';
 import { skyAt } from '../meta/clock.js';
 import { SHAKE_PX } from '../data/fx.js';
 
 const TAU = Math.PI * 2;
+// a defended altar (spec §42): a stone plinth and a floating crystal of light
+function altarMesh() {
+  const G = new THREE.Group();
+  const stone = new THREE.MeshLambertMaterial({ color: 0x6a6878 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(34 * S, 42 * S, 26 * S, 8), stone); base.position.y = 13 * S; G.add(base);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(26 * S, 30 * S, 10 * S, 8), stone); top.position.y = 31 * S; G.add(top);
+  const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(16 * S), new THREE.MeshLambertMaterial({ color: 0xbfe6ff, emissive: new THREE.Color(0.4, 0.7, 1) }));
+  crystal.scale.set(1, 1.6, 1); G.add(crystal);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(240 * S, 240 * S), additive(new THREE.Color(0x9ad0ff), 0.4, glowTex()));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = 0.06; G.add(glow);
+  G.userData.crystal = crystal; G.userData.glow = glow;
+  return G;
+}
 const TS = 800;            // ground tile size (world units)
 const TILE_R = 1150;       // tiles kept within this of the camera point
 const PROP_R = 1350;       // props streamed within this of the hero…
@@ -408,6 +422,12 @@ export class Field25 {
     }
     for (const sp of game.questSpots || []) this.cards.push(this.card({ spot: sp, x: sp.x, y: sp.y, w: 150, top: 100, bottom: 40 }));
     for (const gd of gateGuards(game.fmap)) this.cards.push(this.card({ guard: gd, x: gd.x, y: gd.y, w: 110, top: 110, bottom: 20 }));
+    // quest events (spec §42): the escorted walker on a card, the defended altar in 3D
+    this.eventRef = game.events;
+    for (const ev of game.events || []) {
+      if (ev.kind === 'escort') this.cards.push(this.card({ walker: ev, x: ev.npc.x, y: ev.npc.y, look: { ...ev.look, outfit: ev.outfit }, who: { name: ev.name, title: ev.title, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 }));
+      if (ev.kind === 'defend') { const m = altarMesh(); m.position.set(ev.altar.x * S, 0, ev.altar.y * S); m.userData.ev = ev; P.add(m); }
+    }
   }
   card(o) {
     const c = document.createElement('canvas'), tex = canvasTexture(c);
@@ -416,13 +436,19 @@ export class Field25 {
     return { ...o, c, tex, mesh };
   }
   paintCard(cd, game, t, lite) {
+    if (cd.walker) { // the escorted walker follows the road (spec §42)
+      const n = cd.walker.npc, going = cd.walker.state === 'run' && !n.waiting;
+      cd.x = n.x; cd.y = n.y; cd.pose.moving = going ? 1 : 0; cd.pose.walk = (cd.pose.walk || 0) + (going ? 0.22 : 0);
+      cd.face = n.dir || cd.face || 1;
+    }
     const k = sharp('card', lite), c = cd.c, w = Math.ceil(cd.w * k), h = Math.ceil((cd.top + cd.bottom) * k);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; cd.tex.dispose(); }
     const g = c.getContext('2d');
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
     g.setTransform(k, 0, 0, k, (cd.w / 2 - cd.x) * k, (cd.top - cd.y) * k);
     g.lineJoin = 'round';
-    const figure = (fg) => { // the person on the card (guard / hidden NPC)
+    const figure = (fg) => { // the person on the card (guard / hidden NPC / escorted walker)
+      if (cd.walker) { cd.pose.t = t; actor(fg, cd.x, cd.y, null, cd.look, cd.pose, cd.face); return; }
       if (cd.guard) {
         if (!LOOK.anime) { drawGuard(fg, cd.guard, t); return; }
         const gd = cd.guard; // anime: the gate guard is the townsfolk 'guard' (helm, spear), not a warrior hero
@@ -449,6 +475,7 @@ export class Field25 {
       g.restore();
     } else figure(g);
     if (cd.home) tag(g, cd.who, cd.x, cd.y, t, game.nearHidden === cd.home, cd.home.mark);
+    if (cd.walker) tag(g, cd.who, cd.x, cd.y, t, false, null);
     cd.tex.needsUpdate = true;
     const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home?.scale || 1);
     cd.mesh.position.set(cd.x * S, (feet - (cd.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
@@ -594,7 +621,7 @@ export class Field25 {
     if (game.fmap !== this.mapRef) { this.camX = tx; this.camY = ty; this.buildRegion(game); snap = true; }
     if (game.gates !== this.gatesRef) this.buildGates(game);
     if (game.treasures !== this.chestRef) this.buildChests(game);
-    if (game.hidden !== this.homeRef || game.questSpots !== this.spotRef) this.buildHomes(game);
+    if (game.hidden !== this.homeRef || game.questSpots !== this.spotRef || game.events !== this.eventRef) this.buildHomes(game);
     this.frame++;
     this.camX += (tx - this.camX) * (playing ? 0.12 : 0.02);
     this.camY += (ty - this.camY) * (playing ? 0.12 : 0.02);
@@ -695,11 +722,24 @@ export class Field25 {
       u.glow.material.opacity = open ? 0.08 : locked ? 0.25 : 0.45;
     }
     this.homeGroup.traverse((o) => { if (o.userData.flicker != null) o.scale.setScalar(1 + Math.sin(t * 9 + o.userData.flicker) * 0.1); });
+    for (const m of this.homeGroup.children) { // a defended altar: the crystal turns, dims with its HP, flashes when struck
+      const ev = m.userData.ev;
+      if (!ev) continue;
+      const a = ev.altar, k = ev.state === 'run' ? Math.max(0, a.hp / a.maxHp) : 1, u = m.userData;
+      u.crystal.rotation.y = t * 0.8; u.crystal.position.y = (64 + Math.sin(t * 2) * 4) * S;
+      u.crystal.material.emissive.setRGB(a.hurtT > 0 ? 1 : 0.3 + 0.5 * k, a.hurtT > 0 ? 0.2 : 0.6 * k + 0.2, a.hurtT > 0 ? 0.2 : 1 * k + 0.2);
+      u.glow.material.opacity = (ev.state === 'run' ? 0.25 + 0.35 * k : 0.3) + Math.sin(t * 3) * 0.05;
+    }
+    for (const cd of this.cards) { // walkers move every frame, not only when repainted
+      if (!cd.walker) continue;
+      const n = cd.walker.npc, feet = n.y + 10;
+      cd.mesh.position.set(n.x * S, (feet - (n.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
+    }
     // cards near the hero are repainted (every other frame; every 4th in Ringan)
     const every = lite ? 4 : 2;
     for (let i = 0; i < this.cards.length; i++) {
       const cd = this.cards[i], d2 = (cd.x - this.camX) ** 2 + (cd.y - this.camY) ** 2;
-      cd.mesh.visible = d2 < 1100 * 1100;
+      cd.mesh.visible = d2 < 1100 * 1100 && !(cd.walker && cd.walker.state === 'done');
       if (cd.mesh.visible && ((this.frame + i) % every === 0 || !cd.c.width)) this.paintCard(cd, game, t, lite);
     }
   }
@@ -725,11 +765,33 @@ export class Field25 {
       g.lineWidth = 1.5; g.strokeStyle = 'rgba(30,18,10,.7)'; g.stroke();
       g.beginPath(); g.ellipse(x - e.r * 0.2, y - e.r * 0.15, e.r * 0.6, e.r * 0.25, 0, 0, TAU); g.fillStyle = 'rgba(220,180,120,.45)'; g.fill();
     }
+    for (const ev of game.events || []) { // where a quest event starts (spec §42): a turning ring of gold
+      if (ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue;
+      const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+      g.save(); g.translate(ev.start.x, ev.start.y); g.scale(1, 0.7);
+      g.setLineDash([18, 12]); g.lineDashOffset = -t * 30; g.lineWidth = 4; g.strokeStyle = `rgba(255,210,74,${(0.55 + pulse * 0.35).toFixed(2)})`;
+      g.beginPath(); g.arc(0, 0, START_R, 0, TAU); g.stroke(); g.setLineDash([]);
+      g.fillStyle = `rgba(255,210,74,${(0.08 + pulse * 0.06).toFixed(2)})`; g.fill();
+      g.restore();
+    }
     if (game.state !== 0) targetArrow(g, game, t);
   }
 
-  // the dungeon's name over a gate the hero stands at
+  // the dungeon's name over a gate the hero stands at; HP bars over a quest event's walker / altar
   labels(game) {
+    if (game.state !== 0) for (const ev of game.events || []) {
+      if (ev.state !== 'run') continue;
+      const who = ev.npc || ev.altar, p = this.stage.project(who.x, who.y, ev.npc ? 150 : 130);
+      if (!p) continue;
+      const g = this.view.ctx, dpr = this.view.c.width / innerWidth, w = 64, k = Math.max(0, who.hp / who.maxHp);
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.fillStyle = 'rgba(10,8,20,.85)'; g.fillRect(p.x - w / 2 - 2, p.y - 2, w + 4, 9);
+      g.fillStyle = k > 0.5 ? '#6ee07a' : k > 0.25 ? '#ffd166' : '#ff5d5d'; g.fillRect(p.x - w / 2, p.y, w * k, 5);
+      if (ev.kind === 'defend') { // time left
+        g.fillStyle = 'rgba(255,210,74,.9)'; g.fillRect(p.x - w / 2, p.y + 6, w * Math.min(1, ev.t / DEFEND.time), 1.5);
+      }
+      if (ev.npc?.waiting) { g.font = '600 12px Barlow, system-ui, sans-serif'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(10,8,20,.9)'; g.strokeText(tf('menunggumu…'), p.x, p.y - 6); g.fillStyle = '#f3e2b8'; g.fillText(tf('menunggumu…'), p.x, p.y - 6); }
+    }
     const gt = game.nearGate;
     if (!gt || game.state === 0) return;
     const p = this.stage.project(gt.x, gt.y, 160);

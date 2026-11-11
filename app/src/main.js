@@ -74,6 +74,7 @@ import { renderNpc, renderDungeonGate } from './ui/npc.js';
 import { renderCharPanel, setCharTab } from './ui/charpanel.js';
 import { stepText } from './ui/journal.js';
 import { bountyText } from './ui/board.js';
+import { setEvents, eventPoint } from './run/questev.js';
 import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest, questDef } from './meta/quests.js';
 import { SHARDS, DROP_ITEMS } from './data/quests.js';
 import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker, updatePointsBadge } from './ui/hud.js';
@@ -835,6 +836,7 @@ function refreshFieldQuests() {
   game.hidden = hiddenIn(current);
   game.questSpots = fq.spots.filter((s) => !game.reached.includes(s.spot));
   game.questDrops = fq.drops;
+  setEvents(game, fq.events); // spec §42: escorts, defences… out in the world
   game.questTarget = questTarget(current, null, { x: game.px, y: game.py });
 }
 
@@ -870,6 +872,7 @@ async function openWild(h, message = null) {
 // The quest target, with a gate found during this visit shown as found already.
 function liveQuestTarget() {
   const q = game.questTarget;
+  if (q?.kind === 'event') { const ev = game.events.find((e) => e.key === q.key); return ev ? { ...q, ...eventPoint(ev) } : q; }
   if (q?.kind !== 'hint') return q;
   const g = game.gates.find((x) => x.dungeon === q.dungeon && (x.found || game.gatesFound.includes(x.dungeon)));
   return g ? { kind: 'gate', x: g.x, y: g.y } : q;
@@ -1217,7 +1220,7 @@ function tickRun(pressed) {
   if (game.field) {
     game.clock = worldClock;
     game.night = phaseOf(worldClock).icon === 'moon';
-    if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged)) commitField();
+    if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged || game.eventsDone.length)) commitField();
   }
   if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearGate) { openGate(game.nearGate); return false; }
   if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearHidden) { openWild(game.nearHidden); return false; }

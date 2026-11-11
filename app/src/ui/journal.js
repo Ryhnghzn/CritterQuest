@@ -34,6 +34,7 @@ export function stepText(s) {
     case 'drop':
       if (s.enemy === '*') return t('Kumpulkan {n} {item} dari musuh di {r} pada malam hari', { n: s.n, item: DROP_ITEMS[s.item].name, r: regionById(s.region).name });
       return t('Kumpulkan {n} {item} dari {enemy} di {r}', { n: s.n, item: DROP_ITEMS[s.item].name, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name });
+    case 'event': return s.event === 'escort' ? t('Kawal {name} di {r}', { name: s.name, r: regionById(s.region).name }) : t('Pertahankan {name} di {r}', { name: s.name, r: regionById(s.region).name });
     case 'guard': return s.lord ? t('Kalahkan Penguasa {r} (peti harta terakhir)', { r: regionById(s.region).name }) : t('Kalahkan {n} penjaga harta di {r}', { n: s.n || 1, r: regionById(s.region).name });
     case 'give': return t('Serahkan barang kepada {who} di {town}', { who: s.who, town: where(s) });
     default: return '';

@@ -13,6 +13,9 @@
 //         (enemy '*' = any; night: only after dark)
 //   guard { region, n?, lord? }     — treasure guardians beaten (chests of the region opened)
 //   give  { town, npc, who, say, mats?, gems?, potions?, gear? } — hand things over (ends a talk)
+//   event { event, region, name, … } — something happens out in the world (spec §42, run/questev.js):
+//         escort { from: fx on the zone's main road, to?: fx (null: the zone's town), title, look, outfit }
+//         defend { at: [fx, fy] of the zone }
 // A talk / give in the wild uses town 'wild' and the hidden person's id as npc.
 // reward: { gold, exp } are multipliers of QUEST_REWARD at the player's level; shard: a Pecahan
 // Segel; gear: { rarity } a piece at the player's level; gems: [{ gem?, tier }] (random gem when
@@ -320,5 +323,27 @@ export const SIDE = [
     { kind: 'talk', town: 'bara', npc: 'mats', who: 'Sela Api', say: 'Tungku kota butuh Inti Kegelapan. Lima buah, dan kau dapat harga khusus dariku.' },
     { kind: 'give', town: 'bara', npc: 'mats', who: 'Sela Api', say: 'Tungku menyala lagi! Ini permata terbaik di lapakku, untukmu.', mats: { core: 5 } },
   ], reward: { gold: 6, exp: 6, marks: 4, gems: [{ tier: 3 }, { tier: 3 }] } },
+
+  // varied forms (spec §42): escort someone down a road, hold a place against waves
+  { id: 'e_peziarah', title: 'Peziarah di Jalan Hutan', steps: [
+    { kind: 'talk', town: 'rimba', npc: 'folk4', who: 'Dewi', say: 'Seorang peziarah tua menunggu di tengah jalan Hutan Kelam. Ia ingin ke Rimbawana, tapi kawanan makhluk mengintainya. Antarkan dia dengan selamat, ya?' },
+    { kind: 'event', event: 'escort', region: 'forest', from: 0.5, name: 'Peziarah Tua', title: 'Peziarah', look: L(4, 3), outfit: ['#8a7a5a', '#5e523c'] },
+    { kind: 'talk', town: 'rimba', npc: 'folk4', who: 'Dewi', say: 'Ia sampai, dan langsung bercerita tentang pengawal pemberani. Itu kau! Terimalah ini.' },
+  ], reward: { gold: 4, exp: 5, marks: 3, potions: { big: 2 } } },
+  { id: 'e_patung', title: 'Patung Es untuk Bekubara', steps: [
+    { kind: 'talk', town: 'beku', npc: 'folk1', who: 'Liv', say: 'Muridku membawa patung es terbaikku dari danau di tengah Padang Es. Yeti suka menghancurkan apa pun yang berkilau. Kawal dia ke Bekubara!' },
+    { kind: 'event', event: 'escort', region: 'ice', from: 0.45, name: 'Murid Liv', title: 'Pemahat Muda', look: L(0, 4), outfit: ['#9ab0d6', '#6a80a8'] },
+    { kind: 'talk', town: 'beku', npc: 'folk1', who: 'Liv', say: 'Patungnya utuh! Akan kupajang di alun-alun, dan namamu kuukir di alasnya.' },
+  ], reward: { gold: 5, exp: 6, marks: 3, mats: { crystal: 6 } } },
+  { id: 'e_pos', title: 'Pos Jaga Hutan', steps: [
+    { kind: 'talk', town: 'rimba', npc: 'folk3', who: 'Prajurit Bayu', say: 'Pos jaga lama di Hutan Kelam diserbu tiap malam. Aku tak bisa meninggalkan gerbang. Pertahankan pos itu sampai serbuan reda!' },
+    { kind: 'event', event: 'defend', region: 'forest', at: [0.62, 0.3], name: 'Pos Jaga' },
+    { kind: 'talk', town: 'rimba', npc: 'folk3', who: 'Prajurit Bayu', say: 'Pos masih berdiri? Kau sendirian menahan mereka? Rimbawana berutang padamu.' },
+  ], reward: { gold: 5, exp: 6, marks: 4, gear: { rarity: 2 } } },
+  { id: 'e_altar', title: 'Altar Cahaya Utara', steps: [
+    { kind: 'talk', town: 'beku', npc: 'folk3', who: 'Prajurit Eskil', say: 'Altar Cahaya Utara menjaga Padang Es dari badai. Makhluk es ingin memadamkannya. Jaga altar itu sampai cahayanya pulih!' },
+    { kind: 'event', event: 'defend', region: 'ice', at: [0.7, 0.66], name: 'Altar Cahaya' },
+    { kind: 'talk', town: 'beku', npc: 'folk3', who: 'Prajurit Eskil', say: 'Cahayanya menyala lagi, terlihat sampai dari tembok kota. Ini hadiah dari kepala penjaga.' },
+  ], reward: { gold: 6, exp: 7, marks: 4, gems: [{ tier: 2 }] } },
 ];
 export const QUEST_IDS = [...MAIN_IDS, ...SIDE.map((q) => q.id)];

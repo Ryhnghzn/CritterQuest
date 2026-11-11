@@ -114,7 +114,7 @@ export function applyField(char, part, now, rng = Math.random) {
   }
   if (part.region && regionById(part.region) && !c.regions[part.region]) c.regions = { ...c.regions, [part.region]: {} };
   if (typeof part.fog === 'string') c.world = { ...c.world, fog: part.fog };
-  countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, region: part.region });
+  countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, events: part.events, region: part.region });
   const mountsFound = rollMountDrops(c, part.mountRolls || { any: 0, eclipse: 0 }, rng);
   c.updatedAt = now;
   return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone, mountsFound };

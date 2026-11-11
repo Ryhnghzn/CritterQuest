@@ -23,6 +23,7 @@ import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } f
 import { MOUNT } from '../data/mounts.js';
 import { landAt } from './worldmap.js';
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
+import { stepEvents } from './questev.js';
 import { FIELD } from '../data/world.js';
 import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
 import { Vfx } from './vfx.js';
@@ -135,6 +136,7 @@ export class Game {
     this.time = 0; this.kills = 0;
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
     this.questItems = {}; this.reached = []; this.questSpots = []; this.questDrops = []; this.hidden = []; this.nearHidden = null; // quests (spec §26.5)
+    this.events = []; this.eventsDone = []; // quest events in the world (spec §42, run/questev.js)
     this.expGained = 0; this.bossKills = 0; this.gold = 0;
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
@@ -182,7 +184,7 @@ export class Game {
   takeProgress() {
     const out = {
       exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy },
-      questItems: { ...this.questItems }, reached: this.reached.splice(0),
+      questItems: { ...this.questItems }, reached: this.reached.splice(0), events: this.eventsDone.splice(0),
       items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions }, mountRolls: { ...this.mountRolls },
     };
     this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.questItems = {};
@@ -316,7 +318,7 @@ export class Game {
     for (const h of this.hits) stepHitFx(this, h, dt);
     stepPlayerFx(this, dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
-    if (this.field) stepField(this, dt); else stepDungeon(this, dt);
+    if (this.field) { stepField(this, dt); stepEvents(this, dt); } else stepDungeon(this, dt);
     this.updateEnemies(dt);
     if (this.state === ST.PLAY) {
       if (this.field) stepShots(this, dt, FIELD.despawn, this.px, this.py); else stepShots(this, dt, this.room.bound);
@@ -478,9 +480,11 @@ export class Game {
       // walk in through the lane, then the enemy's own behaviour (run/enemies.js)
       let vx, vy;
       const goal = this.field ? { x: this.px, y: this.py } : enemyGoal(this, e);
-      if (e.entering) {
-        const ga = Math.atan2(goal.y - e.y, goal.x - e.x);
-        vx = Math.cos(ga) * e.speed; vy = Math.sin(ga) * e.speed;
+      if (e.entering || (e.target && e.target.hp > 0)) { // walking in, or going for a quest event's walker / altar (spec §42)
+        const to = e.target && e.target.hp > 0 ? e.target : goal, ga = Math.atan2(to.y - e.y, to.x - e.x);
+        const d = Math.hypot(to.x - e.x, to.y - e.y), stop = e.target ? e.r + 12 : 0;
+        const k = d > stop ? 1 : 0;
+        vx = Math.cos(ga) * e.speed * k; vy = Math.sin(ga) * e.speed * k;
       } else ({ vx, vy } = aiStep(this, e, dt));
       if (e.type === 'dart' || e.type === 'vulture') { // zig-zag flight
         const z = Math.sin(e.wob) * 0.7, c = Math.cos(z), s = Math.sin(z);

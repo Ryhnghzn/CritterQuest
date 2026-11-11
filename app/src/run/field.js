@@ -110,11 +110,17 @@ export function spawnPack(run) {
     if (ok && !run.eclipseOpen && zoneAt(map, x, y) === 'eclipse') ok = false;
   }
   if (!ok) return 0;
-  const zone = packZone(map, x, y);
+  return spawnGroup(run, x, y, Math.min(rint(FIELD.pack[0], FIELD.pack[1]), FIELD.maxEnemies - run.enemies.length), packZone(map, x, y)).length;
+}
+
+// A group of n enemies of a zone round (x, y), at the level there (§33.3: the horde, weaker
+// one by one; a few elites). Returns them. Used by packs and quest events (run/questev.js).
+export function spawnGroup(run, x, y, n, zone) {
+  const map = run.fmap;
   const type = pickType(regionById(zone));
   const level = levelAt(map, x, y);
   const sc = fieldScale(level);
-  const n = Math.min(rint(FIELD.pack[0], FIELD.pack[1]), FIELD.maxEnemies - run.enemies.length);
+  const out = [];
   for (let i = 0; i < n; i++) {
     const e = run.spawnEnemy(type);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // §33.3: the horde, weaker one by one
@@ -124,8 +130,9 @@ export function spawnPack(run) {
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
     pushOut(map, e, e.r);
     if (rand() < FIELD.eliteChance * HORDE.eliteMul) makeElite(e, affixCount({ level }));
+    out.push(e);
   }
-  return n;
+  return out;
 }
 
 export function stepField(run, dt) {

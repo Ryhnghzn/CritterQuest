@@ -319,6 +319,8 @@ export const NPC_LINE_EN = {
 };
 
 // quests (spec §26): titles and what people say, keyed by the Indonesian text
+// the people and places of quest events (spec §42)
+const EVENT_EN = { 'Peziarah Tua': 'Old Pilgrim', Peziarah: 'Pilgrim', 'Murid Liv': "Liv's Apprentice", 'Pemahat Muda': 'Young Sculptor', 'Pos Jaga': 'the Watchpost', 'Altar Cahaya': 'the Altar of Light' };
 const QUEST_TITLE_EN = {
   "Bayangan di Bawah Tanah": "Shadows Below",
   "Gerhana": "Eclipse",
@@ -326,6 +328,10 @@ const QUEST_TITLE_EN = {
   "Busuk di Timur Hutan": "Rot in the Eastern Wood",
   "Makam di Bawah Pasir": "The Tomb Beneath the Sand",
   "Api yang Tak Padam": "The Undying Fire",
+  "Peziarah di Jalan Hutan": "The Pilgrim on the Forest Road",
+  "Patung Es untuk Bekubara": "An Ice Statue for Frosthold",
+  "Pos Jaga Hutan": "The Forest Watchpost",
+  "Altar Cahaya Utara": "The Altar of Northern Light",
 };
 export const QUEST_LINE_EN = {
   "Lima pecahan… Hangatnya terasa sampai ke tulangku. Tapi lihat langit di timur, Nak. Gerhana itu tidak menunggu. Retakan sudah terbuka di balik Baraapi: Tanah Gerhana. Di ujungnya berdiri menaranya. Pergilah, dan akhiri ini.": "Five shards… I can feel their warmth in my bones. But look at the eastern sky, child. The eclipse will not wait. A rift has opened beyond Emberfall: the Eclipse Lands. Its spire stands at the far end. Go, and end this.",
@@ -340,6 +346,14 @@ export const QUEST_LINE_EN = {
   "Kau kembali hidup-hidup! Akan kutarikan kisahmu malam ini. Pecahan terakhir ada di Gunung Api. Carilah Ignis si penambang di Baraapi.": "You came back alive! I'll dance your story tonight. The last shard lies in Fire Mountain. Look for Ignis the miner in Emberfall.",
   "Batu di gunung ini bergerak sejak pecahan itu terbangun. Benteng Lava, di sisi barat Gunung Api. Rajanya tidur di kolam api, dan dia tidak suka dibangunkan.": "The rocks on this mountain have moved ever since that shard woke. The Lava Fortress, on the west side of Fire Mountain. Its king sleeps in a pool of fire, and he hates being woken.",
   "Lima pecahan… Gunung ini berhenti bergetar. Bawa semuanya ke Kakek Odo di Kota Awal. Tapi hati-hati: langit di timur Baraapi mulai menggelap.": "Five shards… The mountain has stopped shaking. Take them all to Old Odo in Hometown. But beware: the sky east of Emberfall is growing dark.",
+  "Seorang peziarah tua menunggu di tengah jalan Hutan Kelam. Ia ingin ke Rimbawana, tapi kawanan makhluk mengintainya. Antarkan dia dengan selamat, ya?": "An old pilgrim is waiting halfway down the Gloomwood road. He wants to reach Wildwood, but packs of beasts are stalking him. Will you see him there safely?",
+  "Ia sampai, dan langsung bercerita tentang pengawal pemberani. Itu kau! Terimalah ini.": "He made it, and he won't stop talking about his brave escort. That's you! Please take this.",
+  "Muridku membawa patung es terbaikku dari danau di tengah Padang Es. Yeti suka menghancurkan apa pun yang berkilau. Kawal dia ke Bekubara!": "My apprentice is carrying my finest ice statue from the lake in the middle of the Frost Plains. Yetis love to smash anything that sparkles. Escort her to Frosthold!",
+  "Patungnya utuh! Akan kupajang di alun-alun, dan namamu kuukir di alasnya.": "The statue is whole! I'll set it up in the square and carve your name on its base.",
+  "Pos jaga lama di Hutan Kelam diserbu tiap malam. Aku tak bisa meninggalkan gerbang. Pertahankan pos itu sampai serbuan reda!": "The old watchpost in Gloomwood is overrun every night. I can't leave the gate. Hold the post until the assault dies down!",
+  "Pos masih berdiri? Kau sendirian menahan mereka? Rimbawana berutang padamu.": "The post still stands? You held them off alone? Wildwood owes you.",
+  "Altar Cahaya Utara menjaga Padang Es dari badai. Makhluk es ingin memadamkannya. Jaga altar itu sampai cahayanya pulih!": "The Altar of Northern Light keeps the storms off the Frost Plains. The ice creatures want to put it out. Guard the altar until its light recovers!",
+  "Cahayanya menyala lagi, terlihat sampai dari tembok kota. Ini hadiah dari kepala penjaga.": "Its light burns again, you can see it from the city walls. Here's a reward from the captain of the guard.",
 };
 
 // side quests & people in the wild (spec §26.5)
@@ -530,6 +544,7 @@ export function localizeData() {
     swap(q, 'title', QUEST_TITLE_EN); swap(q, 'title', WILD_EN);
     for (const st of q.steps) {
       swap(st, 'say', QUEST_LINE_EN); swap(st, 'say', WILD_EN);
+      swap(st, 'name', EVENT_EN); swap(st, 'title', EVENT_EN); // quest events (spec §42)
       if (st.who) st.who = WILD_NAME_EN[st.who] || NPC_NAME_EN[st.who] || nameEn(st.who);
     }
   }

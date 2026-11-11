@@ -1379,3 +1379,29 @@ Save: `difficulty`, `unlocked` (Neraka, Celah), `rift { best, checkpoint }`. Ver
 1. Proyek A: `docs/superpowers/plans/2026-11-11-musuh-beragam.md`.
 2. Proyek B, C, D: rencana masing-masing ditulis saat proyek sebelumnya selesai dicek pemilik.
 3. Satu Dunia (§40) bagian B7–D tetap berjalan; proyek A hanya menyentuh daftar `enemies` per zona di `data/world.js`, bukan peta.
+
+## 42. Quest Beragam (permintaan pemilik 2026-11-11)
+
+Masalah: hampir semua quest berpola "bicara → kalahkan X / kumpulkan Y / datangi Z → bicara". Keputusan pemilik: tambah 8 bentuk baru — **Kawal, Bertahan, Buronan, Sarang, Penyelamatan, Balapan, Peristiwa dunia, Pilihan**.
+
+### 42.1 Aturan umum
+- Bentuk lapangan (Kawal, Bertahan, Buronan, Sarang, Penyelamatan, Balapan) adalah langkah quest jenis `event` `{ event, at, … }`: dimulai saat pemain mendekati titik mulainya (`at`, koordinat pecahan zona seperti `SPOTS`), berjalan di dunia, lalu **berhasil** (langkah selesai) atau **gagal** (tanpa hukuman: kembali ke awal langkah, bisa dicoba lagi dengan mendekati titik mulainya).
+- Logika di `run/questev.js` (murni, tes Vitest), angka di `data/questev.js`. Tanda di peta, peta mini, dan panah tujuan seperti quest lain.
+- **16 quest sampingan baru** (2 per bentuk, tersebar di zona), total 48.
+
+### 42.2 Bentuk
+| Bentuk | Inti |
+|---|---|
+| Kawal | NPC berjalan sendiri menyusuri rute ke tujuan; musuh mengincarnya; HP di atas kepala; berhenti menunggu bila pemain > 500 jauhnya. Gagal bila tumbang. |
+| Bertahan | Altar/pondok ber-HP; 3–4 gelombang makin ganas selama ±75 detik, sebagian menyerang altar. Gagal bila altar hancur atau pemain menjauh > 700. |
+| Buronan | Elite bernama (lebih kuat, pola khusus), lokasi hanya lingkaran jejak di peta; pada HP 50% kabur ke titik lain (lingkaran baru). |
+| Sarang | 3–5 sarang/totem ber-HP yang memunculkan musuh berkala sampai dihancurkan. |
+| Penyelamatan | Kamp: penjaga + kandang; kalahkan penjaga, buka kandang (E), tawanan lari ke kota. |
+| Balapan | Cincin cahaya berurutan di jalan + batas waktu; hadiah perunggu/perak/emas menurut waktu; rekor tercatat. Gagal bila waktu habis. |
+| Pilihan | Langkah `choice` di dialog: dua jawaban dengan hadiah & akibat berbeda (NPC pergi, Lencana, koin); tercatat di jurnal. |
+| Peristiwa dunia | Kejadian acak di zona dekat pemain tiap 5–8 menit (karavan diserang = kawal singkat, hujan meteor = hindari & ambil kristal, serbuan jembatan = bertahan singkat); tanda "!" di peta mini; hilang bila diabaikan; hadiah langsung. |
+
+### 42.3 Save versi 23
+- `quests.choices { [questId]: index }` (jawaban Pilihan), `quests.races { [questId]: detik terbaik }`.
+- `migrate()` v22 → v23.
+- Rencana kerja: `docs/superpowers/plans/2026-11-11-quest-beragam.md` (A Kawal & Bertahan · B Buronan & Sarang · C Penyelamatan & Balapan · D Pilihan & Peristiwa dunia).

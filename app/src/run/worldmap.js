@@ -471,3 +471,20 @@ export function freeSpot(world, x, y, r = 90) {
   }
   return { x: Math.round(x), y: Math.round(y) };
 }
+
+// A stretch of a zone's main road (spec §42 escorts): from where fx `from` lands on it to
+// where fx `to` does, or to the zone's town gate when `to` is null; points every `step`.
+export function roadRoute(world, zone, from, to = null, step = 90) {
+  const road = world.roads.find((r) => r.kind === 'main' && r.zone === zone), pts = sample(road.pts, step);
+  const nearest = (fx) => {
+    const p = zoneToWorld(zone, fx, 0.5);
+    let best = 0, bd = Infinity;
+    pts.forEach(([x, y], i) => { const d = (x - p.x) ** 2 + (y - p.y) ** 2; if (d < bd) { bd = d; best = i; } });
+    return best;
+  };
+  // to the town: stop short of its gate, so the walker arrives before the gate takes the player in
+  let end = pts.length - 1;
+  while (end > 0 && Math.hypot(pts[end][0] - pts[pts.length - 1][0], pts[end][1] - pts[pts.length - 1][1]) < 380) end--;
+  const a = nearest(from), b = to == null ? end : nearest(to);
+  return a <= b ? pts.slice(a, b + 1) : pts.slice(b, a + 1).reverse();
+}

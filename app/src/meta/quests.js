@@ -18,7 +18,7 @@ import { discover } from './collection.js';
 import { isEquipped } from './gear.js';
 import { addExp } from './character.js';
 import { gateSpots } from './world.js';
-import { buildWorld, zoneToWorld, freeSpot } from '../run/worldmap.js';
+import { buildWorld, zoneToWorld, freeSpot, roadRoute } from '../run/worldmap.js';
 import { WORLD } from '../data/worldmap.js';
 import { mulberry } from '../run/fieldmap.js';
 
@@ -62,7 +62,7 @@ export function stepMet(char, step) {
     default: return false;
   }
 }
-const needOf = (step) => (step.kind === 'kill' || step.kind === 'elite' || step.kind === 'drop' ? step.n : 0);
+const needOf = (step) => (step.kind === 'kill' || step.kind === 'elite' || step.kind === 'drop' ? step.n : step.kind === 'event' ? 1 : 0);
 const allSpots = (step) => (1 << step.spots.length) - 1;
 export const spotsDone = (step, prog) => step.spots.filter((_, i) => prog & (1 << i)).length;
 
@@ -83,15 +83,16 @@ export function syncQuests(c) {
 }
 
 // Counts a trip or a field part toward the steps being worked on. Mutates c.
-// trip: { killsBy: { type: n } (by kin), elites, elitesBy, questItems: { item: n }, reached: [spot], region? }
+// trip: { killsBy: { type: n } (by kin), elites, elitesBy, questItems: { item: n }, reached: [spot], events: [key], region? }
 export function countQuests(c, trip) {
   for (const a of activeQuests(c)) {
     const s = a.step, st = a.state;
-    if (!s || (s.region && s.region !== trip.region)) continue;
+    if (!s || (s.region && s.region !== trip.region && s.kind !== 'event')) continue; // an event is known by its key
     if (s.kind === 'reach') {
       s.spots.forEach((id, i) => { if (trip.reached?.includes(id)) st.prog |= 1 << i; });
       continue;
     }
+    if (s.kind === 'event') { if (trip.events?.includes(eventKey(a.id, st.step))) st.prog = 1; continue; }
     let add = 0;
     if (s.kind === 'kill') add = trip.killsBy?.[s.enemy] || 0;
     if (s.kind === 'elite') add = s.enemy ? trip.elitesBy?.[s.enemy] || 0 : trip.elites || 0;
@@ -328,13 +329,26 @@ export function hiddenIn(char, regionId = null) {
 //   spots: places still to stand at [{ spot, x, y }]; drops: quest items that may fall [{ item, enemy, chance, night }]
 //   (every zone when none is given; a drop names its zone: it only falls there)
 export function fieldQuests(char, regionId = null) {
-  const spots = [], drops = [];
+  const spots = [], drops = [], events = [];
   for (const a of activeQuests(char)) {
     const s = a.step;
     if (s?.kind === 'reach') s.spots.forEach((id, i) => { if ((!regionId || SPOTS[id].region === regionId) && !(a.state.prog & (1 << i))) spots.push({ spot: id, ...spotXY(id) }); });
     if (s?.kind === 'drop' && (!regionId || s.region === regionId)) drops.push({ item: s.item, enemy: s.enemy, chance: s.chance, night: !!s.night, region: s.region });
+    if (s?.kind === 'event' && (!regionId || s.region === regionId)) events.push(eventOf(a.id, a.state.step, s));
   }
-  return { spots, drops };
+  return { spots, drops, events };
+}
+
+// quest events in the world (spec §42, run/questev.js)
+export const eventKey = (questId, step) => `${questId}:${step}`;
+// a quest event step as the world needs it: where it starts, an escort's road, a name
+export function eventOf(questId, step, s) {
+  const key = eventKey(questId, step), base = { key, quest: questId, kind: s.event, name: s.name, region: s.region };
+  if (s.event === 'escort') {
+    const route = roadRoute(buildWorld(), s.region, s.from, s.to ?? null);
+    return { ...base, start: { x: route[0][0], y: route[0][1] }, route, look: s.look, outfit: s.outfit, title: s.title };
+  }
+  return { ...base, start: placeXY(`event:${key}`, s.region, s.at, 120) };
 }
 
 // where to go (spec §26.3)
@@ -367,6 +381,7 @@ export function questTarget(char, regionId = null, from = null) {
     const h = hiddenById(s.npc);
     return inZone(h.region) ? { kind: 'hidden', ...hiddenXY(h) } : null;
   }
+  if (s.kind === 'event') return inZone(s.region) ? { kind: 'event', key: eventKey(a.id, a.state.step), ...eventOf(a.id, a.state.step, s).start } : null;
   const town = s.kind === 'town' || s.kind === 'talk' || s.kind === 'give' ? s.town : null;
   const t = town && buildWorld().towns[town];
   return t ? { kind: 'town', town, x: t.x, y: t.y } : null;
