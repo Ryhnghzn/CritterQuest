@@ -67,10 +67,9 @@ export const skillCost = (run, s) => s.cost * (1 - (run.fx?.manaSave || 0));
 const CHARGE_WINDOW = 2, CHARGE_GAP = 0.25;
 
 export function stepSkills(run, intent, dt) {
-  for (let i = 0; i < SKILL_SLOTS; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
-  if (run.charge) for (let i = 0; i < SKILL_SLOTS; i++) if (run.charge[i] > 0 && (run.charge[i] -= dt) <= 0) { // the second cast was not used
-    run.charge[i] = 0; run.skillCd[i] = run.skillCdMax[i];
-  }
+  const cds = run.pageCd || [run.skillCd], maxes = run.pageCdMax || [run.skillCdMax]; // both pages cool down (spec §43.6)
+  for (const cd of cds) for (let i = 0; i < SKILL_SLOTS; i++) if (cd[i] > 0) cd[i] -= dt;
+  if (run.charges) run.charges.forEach((ch, p) => { for (let i = 0; i < SKILL_SLOTS; i++) if (ch[i] > 0 && (ch[i] -= dt) <= 0) { ch[i] = 0; cds[p][i] = maxes[p][i]; } }); // the second cast was not used
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
   run.energy = Math.min(ENERGY.max, run.energy + ENERGY.regen * dt);
   if (run.noEnergyT > 0) run.noEnergyT -= dt;
@@ -86,8 +85,9 @@ export function stepSkills(run, intent, dt) {
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
     if (skills[i].charges > 1) { // L3 (spec §43.4): a second cast right after the first; the cooldown waits for it
-      run.charge ||= [0, 0, 0, 0, 0, 0, 0, 0];
-      if (!run.charge[i]) { run.charge[i] = CHARGE_WINDOW; run.skillCd[i] = CHARGE_GAP; } else run.charge[i] = 0;
+      run.charges ||= [[0, 0, 0, 0], [0, 0, 0, 0]];
+      const ch = run.charges[run.page || 0];
+      if (!ch[i]) { ch[i] = CHARGE_WINDOW; run.skillCd[i] = CHARGE_GAP; } else ch[i] = 0;
     }
     const before = run.hits.length;
     castSkill(run, skills[i]);

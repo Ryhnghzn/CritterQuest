@@ -94,6 +94,20 @@ export function updateActions(game) {
     const left = ring(b, game.skillCd[i], game.skillCdMax[i]);
     b.querySelector('.cdt').textContent = left > 0 ? Math.ceil(left) : '';
   }
+  // the skill page (spec §43.6): A / B on the ⇄ button, the other page's four skills peek out dimmed with their cooldown
+  const sw = $('act-swap'), can = !!game.canSwap?.();
+  sw.classList.toggle('hidden', !can);
+  if (can) {
+    const other = 1 - game.page, defs = game.pageDefs[other], key = `${game.page}:${defs.map((d) => d?.id ?? '').join()}`;
+    sw.querySelector('.pg').textContent = game.page ? 'B' : 'A';
+    const peek = sw.querySelector('.peek');
+    if (peek.dataset.k !== key) {
+      peek.dataset.k = key;
+      peek.replaceChildren(...defs.map((d) => { const i = document.createElement('i'); if (d) i.append(iconCanvas(d.icon || d.id, 16)); i.append(document.createElement('b')); return i; }));
+      sw.title = t('Halaman {p} (Q)', { p: other ? 'B' : 'A' });
+    }
+    [...peek.children].forEach((i, k) => i.lastChild.style.setProperty('--k', game.pageCdMax[other][k] ? (game.pageCd[other][k] / game.pageCdMax[other][k]).toFixed(2) : 0));
+  }
   // ultimate: gold ring fills with its charge (spec §22)
   const u = $('act-ult');
   if (u.dataset.skill !== (game.ult?.name ?? '')) { // it can open mid-trip

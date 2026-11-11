@@ -494,3 +494,12 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 #ui .skill .skbtns{display:flex;gap:6px;align-items:center}
 #ui .skill .lvup{display:block;font-size:12px;color:#7a7266;margin-top:1px}
 #ui .skill .lvup.on{color:var(--cq-gold-l)}
+
+/* skill pages (spec §43.6): the ⇄ button floats beside the skill buttons, the hidden page peeks out dimmed */
+#act-swap{position:absolute;left:-58px;bottom:2px;width:46px;height:46px;grid-area:auto}
+#act-swap .pg{font:800 18px 'Cinzel',serif;color:var(--cq-gold-l)}
+#act-swap .peek{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);display:flex;gap:2px;pointer-events:none}
+#act-swap .peek i{position:relative;width:16px;height:16px;border-radius:3px;background:rgba(12,9,14,.8);opacity:.55;overflow:hidden}
+#act-swap .peek i canvas{width:16px!important;height:16px!important}
+#act-swap .peek i b{position:absolute;inset:0;background:rgba(0,0,0,.6);transform-origin:bottom;transform:scaleY(var(--k,0))}
+body.touch #act-swap{left:-54px;bottom:auto;top:-52px}

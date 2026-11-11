@@ -6,6 +6,7 @@ import { el, button } from './screens.js';
 import { iconCanvas } from '../art/sprites.js';
 import { CLASSES } from '../data/classes.js';
 import { wornIds, equippedUlt, spFree, nextCost, treeRows } from '../meta/jobs.js';
+import { PAGE_B_LEVEL } from '../data/balance.js';
 import { tr, t, num } from '../i18n.js';
 
 const picked = { slot: null, skill: null }; // first tap of the two-tap equip
@@ -18,7 +19,7 @@ function pick(opts, redraw, key, value) {
   if (picked.slot !== null && picked.skill !== null) {
     const { slot, skill } = picked;
     picked.slot = null; picked.skill = null;
-    opts.onEquip(0, slot, skill);
+    opts.onEquip(Math.floor(slot / 4), slot % 4, skill); // slot 0–3 = page A, 4–7 = page B
     return;
   }
   redraw();
@@ -31,7 +32,8 @@ export function renderSkillTab(char, opts, redraw) {
   const skills = el('div', 'panel skills');
   const cls = CLASSES[char.classId], canEdit = !!opts.editable, canTree = !!opts.treeEditable;
   const byId = (id) => cls.skills.find((s) => s.id === id);
-  const worn = wornIds(char, 0), ult = equippedUlt(char), free = spFree(char), rows = treeRows(char);
+  const pageB = char.level >= PAGE_B_LEVEL && char.classId !== 'novice'; // spec §43.6
+  const worn = [...wornIds(char, 0), ...wornIds(char, 1)], ult = equippedUlt(char), free = spFree(char), rows = treeRows(char);
   if (!canEdit) { picked.slot = null; picked.skill = null; }
 
   const head = el('div', 'attrhead');
@@ -39,7 +41,8 @@ export function renderSkillTab(char, opts, redraw) {
   skills.append(head, el('span', 'note', canTree ? tr('2 SP tiap naik level. Atur ulang di Pelatih.') : tr('SP hanya bisa dibagi di kota; skill tetap bisa dipasang.')));
 
   const slots = el('div', 'slots');
-  for (let i = 0; i < 4; i++) {
+  const slotsB = el('div', 'slots pageb');
+  for (let i = 0; i < (pageB ? 8 : 4); i++) {
     const s = worn[i] ? byId(worn[i]) : null;
     const card = button('', `skslot${s ? ' filled' : ' empty'}${picked.slot === i ? ' picked' : ''}`, () => pick(opts, redraw, 'slot', i));
     card.dataset.slot = String(i);
@@ -47,17 +50,17 @@ export function renderSkillTab(char, opts, redraw) {
     card.setAttribute('aria-pressed', picked.slot === i ? 'true' : 'false');
     const ic = el('span', 'sic');
     if (s) ic.append(iconCanvas(s.icon || s.id, 30)); else ic.append(el('span', 'plus', '+'));
-    card.append(ic, el('span', 'sname', s ? s.name : tr('Kosong')), el('span', 'snum', String(i + 1)));
+    card.append(ic, el('span', 'sname', s ? s.name : tr('Kosong')), el('span', 'snum', `${i < 4 ? 'A' : 'B'}${(i % 4) + 1}`));
     const cell = el('div', 'skcell');
     cell.append(card);
     if (s) {
-      const off = button('×', 'skoff', (e) => { e.stopPropagation(); picked.slot = null; picked.skill = null; opts.onEquip(0, i, null); });
+      const off = button('×', 'skoff', (e) => { e.stopPropagation(); picked.slot = null; picked.skill = null; opts.onEquip(Math.floor(i / 4), i % 4, null); });
       off.title = tr('Lepas dari tombol'); off.setAttribute('aria-label', tr('Lepas dari tombol'));
       off.dataset.skill = `${s.id}-off`;
-      off.disabled = !canEdit || worn.filter(Boolean).length <= 1;
+      off.disabled = !canEdit || (i < 4 && worn.slice(0, 4).filter(Boolean).length <= 1);
       cell.append(off);
     }
-    slots.append(cell);
+    (i < 4 ? slots : slotsB).append(cell);
   }
   const novice = !rows.ult.length; // a Pengembara: two fixed skills, no tree (spec §43.1)
   const uDef = ult || rows.ult[0]?.def;
@@ -69,6 +72,8 @@ export function renderSkillTab(char, opts, redraw) {
   slots.append(ucard);
   }
   skills.append(slots);
+  if (pageB) skills.append(el('span', 'note', tr('Halaman B (tukar dengan Q / ⇄ saat bertarung):')), slotsB);
+  else if (!novice) skills.append(el('span', 'note', t('Halaman B terbuka di level {n}.', { n: PAGE_B_LEVEL })));
   if (novice) {
     skills.append(el('div', 'note', tr('Pengembara memakai dua skill tetap. Pilih job di Pelatih mulai level 5; SP yang terkumpul siap dipakai saat itu.')));
     wrap.append(skills);
@@ -96,7 +101,7 @@ export function renderSkillTab(char, opts, redraw) {
     const act = el('span', 'skbtns');
     if (locked) act.append(el('span', 'lock', `LV ${d.unlock}`));
     else {
-      if (slot >= 0) act.append(el('span', 'badgeno', String(slot + 1)));
+      if (slot >= 0) act.append(el('span', 'badgeno', `${slot < 4 ? 'A' : 'B'}${(slot % 4) + 1}`));
       if (r.kind === 'ult' && learned) {
         const use = button(ult?.id === r.id ? tr('Dipakai') : tr('Pakai'), 'btn small', (e) => { e.stopPropagation(); opts.onUlt(r.id); });
         use.disabled = ult?.id === r.id || !canEdit;

@@ -2,7 +2,7 @@
 // (entities live in reused objects and are swap-removed when they die).
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
-import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL } from '../data/balance.js';
 import { expToNext, levelCap } from '../meta/character.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
@@ -44,7 +44,7 @@ const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.w
 // hits from basic attacks fill energy (spec §18.2)
 const BASIC_FX = new Set(['slash', 'stab', 'arrow', 'fireball', 'boom']);
 // potion: belt slot to drink from this step (0–3), or -1
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, ult: false, mount: false, potion: -1 };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, swap: false, ult: false, mount: false, potion: -1 };
 const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
 // potion buffs: stat → multiplier field on the potion (spec §15.2)
 const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
@@ -110,7 +110,7 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {} }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0 }) {
     resetRng();
     this.classId = classId;
     this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
@@ -126,13 +126,16 @@ export class Game {
     this.aimX = 1; this.aimY = 0;
     this.atkCd = 0; this.attackT = 0;
     this.aimPX = 0; this.aimPY = 0;
-    this.skillCd = [0, 0, 0, 0];
     this.energy = ENERGY.start; this.noEnergyT = 0;
     const pool = CLASSES[classId].skills;
     this.levels = levels; // skill id → level (spec §43): each worn skill is built at its level (run/skilllevel.js)
-    this.skillDefs = (skills || [pool[0].id, pool[1].id, null, null]).map((id) => (id ? leveled(pool.find((s) => s.id === id), levels[id] || 1) : null));
-    while (this.skillDefs.length < 4) this.skillDefs.push(null);
-    this.skillCdMax = this.skillDefs.map((sk) => (sk ? skillCooldown(stats, sk) : 0));
+    // two pages of four (spec §43.6): skillDefs / skillCd / skillCdMax are the page in use; both pages' cooldowns run
+    const build = (ids) => { const d = (ids || []).map((id) => (id ? leveled(pool.find((s) => s.id === id), levels[id] || 1) : null)); while (d.length < 4) d.push(null); return d.slice(0, 4); };
+    this.pageDefs = [build(skills || [pool[0].id, pool[1].id]), build(skillsB)];
+    this.pageCd = [[0, 0, 0, 0], [0, 0, 0, 0]];
+    this.pageCdMax = this.pageDefs.map((p) => p.map((sk) => (sk ? skillCooldown(stats, sk) : 0)));
+    this.page = 0;
+    this.usePage(page === 1 && this.canSwap(level) ? 1 : 0);
     this.ult = ult; this.ultCharge = 0;
     this.skillBuff = null; this.skillBuffT = 0; // atk / atkSpd / crit / critDmg from a buff skill
     this.buffT = 0; this.dmgTakenMul = 1;
@@ -214,18 +217,30 @@ export class Game {
     this.baseStats = { ...stats };
     this.stats = { ...stats, hp };
     this.applyBuffs();
-    this.skillCdMax = this.skillDefs.map((sk) => (sk ? skillCooldown(stats, sk) : 0));
+    this.pageCdMax.forEach((m, p) => this.pageDefs[p].forEach((sk, i) => { m[i] = sk ? skillCooldown(stats, sk) : 0; }));
   }
 
-  // Skills changed mid-trip (spec §31.6): a skill put into a slot starts on its full cooldown.
-  setSkills(ids) {
-    const pool = CLASSES[this.classId].skills;
+  // Skills changed mid-trip (spec §31.6): a skill put into a slot starts on its full cooldown. page: 0 = A, 1 = B
+  setSkills(ids, page = 0) {
+    const pool = CLASSES[this.classId].skills, defs = this.pageDefs[page], cd = this.pageCd[page], max = this.pageCdMax[page];
     ids.forEach((id, i) => {
-      if ((this.skillDefs[i]?.id ?? null) === id) return;
-      this.skillDefs[i] = id ? leveled(pool.find((s) => s.id === id), this.levels?.[id] || 1) : null;
-      this.skillCdMax[i] = this.skillDefs[i] ? skillCooldown(this.stats, this.skillDefs[i]) : 0;
-      this.skillCd[i] = this.skillCdMax[i];
+      if ((defs[i]?.id ?? null) === id) return;
+      defs[i] = id ? leveled(pool.find((s) => s.id === id), this.levels?.[id] || 1) : null;
+      max[i] = defs[i] ? skillCooldown(this.stats, defs[i]) : 0;
+      cd[i] = max[i];
     });
+  }
+
+  // Page B opens at PAGE_B_LEVEL and needs a skill on it (spec §43.6)
+  canSwap(level = this.level) { return level >= PAGE_B_LEVEL && this.pageDefs[1].some(Boolean); }
+  usePage(p) { this.page = p; this.skillDefs = this.pageDefs[p]; this.skillCd = this.pageCd[p]; this.skillCdMax = this.pageCdMax[p]; }
+  // Q / ⇄: instant; any held or chained skill is let go (part E hooks into cancelHeld)
+  swapPage() {
+    if (!this.canSwap()) { if (this.level < PAGE_B_LEVEL) this.addFloater(this.px, this.py - 40, t('Halaman B terbuka di level {n}', { n: PAGE_B_LEVEL }), '#9fd8ff'); return false; }
+    this.cancelHeld?.();
+    this.usePage(1 - this.page);
+    sfx.pickCard?.();
+    return true;
   }
 
   // stats = base stats × active potion buffs
@@ -300,6 +315,7 @@ export class Game {
     if (this.bannerT > 0) this.bannerT -= dt;
 
     stepAttack(this, this.intent, dt);
+    if (this.intent.swap) this.swapPage(); // Q / ⇄ (spec §43.6)
     stepSkills(this, this.intent, dt);
     const mv = this.intent.move;
     traitStep(this, dt, mv.x !== 0 || mv.y !== 0 || (this.dodgeT > 0 && !this.skillDash), !!(this.intent.attack || this.intent.auto));
@@ -616,6 +632,7 @@ export class Game {
         this.showBanner(t('Naik level! LV {n}', { n: this.level }));
         this.addFloater(this.px, this.py - 44, t('+{n} poin', { n: POINTS_PER_LEVEL }), '#8fffc0');
         this.addFloater(this.px, this.py - 62, t('+{n} SP', { n: SP_PER_LEVEL }), '#9fd8ff'); // skill points (spec §43): spent in town
+        if (this.level === PAGE_B_LEVEL && this.classId !== 'novice') this.showBanner(tr('Halaman skill B terbuka! Pasang di Karakter → Skill, tukar dengan Q / ⇄'));
         sfx.levelup();
       }
     }

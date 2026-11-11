@@ -563,4 +563,11 @@ export default {
   'Belum terbuka.': 'Not open yet.',
   'Semua petualang mulai sebagai Pengembara. Di Pelatih kamu bisa mencoba Warrior, Archer, Mage, dan Assassin, lalu memilih job mulai level 5.': 'Every adventurer starts as a Wanderer. At the Trainer you can try Warrior, Archer, Mage and Assassin, then pick a job from level 5.',
   'Pengembara memakai dua skill tetap. Pilih job di Pelatih mulai level 5; SP yang terkumpul siap dipakai saat itu.': 'A Wanderer uses two fixed skills. Pick a job at the Trainer from level 5; the SP gathered by then are ready to spend.',
+  // skill pages (spec §43.6)
+  'Halaman B terbuka di level {n}': 'Page B opens at level {n}',
+  'Halaman skill B terbuka! Pasang di Karakter → Skill, tukar dengan Q / ⇄': 'Skill page B is open! Fill it in Character → Skills, swap with Q / ⇄',
+  'Halaman {p} (Q)': 'Page {p} (Q)',
+  'Halaman B (tukar dengan Q / ⇄ saat bertarung):': 'Page B (swap with Q / ⇄ in a fight):',
+  'Halaman B terbuka di level {n}.': 'Page B opens at level {n}.',
+  'Tukar halaman skill': 'Swap skill page',
 };

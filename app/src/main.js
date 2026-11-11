@@ -581,7 +581,7 @@ function equipInRun(page, slot, id) {
   const r = equipSkill(tripChar(), page, slot, id, Date.now());
   if (!r.ok) { openCharPanel(); return; }
   current = { ...current, jobs: r.char.jobs };
-  game.setSkills(wornIds(current, 0));
+  game.setSkills(wornIds(current, page), page);
   saveCurrent();
   openCharPanel();
 }
@@ -736,7 +736,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
   });
   tripAttrs = {};
   setupRunUI();
@@ -764,7 +764,7 @@ async function explore(at = current.location) {
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
     at, gate: typeof at === 'string' ? lastGate[at] ?? null : null, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
     eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });
@@ -1289,8 +1289,11 @@ function tickRun(pressed) {
   game.intent = {
     move: runView() !== R ? STAGE.toWorld(input.x, input.y) : { x: input.x, y: input.y }, aimAt, attack, auto,
     dodge: pressed.has('dodge'), mount: pressed.has('mount'), potion: potionSlot(pressed), ult: pressed.has('ult'),
-    skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'),
+    skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'), swap: pressed.has('swap'),
   };
+  if (game.page !== undefined && current.jobs?.[current.classId] && game.page !== current.jobs[current.classId].page) { // the page in use is remembered (spec §43.6)
+    current = { ...current, jobs: { ...current.jobs, [current.classId]: { ...current.jobs[current.classId], page: game.page } } };
+  }
   if (game.field) {
     game.clock = worldClock;
     game.night = phaseOf(worldClock).icon === 'moon';

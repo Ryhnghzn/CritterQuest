@@ -46,11 +46,11 @@
 - [x] C1 `run/skilllevel.js` + tes: `leveled(def, 1)` = def; level n → `mult × (1 + 0,12 × (n − 1))` termasuk `mult` bersarang (`blast`, `throw`, `trail`, `explode.shards`, `split`); level ≥ 3 menerapkan `def.lv3`, level 5 juga `def.lv5` (tambalan digabung dalam, angka bersarang ditimpa). Ultimate: +15%/level; level 3: Luas `duration + 0,5`, Fokus `r × 1,2`.
 - [x] C2 `lv3`/`lv5` untuk 24 skill lama di `data/classes.js` persis tabel §43.4. Efek yang belum ada mekaniknya dibuat di `run/` + tes masing-masing: pusaran tertinggal (Putaran Pedang L5), jejak api dash (Terjang L5), ledakan pilar terakhir (Retakan Bumi L5), kapak kedua / jeda putar di ujung (Kapak Bumerang), Murka +40 (Amarah Perang L5), pantulan pecahan (Panah Pecah L5), dua naga (Panah Naga L5), 2× berturut (`charges: 2` untuk Lompatan Mundur, Teleportasi, Langkah Bayangan), Bidik penuh (Lompatan L5), ledakan akhir jebakan, panah biasa menembus selama buff (Mata Elang L5), serpihan es saat mati beku (Nova Es L5), setrum area (Badai Petir L5), lava (Meteor L5), ledakan es titik awal (Teleportasi L5), meledak dua kali (Matahari Kecil L5), ledakan akhir Perisai Mana, bayangan menebas ulang, belati kembali, kabut menambah damage diterima, kebal saat Bom Asap, shuriken membelah, perpanjangan Naluri Pembunuh.
 - [x] C3 `run/run.js` memakai `leveled(def, levelOf(char, id))`. Tab Skill menampilkan efek L3/L5 (abu-abu bila belum). Kamus EN.
-- [ ] C4 Tes, build, server → **cek manual pemilik** (cheat: SP penuh; tiap efek L3/L5 terlihat).
+- [x] C4 Tes, build, server → **cek manual pemilik** (cheat: SP penuh; tiap efek L3/L5 terlihat).
 
 ## Bagian D — Dua halaman skill (cek manual)
-- [ ] D1 `run`: `run.skillDefs` 2 × 4, `run.page`, cooldown 8 slot; intent `swap` (Q di `core/input.js`, tombol ⇄ di `ui/touch.js`); tukar membatalkan `run.held`/`run.chain` (ditambah di E; siapkan kait `cancelHeld(run)`). Halaman B terkunci < level 15. Tes: cooldown halaman tersembunyi tetap turun; tukar instan; level 14 tidak bisa tukar.
-- [ ] D2 HUD (`ui/hud.js`): 4 ikon kecil redup halaman tersembunyi + putaran cooldown, huruf A/B; tab Skill dua baris slot; pesan sekali saat level 15. Halaman terakhir disimpan `jobs[id].page`. Kamus EN.
+- [x] D1 `run`: `run.skillDefs` 2 × 4, `run.page`, cooldown 8 slot; intent `swap` (Q di `core/input.js`, tombol ⇄ di `ui/touch.js`); tukar membatalkan `run.held`/`run.chain` (ditambah di E; siapkan kait `cancelHeld(run)`). Halaman B terkunci < level 15. Tes: cooldown halaman tersembunyi tetap turun; tukar instan; level 14 tidak bisa tukar.
+- [x] D2 HUD (`ui/hud.js`): 4 ikon kecil redup halaman tersembunyi + putaran cooldown, huruf A/B; tab Skill dua baris slot; pesan sekali saat level 15. Halaman terakhir disimpan `jobs[id].page`. Kamus EN.
 - [ ] D3 Tes, build, server → **cek manual pemilik** (PC & HP).
 
 ## Bagian E — Skill tempo (dua cek manual)
