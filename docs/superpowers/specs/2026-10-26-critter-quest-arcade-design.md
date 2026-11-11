@@ -1236,3 +1236,46 @@ Pemilik lebih suka karakter versi pixel ("tidak terlihat seperti anak kecil") se
 - **Langkah 2 (hero anime di game, 2026-11-09):** empat job digambar ulang gaya anime fantasi di `src/art/anime/` (desain sendiri), digerakkan kerangka `art/hero/rig.js` sehingga jalan, serangan, skill, dan guling tetap sama. `drawHero` memakai gambar anime bila `pose.anime` (dinyalakan renderer bila `LOOK.anime`; `?lama` = gaya D halus). Rambut save → gaya anime (Pendek→Klimis, Jabrik, Panjang, Bob→Belah Tengah, Kuncir), warna rambut → 6 warna anime. Rarity senjata → elemen (Biasa/Bagus polos, Langka Es, Epik Kehampaan, Legendaris Cahaya, Mitos elemen khas job: Warrior Api, Archer Petir, Mage Kehampaan, Assassin Darah); tiap elemen punya efek sendiri (`art/anime/elemfx.js`), digambar setelah filter pixel supaya halus. Lari per job (`rig.js` `GAIT`, hanya bila `pose.gait`), pose depan/belakang gaya anime. Warga kota dan potret menu belum gaya anime. Ikon item gaya anime (`art/anime/items.js`, pixel 40 px) siap tetapi belum dipasang ke UI.
 - **Halaman contoh:** `app/anime.html` (desain karakter, semua job, arah, lari, skill, pixel/halus), `app/item.html` (ikon item per rarity, Mitos besar).
 - **Ringan di HP (2026-11-11):** warga kota digambar ulang sesuai jatah `LOOK.npcFps` (diam 8/dtk, berjalan 12/dtk, jauh dari kamera 4/dtk; saat berbalik tiap frame), bukan tiap 2 frame. NPC tersembunyi dan penjaga gerbang di wilayah (`render3d/field.js` kartu) kini pixel seperti hero, labelnya tetap tajam. Penghitung FPS sudah ada di panel cheat ("FPS: tampilkan"). `?lama` = perilaku lama.
+
+## 40. Satu Dunia Tersambung (permintaan pemilik 2026-11-11)
+
+Masalah: gerbang kota besar hanya menawarkan wilayahnya sendiri (Rimbawana → Hutan Kelam saja) karena dunia berbentuk bintang (§25). Keputusan pemilik (2026-11-11):
+- **Satu dunia besar ±70000 × 70000** (±5 menit dari Kota Awal ke kota besar). Kota Awal di **pusat**; empat biome mengelilinginya: barat Hutan Kelam, utara Padang Es, timur Gurun Merah, selatan Gunung Api. Kota besar di ujung luar tiap lengan; Tanah Gerhana kantong di ujung selatan di balik Baraapi.
+- **Biome tidak menempel.** Tiap perbatasan punya pembatas alam berbeda dan hanya bisa diseberangi di titik tertentu; peralihan pendek (±400) hanya di titik penyeberangan.
+- **Kota tetap layar sendiri** dengan gerbang yang terlihat di dunia.
+- **Pendekatan A:** kerangka kecil sekali buat + isi per petak yang dibuat saat didekati.
+
+### 40.1 Tata letak
+| Perbatasan | Pembatas | Penyeberangan |
+|---|---|---|
+| Hutan ↔ Padang Es (barat laut) | pegunungan bersalju | 2 celah gunung |
+| Padang Es ↔ Gurun (timur laut) | sungai besar (beku di sisi Es) | 2 jembatan batu |
+| Gurun ↔ Gunung Api (tenggara) | ngarai dalam | 2 jembatan gantung |
+| Gunung Api ↔ Hutan (barat daya) | tebing vulkanik + sungai lava | tidak ada (memutar) |
+| Gunung Api → Tanah Gerhana | tebing hitam | 1 celah, tertutup sampai 5 Pecahan Segel |
+
+- Kota Awal di **dataran netral** (rumput, radius ±3000) tempat keempat pembatas berhenti; empat jalan utama keluar dari sana ke keempat kota besar.
+- **Jalan lingkar** menghubungkan kota besar bertetangga lewat celah/jembatan (Rimbawana–Bekubara–Pasirluas–Baraapi), tidak lewat sisi barat daya.
+- **Zona = wilayah lama.** Id `forest`, `ice`, `desert`, `volcano`, `eclipse` tetap. `zoneAt(x, y)` memberi zona di suatu titik (arah dari pusat; Gerhana = kantong selatan). `zoneToWorld(zone, fx, fy)` memetakan koordinat pecahan lama: `fx` 0→1 = dari tepi dataran Kota Awal ke kota besar, `fy` = melintang lengan. Penghuni tersembunyi, tempat quest, pita gerbang dungeon, dan pita harta tetap memakai data lamanya.
+- **Level** naik dengan `fx` di lengannya (rentang lama: Hutan 1–15, Es 10–25, Gurun 20–35, Gunung Api 30–50, Gerhana 45–50).
+
+### 40.2 Mesin peta
+- **Kerangka** (`run/worldmap.js`), dibuat sekali dari seed tetap yang sama untuk semua karakter: jalan, pembatas beserta celah/jembatannya, sungai kecil & danau per lengan, letak kota & gerbangnya, kantong Gerhana.
+- **Petak 4000 × 4000** (18 × 18): pohon, batu, reruntuhan, dan benda padat pembatas dibuat per petak dari seed `(dunia, ix, iy)` — selalu sama. Yang ada di memori hanya petak di sekitar pemain (3 × 3); petak jauh dibuang dan dibuat ulang identik. Pembuatan dicicil maksimal satu petak per frame, mulai sebelum terlihat. `blocked`/`pushOut`/`solidsNear` tetap dengan pencarian per petak.
+- **Tanah** per ubin memilih pola biome di posisinya; di penyeberangan dua pola dibaurkan. **Props 3D** dibangun/dibuang per petak. Pembatas digambar khusus (punggung gunung, sungai besar + jembatan batu, ngarai + jembatan gantung, sungai lava + tebing).
+- **Peta penuh (M) & peta mini** satu peta dunia: warna biome, pembatas, jalan, kota, gerbang yang ditemukan, kabut. **Kabut** satu untuk dunia, sel 250 (±78 ribu sel).
+
+### 40.3 Aturan main
+- **Musuh** dari zona di titik muncul; dekat penyeberangan (radius 600) campuran dua zona.
+- **Gerbang dungeon, harta & mini bos, penghuni, tempat quest:** letak dari data lama lewat `zoneToWorld`, digeser ke titik bebas terdekat bila jatuh di benda padat (deterministik).
+- **Masuk kota:** berjalan ke gerbang kota di dunia (kota pertama kali didatangi tercatat, `visitTown`). **Keluar kota:** gerbang Rolan di kota mana pun punya satu tombol "Keluar ke dunia"; muncul di depan gerbang kota itu. Teleport tetap.
+- **Simpan:** tiap 60 detik, saat masuk kota/dungeon, saat tumbang, **dan saat berpindah zona** (supaya hitungan quest/tugas per zona tetap benar dengan `trip.region` = zona saat itu).
+- **Quest "injak wilayah"** tercatat saat pertama masuk zona. Target quest ke kota = gerbang kota itu di dunia.
+- **Tumbang:** bangun di kota terakhir, kehilangan 10% koin (tetap).
+
+### 40.4 Save versi 21
+- `world { seed, fog }` — kabut dunia (base64). `regions { [zona]: {} }` hanya penanda zona yang pernah diinjak (kabut lama dibuang karena petanya berubah).
+- `treasures` (per zona, indeks peti) dan `found` tetap; letaknya pindah tapi yang sudah dibuka/ditemukan tetap tercatat.
+- `migrate()` v20 → v21. (Rencana Mount §35 yang juga memakai v21 menyesuaikan ke v22 bila menyusul.)
+- Rencana kerja: `docs/superpowers/plans/2026-11-11-satu-dunia.md`.
+- **Warga kota anime di game (2026-11-11):** warga kota & interior (`render3d/town.js`), NPC tersembunyi di wilayah (`render3d/field.js`), dan potret NPC memakai `art/anime/npc.js` (22 jenis dari `art/hero/npc.js` `archParts`, gerak diam pekerjaan dari rig `npc`), lewat `drawHero` bila `pose.anime`. Penjaga gerbang wilayah kini digambar sebagai warga jenis Penjaga (helm, tombak), bukan Warrior. `?lama` = gaya D. Contoh: `app/npc.html`.
