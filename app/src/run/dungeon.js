@@ -80,7 +80,7 @@ export function spawnFromLane(run, type, lane = null) {
   e.y = lane.y + lane.dy * along + lane.dx * side;
   e.lane = lane;
   e.entering = true;
-  if (e.boss) run.showBanner(t('{name} DATANG!', { name: ENEMIES[type].name.toUpperCase() }));
+  if (e.boss) { run.showBanner(t('{name} DATANG!', { name: ENEMIES[type].name.toUpperCase() })); run.bossIntro = type; } // main.js plays its entrance (spec §44)
   return e;
 }
 

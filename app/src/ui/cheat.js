@@ -1,6 +1,7 @@
 // Cheat panel for testing without grinding. Only on in `npm run dev` or with
 // ?cheat in the address; toggled with ` (backtick) or the CHEAT button.
 // The panel only builds buttons — every action lives in main.js (`actions`).
+import { SCENES } from '../data/scenes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { el, button } from './screens.js';
 import { RARITIES, SLOT_IDS, SLOTS } from '../data/items.js';
@@ -25,6 +26,11 @@ export function renderCheat(box, ctx, actions, redraw) {
   const b = (label, fn) => button(tr(label), 'chb', fn);
 
   if (ctx.scene === 'menu') { box.append(el('div', 'note', tr('Muat karakter dulu.'))); return; }
+
+  // every cutscene, to watch without playing the story through (spec §44)
+  const ids = Object.keys(SCENES);
+  section('Cutscene', ...Array.from({ length: Math.ceil(ids.length / 4) }, (_, i) => row(...ids.slice(i * 4, i * 4 + 4).map((id) => button(id, 'chb', () => actions.scene(id))))),
+    row(b('Momen kawal', () => actions.scene('moment:escort')), b('Momen selamatkan', () => actions.scene('moment:rescue'))));
 
   const fx = (kind) => () => actions.fxTest(kind);
   section('Efek',

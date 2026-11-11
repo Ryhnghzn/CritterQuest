@@ -7,10 +7,11 @@
 import UI from './i18n/en-ui.js';
 import GAME from './i18n/en-game.js';
 import DATA from './i18n/en-data.js';
+import STORY from './i18n/en-story.js';
 
 export const LANGS = ['en', 'id'];
 export const LANG_NAMES = { en: 'English', id: 'Bahasa Indonesia' };
-const EN = { ...DATA, ...GAME, ...UI };
+const EN = { ...DATA, ...GAME, ...UI, ...STORY };
 
 // Indonesian until main.js applies the saved setting (tests stay in Indonesian).
 let lang = 'id';

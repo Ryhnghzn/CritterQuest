@@ -108,6 +108,15 @@ pushing back purple shadows. No people.
 
 ---
 
+## D. Opsional — panel kilas balik cutscene pembuka (spesifikasi §44)
+
+Dua panel bergaya "lukisan tua". Kalau belum ada, game menggambar versi sepia dari kode. Tambahkan ke GAYA DASAR: `aged parchment painting look, sepia and gold tones, soft vignette`.
+
+| File | Prompt |
+|---|---|
+| `story_past_eclipse` | `a vast medieval fantasy land under a black eclipsed sun with a violet corona, shadowy horned creatures rising from cracks in the earth, tiny villages with burning lights, sky torn with purple light` |
+| `story_past_seal` | `five robed elders standing in a circle on a cliff, raising glowing staffs toward a black eclipsed sun bound by golden chains of light, the seal breaking into five shining shards flying apart across the sky` |
+
 ## Tidak disarankan (untuk sekarang)
 
 - **Logo bertulisan "Critter Quest":** generator sering salah mengeja huruf. Logo tetap teks Cinzel dari kode.

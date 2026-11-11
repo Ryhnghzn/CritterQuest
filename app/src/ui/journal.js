@@ -1,5 +1,6 @@
 // Quest journal (spec §26.3): a tab of the character panel (and key J). The main
 // quest's chapter with the steps done so far, then the side quests being worked on.
+import { SCENES, MEMORIES } from '../data/scenes.js';
 import { dungeonById } from '../data/dungeons.js';
 import { ENEMIES } from '../data/enemies.js';
 import { TOWNS, regionOfDungeon, regionById } from '../data/world.js';
@@ -143,5 +144,17 @@ export function renderQuestTab(char, opts = null) {
   if (sides.length) for (const a of sides) side.append(questCard(a, false, char, opts));
   else side.append(el('div', 'note', tr('Belum ada side quest. Carilah orang bertanda ! di kota dan di jalan.')));
   body.append(main, side);
+  // Kenangan (spec §44): the scenes already lived through, to watch again
+  if (opts?.onMemory) {
+    const mem = el('div', 'panel');
+    const mh = el('div', 'attrhead');
+    const seen = MEMORIES.filter((m) => m.when(char));
+    mh.append(el('h3', null, tr('Kenangan')), el('span', 'pts', `${seen.length} / ${MEMORIES.length}`));
+    mem.append(mh);
+    const list = el('div', 'memories');
+    for (const m of seen) { const b = button(`▶ ${tr(SCENES[m.id].title)}`, 'btn small', () => opts.onMemory(m.id)); list.append(b); }
+    mem.append(list);
+    body.append(mem);
+  }
   return body;
 }

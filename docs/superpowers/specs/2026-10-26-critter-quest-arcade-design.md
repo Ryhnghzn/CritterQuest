@@ -1531,3 +1531,14 @@ Enam skill lama tetap (angka §31/`data/classes.js` = level 1). Dua skill **temp
 - **Save** (versi berikut yang tersedia saat dikerjakan; Quest Beragam memakai v23): `jobs { [classId]: { sp { [id]: level }, pages [[4], [4]], page, ult, branch } }`, `jobChanges`; `skills` dan `talents` dihapus. Validasi: SP terpakai per job ≤ 2 × (level − 1). `migrate()`: `classId` tetap (karakter lama dianggap sudah memilih job), skill yang terpasang jadi level 1 di halaman A, sisa SP bebas, bakat lama dikembalikan jadi SP + pesan sekali "Poin skill dikembalikan, susun lagi di tab Skill".
 - **Bagian kerja** (cek manual tiap bagian): A Pengembara & pilih/ganti job & Coba Job · B SP, pohon, tab Skill, Umum, atur ulang · C level skill & efek L3/L5 · D dua halaman · E skill tempo (per jenis) · F ultimate Fokus · G keseimbangan & tes patokan · H Job Lanjutan (§41.4: ujian, cabang dengan 2 skill + 1 ultimate + 2 pasif; dirinci saat bagian G selesai).
 - **Urutan proyek:** §41 proyek A (musuh beragam) dan B (bos khas), yang sudah berjalan, selesai dulu → **§43** → §41 proyek C (9E). Proyek D §41 digantikan bagian H.
+
+## 44. Cerita & Cutscene (permintaan pemilik 2026-11-11)
+
+Masalah: cerita hanya tersampaikan lewat teks di kotak dialog dan satu panel epilog. Keputusan: cutscene di dalam game (bukan video), pendek (±10–40 detik), bisa dilewati, bisa diputar ulang.
+
+- **Panggung pixel:** adegan digambar di kanvas kecil 480×270 lalu diperbesar tanpa penghalusan; aktor (hero anime, warga, bos anime `art/bosses`) memakai filter pixel game. Latar per tempat dilukis kode (langit, siluet berlapis paralaks, tanah; dungeon dengan obor). Teks (dialog dengan potret pembicara, kartu judul) tetap tajam di atasnya. Pita sinematik atas-bawah, tombol **Lewati**.
+- **Naskah sebagai data** (`data/scenes.js`): langkah `bg, put, hide, cam, move, look, say, panel, title, fx, fade, wait` (lihat komentar di file). Pemutar murni `run/cutscene.js` (+ tes), gambar `render/cutscene.js`, lapisan DOM `ui/cutscene.js`. Ketuk/klik/Spasi/Enter/E = lanjut (teks langsung utuh, lalu lanjut); Esc = lewati; baris lanjut sendiri setelah waktu baca.
+- **Adegan:** Pembuka (kilas balik 2 panel ilustrasi + Kakek Odo, saat karakter baru dibuat) · kemunculan 6 bos (sekali per sesi per bos) · Pecahan Segel I–V (setelah bab selesai; penglihatan tempat berikutnya) · Celah Tanah Gerhana (setelah pecahan kelima) · Epilog "Fajar Kembali" (sebelum panel catatan akhir) · momen kecil setelah Kawal/Penyelamatan (§42).
+- **Panel ilustrasi:** `public/img/story_past_eclipse.webp`, `story_past_seal.webp` bila ada (prompt di `docs/2026-10-29-prompt-gambar.md` bagian D); bila belum ada, digambar kode bergaya sepia.
+- **Kenangan:** panel di Jurnal, memutar ulang adegan yang sudah dialami (diturunkan dari progres, tanpa data save baru). Panel CHEAT punya tombol semua adegan untuk uji.
+- Teks dua bahasa di `i18n/en-story.js`.

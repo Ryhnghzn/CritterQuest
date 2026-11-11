@@ -96,6 +96,8 @@ function succeed(run, ev) {
   ev.state = 'done';
   if (ev.world) { payHappening(run, ev); return; }
   run.eventsDone.push(ev.key);
+  // a small moment after an escort or a rescue (spec §44): main.js plays it
+  if (ev.kind === 'escort' || ev.kind === 'rescue') run.moment = { kind: ev.kind, name: ev.name, look: ev.look, outfit: ev.outfit, region: ev.region };
   run.showBanner(t('Berhasil! Quest maju.'));
   run.addShake?.('small');
 }

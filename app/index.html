@@ -710,6 +710,27 @@ button.skill:disabled{cursor:default;color:inherit}
 #boot span{font:500 13px 'Barlow',system-ui,sans-serif;letter-spacing:3px;color:#9a8f80}
 @keyframes bootspin{to{transform:rotate(360deg)}}
 @keyframes bootmoon{to{transform:translateX(-14px)}}
+/* §44 cutscenes: the pixel stage, the line box with a portrait, the title card */
+.cutscene{position:fixed;inset:0;z-index:90;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;animation:csin .25s ease-out}
+.cutscene.out{opacity:0;transition:opacity .25s}
+@keyframes csin{from{opacity:0}to{opacity:1}}
+.cutscene .cs-stage{width:min(100vw,calc(100vh*16/9));height:auto;aspect-ratio:16/9;image-rendering:pixelated;image-rendering:crisp-edges}
+.cutscene .cs-title{position:absolute;left:0;right:0;top:28%;text-align:center;opacity:0;transform:scale(1.15);transition:opacity .35s,transform .5s;pointer-events:none}
+.cutscene .cs-title.on{opacity:1;transform:scale(1)}
+.cutscene .cs-tmain{font:900 clamp(26px,6vw,56px) Barlow,system-ui,sans-serif;letter-spacing:.06em;color:#f3e2b8;text-shadow:0 0 18px rgba(255,190,90,.55),0 3px 0 #2a1606}
+.cutscene .cs-tsub{margin-top:4px;font:600 clamp(13px,2.4vw,20px) Barlow,system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#d8b878}
+.cutscene .cs-line{position:absolute;left:50%;bottom:max(14px,4vh);transform:translateX(-50%);width:min(92vw,760px);display:flex;gap:12px;align-items:flex-start;padding:12px 16px 12px 12px;background:rgba(12,9,18,.9);border:1px solid rgba(230,194,122,.55);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);opacity:0;transition:opacity .2s;pointer-events:none}
+.cutscene .cs-line.on{opacity:1}
+.cutscene .cs-line.panel{background:rgba(26,18,8,.85);border-color:rgba(230,194,122,.35)}
+.cutscene .cs-face{width:72px;height:72px;flex:none;image-rendering:pixelated;border:1px solid rgba(230,194,122,.45);border-radius:6px;background:radial-gradient(circle at 50% 35%,#3a2c4a,#14101c)}
+.cutscene .cs-face.none{display:none}
+.cutscene .cs-words{flex:1;min-width:0}
+.cutscene .cs-name{font:700 14px Barlow,system-ui,sans-serif;color:#ffd24a;letter-spacing:.04em;min-height:4px}
+.cutscene .cs-text{font:500 clamp(14px,2.2vw,18px)/1.45 Barlow,system-ui,sans-serif;color:#f3e2b8;margin-top:2px}
+.cutscene .cs-more{align-self:flex-end;color:#ffd24a;font-size:12px;opacity:0}
+.cutscene .cs-more.on{opacity:1;animation:csmore 1s infinite}
+@keyframes csmore{50%{transform:translateY(3px)}}
+.cutscene .cs-skip{position:absolute;top:max(10px,2vh);right:max(10px,2vw);opacity:.8}
 </style>
 </head>
 <body>
