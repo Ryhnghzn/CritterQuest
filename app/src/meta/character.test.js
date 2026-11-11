@@ -115,6 +115,12 @@ describe('HP & potion', () => {
     expect(currentHp({ ...make(), hp: 999 })).toBe(140);
   });
 
+  it('bonus mount potionheal berlaku di kota (Rusa Cahaya)', () => {
+    const c0 = { ...make(), hp: 20, potions: pots({ red: 1 }) };
+    c0.mounts = { owned: { stag: [0] }, active: 'stag', skin: { stag: 0 }, pity: { tiger: 0, pegasus: 0 } };
+    expect(usePotion(c0, 'red', NOW).hp).toBe(82); // 20 + 56 × 1.1, rounded (76 without the mount)
+  });
+
   it('potion memulihkan 40% HP maks, tidak melebihi maks', () => {
     const c = usePotion({ ...make(), hp: 20, potions: pots({ red: 2 }) }, 'red', NOW);
     expect(c.hp).toBe(76);

@@ -30,6 +30,9 @@ describe('kandang (§35.2)', () => {
     const r = buyMount(char({ gold: price }), 'snowwolf', 1);
     expect(r.ok).toBe(true); expect(r.char.gold).toBe(0); expect(r.char.mounts.owned.snowwolf).toEqual([0]);
     expect(buyMount(r.char, 'snowwolf', 2).reason).toBe('owned');
+    const src = char({ gold: price });
+    const r2 = buyMount(src, 'snowwolf', 7);
+    expect(src.gold).toBe(price); expect(src.mounts.owned).toEqual({}); expect(r2.char.updatedAt).toBe(7);
   });
   it('beli warna: punya mountnya, belum punya warnanya', () => {
     const c = char({ gold: SKIN_PRICE }); grantMount(c, 'horse');

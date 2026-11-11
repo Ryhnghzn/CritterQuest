@@ -17,7 +17,7 @@ import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
 import { isFogValid } from './world.js';
 import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
-import { MOUNT_DEFS } from '../data/mounts.js';
+import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts } from './stable.js';
 
 export const SAVE_VERSION = 21;
@@ -217,10 +217,10 @@ export function validateSlot(d) {
     && new Set(d.records.uniques).size === d.records.uniques.length, 'records.uniques');
   const ms = d.mounts;
   need(isObj(ms) && isObj(ms.owned) && isObj(ms.skin) && isObj(ms.pity)
-    && Object.entries(ms.owned).every(([id, sk]) => MOUNT_DEFS[id] && Array.isArray(sk) && sk.length >= 1 && sk.every((i) => isInt(i, 0, MOUNT_DEFS[id].skins - 1)))
+    && Object.entries(ms.owned).every(([id, sk]) => MOUNT_DEFS[id] && Array.isArray(sk) && sk.length >= 1 && new Set(sk).size === sk.length && sk.every((i) => isInt(i, 0, MOUNT_DEFS[id].skins - 1)))
     && (ms.active === null || Object.hasOwn(ms.owned, ms.active))
     && Object.entries(ms.skin).every(([id, i]) => ms.owned[id]?.includes(i))
-    && Object.values(ms.pity).every((n) => isInt(n, 0)), 'mounts');
+    && Object.entries(ms.pity).every(([id, n]) => PITY_IDS.includes(id) && isInt(n, 0)), 'mounts');
   need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))
     && Object.keys(d.potions).length === POTION_IDS.length, 'potions');
   need(Array.isArray(d.belt) && d.belt.length === BELT_SIZE

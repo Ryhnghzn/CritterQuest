@@ -283,6 +283,15 @@ describe('save versi 2', () => {
     expect(validateSlot(d).join()).toMatch(/mounts/);
   });
 
+  it('menolak warna ganda dan kunci pity di luar daftar', () => {
+    const c = fresh();
+    c.mounts.owned.horse = [0, 0]; c.mounts.skin.horse = 0;
+    expect(validateSlot(c).join()).toMatch(/mounts/);
+    const d = fresh();
+    d.mounts.pity.horse = 1;
+    expect(validateSlot(d).join()).toMatch(/mounts/);
+  });
+
   it('menolak tugas belum diambil yang punya progres', () => {
     const c = fresh();
     c.bounties[0].have = 2;

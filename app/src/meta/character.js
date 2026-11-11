@@ -15,7 +15,7 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
 import { UPGRADES } from '../data/shop.js';
-import { freshMounts, mountStatMul } from './stable.js';
+import { freshMounts, mountStatMul, mountFx } from './stable.js';
 
 export function validateName(name) {
   if (typeof name !== 'string') return null;
@@ -168,7 +168,7 @@ export function usePotion(char, id, now) {
   if (!id || !isHeal(id) || char.potions[id] <= 0 || hp >= max) return char;
   const c = structuredClone(char);
   c.potions[id] -= 1;
-  withHp(c, hp + max * POTIONS[id].heal);
+  withHp(c, hp + max * POTIONS[id].heal * (1 + (mountFx(char).potionheal || 0)));
   c.updatedAt = now;
   return c;
 }

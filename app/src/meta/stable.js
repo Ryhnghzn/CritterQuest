@@ -1,7 +1,7 @@
 // The Stable (spec §35.2): owned mounts + colours, the active one, purchases and bonuses.
-import { MOUNT_DEFS, MOUNT_STATS, SKIN_PRICE } from '../data/mounts.js';
+import { MOUNT_DEFS, MOUNT_STATS, SKIN_PRICE, PITY_IDS } from '../data/mounts.js';
 
-export const freshMounts = () => ({ owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } });
+export const freshMounts = () => ({ owned: {}, active: null, skin: {}, pity: Object.fromEntries(PITY_IDS.map((id) => [id, 0])) });
 
 // Mutates c (callers already cloned). New mount -> 'new'; owned -> a random missing colour 'skin'; nothing left -> null.
 export function grantMount(c, id, rng = Math.random) {

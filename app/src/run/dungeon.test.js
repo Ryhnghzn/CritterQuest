@@ -55,6 +55,14 @@ describe('bonus mount: matfind', () => {
     addMats(g, { dust: 20 });
     expect(g.mats.dust - before).toBe(21);
   });
+  it('drop kecil: rata-rata ≈ n × (1 + matfind)', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats, maxHp: 1e6 }, effects: { matfind: 0.05 } });
+    const before = g.mats.dust;
+    for (let i = 0; i < 4000; i++) addMats(g, { dust: 3 });
+    expect((g.mats.dust - before) / 4000).toBeCloseTo(3.15, 1);
+    expect(Math.abs((g.mats.dust - before) / 4000 - 3.15)).toBeLessThan(0.03);
+  });
 });
 
 describe('gelombang', () => {

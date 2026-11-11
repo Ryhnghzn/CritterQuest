@@ -207,7 +207,11 @@ export function gearPickedUp(run, item) {
 export function addMats(run, mats, dx = 0, dy = -50) {
   for (const [m, base] of Object.entries(mats)) {
     if (!base) continue;
-    const n = base > 0 ? Math.round(base * (1 + (run.fx.matfind || 0))) : base; // mount bonus
+    let n = base;
+    if (base > 0 && run.fx.matfind > 0) { // mount bonus: probabilistic rounding so small drops feel it too
+      const x = base * (1 + run.fx.matfind), lo = Math.floor(x);
+      n = lo + (rand() < x - lo ? 1 : 0);
+    }
     run.mats[m] += n;
     run.addFloater(run.px + dx, run.py + dy, `+${n} ${MATS[m].name}`, MATS[m].color);
     dy -= 10;
