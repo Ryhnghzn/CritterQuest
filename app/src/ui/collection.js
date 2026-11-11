@@ -2,6 +2,8 @@
 // codex of unique items found.
 import { el } from './screens.js';
 import { enemyCanvas } from '../art/sprites.js';
+import { BOSS_ART, bossPortrait } from '../art/bosses/index.js';
+import { LOOK } from '../data/look.js';
 import { gearCanvas } from '../art/gear.js';
 import { ENEMIES } from '../data/enemies.js';
 import { BESTIARY, BESTIARY_IDS, CODEX_FX } from '../data/collection.js';
@@ -24,7 +26,7 @@ export function renderCollectionTab(char) {
     const steps = stepsOf(id);
     const row = el('div', `beast${kills ? '' : ' unseen'}${ENEMIES[id].boss ? ' boss' : ''}`);
     row.dataset.enemy = id;
-    row.append(enemyCanvas(id, ENEMIES[id].r, 34));
+    row.append(LOOK.anime && BOSS_ART[id] ? bossPortrait(id, 34, LOOK.pixel) : enemyCanvas(id, ENEMIES[id].r, 34)); // anime bosses (spec §41.2)
     const info = el('div', 'binfo');
     info.append(el('b', null, kills ? ENEMIES[id].name : '???'));
     const pips = el('span', 'pips');

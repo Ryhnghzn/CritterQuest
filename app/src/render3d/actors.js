@@ -10,6 +10,7 @@ import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
 import { artExt } from '../art/monsters.js';
+import { BOSS_ART, BOSS_AURAS, BOSS_BOX, BOSS_K, drawBoss } from '../art/bosses/index.js';
 import { drawDoll } from '../art/doll.js';
 import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
 import { setFxSink, drawFx } from '../art/anime/elemfx.js';
@@ -70,6 +71,7 @@ export class Actors {
     });
     this.texOf = new WeakMap();
     this.enemyMesh = new Map();
+    this.bossBill = new Map(); // anime bosses: their own canvas billboards (drawAnimeBoss)
     this.decal = document.createElement('canvas');
     this.decalTex = canvasTexture(this.decal);
     this.decalMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: this.decalTex, transparent: true, depthWrite: false }));
@@ -286,6 +288,7 @@ export class Actors {
     if (playing) for (const e of game.enemies) {
       if (e.hidden || e.nest) continue; // a quest nest is drawn by the field (render3d/field.js)
       seen.add(e);
+      if (LOOK.anime && BOSS_ART[e.type]) { this.drawAnimeBoss(game, e, t); continue; } // spec §41.2
       let m = this.enemyMesh.get(e);
       if (!m) { m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), billMat(null)); m.renderOrder = 2; this.enemies.add(m); this.enemyMesh.set(e, m); }
       const warn = (e.mode === 'wind' || e.mode === 'fuse') && ((t * 14) | 0) % 2 === 0;
@@ -307,6 +310,51 @@ export class Actors {
       m.visible = true;
     }
     for (const [e, m] of this.enemyMesh) if (!seen.has(e)) { this.enemies.remove(m); m.geometry.dispose(); m.material.dispose(); this.enemyMesh.delete(e); }
+    for (const [e, b] of this.bossBill) if (!seen.has(e)) { this.enemies.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); b.tex.dispose(); this.bossBill.delete(e); }
+  }
+
+  // An anime boss (spec §41.2): redrawn every frame on its own canvas like the hero — the body, the
+  // pixel filter, the weapon's element effects, then its pixel aura behind and in front. It faces
+  // the player: the front view while the player is below it (toward the camera), else side-on,
+  // and always side-on while it acts (a swing of its skeleton plays through the action).
+  drawAnimeBoss(game, e, t) {
+    const { hx, ht, hb } = BOSS_BOX, k = LOOK.pixel ? LOOK.pixel.k : 2, yaw = this.stage.yaw;
+    let b = this.bossBill.get(e);
+    if (!b) {
+      const c = document.createElement('canvas'), tex = LOOK.pixel ? pixelTexture(canvasTexture(c)) : canvasTexture(c);
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2 * S, (ht + hb) * S), billMat(tex, LOOK.heroBill));
+      mesh.renderOrder = 2; this.enemies.add(mesh);
+      b = { c, tex, mesh, face: makeFacing(screenX(game.px - e.x, game.py - e.y, yaw) < 0 ? -1 : 1), busyT: null };
+      this.bossBill.set(e, b);
+    }
+    const c = b.c, w = Math.ceil(hx * 2 * k), h = Math.ceil((ht + hb) * k);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; b.tex.dispose(); }
+    const busy = e.mode === 'wind' || e.mode === 'dash' || e.mode === 'fuse' || !!e.pat;
+    if (busy && b.busyT == null) b.busyT = t; else if (!busy) b.busyT = null;
+    const attack = busy ? ((t - b.busyT) / 0.9) % 1 : null;
+    const dx = game.px - e.x, dy = game.py - e.y, d = Math.hypot(dx, dy) || 1, sx = screenX(dx, dy, yaw), sz = towardCam(dx, dy, yaw);
+    turnTo(b.face, sx, t);
+    viewTo(b.face, sx / d, Math.max(0, sz) / d, t, busy); // never the back view
+    const vw = viewNow(b.face, t), turn = pose2d(b.face, t), front = vw.view === 'front';
+    const base = ENEMIES[e.type], phase = e.phase > 0 || e.hp < e.maxHp * (base.enrageAt ?? 0.5) ? 2 : 1;
+    const g = c.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+    g.setTransform(k, 0, 0, k, hx * k, ht * k);
+    g.translate(0, -turn.hop);
+    g.scale(DOLL_SCALE * (front ? 1 : turn.w) * vw.squash, DOLL_SCALE);
+    if (LOOK.pixel) setFxSink(this.fxList = []);
+    try { drawBoss(g, e.type, t, phase, attack, front ? 'front' : 'right'); } finally { setFxSink(null); }
+    pixelateCanvas(c, LOOK.pixel);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    if (this.fxList?.length) { drawFx(g, this.fxList, new DOMMatrix()); this.fxList = null; }
+    if (e.flash > 0 || e.frozen > 0) { g.globalCompositeOperation = 'source-atop'; g.fillStyle = e.flash > 0 ? 'rgba(255,255,255,.7)' : 'rgba(120,205,255,.5)'; g.fillRect(0, 0, w, h); }
+    const aura = BOSS_AURAS[e.type], s = k * DOLL_SCALE * BOSS_K;
+    g.globalCompositeOperation = 'destination-over'; aura(g, hx * k, ht * k, s, t, phase, false); // behind the body
+    g.globalCompositeOperation = 'source-over'; aura(g, hx * k, ht * k, s, t, phase, true);
+    b.tex.needsUpdate = true;
+    b.mesh.position.set(e.x * S, ((ht - hb) / 2) * S, (e.y + e.r * 0.75) * S);
+    b.mesh.rotation.y = yaw;
+    b.mesh.visible = true;
   }
 
   // the 2D canvas on top: HP pills, damage numbers, screen flashes, vignette, fade (0..1)

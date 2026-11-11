@@ -23,19 +23,16 @@ canvas{display:block;width:100%;background:#0b0810;border:1px solid var(--gold-d
 </head>
 <body>
 <main>
-  <h1>Bos Gaya Anime — Contoh</h1>
-  <p class="intro">Contoh arah C (spesifikasi §41.2), belum masuk game. Raja Lava = tokoh penjahat anime (raja iblis api), Golem Kristal = golem raksasa gaya anime. Aura dibuat pixel: bara, lidah api, kolam lava, asap; serpih kristal mengitari tubuh, kilau, kabut es. Mage di kiri sebagai pembanding ukuran. Fase 2 = bos mengamuk (aura lebih kuat).</p>
+  <h1>Bos Gaya Anime</h1>
+  <p class="intro">Spesifikasi §41.2: keenam bos dungeon dari kode game (<code>src/art/bosses</code>), monster di atas kerangka karakter dengan aura pixel. Mage di kiri sebagai pembanding ukuran. Bos hanya punya tampak kiri, depan, kanan (selalu menghadap pemain). Fase 2 = mengamuk.</p>
   <div class="bar">
     <div class="grp"><b>Gambar</b><div class="opts" id="mode"></div></div>
     <div class="grp"><b>Fase</b><div class="opts" id="phase"></div></div>
-    <div class="grp"><b>Arah (v2, v3)</b><div class="opts" id="view"></div></div>
+    <div class="grp"><b>Arah</b><div class="opts" id="view"></div></div>
     <div class="grp"><b>Gerak</b><div class="opts" id="swing"></div></div>
     <div class="grp"><b>Ukuran pixel</b><div class="opts" id="size"></div></div>
   </div>
-  <h2>Raja Lava v3 — monster di atas kerangka karakter (tengkorak iblis, 4 lengan, kaki terbalik, ekor, sayap api)</h2><canvas id="lava3"></canvas>
-  <h2>Raja Lava v2 — dirakit dari sistem karakter (terlalu mirip hero)</h2><canvas id="lava2"></canvas>
-  <h2>Raja Lava v1 — digambar manual (sebelumnya)</h2><canvas id="lava"></canvas>
-  <h2>Golem Kristal</h2><canvas id="crystal"></canvas>
+  <div id="list"></div>
 </main>
 <script type="module" src="./bosanime/main.js"></script>
 </body>
