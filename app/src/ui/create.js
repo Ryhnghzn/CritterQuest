@@ -1,5 +1,6 @@
-// Buat Karakter: name, hair style × colour, class, with a live paper-doll preview.
-import { el, button, stage, pressable } from './screens.js';
+// Buat Karakter: name and hair style × colour, with a live preview. Every adventurer starts as a
+// Pengembara (spec §43.1); the job is picked later at the Trainer.
+import { el, button, stage } from './screens.js';
 import { portrait, OUTFIT, HAIR_NAMES, HAIR_COLOR_NAMES, HAIR_PALETTE } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { NAME_MAX } from '../data/balance.js';
@@ -8,7 +9,8 @@ import { tr, t } from '../i18n.js';
 
 // onCreate({ name, look, classId }) may reject (e.g. save failed); the error is shown.
 export function renderCreate(box, { onCreate, onBack }) {
-  const form = { hair: 0, hairColor: 0, classId: 'warrior' };
+  const form = { hair: 0, hairColor: 0, classId: 'novice' };
+  const NOVICE_COLOR = '#9a8064';
   box.replaceChildren();
 
   const preview = el('div', 'preview');
@@ -34,18 +36,7 @@ export function renderCreate(box, { onCreate, onBack }) {
   });
   colorRow.append(...colorBtns);
 
-  const classGrid = el('div', 'classgrid');
-  const classCards = Object.values(CLASSES).map((c) => {
-    const card = el('div', 'card classcard');
-    card.dataset.class = c.id;
-    card.style.setProperty('--c', OUTFIT[c.id][0]);
-    const top = el('div', 'top');
-    top.append(el('span', 'dotc'), el('span', 'nm', c.name));
-    card.append(top, el('div', 'ds', c.desc), el('div', 'st', t('HP {hp} · ATK {atk} · Kritis {crit}%', { hp: c.stats.maxHp, atk: c.stats.atk, crit: c.stats.crit })));
-    pressable(card, () => set('classId', c.id));
-    return card;
-  });
-  classGrid.append(...classCards);
+  const jobNote = el('div', 'note', tr('Semua petualang mulai sebagai Pengembara. Di Pelatih kamu bisa mencoba Warrior, Archer, Mage, dan Assassin, lalu memilih job mulai level 5.'));
 
   const field = (label, ...kids) => {
     const f = el('div', 'field');
@@ -60,7 +51,7 @@ export function renderCreate(box, { onCreate, onBack }) {
   actions.append(button(tr('Batal'), 'btn ghost', onBack), ok);
 
   const formCol = el('div', 'formcol');
-  formCol.append(field('Nama', name), field('Rambut', hairRow, colorRow), field('Kelas', classGrid));
+  formCol.append(field('Nama', name), field('Rambut', hairRow, colorRow), field('Kelas', jobNote));
   const grid = el('div', 'create-grid');
   grid.append(preview, formCol);
   box.append(el('h2', 'h', tr('Buat Petualang')), grid, err, actions);
@@ -68,13 +59,12 @@ export function renderCreate(box, { onCreate, onBack }) {
   function set(key, value) { form[key] = value; refresh(); }
 
   function refresh() {
-    const color = OUTFIT[form.classId][0];
+    const color = OUTFIT[form.classId]?.[0] || NOVICE_COLOR;
     className.textContent = CLASSES[form.classId].name;
     className.style.setProperty('--c', color);
     preview.replaceChildren(stage(portrait(form.classId, form, 172), color), className);
     hairBtns.forEach((b, i) => b.classList.toggle('sel', i === form.hair));
     colorBtns.forEach((b, i) => b.classList.toggle('sel', i === form.hairColor));
-    classCards.forEach((c) => c.classList.toggle('sel', c.dataset.class === form.classId));
   }
 
   async function submit() {

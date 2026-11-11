@@ -23,6 +23,7 @@ import { MAIN, SIDE, HIDDEN, DROP_ITEMS } from '../data/quests.js';
 
 export const CLASS_EN = {
   'Tebal darah, tebasan jarak dekat.': 'Thick-blooded, cleaves up close.',
+  'Belum punya job. Pilih job di Pelatih mulai level 5.': 'No job yet. Pick a job at the Trainer from level 5.',
   'Panah jarak jauh, lincah.': 'Long-range arrows, nimble.',
   'Sihir area yang sakit, tapi rapuh.': 'Painful area magic, but fragile.',
   'Cepat, kritis tinggi, tusukan beruntun.': 'Fast, high crit, rapid stabs.',
@@ -30,6 +31,8 @@ export const CLASS_EN = {
 
 export const SKILL_EN = {
   'Putaran Pedang': 'Blade Spin',
+  'Ayunan Lebar': 'Wide Swing', 'Ayunan memutar di sekeliling: 180%, mendorong.': 'A swing all around you: 180%, knocks back.',
+  'Guling Serang': 'Rolling Strike', 'Berguling 140 px ke arah bidik, 200% ke yang dilewati.': 'Roll 140 px toward your aim, 200% to everything passed.',
   'Berputar menebas sekeliling 5×220%, menarik musuh.': 'Spin and slash all around for 5×220%, pulling enemies in.',
   'Teriakan Baja': 'Iron Shout',
   'Damage diterima −60% selama 5 detik + gelombang kejut 250%.': 'Damage taken −60% for 5 seconds + a 250% shockwave.',
@@ -554,6 +557,7 @@ export function localizeData() {
   if (getLang() !== 'en') return;
   for (const c of Object.values(CLASSES)) {
     swap(c, 'desc', CLASS_EN);
+    if (c.id === 'novice') c.name = 'Wanderer'; // Pengembara (spec §43.1); the job names stay as they are
     for (const s of [...c.skills, c.ult]) { swap(s, 'name', SKILL_EN); swap(s, 'desc', SKILL_EN); }
   }
   for (const r of RARITIES) swap(r, 'name', RARITY_EN);

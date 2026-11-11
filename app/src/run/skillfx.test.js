@@ -29,7 +29,7 @@ function cast(g, key, seconds = 3) {
 describe('efek skill', () => {
   it('setiap skill & ultimate punya data efek', () => {
     for (const c of Object.values(CLASSES)) {
-      for (const s of [...c.skills, c.ult]) expect(SKILL_FX[s.id], s.id).toBeTruthy();
+      for (const s of [...c.skills, c.ult].filter(Boolean)) expect(SKILL_FX[s.id], s.id).toBeTruthy();
     }
   });
 

@@ -11,6 +11,8 @@ export const OUTFITS = {
   night: { name: 'Malam & Emas', coat: pal('#22203a', { shade: '#0c0a18', hi: '#4a4670' }), trim: '#e7b043', lining: pal('#8a1424') },
   crimson: { name: 'Merah & Perak', coat: pal('#7a1420', { shade: '#320610', hi: '#c43a40' }), trim: '#d8e2f0', lining: pal('#1a1a2a') },
   white: { name: 'Putih & Biru', coat: pal('#dfe4ee', { shade: '#7e88a8', hi: '#ffffff' }), trim: '#3a8ae8', lining: pal('#1e3c78') },
+  // the Pengembara (spec §43.1): a plain traveller's coat, no shine
+  novice: { name: 'Pengembara', coat: pal('#6a5440', { shade: '#2e2218', hi: '#9a8064' }), trim: '#b8a07a', lining: pal('#4a5a3a') },
 };
 const SASH = pal('#b81c30', { shade: '#5a0818', hi: '#ff6a6a' });
 export const BLADE_LEN = 104;

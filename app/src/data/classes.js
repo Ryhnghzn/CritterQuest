@@ -103,4 +103,19 @@ export const CLASSES = {
       { id: 'assassinate', name: 'Naluri Pembunuh', unlock: 20, desc: 'Kritis +40% dan damage kritis +60% selama 6 detik.', icon: 'pow', kind: 'buff', cost: 50, cd: 12, duration: 6, dmgTaken: 1, crit: 40, critDmg: 0.6 },
     ],
   },
+  // Pengembara (spec §43.1): every new character starts here, without a job. Two fixed skills (no
+  // levels), no signature mechanic, no ultimate; capped at level 10 until a job is picked.
+  novice: {
+    id: 'novice', name: 'Pengembara', desc: 'Belum punya job. Pilih job di Pelatih mulai level 5.',
+    stats: { maxHp: 110, atk: 12, def: 1, crit: 6, moveSpd: 112 },
+    growth: { maxHp: 9, atk: 1.3 },
+    attack: { kind: 'arc', fx: 'slash', interval: 0.5, mult: 1, r: 40, arc: 90, energy: 6 },
+    trait: null, ult: null, ults: [],
+    skills: [
+      { id: 'sweep', name: 'Ayunan Lebar', unlock: 1, desc: 'Ayunan memutar di sekeliling: 180%, mendorong.', icon: 'spin', look: 'spin', kind: 'area', cost: 30, cd: 3, r: 70, ticks: 1, duration: 0.3, mult: 1.8, follow: true, knock: 120 },
+      { id: 'tumble', name: 'Guling Serang', unlock: 1, desc: 'Berguling 140 px ke arah bidik, 200% ke yang dilewati.', icon: 'spd', look: 'shadow', kind: 'dash', cost: 20, cd: 3, distance: 140, duration: 0.16, r: 24, mult: 2 },
+    ],
+  },
 };
+// the real jobs (not the novice): job choice, weapon drops, shops, the class gallery
+export const JOB_IDS = ['warrior', 'archer', 'mage', 'assassin'];

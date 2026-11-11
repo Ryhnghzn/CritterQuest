@@ -34,7 +34,7 @@ import { MOUNT_IDS } from './data/mounts.js';
 import { mountGainText } from './ui/stable.js';
 import { MAJESTIC_BY_ID } from './render/world.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
-import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf } from './meta/jobs.js';
+import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf, newJob, pickJob, changeJob, jobChangePrice } from './meta/jobs.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
@@ -244,6 +244,7 @@ function toast(text, color = '') {
 
 // Writes the character; a failed write keeps playing from memory and says so.
 async function saveCurrent() {
+  if (trial) return null; // the training arena is never saved (spec §43.1)
   current = { ...current, clock: Math.floor(worldClock) };
   try { await store.saveSlot(current); return null; } catch (e) { toast(t('Gagal menyimpan: {err}', { err: e.message })); return e.message; }
 }
@@ -432,6 +433,16 @@ function openNpc(npc, message = null) {
     onBuySkin: (id, skin) => serve((c, now) => buySkin(c, id, skin, now), t('Warna {name} ditambahkan.', { name: MAJESTIC_BY_ID[id].skins[skin].name })),
     onSetMount: (id, skin) => serve((c, now) => setActiveMount(c, id, skin, now), t('{name} siap ditunggangi (tekan R di wilayah).', { name: MAJESTIC_BY_ID[id].name })),
     onHaircut: (look) => serve((c, now) => changeLook(c, look, now), tr('Nah, rapi sekali! Cocok untukmu.')),
+    // jobs (spec §43.1): pick the first one free, change later for a price, try any in the arena
+    onPickJob: async (id) => {
+      if (await confirmDialog(t('Jadi {job}? Pilihan pertama gratis; ganti job nanti berbayar.', { job: CLASSES[id].name }), tr('Pilih'))) serve((c, now) => pickJob(c, id, now), t('Selamat, {job}! Senjata awalmu sudah di tangan, SP-mu siap dipakai.', { job: CLASSES[id].name }));
+      else openNpc(townNpc);
+    },
+    onChangeJob: async (id) => {
+      if (await confirmDialog(t('Ganti job ke {job} seharga {n} koin? Poin atribut dikembalikan; susunan skill tiap job tersimpan.', { job: CLASSES[id].name, n: jobChangePrice(current) }), tr('Ganti'))) serve((c, now) => changeJob(c, id, now), t('Kini kau seorang {job}.', { job: CLASSES[id].name }));
+      else openNpc(townNpc);
+    },
+    onTryJob: (id) => tryJob(id),
     onBountyClaim: (i, sub = bountyText(current.bounties[i])) => serve((c, now) => claimBounty(c, i, Math.random, now), (r) => (rewardPop(tr('Tugas selesai!'), sub, { ...r.reward, mats: { dust: r.reward.dust } }, r.levelsGained), {
       text: t('Tugas selesai! +{g} koin, +{e} EXP, +{d} {dust}, +{m} Lencana.', { g: r.reward.gold, e: r.reward.exp, d: r.reward.dust, dust: MATS.dust.name, m: r.reward.marks })
         + (r.levelsGained ? ` ${tr('Naik level!')}` : ''), color: '#e6c27a',
@@ -464,7 +475,7 @@ function openNpc(npc, message = null) {
 const REFUSE = {
   full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' },
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
-  equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
+  equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.', locked: 'Belum terbuka.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
   owned: 'Sudah kamu miliki.', marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh. Selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.', taken: 'Tugas itu sudah kau ambil.', nottaken: 'Tugas itu belum kau ambil.',
   mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', stashfull: 'Gudang sudah penuh.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
@@ -697,6 +708,22 @@ async function drinkInTown(slot) {
 // dungeon
 // The character is saved at the gate; closing the browser mid-dungeon returns
 // to this state (spec §13.4).
+// The training arena (spec §43.1): the first floor of Bayangan as job `id` — its starting skills at
+// level 1, a plain weapon of its own, the same level. Nothing is saved (saveCurrent skips while
+// `trial` is set) and no rewards are kept; any end of the run brings the real character back to town.
+let trial = null;
+async function tryJob(id) {
+  if (scene === 'town') syncHp();
+  await saveCurrent();
+  const real = current, t0 = structuredClone(real), w = makeItem({ slot: 'weapon', classId: id, rarity: 0, itemLevel: real.level }, Math.random);
+  t0.classId = id; t0.jobs = { ...t0.jobs, [id]: newJob(id) }; t0.inventory.push(w); t0.equipped.weapon = w.id; t0.hp = null;
+  for (const k in t0.attrs) t0.attrs[k] = 0;
+  trial = { real };
+  current = t0;
+  toast(t('Latihan: {job}. Tidak ada hadiah; keluar lewat Jeda → Menyerah.', { job: CLASSES[id].name }));
+  await enterDungeon('shadow', 1);
+}
+
 async function enterDungeon(dungeon = 'shadow', floor = 1) {
   if (scene === 'town') syncHp();
   await saveCurrent();
@@ -950,6 +977,13 @@ function drawTownMinimap() {
 // End of a trip — gold portal (died = false), death or giving up (died = true):
 // apply rewards/penalty, auto-save, show Hasil Perjalanan (spec §13.4).
 async function endRun(died) {
+  if (trial) { // back from the training arena: the real character, as it was
+    current = trial.real; trial = null;
+    stopMusic();
+    toast(tr('Latihan selesai.'));
+    enterTown(current, 'gate');
+    return;
+  }
   if (game.field) { endField(died); return; }
   screen = 'ending';
   stopMusic();

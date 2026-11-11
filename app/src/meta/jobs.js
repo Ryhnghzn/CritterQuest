@@ -2,14 +2,15 @@
 // char.jobs[classId] = { sp: { id: level }, pages: [[4 ids], [4 ids]], page, ult, branch, freeRespec }.
 // Pure — changes return { ok: true, char } or { ok: false, reason }
 // ('locked' | 'max' | 'sp' | 'gold' | 'bad' | 'same' | 'none').
-import { CLASSES } from '../data/classes.js';
-import { SKILL_SLOTS } from '../data/balance.js';
+import { CLASSES, JOB_IDS } from '../data/classes.js';
+import { SKILL_SLOTS, INVENTORY_MAX, JOB_PICK_LEVEL, JOB_CHANGE } from '../data/balance.js';
+import { makeItem } from './itemgen.js';
 import {
   SP_PER_LEVEL, SKILL_COST, SKILL_MAX, ULT_COST, ULT_MAX, PASSIVE_COST, PASSIVE_MAX, UMUM_COST,
   SP_RESPEC, FREE_START_LEVEL, PASSIVES, UMUM,
 } from '../data/skilltree.js';
 
-const ultsOf = (classId) => CLASSES[classId].ults || [CLASSES[classId].ult]; // Fokus joins in part F
+const ultsOf = (classId) => CLASSES[classId].ults?.length || !CLASSES[classId].ult ? CLASSES[classId].ults || [] : [CLASSES[classId].ult]; // Fokus joins in part F
 const starters = (classId) => CLASSES[classId].skills.filter((s) => s.unlock <= 1).slice(0, 2).map((s) => s.id); // the first two
 
 // What an id is in a job's tree: { kind: 'skill' | 'ult' | 'passive' | 'umum', def } or null
@@ -64,6 +65,7 @@ function withJob(char, now, fn) {
 
 // One more level of a skill / ultimate / passive / Umum talent.
 export function raise(char, id, now) {
+  if (char.classId === 'novice') return { ok: false, reason: 'locked' }; // a Pengembara has no tree (spec §43.1)
   const node = nodeOf(char.classId, id);
   if (!node) return { ok: false, reason: 'bad' };
   if (unlockOf(node) > char.level) return { ok: false, reason: 'locked' };
@@ -164,3 +166,48 @@ export function mergeFx(a, b) {
 
 // Points not yet spent, for the Karakter badge
 export const spBadge = (char) => spFree(char);
+
+// ─── picking & changing job (spec §43.1) ─────────────────────────────────────
+export const jobChangePrice = (char) => Math.round((JOB_CHANGE.base + JOB_CHANGE.perLevel * char.level) * JOB_CHANGE.growth ** (char.jobChanges || 0));
+
+// Into job `id`: its build comes back (or a fresh one, the first time, with a plain starting weapon of
+// level = character level and one free SP reset); a weapon of another job comes off; attribute points
+// are refunded. rng: for the weapon's rolls.
+function enterJob(c, id, now, rng) {
+  const first = !c.jobs?.[id];
+  c.jobs ||= {};
+  if (first) c.jobs[id] = newJob(id, true);
+  const worn = c.inventory.find((it) => it.id === c.equipped.weapon);
+  if (worn && worn.classId !== id) c.equipped.weapon = null;
+  if (first) {
+    const w = makeItem({ slot: 'weapon', classId: id, rarity: 0, itemLevel: c.level }, rng);
+    c.inventory.push(w);
+    if (!c.equipped.weapon) c.equipped.weapon = w.id;
+  } else if (!c.equipped.weapon) { // wear the best weapon of this job already in the bag
+    const best = c.inventory.filter((it) => it.slot === 'weapon' && it.classId === id).sort((a, b) => b.itemLevel - a.itemLevel || b.rarity - a.rarity)[0];
+    if (best) c.equipped.weapon = best.id;
+  }
+  for (const k in c.attrs) c.attrs[k] = 0;
+  c.classId = id; c.hp = null; c.updatedAt = now;
+  return { ok: true, char: c };
+}
+// The first job: a Pengembara from JOB_PICK_LEVEL, free.
+export function pickJob(char, id, now, rng = Math.random) {
+  if (!JOB_IDS.includes(id)) return { ok: false, reason: 'bad' };
+  if (char.classId !== 'novice') return { ok: false, reason: 'same' };
+  if (char.level < JOB_PICK_LEVEL) return { ok: false, reason: 'locked' };
+  if (!char.jobs?.[id] && char.inventory.length >= INVENTORY_MAX) return { ok: false, reason: 'bag' };
+  return enterJob(structuredClone(char), id, now, rng);
+}
+// Another job later, at the Trainer in town: costs jobChangePrice, each change dearer.
+export function changeJob(char, id, now, rng = Math.random) {
+  if (!JOB_IDS.includes(id)) return { ok: false, reason: 'bad' };
+  if (char.classId === 'novice') return { ok: false, reason: 'locked' };
+  if (char.classId === id) return { ok: false, reason: 'same' };
+  const price = jobChangePrice(char);
+  if (char.gold < price) return { ok: false, reason: 'gold' };
+  if (!char.jobs?.[id] && char.inventory.length >= INVENTORY_MAX) return { ok: false, reason: 'bag' };
+  const c = structuredClone(char);
+  c.gold -= price; c.jobChanges = (c.jobChanges || 0) + 1;
+  return enterJob(c, id, now, rng);
+}

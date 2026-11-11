@@ -1,7 +1,7 @@
 // Save format (spec §9.2–9.3): version migration and validation. Pure — never
 // touches storage, so corrupt data is only ever reported, never rewritten.
 import { tr, t } from '../i18n.js';
-import { CLASSES } from '../data/classes.js';
+import { CLASSES, JOB_IDS } from '../data/classes.js';
 import {
   SLOT_COUNT, NAME_MAX, HAIR_STYLES, HAIR_COLORS, CHAR_LEVEL_MAX, INVENTORY_MAX, STASH_MAX, ATTRS, POINTS_PER_LEVEL, SKILL_SLOTS,
 } from '../data/balance.js';
@@ -242,8 +242,8 @@ export function validateSlot(d) {
   need(isInt(d.gold, 0), 'gold');
   need(isInt(d.clock, 0), 'clock');
   need(isObj(d.mats) && MAT_IDS.every((k) => isInt(d.mats[k], 0)), 'mats');
-  need(isObj(d.jobs) && Object.keys(d.jobs).every((id) => Object.hasOwn(CLASSES, id) && validJob(id, d.jobs[id], d.level))
-    && Object.hasOwn(d.jobs, d.classId), 'jobs');
+  need(isObj(d.jobs) && Object.keys(d.jobs).every((id) => JOB_IDS.includes(id) && validJob(id, d.jobs[id], d.level))
+    && (d.classId === 'novice' || Object.hasOwn(d.jobs, d.classId)), 'jobs'); // a Pengembara has no build yet (spec §43.1)
   need(isInt(d.jobChanges, 0), 'jobChanges');
   need(typeof d.spNotice === 'boolean', 'spNotice');
   need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');

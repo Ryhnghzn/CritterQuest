@@ -59,13 +59,21 @@ export function renderSkillTab(char, opts, redraw) {
     }
     slots.append(cell);
   }
-  const uDef = ult || rows.ult[0].def;
+  const novice = !rows.ult.length; // a Pengembara: two fixed skills, no tree (spec §43.1)
+  const uDef = ult || rows.ult[0]?.def;
+  if (uDef) {
   const ucard = el('div', `skslot ult${ult ? ' filled' : ' locked'}`);
   const uic = el('span', 'sic'); uic.append(iconCanvas(uDef.icon, 30));
   ucard.append(uic, el('span', 'sname', ult ? ult.name : tr('Belum ada')), el('span', 'snum', '5'));
   ucard.title = ult ? `${ult.name} · Ultimate — ${ult.desc}` : tr('Pelajari ultimate di tab Ultimate, lalu pakai.');
   slots.append(ucard);
+  }
   skills.append(slots);
+  if (novice) {
+    skills.append(el('div', 'note', tr('Pengembara memakai dua skill tetap. Pilih job di Pelatih mulai level 5; SP yang terkumpul siap dipakai saat itu.')));
+    wrap.append(skills);
+    return wrap;
+  }
   if (canEdit) skills.append(el('span', 'note', tr('Ketuk satu slot lalu satu skill untuk memasang.')));
 
   const tabs = el('div', 'sktabs');

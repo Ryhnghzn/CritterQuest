@@ -1,8 +1,8 @@
 // Permanent character: creation, level/EXP and final stats (spec §4.1, §4.3).
 // Every function returns new objects; save data is never mutated in place.
 import { tr, t } from '../i18n.js';
-import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
+import { CLASSES, CLASS_BASE, JOB_IDS } from '../data/classes.js';
+import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX, NOVICE_LEVEL_CAP } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
 import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshBounties, freshBestiary, freshQuests, worldSeed } from './schema.js';
@@ -33,7 +33,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     gold: 0,
     clock: START_TIME,
     mats: freshMats(), gems: freshGems(),
-    jobs: CLASSES[classId] ? { [classId]: newJob(classId, false) } : {}, jobChanges: 0, spNotice: false, // skill points (spec §43)
+    jobs: JOB_IDS.includes(classId) ? { [classId]: newJob(classId, false) } : {}, jobChanges: 0, spNotice: false, // skill points (spec §43)
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot), fog: '' }, found: [], expedition: null,
@@ -52,6 +52,9 @@ export function createCharacter({ slot, name, look, classId }, now) {
   return c;
 }
 
+// the highest level: a Pengembara stops at NOVICE_LEVEL_CAP until it picks a job (spec §43.1)
+export const levelCap = (classId) => (classId === 'novice' ? NOVICE_LEVEL_CAP : CHAR_LEVEL_MAX);
+
 export function expToNext(level) { return CHAR_EXP_BASE + CHAR_EXP_GROWTH * level; }
 
 // Skills whose unlock level was just passed (from < unlock <= to): they can now be learned with
@@ -65,12 +68,13 @@ export function addExp(char, amount) {
   const from = c.level;
   let levelsGained = 0;
   c.exp += Math.floor(amount);
-  while (c.level < CHAR_LEVEL_MAX && c.exp >= expToNext(c.level)) {
+  const cap = levelCap(c.classId);
+  while (c.level < cap && c.exp >= expToNext(c.level)) {
     c.exp -= expToNext(c.level);
     c.level++;
     levelsGained++;
   }
-  if (c.level >= CHAR_LEVEL_MAX) c.exp = 0;
+  if (c.level >= cap) c.exp = 0;
   const newSkills = newlyOpen(c.classId, from, c.level);
   return { char: c, levelsGained, newSkills };
 }

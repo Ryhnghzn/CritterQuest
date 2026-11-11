@@ -9,6 +9,7 @@ import { drawAssassin, RIM as ASSASSIN_RIM } from './assassin.js';
 import { drawNpc, archetypeOf, idleOf, RIM as NPC_RIM } from './npc.js';
 import { HAIR_PALETTE } from '../doll.js';
 import { drawAnime, animeLook } from '../anime/index.js';
+import { ELEMENTS } from '../anime/common.js';
 import { drawAnimeNpc } from '../anime/npc.js';
 import { Z } from '../anime/kit.js';
 
@@ -32,6 +33,8 @@ function npcOf(look) {
 // pose: as drawDoll ({ t, moving, walk, attack, hurt }) plus optional attackPhase (0..1, keyframed swing),
 // move ({ id: skill id, ph: 0..1, dur: s }) and dodge (0..1)
 export function drawHero(g, classId, look, pose = {}) {
+  const novice = classId === 'novice'; // the Pengembara (spec §43.1) moves and is drawn as a plain warrior
+  if (novice) classId = 'warrior';
   const isNpc = !classId;
   const draw = isNpc ? null : DRAW[classId];
   if (!draw && !(isNpc && look.outfit)) return null;
@@ -43,6 +46,7 @@ export function drawHero(g, classId, look, pose = {}) {
     const S = HERO_SCALE * (SIZE[classId] || 1) / Z;
     g.save(); g.scale(S, S);
     const al = animeLook(classId, look);
+    if (novice) { al.outfit = 'novice'; al.gear.weapon = 0; al.element = { ...ELEMENTS.ice, fx: 'none' }; }
     if (pose.wings) al.wings = pose.wings; // Mitos gear / Phoenix (replaces the thin wings of art/aura.js)
     const a = drawAnime(g, classId, al, pose);
     g.restore();

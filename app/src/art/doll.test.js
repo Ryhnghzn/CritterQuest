@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { drawDoll, HAIR_NAMES, HAIR_PALETTE, HAIR_COLOR_NAMES, OUTFIT } from './doll.js';
 import { ENEMY_ART, PICKUP_ART, DECOR_ART, ICON_IDS, drawIcon } from './sprites.js';
 import { HAIR_STYLES, HAIR_COLORS } from '../data/balance.js';
-import { CLASSES } from '../data/classes.js';
+import { CLASSES, JOB_IDS } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 
 // Canvas 2D stand-in: every method is a no-op, gradients accept colour stops.
@@ -23,12 +23,12 @@ describe('paper doll vektor', () => {
     expect(HAIR_NAMES.length).toBe(HAIR_STYLES);
     expect(HAIR_PALETTE.length).toBe(HAIR_COLORS);
     expect(HAIR_COLOR_NAMES.length).toBe(HAIR_COLORS);
-    expect(Object.keys(OUTFIT).sort()).toEqual(Object.keys(CLASSES).sort());
+    expect(Object.keys(OUTFIT).sort()).toEqual([...JOB_IDS].sort()); // the Pengembara is drawn as a plain warrior
   });
 
   it('semua kombinasi kelas × rambut × warna × pose bisa digambar', () => {
     const poses = [{}, { moving: 1, walk: 1.2, t: 3 }, { attack: 1 }, { hurt: true }];
-    for (const classId of Object.keys(CLASSES)) {
+    for (const classId of JOB_IDS) {
       for (let hair = 0; hair < HAIR_STYLES; hair++) {
         for (let hairColor = 0; hairColor < HAIR_COLORS; hairColor++) {
           for (const pose of poses) {
@@ -65,7 +65,7 @@ describe('gear per varian', () => {
   it('tiap slot × tingkat (dan tiap senjata kelas) bisa digambar di badan dan sebagai ikon', async () => {
     const { drawGearIcon } = await import('./gear.js');
     for (let tier = 0; tier < 7; tier++) {
-      for (const classId of Object.keys(CLASSES)) {
+      for (const classId of JOB_IDS) {
         const gear = { weapon: { tier, rarity: 3 }, helm: { tier, rarity: 4 }, armor: { tier, rarity: 5 }, boots: { tier, rarity: 1 } };
         drawDoll(fakeCtx(), classId, { hair: 2, hairColor: 1, gear }, { attack: 0.5, t: 1 });
         drawGearIcon(fakeCtx(), { slot: 'weapon', classId, variant: tier, rarity: tier % 6 }, 32, 1);
@@ -77,7 +77,7 @@ describe('gear per varian', () => {
   it('tiap rarity (Biasa–Mitos) bisa digambar di badan (diam & menyerang) dan sebagai ikon', async () => {
     const { drawGearIcon } = await import('./gear.js');
     for (let rarity = 0; rarity < 6; rarity++) {
-      for (const classId of Object.keys(CLASSES)) {
+      for (const classId of JOB_IDS) {
         const gear = Object.fromEntries(['weapon', 'helm', 'armor', 'boots'].map((s) => [s, { tier: rarity, rarity }]));
         for (const pose of [{ t: 2 }, { attack: 0.8, t: 3.3 }]) drawDoll(fakeCtx(), classId, { hair: 0, hairColor: 0, gear }, pose);
         drawGearIcon(fakeCtx(), { slot: 'weapon', classId, variant: 6, rarity }, 32, 2.5);

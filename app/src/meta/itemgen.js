@@ -73,12 +73,16 @@ export function makeItem({ slot, classId, rarity, itemLevel, unique = null }, rn
 export function dropItem({ source, classId, charLevel, floor, luk = 0, level = null }, rng) {
   const itemLevel = level ?? itemLevelFor(charLevel, floor, rng);
   let rarity = rollRarity(source, luk, rng);
+  const noWeapon = classId === 'novice'; // a Pengembara finds no weapons (spec §43.1)
   if (rarity >= LEGENDARY) {
-    const fits = UNIQUES.filter((u) => !u.quest && u.rarity === rarity && (u.classId === null || u.classId === classId));
-    const u = fits[Math.floor(rng() * fits.length)];
-    return makeItem({ slot: u.slot, classId, rarity, itemLevel, unique: u.id }, rng);
+    const fits = UNIQUES.filter((u) => !u.quest && u.rarity === rarity && (u.classId === null || u.classId === classId) && !(noWeapon && u.slot === 'weapon'));
+    if (fits.length) {
+      const u = fits[Math.floor(rng() * fits.length)];
+      return makeItem({ slot: u.slot, classId, rarity, itemLevel, unique: u.id }, rng);
+    }
   }
-  const slot = SLOT_IDS[Math.floor(rng() * SLOT_IDS.length)];
+  const slots = noWeapon ? SLOT_IDS.filter((s) => s !== 'weapon') : SLOT_IDS;
+  const slot = slots[Math.floor(rng() * slots.length)];
   rarity = Math.max(rarity, SLOTS[slot].minRarity || 0);
   return makeItem({ slot, classId, rarity, itemLevel }, rng);
 }

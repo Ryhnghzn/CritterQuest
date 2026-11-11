@@ -5,7 +5,7 @@ import {
 import { RARITIES, SLOTS, SLOT_IDS, UNIQUES, DROP_WEIGHTS, VARIANTS, TIER_LEVELS, EFFECTS } from '../data/items.js';
 import { validateSlot } from './schema.js';
 import { createCharacter } from './character.js';
-import { CLASSES } from '../data/classes.js';
+import { CLASSES, JOB_IDS } from '../data/classes.js';
 
 // seeded mulberry32 so every test is repeatable
 function seeded(seed) {
@@ -93,7 +93,7 @@ describe('item', () => {
 
   it('senjata selalu untuk kelas pemilik, termasuk item unik', () => {
     const rng = seeded(12);
-    for (const classId of Object.keys(CLASSES)) {
+    for (const classId of JOB_IDS) {
       for (let i = 0; i < 1500; i++) {
         const it = dropItem({ source: 'boss', classId, charLevel: 20, floor: 5 }, rng);
         if (it.slot === 'weapon') expect(it.classId).toBe(classId);
@@ -154,7 +154,7 @@ describe('nama & teks', () => {
       for (const l of lists) expect(l).toHaveLength(TIER_LEVELS.length);
       expect(SLOTS[slot]).toBeDefined();
     }
-    expect(Object.keys(VARIANTS.weapon).sort()).toEqual(Object.keys(CLASSES).sort());
+    expect(Object.keys(VARIANTS.weapon).sort()).toEqual([...JOB_IDS].sort()); // a Pengembara has no weapons
     for (const u of UNIQUES) expect(EFFECTS[u.effect]).toBeDefined();
     expect(new Set(UNIQUES.map((u) => u.id)).size).toBe(UNIQUES.length);
   });

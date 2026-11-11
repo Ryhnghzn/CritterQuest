@@ -7,9 +7,9 @@ import { TOWN_DEFS } from '../../data/towns.js';
 import { drawDoll } from '../doll.js';
 import { HAIR_STYLES, HAIR_COLORS } from '../../data/balance.js';
 import { RARITIES } from '../../data/items.js';
-import { CLASSES } from '../../data/classes.js';
+import { CLASSES, JOB_IDS } from '../../data/classes.js';
 
-const CLASS_IDS = Object.keys(CLASSES);
+const CLASS_IDS = JOB_IDS; // the Pengembara is drawn as a plain warrior (art/hero/index.js)
 
 // Canvas 2D stand-in: every method is a no-op, gradients accept colour stops.
 function fakeCtx() {
@@ -67,7 +67,7 @@ describe('gaya D — kerangka & keyframe', () => {
 
 describe('gaya D — gerakan skill', () => {
   it('setiap skill & ultimate punya gerakan, durasinya masuk akal', () => {
-    for (const [c, d] of Object.entries(CLASSES)) {
+    for (const [c, d] of JOB_IDS.map((id) => [id, CLASSES[id]])) {
       for (const s of [...d.skills, d.ult]) {
         expect(hasMove(c, s.id)).toBe(true);
         const dur = moveDuration(c, s.id, s.duration);
@@ -86,7 +86,7 @@ describe('gaya D — gerakan skill', () => {
   });
 
   it('semua gerakan bisa digambar di semua fase', () => {
-    for (const [c, d] of Object.entries(CLASSES)) {
+    for (const [c, d] of JOB_IDS.map((id) => [id, CLASSES[id]])) {
       for (const s of [...d.skills, d.ult]) {
         for (const ph of [0, 0.3, 0.5, 0.9]) expect(() => drawDoll(fakeCtx(), c, { hair: 0, hairColor: 0 }, { move: { id: s.id, ph, dur: 1 } })).not.toThrow();
       }

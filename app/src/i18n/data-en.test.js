@@ -25,7 +25,7 @@ function strings() {
   const out = [];
   for (const c of Object.values(CLASSES)) {
     out.push(c.desc);
-    for (const s of [...c.skills, c.ult]) out.push(s.name, s.desc);
+    for (const s of [...c.skills, c.ult].filter(Boolean)) out.push(s.name, s.desc);
   }
   out.push(...RARITIES.map((r) => r.name), ...Object.values(SLOTS).map((s) => s.name));
   for (const list of Object.values(VARIANTS.weapon)) out.push(...list);

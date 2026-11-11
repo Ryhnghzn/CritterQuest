@@ -3,7 +3,7 @@
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE } from '../data/balance.js';
-import { expToNext } from '../meta/character.js';
+import { expToNext, levelCap } from '../meta/character.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { passiveCrit, poisonFoe } from './passives.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
@@ -602,7 +602,7 @@ export class Game {
       this.expGained += v;
       this.addFloater(g.x, g.y, `+${Math.round(v * 10) / 10}`, '#8fffc0');
       sfx.gem();
-      while (this.level < CHAR_LEVEL_MAX && this.xp >= this.xpNeed) {
+      while (this.level < levelCap(this.classId) && this.xp >= this.xpNeed) {
         this.xp -= this.xpNeed;
         this.level++;
         this.levelsGained++;

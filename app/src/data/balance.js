@@ -53,3 +53,10 @@ export const SKILL_PULL = 260;
 // once its total travel exceeds BOOMERANG_MAX_TRAVEL × its range, e.g. when the player runs off.
 export const RETURN_CATCH = 20;
 export const BOOMERANG_MAX_TRAVEL = 3;
+
+// Jobs (spec §43.1): a Pengembara picks a job from this level (free), stays at most this level until
+// then; changing job costs (base + perLevel × level) × growth^(job changes so far). Page B from PAGE_B_LEVEL.
+export const JOB_PICK_LEVEL = 5;
+export const NOVICE_LEVEL_CAP = 10;
+export const JOB_CHANGE = { base: 200, perLevel: 30, growth: 1.5 };
+export const PAGE_B_LEVEL = 15;

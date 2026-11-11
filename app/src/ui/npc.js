@@ -9,7 +9,9 @@ import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints } from '../meta/character.js';
-import { jobOf, spRespecPrice, spTotal, spFree } from '../meta/jobs.js';
+import { jobOf, spRespecPrice, spTotal, spFree, jobChangePrice } from '../meta/jobs.js';
+import { CLASSES, JOB_IDS } from '../data/classes.js';
+import { JOB_PICK_LEVEL } from '../data/balance.js';
 import { dungeonById } from '../data/dungeons.js';
 import { REGIONS, TOWNS, TOWN_IDS, regionOfDungeon, regionOpen } from '../data/world.js';
 import { teleportPrice } from '../meta/world.js';
@@ -104,7 +106,7 @@ function buildNpc(box, npc, ctx) {
   } else if (npc.role === 'potion') {
     body.append(potionList(char, ctx.onBuyPotion), beltEditor(char, ctx.onBelt));
   } else if (npc.role === 'trainer') {
-    body.append(trainerList(char, ctx.onUpgrade, ctx.onRespec, ctx.onTalentRespec));
+    body.append(jobPanel(char, ctx), trainerList(char, ctx.onUpgrade, ctx.onRespec, ctx.onTalentRespec));
   } else if (npc.role === 'barber') {
     body.append(barberPanel(char, ctx.onHaircut, () => renderNpc(box, npc, { ...ctx, message: null })));
   } else if (npc.role === 'gear') {
@@ -312,6 +314,40 @@ function sellPanel(char, onSell, redraw) {
   act.append(pickJunk(0), pickJunk(1), sell);
   wrap.append(head, grid, act);
   return wrap;
+}
+
+// Jobs at the Trainer (spec §43.1): a Pengembara tries any job and picks one from JOB_PICK_LEVEL (free);
+// later the other jobs can be tried and changed to (a price that grows each change).
+// ctx: onTryJob(id), onPickJob(id), onChangeJob(id)
+function jobPanel(char, ctx) {
+  const list = el('div', 'shoplist jobs');
+  const novice = char.classId === 'novice', price = novice ? 0 : jobChangePrice(char);
+  list.append(el('div', 'label', novice
+    ? (char.level >= JOB_PICK_LEVEL ? tr('Pilih jalanmu! Coba dulu, lalu pilih satu job (gratis).') : t('Coba tiap job di arena latihan. Memilih job terbuka di level {n}.', { n: JOB_PICK_LEVEL }))
+    : t('Job sekarang: {job}. Ganti job di sini; level, gear, dan koin tetap.', { job: CLASSES[char.classId].name })));
+  for (const id of JOB_IDS) {
+    const C = CLASSES[id], row = el('div', `shoprow${char.classId === id ? ' worn' : ''}`);
+    const ic = el('span', 'sic'); ic.append(portrait(id, { hair: char.look.hair, hairColor: char.look.hairColor }, 40));
+    const txt = el('div', 'stx'); txt.append(el('b', null, C.name), el('span', null, C.desc));
+    const act = el('span', 'skbtns');
+    if (char.classId === id) act.append(el('span', 'have', tr('Job sekarang')));
+    else {
+      const tryB = button(tr('Coba'), 'btn small ghost', () => ctx.onTryJob(id)); tryB.dataset.tryjob = id;
+      act.append(tryB);
+      if (novice) {
+        const pick = button(tr('Pilih'), 'btn small', () => ctx.onPickJob(id)); pick.dataset.pickjob = id;
+        pick.disabled = char.level < JOB_PICK_LEVEL;
+        act.append(pick);
+      } else {
+        const ch = button(String(price), 'btn small buy', () => ctx.onChangeJob(id)); ch.prepend(el('span', 'coin')); ch.dataset.changejob = id;
+        ch.disabled = char.gold < price;
+        act.append(ch);
+      }
+    }
+    row.append(ic, txt, act);
+    list.append(row);
+  }
+  return list;
 }
 
 function trainerList(char, onUpgrade, onRespec, onTalentRespec) {

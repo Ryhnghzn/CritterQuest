@@ -4,6 +4,9 @@
 
 // skill id → { el: palette (data/fx.js PALETTES), n: main burst size, rate: particles/s while alive }
 export const SKILL_FX = {
+  // Pengembara (spec §43.1): plain steel
+  sweep: { el: 'steel', n: 10, rate: 40 },
+  tumble: { el: 'steel', n: 8, rate: 90 },
   // warrior
   spin: { el: 'fire', n: 14, rate: 70 },
   shout: { el: 'holy', n: 24 },
