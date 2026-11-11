@@ -373,8 +373,9 @@ export class Game {
     const p = POTIONS[id], s = this.stats;
     if (p.heal) {
       if (s.hp >= s.maxHp) return false;
-      s.hp = Math.min(s.maxHp, s.hp + s.maxHp * p.heal);
-      this.addFloater(this.px, this.py - 30, `+${Math.round(s.maxHp * p.heal)}`, p.light);
+      const heal = s.maxHp * p.heal * (1 + (this.fx.potionheal || 0));
+      s.hp = Math.min(s.maxHp, s.hp + heal);
+      this.addFloater(this.px, this.py - 30, `+${Math.round(heal)}`, p.light);
     } else if (p.shield) {
       this.shieldMax = this.shield = s.maxHp * p.shield;
       this.shieldT = p.dur;

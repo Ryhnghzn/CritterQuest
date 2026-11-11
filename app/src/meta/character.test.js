@@ -30,7 +30,7 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 20, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 21, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
       mats: { dust: 0, crystal: 0, core: 0 },
@@ -46,6 +46,7 @@ describe('createCharacter', () => {
       location: 'home', towns: ['home'], regions: {},
       world: { seed: NOW % 2147483647 }, found: [], expedition: null, shops: {}, stash: [], treasures: {},
       quests: { main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null },
+      mounts: { owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } },
       hp: null, potions: pots(), belt: ['red', 'big', 'shield', 'rage'],
       upgrades: { hp: 0, atk: 0, magnet: 0 },
       attrs: { str: 0, vit: 0, agi: 0, dex: 0, luk: 0 },
@@ -93,6 +94,12 @@ describe('finalStats', () => {
     expect(finalStats(make())).toEqual({
       maxHp: 140, atk: 14, def: 2, atkSpd: 1, crit: 5, critDmg: 1.5, moveSpd: 112, cdr: 0, magnet: 70,
     });
+  });
+  it('mount aktif menambah maxHp 5% (Singa Kerajaan)', () => {
+    const base = finalStats(make()).maxHp;
+    const c = make();
+    c.mounts = { owned: { lion: [0] }, active: 'lion', skin: { lion: 0 }, pity: { tiger: 0, pegasus: 0 } };
+    expect(finalStats(c).maxHp).toBeCloseTo(base * 1.05);
   });
   it('menambah pertumbuhan × (level − 1)', () => {
     const s = finalStats({ ...make(), level: 11 });

@@ -28,6 +28,7 @@ import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, a
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
 import { codexFx } from './meta/collection.js';
+import { activeMountSetup, mountFx } from './meta/stable.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
 import { equipSkill, allocateTalents, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
@@ -666,7 +667,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
+    effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current),
   });
   tripAttrs = {};
   setupRunUI();
@@ -706,8 +707,8 @@ async function explore(regionId, at = 'west') {
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), skills: current.skills, ult: ultimateOf(current),
-    region: regionId, at, mount: cheatMount, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
+    effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current),
+    region: regionId, at, mount: activeMountSetup(current) ?? cheatMount, fog: decodeFog(current.regions[regionId]?.fog, region), ...gatesAndTarget(region), opened: current.treasures[regionId] || [],
   });
   const x = current.expedition, home = x && regionOfDungeon(x.dungeon);
   if (home && home.id !== regionId) toast(t('Gerbang ekspedisi {d} ada di {r}.', { d: dungeonById(x.dungeon).name, r: home.name }));

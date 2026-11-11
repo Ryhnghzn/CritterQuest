@@ -205,8 +205,9 @@ export function gearPickedUp(run, item) {
 
 // Forge materials found this trip (spec §20): straight into run.mats, with a floater.
 export function addMats(run, mats, dx = 0, dy = -50) {
-  for (const [m, n] of Object.entries(mats)) {
-    if (!n) continue;
+  for (const [m, base] of Object.entries(mats)) {
+    if (!base) continue;
+    const n = base > 0 ? Math.round(base * (1 + (run.fx.matfind || 0))) : base; // mount bonus
     run.mats[m] += n;
     run.addFloater(run.px + dx, run.py + dy, `+${n} ${MATS[m].name}`, MATS[m].color);
     dy -= 10;
@@ -225,7 +226,7 @@ export function dropLoot(run, e) {
   } else if (e.elite) {
     dropGear(run, 'elite', e.x, e.y);
     if (rand() < MAT_DROPS.eliteDustChance) addMats(run, { dust: 1 + Math.floor(rand() * 3) });
-  } else if (rand() < normalChance(DROP.enemyChance)) dropGear(run, 'enemy', e.x, e.y);
+  } else if (rand() < normalChance(DROP.enemyChance) * (1 + (run.fx.gearfind || 0))) dropGear(run, 'enemy', e.x, e.y);
   dropCoins(run, e);
 }
 

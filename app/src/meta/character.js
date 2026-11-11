@@ -15,6 +15,7 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
 import { UPGRADES } from '../data/shop.js';
+import { freshMounts, mountStatMul } from './stable.js';
 
 export function validateName(name) {
   if (typeof name !== 'string') return null;
@@ -37,7 +38,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot) }, found: [], expedition: null,
-    shops: {}, stash: [], treasures: {}, quests: freshQuests(),
+    shops: {}, stash: [], treasures: {}, quests: freshQuests(), mounts: freshMounts(),
     hp: null,
     potions: Object.fromEntries(POTION_IDS.map((id) => [id, 0])),
     belt: DEFAULT_BELT.slice(),
@@ -119,6 +120,7 @@ export function finalStats(char) {
     for (const [stat, v] of Object.entries(u.pct || {})) s[stat] *= 1 + v * n;
     for (const [stat, v] of Object.entries(u.flat || {})) s[stat] += v * n;
   }
+  for (const [stat, k] of Object.entries(mountStatMul(char))) s[stat] *= k; // active mount (spec §35.2)
   return s;
 }
 

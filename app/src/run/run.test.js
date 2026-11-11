@@ -130,6 +130,12 @@ describe('HP awal & ramuan di dungeon', () => {
     expect(g.stats.hp).toBe(132);
   });
 
+  it('bonus mount potionheal menambah pulih ramuan', () => {
+    const g = start({ hp: 14, potions: pots({ red: 1 }), effects: { potionheal: 0.1 } });
+    step(g, 0);
+    expect(g.stats.hp).toBeCloseTo(14 + 140 * 0.4 * 1.1);
+  });
+
   it('ramuan pulih tidak terbuang saat HP penuh; slot kosong / stok habis tidak berbuat apa-apa', () => {
     const g = start({ potions: pots({ red: 1, big: 0 }) });
     step(g, 0);

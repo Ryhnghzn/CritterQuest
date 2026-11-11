@@ -17,8 +17,10 @@ import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
 import { isFogValid } from './world.js';
 import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
+import { MOUNT_DEFS } from '../data/mounts.js';
+import { freshMounts } from './stable.js';
 
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -113,6 +115,8 @@ export const MIGRATIONS = {
   }),
   // v20: bounties are taken from the board before they count; a task already moving counts as taken.
   19: (d) => ({ ...d, version: 20, bounties: Array.isArray(d.bounties) ? d.bounties.map((b) => (isObj(b) ? { ...b, taken: isInt(b.have) && b.have > 0 } : b)) : d.bounties }),
+  // v21 (spec §35.2): the Stable — owned mounts. Story mounts already earned are granted in Part D.
+  20: (d) => ({ ...d, version: 21, mounts: freshMounts() }),
   17: (d) => ({ ...d, version: 18, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
   14: (d) => ({ ...d, version: 15, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
 };
@@ -211,6 +215,12 @@ export function validateSlot(d) {
   need(isObj(d.records) && isObj(d.records.bestiary) && BESTIARY_IDS.every((id) => isInt(d.records.bestiary[id], 0)), 'records.bestiary');
   need(isObj(d.records) && Array.isArray(d.records.uniques) && d.records.uniques.every((id) => UNIQUE_IDS.includes(id))
     && new Set(d.records.uniques).size === d.records.uniques.length, 'records.uniques');
+  const ms = d.mounts;
+  need(isObj(ms) && isObj(ms.owned) && isObj(ms.skin) && isObj(ms.pity)
+    && Object.entries(ms.owned).every(([id, sk]) => MOUNT_DEFS[id] && Array.isArray(sk) && sk.length >= 1 && sk.every((i) => isInt(i, 0, MOUNT_DEFS[id].skins - 1)))
+    && (ms.active === null || Object.hasOwn(ms.owned, ms.active))
+    && Object.entries(ms.skin).every(([id, i]) => ms.owned[id]?.includes(i))
+    && Object.values(ms.pity).every((n) => isInt(n, 0)), 'mounts');
   need(isObj(d.potions) && POTION_IDS.every((id) => isInt(d.potions[id], 0, POTION_MAX))
     && Object.keys(d.potions).length === POTION_IDS.length, 'potions');
   need(Array.isArray(d.belt) && d.belt.length === BELT_SIZE

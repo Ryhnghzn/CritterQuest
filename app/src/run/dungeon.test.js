@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
-import { waveQueue, FLOOR_COUNT, makeElite, spawnFromLane, stepDungeon, hpMul, normalChance } from './dungeon.js';
+import { waveQueue, FLOOR_COUNT, makeElite, spawnFromLane, stepDungeon, hpMul, normalChance, addMats } from './dungeon.js';
 import { HORDE } from '../data/balance.js';
 import { inside } from './room.js';
 import { DUNGEONS } from '../data/dungeons.js';
@@ -46,6 +46,16 @@ function enter(g, kind) {
 // enemies a floor sends: normal counts × HORDE.count (spec §33.2), bosses as they are
 const many = (type, n) => (ENEMIES[type].boss ? n : Math.max(1, Math.round(n * HORDE.count)));
 const total = (floor) => FLOORS[floor - 1].waves.reduce((n, w) => n + Object.entries(w.mix).reduce((a, [ty, k]) => a + many(ty, k), 0), 0);
+
+describe('bonus mount: matfind', () => {
+  it('debu × (1 + matfind), dibulatkan', () => {
+    const g = new Game();
+    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats, maxHp: 1e6 }, effects: { matfind: 0.05 } });
+    const before = g.mats.dust;
+    addMats(g, { dust: 20 });
+    expect(g.mats.dust - before).toBe(21);
+  });
+});
 
 describe('gelombang', () => {
   it('urutan muncul: bos dulu, jumlah musuh biasa × HORDE.count (spec §33.2)', () => {

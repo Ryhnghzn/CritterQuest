@@ -265,6 +265,24 @@ describe('save versi 2', () => {
     expect(r.data.bounties[0].have).toBe(4);
   });
 
+  it('migrasi v20 → v21: Kandang kosong', () => {
+    const { mounts, ...rest } = structuredClone(fresh());
+    const r = readSlot({ ...rest, version: 20 });
+    expect(r.status).toBe('ok');
+    expect(r.data.version).toBe(21);
+    expect(r.data.mounts).toEqual({ owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } });
+    expect(validateSlot(r.data)).toEqual([]);
+  });
+
+  it('menolak mount aktif yang tidak dimiliki atau warna di luar jangkauan', () => {
+    const c = fresh();
+    c.mounts.active = 'lion';
+    expect(validateSlot(c).join()).toMatch(/mounts/);
+    const d = fresh();
+    d.mounts.owned.horse = [5]; d.mounts.skin.horse = 5;
+    expect(validateSlot(d).join()).toMatch(/mounts/);
+  });
+
   it('menolak tugas belum diambil yang punya progres', () => {
     const c = fresh();
     c.bounties[0].have = 2;
