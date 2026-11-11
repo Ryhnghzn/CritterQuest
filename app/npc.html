@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPC Anime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a24a;--gold-d:#6e5426;--gold-l:#e8cf8e;--ink:#e8dcc4;--dim:#9a8f80}
+*{box-sizing:border-box}
+body{margin:0;background:#08060a;color:var(--ink);font-family:'Barlow',system-ui,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 22px 'Cinzel',serif;color:var(--gold-l);margin:0 0 4px;letter-spacing:1px}
+.intro{color:var(--dim);margin:0 0 12px;max-width:900px;line-height:1.5}
+.intro a{color:var(--gold-l)}
+.bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.grp b{display:block;font:700 12.5px 'Cinzel',serif;color:var(--gold-l);margin-bottom:5px;letter-spacing:1px}
+.opts{display:flex;gap:5px;flex-wrap:wrap}
+.btn{font:600 13px 'Barlow',sans-serif;color:var(--gold-l);background:#100c14;border:1px solid var(--gold-d);padding:6px 9px;cursor:pointer;min-height:32px}
+.btn.on{border-color:var(--gold);color:#fff1d6;background:#2a1d14}
+canvas{display:block;width:100%;background:#0b0810;border:1px solid var(--gold-d)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Warga Kota & NPC — Gaya Anime</h1>
+  <p class="intro">Contoh desain, belum masuk game. Ke-22 jenis warga kota sama dengan di game (pandai besi memukul palu, penjaga memegang tombak, tetua bertongkat, dst.), dirakit dari bagian: bentuk badan, pakaian, penutup kepala, janggut, alat, dan gerak diam pekerjaannya. Warna pakaian dari data NPC. Hero ada di <a href="./anime.html">anime.html</a>.</p>
+  <div class="bar">
+    <div class="grp"><b>Tampilan</b><div class="opts" id="render"></div></div>
+    <div class="grp"><b>Arah</b><div class="opts" id="view"></div></div>
+    <div class="grp"><b>Gerak</b><div class="opts"><button class="btn" id="walk">Berjalan</button><button class="btn" id="old">Bandingkan gaya lama</button></div></div>
+  </div>
+  <canvas id="grid"></canvas>
+</main>
+<script type="module" src="./npc/main.js"></script>
+</body>
+</html>

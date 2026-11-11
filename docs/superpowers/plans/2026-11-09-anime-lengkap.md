@@ -284,3 +284,9 @@ izin): menyimpan frame jadi untuk warga kota (cache per gerakan), atau menurunka
 
 Setiap commit: hanya file bagian itu; perbarui spesifikasi §39 (satu poin per bagian) dan centang
 rencana ini.
+
+## Status (2026-11-11)
+
+- A–D dikerjakan agen lain, masuk commit `b1246ba` ("Snapshot pekerjaan terkini").
+- E: E1 tidak perlu (penghitung FPS sudah ada di panel cheat). E2 (`LOOK.npcFps`, `render3d/town.js`) dan E3 (`render3d/field.js` kartu pixel) dikerjakan Claude; belum di-commit, menunggu cek pemilik. E4 (ukur di iPhone) menunggu pemilik.
+- NPC anime: contoh desain dibuat Claude di `app/npc.html`.
