@@ -6,6 +6,7 @@
 // Steps that only check what the character already did (town, gate, boss, guard) finish on
 // their own whenever quests are synced; a quest always ends with a talk or a give, which pays.
 // Talks in the wild use town 'wild' and the hidden person's id (data/quests.js HIDDEN).
+import { storyMounts } from './stable.js';
 import { MAIN, SIDE, SIDE_MAX, QUEST_REWARD, SHARDS, GATE_HINT, HIDDEN, SPOTS, hiddenById } from '../data/quests.js';
 import { UNIQUES, SLOT_IDS, SLOTS, LEGENDARY } from '../data/items.js';
 import { GEM_IDS } from '../data/forge.js';
@@ -270,9 +271,10 @@ export function questTalk(char, id, townId, npcId, now, rng = Math.random) {
     if (c.quests.track === id) c.quests.track = null;
     c.quests.done.push(id);
   }
+  const mounts = storyMounts(c, rng);
   syncQuests(c);
   c.updatedAt = now;
-  return { ok: true, char: c, id, say: offer.say, done: !!got, given, got };
+  return { ok: true, char: c, id, say: offer.say, done: !!got, given, got, mounts };
 }
 
 // Drops a side quest (its progress is lost; it can be taken again).

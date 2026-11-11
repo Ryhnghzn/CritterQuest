@@ -11,6 +11,14 @@ const forest = regionById('forest');
 const make = () => createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'archer' }, 1);
 const pots = { red: 1, big: 0, shield: 0, wind: 0, rage: 0 };
 
+describe('mount dari wilayah', () => {
+  it('applyField menggulir jatuhan bos dengan rng yang diberikan', () => {
+    const r = applyField(make(), { potions: pots, hp: 100, mountRolls: { any: 0, eclipse: 1 } }, 9, () => 0);
+    expect(r.mountsFound).toEqual(['tiger', 'pegasus']);
+    expect(applyField(make(), { potions: pots, hp: 100 }, 9).mountsFound).toEqual([]);
+  });
+});
+
 describe('kabut', () => {
   it('base64 bolak-balik', () => {
     const { bytes } = fogSize(forest);

@@ -10,6 +10,7 @@ import { isDone } from '../meta/bounties.js';
 import { ENEMIES } from '../data/enemies.js';
 import { tr, t } from '../i18n.js';
 import { causeText } from './death.js';
+import { mountGainText } from './stable.js';
 
 // the boss waiting on a dungeon's last floor
 const bossOf = (id) => ENEMIES[Object.keys(dungeonById(id).floors.at(-1).waves.at(-1).mix).find((k) => ENEMIES[k].boss)]?.name ?? '';
@@ -17,7 +18,7 @@ const bossOf = (id) => ENEMIES[Object.keys(dungeonById(id).floors.at(-1).waves.a
 // info: { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, newRecord, saveError }
 // continueLabel: text of the button (default "Kembali ke Kota")
 export function renderResults(box, info, { onContinue, continueLabel = null }) {
-  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError, bountiesDone, uniquesFound, cause } = info;
+  const { char, trip, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, newRecord, saveError, bountiesDone, uniquesFound, cause, mountGains } = info;
   box.replaceChildren();
   const titleText = tr(trip.died ? 'Tumbang!' : trip.cleared ? 'Dungeon Tamat!' : 'Pulang dengan Selamat');
   const title = el('h2', trip.died ? 'h bad' : 'h', titleText);
@@ -35,6 +36,10 @@ export function renderResults(box, info, { onContinue, continueLabel = null }) {
   if (levelsGained > 0) badges.append(el('span', 'badge mint', t('Naik level! LV {n}', { n: char.level })));
   if (bountiesDone > 0) badges.append(el('span', 'badge mint', t('{n} tugas selesai. Klaim di Balai Petualang', { n: bountiesDone })));
   if (uniquesFound?.length) badges.append(el('span', 'badge', t('Kodeks: +{n} item unik', { n: uniquesFound.length })));
+  for (const g of mountGains || []) { // new mounts / colours (spec §35.2), in their rarity colour
+    const m = mountGainText(g), b = el('span', 'badge', m.text);
+    b.style.color = m.color; badges.append(b);
+  }
   // bounty board progress after this trip (spec §24)
   const board = el('div', 'rbounties');
   const x = char.expedition; // expedition progress (spec §25.5)

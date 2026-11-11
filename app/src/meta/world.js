@@ -9,6 +9,7 @@ import { addExp, allocate, finalStats } from './character.js';
 import { addKills, discover } from './collection.js';
 import { advanceBounties, isDone } from './bounties.js';
 import { countQuests, syncQuests } from './quests.js';
+import { rollMountDrops } from './stable.js';
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -76,8 +77,8 @@ function storeHp(c, hp) {
 
 // Writes what was earned in a region since the last save.
 // part: { region, fog, found (dungeon gates found), exp, gold, kills, killsBy, elites, items, mats, gems, hp, potions, attrs }
-// → { char, levelsGained, itemsLeft, uniquesFound, bountiesDone }
-export function applyField(char, part, now) {
+// → { char, levelsGained, itemsLeft, uniquesFound, bountiesDone, mountsFound }
+export function applyField(char, part, now, rng = Math.random) {
   const leveled = addExp(char, part.exp || 0);
   const c = (part.attrs && allocate(leveled.char, part.attrs, now)) || leveled.char;
   c.gold += part.gold || 0;
@@ -107,8 +108,9 @@ export function applyField(char, part, now) {
   }
   if (part.region && regionById(part.region)) c.regions = { ...c.regions, [part.region]: { fog: part.fog ?? c.regions[part.region]?.fog ?? '' } };
   countQuests(c, { killsBy: part.killsBy, elites: part.elites, elitesBy: part.elitesBy, questItems: part.questItems, reached: part.reached, region: part.region });
+  const mountsFound = rollMountDrops(c, part.mountRolls || { any: 0, eclipse: 0 }, rng);
   c.updatedAt = now;
-  return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone };
+  return { char: c, levelsGained: leveled.levelsGained, itemsLeft, uniquesFound, bountiesDone, mountsFound };
 }
 
 // Falling in a region: wake in the last town with a little HP, minus a tenth of the coins.

@@ -75,7 +75,7 @@ export class Game {
     return {
       time: this.time, kills: this.kills, exp: Math.floor(this.expGained), gold: this.gold, items: this.loot.slice(),
       mats: { ...this.mats }, gems: this.gemsFound.slice(),
-      bossKills: this.bossKills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy }, floorsCleared: this.floorsCleared, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id,
+      bossKills: this.bossKills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy }, floorsCleared: this.floorsCleared, floor: this.deepest, cleared: this.cleared, dungeon: this.dungeon.id, mountRolls: { ...this.mountRolls },
     };
   }
 
@@ -104,9 +104,10 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the class ultimate when unlocked (meta/talents.js ultimateOf), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false }) {
     resetRng();
     this.classId = classId;
+    this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
     this.mount = freshMount(null); this.mountFxT = 0; // mount (spec §35); regions set it in explore()
     this.enemies.length = 0; this.hits.length = 0;
     this.shots.length = 0; this.hazards.length = 0; this.pulses.length = 0;
@@ -167,7 +168,7 @@ export class Game {
   // A region of the open world instead of a dungeon (spec §25.1).
   // setup.region: region id; setup.at: 'west' | 'east'; setup.fog: Uint8Array (revealed in place)
   explore(setup) {
-    this.reset(setup);
+    this.reset({ ...setup, eclipse: setup.region === 'eclipse' });
     this.mount = freshMount(setup.mount || null);
     this.fog = setup.fog || null;
     startField(this, setup.region, setup.at, setup.gates, setup.target, setup.opened);
@@ -180,10 +181,11 @@ export class Game {
     const out = {
       exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy },
       questItems: { ...this.questItems }, reached: this.reached.splice(0),
-      items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions },
+      items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions }, mountRolls: { ...this.mountRolls },
     };
     this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.questItems = {};
     this.loot.length = 0; this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound.length = 0;
+    this.mountRolls = { any: 0, eclipse: 0 };
     return out;
   }
 
@@ -516,6 +518,7 @@ export class Game {
     this.kills += 1;
     const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin
     this.killsBy[kin] = (this.killsBy[kin] || 0) + 1;
+    if (e.boss || e.mini) this.mountRolls[this.inEclipse ? 'eclipse' : 'any'] += 1;
     if (e.elite) { this.elites += 1; this.elitesBy[kin] = (this.elitesBy[kin] || 0) + 1; }
     if (this.field && this.questDrops.length) questDrop(this, e, kin);
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);

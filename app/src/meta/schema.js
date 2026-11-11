@@ -18,7 +18,7 @@ import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data
 import { isFogValid } from './world.js';
 import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
-import { freshMounts } from './stable.js';
+import { freshMounts, storyMounts } from './stable.js';
 
 export const SAVE_VERSION = 21;
 
@@ -115,8 +115,12 @@ export const MIGRATIONS = {
   }),
   // v20: bounties are taken from the board before they count; a task already moving counts as taken.
   19: (d) => ({ ...d, version: 20, bounties: Array.isArray(d.bounties) ? d.bounties.map((b) => (isObj(b) ? { ...b, taken: isInt(b.have) && b.have > 0 } : b)) : d.bounties }),
-  // v21 (spec §35.2): the Stable — owned mounts. Story mounts already earned are granted in Part D.
-  20: (d) => ({ ...d, version: 21, mounts: freshMounts() }),
+  // v21 (spec §35.2): the Stable — owned mounts. Story mounts already earned are granted here.
+  20: (d) => {
+    const out = { ...d, version: 21, mounts: freshMounts() };
+    if (isObj(out.quests) && Array.isArray(out.quests.done) && isObj(out.records)) storyMounts(out);
+    return out;
+  },
   17: (d) => ({ ...d, version: 18, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
   14: (d) => ({ ...d, version: 15, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
 };

@@ -167,3 +167,11 @@ export function renderStableShop(char, { onBuyMount, onBuySkin }) {
   }
   return list;
 }
+
+// The news line for one gain from mountGains(): new mount in its rarity colour, or a new colour.
+export function mountGainText(g) {
+  const art = MAJESTIC_BY_ID[g.id];
+  const text = g.isNew ? t('Mount baru: {name}!', { name: art.name })
+    : t('Warna baru: {mount} {colour}!', { mount: art.name, colour: g.skins.map((s) => art.skins[s].name).join(', ') });
+  return { text, color: RARITIES[MOUNT_DEFS[g.id].rarity].color };
+}

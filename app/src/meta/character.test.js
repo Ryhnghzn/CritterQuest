@@ -161,6 +161,14 @@ describe('addExp: pasang skill otomatis', () => {
 });
 
 describe('applyTrip', () => {
+  it('mount: gulungan bos masuk lewat rng; tamat Menara memberi Naga', () => {
+    const r = applyTrip(make(), trip({ mountRolls: { any: 1, eclipse: 0 } }), NOW, () => 0);
+    expect(r.mountsFound).toEqual(['tiger']);
+    expect(r.char.mounts.owned.tiger).toEqual([0]);
+    const e = applyTrip(make(), trip({ dungeon: 'spire', cleared: true, floor: 5 }), NOW, () => 0.99);
+    expect(e.mountsFound).toContain('dragon');
+    expect(applyTrip(make(), trip(), NOW).mountsFound).toEqual([]);
+  });
   it('pulang: semua hadiah dibawa, HP disimpan, rekor naik', () => {
     const before = { ...make(), gold: 5, records: { trips: 4, kills: 10, bossKills: 0, dungeons: dungeonRecs({ bestFloor: 2, clears: 0 }) } };
     const { char, levelsGained, goldLost } = applyTrip(before, trip({ exp: 55, gold: 40, kills: 30, bossKills: 1, floor: 3, hp: 77, potions: pots({ red: 2, wind: 1 }) }), NOW + 5);

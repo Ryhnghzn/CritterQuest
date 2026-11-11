@@ -43,6 +43,8 @@ describe('quest utama', () => {
     expect(pv.shard).toBe(true);
     expect(r.char.inventory.at(-1)).toEqual(r.got.items[0]);
     expect(r.char.quests.done).toEqual(['ch1']);
+    expect(r.mounts).toEqual(['horse']);
+    expect(r.char.mounts.active).toBe('horse');
     expect(r.char.quests.main).toEqual({ ch: 1, step: 0, prog: 0 }); // ch2: walk into Rimbawana
     expect(shards(r.char)).toBe(1);
     expect(validateSlot(r.char)).toEqual([]);

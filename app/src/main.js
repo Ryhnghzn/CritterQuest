@@ -28,8 +28,9 @@ import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, a
 import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
 import { codexFx } from './meta/collection.js';
-import { activeMountSetup, mountFx, grantMount, buyMount, buySkin, setActiveMount } from './meta/stable.js';
+import { activeMountSetup, mountFx, grantMount, buyMount, buySkin, setActiveMount, mountGains } from './meta/stable.js';
 import { MOUNT_IDS } from './data/mounts.js';
+import { mountGainText } from './ui/stable.js';
 import { MAJESTIC_BY_ID } from './render/world.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
 import { equipSkill, allocateTalents, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
@@ -388,7 +389,7 @@ function openNpc(npc, message = null) {
     char: current, hp: town.hp, maxHp: town.maxHp, message,
     line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
     quests: talkOffers(current, town.id, npc.id),
-    onQuest: (id) => serve((c, now) => questTalk(c, id, town.id, townNpc.id, now), questText),
+    onQuest: (id) => { const before = current; serve((c, now) => questTalk(c, id, town.id, townNpc.id, now, Math.random), (r) => { const m = questText(r); mountNews(before, r.char, r.mounts); return m; }); },
     onInn: () => serve(innRest, tr('Kamu tidur nyenyak. HP pulih penuh!')),
     onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), t('{name}, segar dari kuali. Hehehe.', { name: POTIONS[id].name })),
     onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
@@ -506,6 +507,13 @@ function rewardPop(title, sub, reward, levelsGained = 0) {
   sfx.fanfare();
   if (levelsGained) sfx.levelup();
   showRewardPop({ title, sub, ...reward, levelsGained });
+}
+
+// Toasts for mounts just obtained (spec §35.2); the first mount also says how to ride it.
+function mountNews(before, after, ids) {
+  const gains = mountGains(before, after, ids);
+  for (const g of gains) { const m = mountGainText(g); toast(m.text, m.color); }
+  if (gains.some((g) => g.isNew) && !Object.keys(before.mounts.owned).length) toast(tr('Tekan R (atau tombol kuda) di wilayah untuk menunggang.'));
 }
 
 // A toast when the tracked quest moved on by itself (a gate found, a boss beaten, a town reached).
@@ -673,7 +681,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current),
+    effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
   });
   tripAttrs = {};
   setupRunUI();
@@ -746,11 +754,12 @@ async function openGate(g) {
 async function commitField() {
   const part = game.takeProgress();
   const before = current;
-  const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now());
+  const r = applyField(current, { ...part, region: game.region.id, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now(), Math.random);
   tripAttrs = {};
   current = { ...r.char, skills: runSkillIds() };
   fieldSaveT = 0;
   refreshFieldQuests();
+  mountNews(before, current, r.mountsFound);
   if (r.itemsLeft.length) toast(t('Tas penuh: {n} gear ditinggal.', { n: r.itemsLeft.length }));
   else if (current.quests.main.step !== before.quests.main.step || current.quests.main.ch !== before.quests.main.ch) questNews(before);
   else if (r.bountiesDone > 0) toast(t('{n} tugas selesai. Klaim di Balai Petualang', { n: r.bountiesDone }));
@@ -827,12 +836,14 @@ async function openWild(h, message = null) {
     line: h.lines[(talkIdx[h.id] ?? 0) % h.lines.length],
     quests: talkOffers(current, 'wild', h.id),
     onQuest: async (id) => {
-      const r = questTalk(current, id, 'wild', h.id, Date.now());
+      const before = current;
+      const r = questTalk(current, id, 'wild', h.id, Date.now(), Math.random);
       if (!r.ok) { openWild(h, { text: tr(REFUSE[r.reason] || REFUSE.bad), ok: false }); return; }
       current = r.char;
       sfx.heart();
       const err = await saveCurrent();
       const msg = err ? { text: t('Gagal menyimpan: {err}', { err }), ok: false } : { ...questText(r), ok: true };
+      mountNews(before, r.char, r.mounts);
       // rewards / hand-overs change level, potions and the bag: pick the region up again from the save
       if (r.done || r.given) { explore(game.region.id, { x: game.px, y: game.py }).then(() => toast(msg.text)); return; }
       refreshFieldQuests();
@@ -906,11 +917,12 @@ async function endRun(died) {
   const trip = {
     exp: r.exp, gold: r.gold, kills: r.kills, bossKills: r.bossKills, killsBy: r.killsBy, elites: r.elites, floorsCleared: r.floorsCleared,
     dungeon: r.dungeon, floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
-    attrs: tripAttrs, items: r.items, mats: r.mats, gems: r.gems,
+    attrs: tripAttrs, items: r.items, mats: r.mats, gems: r.gems, mountRolls: r.mountRolls,
   };
   const newRecord = trip.floor > current.records.dungeons[r.dungeon].bestFloor;
   const before = current;
-  const applied = applyTrip(current, trip, Date.now());
+  const applied = applyTrip(current, trip, Date.now(), Math.random);
+  const gains = mountGains(before, applied.char, applied.mountsFound);
   current = { ...applied.char, skills: runSkillIds() }; // keep progress in memory even if the write fails
   questNews(before);
   const saveError = await saveCurrent();
@@ -918,7 +930,7 @@ async function endRun(died) {
   const back = !died && dungeonReturn;
   dungeonReturn = null;
   const go = () => (back ? explore(back.region, { x: back.x, y: back.y }) : enterTown(current, 'gate'));
-  renderResults($('results'), { ...applied, trip, newRecord, saveError, cause: died ? game.deathCause() : null },
+  renderResults($('results'), { ...applied, mountGains: gains, trip, newRecord, saveError, cause: died ? game.deathCause() : null },
     { onContinue: applied.ending ? () => { playMusic('epilog'); renderEnding($('ending'), current, go); showMenu('ending'); } : go,
       continueLabel: back ? t('Kembali ke {r}', { r: regionById(back.region).name })
         : died ? t('Bangkit di {town}', { town: TOWNS[current.location].name }) : null });

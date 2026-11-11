@@ -49,7 +49,7 @@ describe('hasil ronde', () => {
     const r = g.result();
     expect(r.exp).toBe(Math.floor(total + 1e-9)); // per-enemy EXP is fractional since §33.4
     expect(Object.values(r.killsBy).reduce((a, b) => a + b, 0)).toBe(g.kills);
-    expect(r).toEqual({ time: g.time, kills: g.kills, exp: r.exp, gold: g.gold, items: g.loot, bossKills: g.bossKills, killsBy: g.killsBy, elites: g.elites, elitesBy: g.elitesBy, floorsCleared: g.floorsCleared, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [] });
+    expect(r).toEqual({ time: g.time, kills: g.kills, exp: r.exp, gold: g.gold, items: g.loot, bossKills: g.bossKills, killsBy: g.killsBy, elites: g.elites, elitesBy: g.elitesBy, floorsCleared: g.floorsCleared, floor: g.deepest, cleared: false, dungeon: 'shadow', mats: g.mats, gems: [], mountRolls: { any: 0, eclipse: 0 } });
   });
 
   it('menghitung bos yang dikalahkan', () => {

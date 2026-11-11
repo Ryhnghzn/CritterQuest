@@ -274,6 +274,16 @@ describe('save versi 2', () => {
     expect(validateSlot(r.data)).toEqual([]);
   });
 
+  it('migrasi v20 → v21: mount cerita yang sudah diraih diberikan', () => {
+    const { mounts, ...rest } = structuredClone(fresh());
+    rest.quests.done = ['ch1']; rest.records.ending = 5;
+    const r = readSlot({ ...rest, version: 20 });
+    expect(r.status).toBe('ok');
+    expect(Object.keys(r.data.mounts.owned).sort()).toEqual(['dragon', 'horse']);
+    expect(r.data.mounts.active).toBe('horse');
+    expect(validateSlot(r.data)).toEqual([]);
+  });
+
   it('menolak mount aktif yang tidak dimiliki atau warna di luar jangkauan', () => {
     const c = fresh();
     c.mounts.active = 'lion';

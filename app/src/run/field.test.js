@@ -157,6 +157,23 @@ describe('mode wilayah', () => {
     expect(g.expGained).toBeCloseTo(0.5);
     expect(g.takeProgress().kills).toBe(0);
   });
+  it('bos & penjaga wilayah dihitung sebagai gulungan mount; takeProgress mengosongkan', () => {
+    const g = new Game();
+    g.explore(setup());
+    g.killEnemy({ ...g.spawnEnemy('boss'), boss: true });
+    g.killEnemy({ ...g.spawnEnemy('slink'), mini: true });
+    g.killEnemy({ ...g.spawnEnemy('slink') });
+    expect(g.takeProgress().mountRolls).toEqual({ any: 2, eclipse: 0 });
+    expect(g.takeProgress().mountRolls).toEqual({ any: 0, eclipse: 0 });
+    const h = new Game();
+    h.explore(setup({ region: 'eclipse' }));
+    h.killEnemy({ ...h.spawnEnemy('boss'), boss: true });
+    expect(h.result().mountRolls).toEqual({ any: 0, eclipse: 1 });
+    const d = new Game();
+    d.start({ ...setup(), eclipse: true });
+    d.killEnemy({ ...d.spawnEnemy('boss'), boss: true });
+    expect(d.result().mountRolls).toEqual({ any: 0, eclipse: 1 });
+  });
   it('gerbang dungeon: ditemukan dari dekat, bisa dimasuki bila berdiri di dekatnya', () => {
     const g = new Game();
     g.explore(setup({ gates: [{ dungeon: 'shadow', x: 3000, y: 6000, found: false }] }));

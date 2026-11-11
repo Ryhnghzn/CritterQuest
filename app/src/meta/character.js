@@ -15,7 +15,7 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
 import { UPGRADES } from '../data/shop.js';
-import { freshMounts, mountStatMul, mountFx } from './stable.js';
+import { freshMounts, mountStatMul, mountFx, rollMountDrops, storyMounts } from './stable.js';
 
 export function validateName(name) {
   if (typeof name !== 'string') return null;
@@ -183,7 +183,7 @@ export function usePotion(char, id, now) {
 // mats / gems: forge materials & gems found — a death keeps half the materials
 // (rounded down) and each gem with DEATH.gearKeepChance.
 // Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost,
-//           bountiesDone (newly finished), uniquesFound }.
+//           bountiesDone (newly finished), uniquesFound, ending, mountsFound (ids or extra colours) }.
 export function applyTrip(char, trip, now, rng = Math.random) {
   const leveled = addExp(char, trip.exp);
   const levelsGained = leveled.levelsGained;
@@ -232,8 +232,9 @@ export function applyTrip(char, trip, now, rng = Math.random) {
     if (trip.died && rng() >= DEATH.gearKeepChance) { gemsLost.push(gm); continue; }
     c.gems[gm.gem][gm.tier - 1] += 1;
   }
+  const mountsFound = [...rollMountDrops(c, trip.mountRolls || { any: 0, eclipse: 0 }, rng), ...storyMounts(c, rng)]; // storyMounts catches the dragon on the ending
   c.updatedAt = now;
-  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound, ending };
+  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound, ending, mountsFound };
 }
 
 // Dungeons open one after another: the next once the previous has been cleared (spec §18.3).
