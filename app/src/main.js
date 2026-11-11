@@ -391,7 +391,7 @@ function openNpc(npc, message = null) {
     char: current, hp: town.hp, maxHp: town.maxHp, message,
     line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
     quests: talkOffers(current, town.id, npc.id),
-    onQuest: (id) => { const before = current; serve((c, now) => questTalk(c, id, town.id, townNpc.id, now, Math.random), (r) => { const m = questText(r); mountNews(before, r.char, r.mounts); return m; }); },
+    onQuest: (id, pick = null) => { const before = current; serve((c, now) => questTalk(c, id, town.id, townNpc.id, now, Math.random, pick), (r) => { const m = questText(r); mountNews(before, r.char, r.mounts); return m; }); },
     onInn: () => serve(innRest, tr('Kamu tidur nyenyak. HP pulih penuh!')),
     onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), t('{name}, segar dari kuali. Hehehe.', { name: POTIONS[id].name })),
     onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
@@ -502,7 +502,8 @@ function questText(r) {
   for (const [m, n] of Object.entries(g.mats)) bits.push(`+${n} ${MATS[m].name}`);
   for (const [p, n] of Object.entries(g.potions)) bits.push(`+${n} ${POTIONS[p].name}`);
   rewardPop(tr('Quest selesai!'), questDef(r.id)?.title, g, g.levelsGained);
-  return { text: `${tr('Quest selesai!')} ${bits.join(' · ')}${g.levelsGained ? ` ${tr('Naik level!')}` : ''}`, color: '#ffd24a' };
+  const reply = r.pick != null && r.say ? `“${r.say}” ` : ''; // the answer to a choice (spec §42)
+  return { text: `${reply}${tr('Quest selesai!')} ${bits.join(' · ')}${g.levelsGained ? ` ${tr('Naik level!')}` : ''}`, color: '#ffd24a' };
 }
 
 // The festive pop-up over whatever is open when a reward is claimed.
@@ -825,7 +826,7 @@ function openMap() {
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden, events: game.events });
   $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
   $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, WORLD) * 100) });
 }
@@ -849,9 +850,9 @@ async function openWild(h, message = null) {
     char: current, hp: game.stats.hp, maxHp: game.stats.maxHp, message,
     line: h.lines[(talkIdx[h.id] ?? 0) % h.lines.length],
     quests: talkOffers(current, 'wild', h.id),
-    onQuest: async (id) => {
+    onQuest: async (id, pick = null) => {
       const before = current;
-      const r = questTalk(current, id, 'wild', h.id, Date.now(), Math.random);
+      const r = questTalk(current, id, 'wild', h.id, Date.now(), Math.random, pick);
       if (!r.ok) { openWild(h, { text: tr(REFUSE[r.reason] || REFUSE.bad), ok: false }); return; }
       current = r.char;
       sfx.heart();
@@ -889,7 +890,7 @@ function drawMinimap() {
   if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden, events: game.events });
 }
 $('minimap').addEventListener('click', () => (scene === 'town' ? openTownMap() : openMap()));
 $('mapclose').addEventListener('click', () => (scene === 'town' ? closeTownOverlay() : resume()));

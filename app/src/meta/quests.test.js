@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { activeQuests, syncQuests, talkOffers, npcMarks, questTalk, questTarget, shards, mainDone, rewardPreview, questDef, strongerMark, markChar, isMainMark } from './quests.js';
+import { activeQuests, syncQuests, countQuests, talkOffers, npcMarks, questTalk, questTarget, shards, mainDone, rewardPreview, questDef, strongerMark, markChar, isMainMark } from './quests.js';
 import { createCharacter, applyTrip } from './character.js';
 import { applyField, visitTown, gateSpots } from './world.js';
 import { validateSlot } from './schema.js';
@@ -295,13 +295,13 @@ describe('data quest', () => {
       for (const s of q.steps) {
         if (s.enemy && s.enemy !== '*') expect(ENEMIES[s.enemy], `${q.id} ${s.enemy}`).toBeTruthy();
         if (s.show) expect(ENEMIES[s.show].kin).toBe(s.enemy);
-        if ((s.kind === 'talk' || s.kind === 'give') && s.town !== 'wild') expect(npcs(s.town), `${q.id} ${s.npc}`).toContain(s.npc);
+        if ((s.kind === 'talk' || s.kind === 'give' || s.kind === 'choice') && s.town !== 'wild') expect(npcs(s.town), `${q.id} ${s.npc}`).toContain(s.npc);
         if (s.town === 'wild') expect(HIDDEN.some((h) => h.id === s.npc)).toBe(true);
         for (const id of s.spots || []) expect(SPOTS[id]).toBeTruthy();
       }
       if (q.reward.unique) expect(UNIQUES.find((u) => u.id === q.reward.unique)?.quest).toBe(true);
       const last = q.steps.at(-1).kind;
-      expect(['talk', 'give']).toContain(last);
+      expect(['talk', 'give', 'choice']).toContain(last);
     }
   });
 
@@ -396,5 +396,28 @@ describe('tanda quest', () => {
     expect(strongerMark(null, '!')).toBe('!');
     expect(strongerMark(undefined, undefined)).toBe(null);
     expect([markChar('M?'), markChar('!'), isMainMark('M!'), isMainMark('?')]).toEqual(['?', '!', true, false]);
+  });
+});
+
+describe('langkah pilihan (§42)', () => {
+  it('dua jawaban, hadiah berbeda, jawaban tercatat', async () => {
+    const { createCharacter } = await import('./character.js');
+    const { validateSlot } = await import('./schema.js');
+    let c = createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'warrior' }, 1);
+    c.towns.push('pasir'); c.location = 'pasir';
+    c = questTalk(c, 'p_kantong', 'pasir', 'folk1', 2, () => 0.5).char;
+    countQuests(c, { elites: 1, region: 'desert' });
+    const offer = talkOffers(c, 'pasir', 'folk1').find((o) => o.id === 'p_kantong');
+    expect(offer.choice.map((o) => o.label)).toEqual(['Kembalikan ke Omar', 'Simpan saja']);
+    expect(questTalk(c, 'p_kantong', 'pasir', 'folk1', 3, () => 0.5).reason).toBe('choose');
+    const keep = questTalk(c, 'p_kantong', 'pasir', 'folk1', 3, () => 0.5, 1), give = questTalk(c, 'p_kantong', 'pasir', 'folk1', 3, () => 0.5, 0);
+    expect(keep.ok && give.ok).toBe(true);
+    expect(keep.char.quests.choices.p_kantong).toBe(1);
+    expect(give.char.quests.choices.p_kantong).toBe(0);
+    expect(keep.got.gold).toBeGreaterThan(give.got.gold);
+    expect(give.char.marks).toBeGreaterThan(keep.char.marks);
+    expect(keep.say).toContain('gurun');
+    expect(keep.char.quests.done).toContain('p_kantong');
+    expect(validateSlot(keep.char)).toEqual([]);
   });
 });

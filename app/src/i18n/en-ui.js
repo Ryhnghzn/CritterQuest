@@ -402,6 +402,7 @@ export default {
   "Temukan {n} {what} di {r}": "Find {n} {what} in {r}",
   "Kumpulkan {n} {item} dari {enemy} di {r}": "Collect {n} {item} from {enemy} in {r}",
   "Kawal {name} di {r}": "Escort {name} in {r}",
+  "Putuskan bersama {who}": "Decide with {who}",
   "Pertahankan {name} di {r}": "Defend {name} in {r}",
   "Buru {name} di {r}": "Hunt {name} in {r}",
   "Hancurkan {name} di {r}": "Destroy {name} in {r}",

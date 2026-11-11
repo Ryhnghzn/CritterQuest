@@ -13,7 +13,7 @@ const idle = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, p
 const game = () => {
   const g = new Game();
   g.explore({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, at: 'rimba' });
-  g.intent = idle; g.packT = 1e9; g.god = true;
+  g.intent = idle; g.packT = 1e9; g.god = true; g.happenT = 1e9; // no happenings unless a test wants one
   return g;
 };
 const stepOf = (id) => questDef(id).steps.findIndex((s) => s.kind === 'event');
@@ -212,5 +212,47 @@ describe('quest event: Penyelamatan & Balapan (§42)', async () => {
     run(h, d.times.bronze + 1, () => { h.enemies.length = 0; });
     expect(h.events[0].state).toBe('wait');
     expect(RACE.ringR).toBeGreaterThan(0);
+  });
+});
+
+describe('Peristiwa dunia (§42)', async () => {
+  const { HAPPEN } = await import('../data/questev.js');
+  const { stepHappenings } = await import('./questev.js');
+  const { zoneToWorld } = await import('./worldmap.js');
+  const at = (g) => { const p = zoneToWorld('forest', 0.5, 0.5); g.px = p.x; g.py = p.y; };
+  it('muncul sendiri di dekat pemain, hilang bila diabaikan, tidak ikut terhapus saat quest disegarkan', () => {
+    const g = game(); at(g);
+    g.happenT = 0; stepHappenings(g, 1 / 60);
+    const ev = g.events.find((e) => e.world);
+    expect(ev).toBeTruthy();
+    const d = Math.hypot(ev.start.x - g.px, ev.start.y - g.py);
+    expect(d).toBeGreaterThan(HAPPEN.dist[0] - 50);
+    setEvents(g, []);
+    expect(g.events).toContain(ev);
+    stepHappenings(g, HAPPEN.expire + 1);
+    expect(g.events.includes(ev)).toBe(false);
+  });
+  it('karavan sampai → koin; hujan meteor: kristal dipungut, selesai → koin & kristal', () => {
+    const g = game(); at(g);
+    let tries = 0;
+    while (!g.events.some((e) => e.world && e.kind === 'escort') && tries++ < 60) { g.events = []; g.happenT = 0; stepHappenings(g, 1 / 60); }
+    const car = g.events.find((e) => e.kind === 'escort');
+    expect(car).toBeTruthy();
+    g.px = car.start.x; g.py = car.start.y; run(g, 0.1);
+    const gold0 = g.gold;
+    run(g, 60, () => { g.px = car.npc.x + 50; g.py = car.npc.y; for (const e of g.enemies) e.hp = 0; g.happenT = 1e9; });
+    expect(g.events.includes(car)).toBe(false);
+    expect(g.gold).toBeGreaterThan(gold0);
+    const h = game(); at(h);
+    tries = 0;
+    while (!h.events.some((e) => e.kind === 'meteor') && tries++ < 60) { h.events = []; h.happenT = 0; stepHappenings(h, 1 / 60); }
+    const m = h.events.find((e) => e.kind === 'meteor');
+    h.px = m.start.x; h.py = m.start.y; h.god = false; run(h, 0.1);
+    expect(m.state).toBe('run');
+    run(h, HAPPEN.meteor.time + HAPPEN.meteor.warn + 1, () => { h.invuln = 99; h.happenT = 1e9; if (m.crystals[0]) { h.px = m.crystals[0].x; h.py = m.crystals[0].y; } });
+    run(h, HAPPEN.meteor.life + 1, () => { h.happenT = 1e9; });
+    expect(m.got).toBeGreaterThan(5);
+    expect(h.mats.crystal).toBe(m.got);
+    expect(h.events.includes(m)).toBe(false);
   });
 });

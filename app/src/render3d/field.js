@@ -26,7 +26,7 @@ import { actor, tag } from '../render/paint.js';
 import { t as tf } from '../i18n.js';
 import { FIELD, TOWNS, regionById } from '../data/world.js';
 import { chunkProps } from './fieldprops.js';
-import { START_R, DEFEND, RESCUE } from '../data/questev.js';
+import { START_R, DEFEND, RESCUE, HAPPEN } from '../data/questev.js';
 import { MEDAL } from '../run/questev.js';
 import { zoneAt, inHub, chunksNear } from '../run/worldmap.js';
 import { dungeonById } from '../data/dungeons.js';
@@ -846,6 +846,33 @@ export class Field25 {
       g.beginPath(); g.arc(0, 0, START_R, 0, TAU); g.stroke(); g.setLineDash([]);
       g.fillStyle = `rgba(255,210,74,${(0.08 + pulse * 0.06).toFixed(2)})`; g.fill();
       g.restore();
+    }
+    for (const ev of game.events || []) { // a meteor shower (spec §42): warnings, impacts, crystals to pick up
+      if (ev.kind !== 'meteor' || ev.state !== 'run') continue;
+      const M = HAPPEN.meteor;
+      for (const f of ev.falls) {
+        if (!visible(f.x, f.y, M.blast)) continue;
+        const k = 1 - f.t / M.warn;
+        g.save(); g.translate(f.x, f.y); g.scale(1, 0.7);
+        g.beginPath(); g.arc(0, 0, M.blast, 0, TAU); g.lineWidth = 3; g.strokeStyle = `rgba(255,70,50,${(0.5 + 0.4 * Math.sin(t * 20)).toFixed(2)})`; g.stroke();
+        g.beginPath(); g.arc(0, 0, M.blast * k, 0, TAU); g.fillStyle = `rgba(255,90,40,${(0.18 + 0.3 * k).toFixed(2)})`; g.fill();
+        g.restore();
+      }
+      for (const b of ev.booms) {
+        const k = 1 - b.t / 0.35, gr = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, M.blast * (0.6 + k));
+        gr.addColorStop(0, `rgba(255,230,160,${(0.9 * (1 - k)).toFixed(2)})`); gr.addColorStop(1, 'rgba(255,90,30,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(b.x, b.y, M.blast * (0.6 + k), 0, TAU); g.fill();
+      }
+      for (const c of ev.crystals) {
+        if (!visible(c.x, c.y, 30)) continue;
+        const bob = Math.sin(t * 4 + c.x) * 3, a = c.life < 3 ? (Math.sin(t * 16) > 0 ? 0.4 : 1) : 1;
+        g.save(); g.globalAlpha = a;
+        const gr = g.createRadialGradient(c.x, c.y, 0, c.x, c.y, 36); gr.addColorStop(0, 'rgba(120,220,255,.6)'); gr.addColorStop(1, 'rgba(120,220,255,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(c.x, c.y, 36, 0, TAU); g.fill();
+        g.beginPath(); g.moveTo(c.x, c.y - 16 + bob); g.lineTo(c.x + 8, c.y - 4 + bob); g.lineTo(c.x, c.y + 6 + bob); g.lineTo(c.x - 8, c.y - 4 + bob); g.closePath();
+        g.fillStyle = '#9ae8ff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#1a3a5a'; g.stroke();
+        g.restore();
+      }
     }
     if (game.state !== 0) targetArrow(g, game, t);
   }

@@ -34,6 +34,7 @@ export function stepText(s) {
     case 'drop':
       if (s.enemy === '*') return t('Kumpulkan {n} {item} dari musuh di {r} pada malam hari', { n: s.n, item: DROP_ITEMS[s.item].name, r: regionById(s.region).name });
       return t('Kumpulkan {n} {item} dari {enemy} di {r}', { n: s.n, item: DROP_ITEMS[s.item].name, enemy: ENEMIES[s.enemy].name, r: regionById(s.region).name });
+    case 'choice': return t('Putuskan bersama {who}', { who: s.who });
     case 'event': {
       const text = { escort: 'Kawal {name} di {r}', defend: 'Pertahankan {name} di {r}', outlaw: 'Buru {name} di {r}', nest: 'Hancurkan {name} di {r}', rescue: 'Bebaskan {name} di {r}', race: 'Balapan {name} di {r}' }[s.event];
       return t(text, { name: s.name, r: regionById(s.region).name });

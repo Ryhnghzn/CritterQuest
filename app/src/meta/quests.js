@@ -142,9 +142,10 @@ export function talkOffers(char, townId, npcId) {
   const out = [];
   for (const a of activeQuests(char)) {
     const s = a.step;
-    if ((s?.kind !== 'talk' && s?.kind !== 'give') || s.town !== townId || s.npc !== npcId) continue;
+    if ((s?.kind !== 'talk' && s?.kind !== 'give' && s?.kind !== 'choice') || s.town !== townId || s.npc !== npcId) continue;
     const o = { id: a.id, title: a.def.title, who: s.who, say: s.say, start: a.state.step === 0, ends: a.state.step === a.def.steps.length - 1, reward: a.def.reward };
     if (s.kind === 'give') { o.give = s; o.can = canGive(char, s); }
+    if (s.kind === 'choice') o.choice = s.options.map((op) => ({ label: op.label, reward: op.reward || {} })); // spec §42
     out.push(o);
   }
   for (const q of SIDE) {
@@ -252,16 +253,20 @@ function hand(c, step) {
 
 // Speaks (or hands over) to the NPC: a side quest starts, a step is done, the quest may finish and pay.
 // → { ok, char, id, say, done, given?, got? } | { ok: false, reason: 'missing' | 'journal' | 'give' | 'bag' }
-export function questTalk(char, id, townId, npcId, now, rng = Math.random) {
+// pick: the answer taken at a choice step (spec §42), its index in the step's options
+export function questTalk(char, id, townId, npcId, now, rng = Math.random, pick = null) {
   const offer = talkOffers(char, townId, npcId).find((o) => o.id === id);
   if (!offer) return { ok: false, reason: 'missing' };
+  if (offer.choice && !offer.choice[pick]) return { ok: false, reason: 'choose' };
   if (offer.full) return { ok: false, reason: 'journal' };
   if (offer.give && !offer.can.ok) return { ok: false, reason: 'give' };
-  const def = QUESTS[id], rw = def.reward;
+  const def = QUESTS[id], option = offer.choice ? stateStep(char, id).options[pick] : null;
+  const rw = option?.reward ? addRewards(def.reward, option.reward) : def.reward;
   if (offer.ends && (rw.gear || rw.unique) && char.inventory.length >= INVENTORY_MAX && char.stash.length >= STASH_MAX) return { ok: false, reason: 'bag' };
   let c = structuredClone(char);
   if (!def.main && !c.quests.side[id]) c.quests.side[id] = { step: 0, prog: 0 };
   const given = offer.give ? hand(c, offer.give) : null;
+  if (option) c.quests.choices = { ...c.quests.choices, [id]: pick };
   const st = stateOf(c.quests, id);
   st.step++;
   st.prog = 0;
@@ -278,7 +283,21 @@ export function questTalk(char, id, townId, npcId, now, rng = Math.random) {
   const mounts = storyMounts(c, rng);
   syncQuests(c);
   c.updatedAt = now;
-  return { ok: true, char: c, id, say: offer.say, done: !!got, given, got, mounts };
+  return { ok: true, char: c, id, say: option?.say || offer.say, done: !!got, given, got, mounts, pick };
+}
+
+// the step a quest is on (for its options)
+const stateStep = (char, id) => QUESTS[id].steps[stateOf(char.quests, id).step];
+// two rewards together (a choice's on top of the quest's): numbers add up, lists join
+export function addRewards(a, b) {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) {
+    if (typeof v === 'number') out[k] = (out[k] || 0) + v;
+    else if (Array.isArray(v)) out[k] = [...(out[k] || []), ...v];
+    else if (v && typeof v === 'object' && (k === 'mats' || k === 'potions')) { out[k] = { ...(out[k] || {}) }; for (const [m, n] of Object.entries(v)) out[k][m] = (out[k][m] || 0) + n; }
+    else out[k] = v;
+  }
+  return out;
 }
 
 // Drops a side quest (its progress is lost; it can be taken again).

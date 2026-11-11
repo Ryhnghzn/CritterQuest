@@ -6,7 +6,10 @@
 // sent at the walker / altar carry e.target. Pure logic on the run state (run/run.js).
 import { t } from '../i18n.js';
 import { rand, rrange, rint } from '../core/rng.js';
-import { START_R, RETRY_AFTER, TOUCH, ESCORT, DEFEND, OUTLAW, NEST, RESCUE, RACE } from '../data/questev.js';
+import { START_R, RETRY_AFTER, TOUCH, ESCORT, DEFEND, OUTLAW, NEST, RESCUE, RACE, HAPPEN } from '../data/questev.js';
+import { sample } from './fieldmap.js';
+import { inHub } from './worldmap.js';
+import { addMats } from './dungeon.js';
 import { QUEST_REWARD } from '../data/quests.js';
 import { blocked, zoneAt } from './worldmap.js';
 import { spawnGroup } from './field.js';
@@ -17,7 +20,8 @@ const hpAt = (h, level) => Math.round(h.base + h.perLevel * level);
 // list: [{ key, quest, kind: 'escort' | 'defend', name, start: { x, y }, route?, look?, outfit? }]
 export function setEvents(run, list) {
   const old = new Map((run.events || []).map((e) => [e.key, e]));
-  run.events = list.map((d) => old.get(d.key) || freshEvent(d));
+  const happenings = (run.events || []).filter((e) => e.world && e.state !== 'done'); // they are not quests: kept
+  run.events = [...list.map((d) => old.get(d.key) || freshEvent(d)), ...happenings];
   for (const e of old.values()) if (!run.events.includes(e)) clearFoes(run, e);
 }
 
@@ -45,7 +49,7 @@ function clearFoes(run, ev) {
 function begin(run, ev) {
   ev.state = 'run'; ev.t = 0; ev.next = 1.5;
   if (ev.kind === 'escort') { const hp = hpAt(ESCORT.hp, run.level); ev.npc.hp = ev.npc.maxHp = hp; run.showBanner(t('Kawal {name} sampai tujuan!', { name: ev.name })); }
-  if (ev.kind === 'defend') { const hp = hpAt(DEFEND.hp, run.level); ev.altar.hp = ev.altar.maxHp = hp; run.showBanner(t('Pertahankan {name}!', { name: ev.name })); }
+  if (ev.kind === 'defend') { const hp = hpAt(DEFEND.hp, run.level) * (ev.hpMul || 1); ev.altar.hp = ev.altar.maxHp = hp; run.showBanner(t('Pertahankan {name}!', { name: ev.name })); }
   if (ev.kind === 'outlaw') { // it shows itself, with a few of its kind
     const zone = zoneAt(run.fmap, ev.lurk.x, ev.lurk.y), [o, ...escort] = spawnGroup(run, ev.lurk.x, ev.lurk.y, 1 + OUTLAW.escort, zone, ev.enemy || null);
     o.hp *= OUTLAW.hp; o.maxHp = o.hp; o.dmg *= OUTLAW.dmg; o.r *= OUTLAW.size; o.xp *= 6;
@@ -76,9 +80,11 @@ function begin(run, ev) {
     run.showBanner(t('Kalahkan penjaga kamp, lalu bebaskan {name}!', { name: ev.name }));
   }
   if (ev.kind === 'race') run.showBanner(t('Balapan dimulai! Lewati semua cincin cahaya.'));
+  if (ev.kind === 'meteor') { ev.falls = []; ev.crystals = []; ev.booms = []; ev.got = 0; run.showBanner(t('Hujan meteor! Hindari lingkaran merah, pungut kristalnya.')); }
 }
 
 function fail(run, ev, why) {
+  if (ev.world) { endHappening(run, ev, why); return; } // a happening does not wait to be tried again
   clearFoes(run, ev);
   resetEvent(ev);
   ev.cool = RETRY_AFTER;
@@ -88,6 +94,7 @@ function fail(run, ev, why) {
 function succeed(run, ev) {
   clearFoes(run, ev);
   ev.state = 'done';
+  if (ev.world) { payHappening(run, ev); return; }
   run.eventsDone.push(ev.key);
   run.showBanner(t('Berhasil! Quest maju.'));
   run.addShake?.('small');
@@ -152,7 +159,7 @@ function stepEscort(run, ev, dt) {
 function stepDefend(run, ev, dt) {
   const a = ev.altar;
   ev.t += dt;
-  const W = DEFEND.waves;
+  const W = ev.waves || DEFEND.waves;
   while (ev.wave < W.length && ev.t >= W[ev.wave][0]) {
     const size = W[ev.wave][1], k = 1 + DEFEND.waveMul * ev.wave;
     for (let left = size; left > 0;) {
@@ -169,7 +176,7 @@ function stepDefend(run, ev, dt) {
   const far = (run.px - a.x) ** 2 + (run.py - a.y) ** 2 > DEFEND.leave * DEFEND.leave;
   ev.away = far ? ev.away + dt : 0;
   if (ev.away > DEFEND.leaveT) { fail(run, ev, t('Kamu meninggalkan {name}.', { name: ev.name })); return; }
-  if (ev.t >= DEFEND.time && ev.wave >= W.length && run.enemies.filter((e) => e.ev === ev.key).length <= DEFEND.mop) succeed(run, ev);
+  if (ev.t >= (ev.time || DEFEND.time) && ev.wave >= W.length && run.enemies.filter((e) => e.ev === ev.key).length <= DEFEND.mop) succeed(run, ev);
 }
 
 const alive = (run, e) => e && e.hp > 0 && run.enemies.includes(e);
@@ -242,9 +249,103 @@ function stepRace(run, ev, dt) {
 }
 export const MEDAL = { gold: 'Emas', silver: 'Perak', bronze: 'Perunggu' };
 
+// ---- happenings (Peristiwa dunia) ----
+const purseOf = (run, k) => Math.round((QUEST_REWARD.gold.base + QUEST_REWARD.gold.perLevel * run.level) * k);
+function payHappening(run, ev) {
+  const gold = purseOf(run, ev.purse);
+  if (gold > 0) run.addGold(gold);
+  run.eventsDone.push(ev.key); // saves the coins at once (main.js); no quest knows this key
+  run.showBanner(t('{name} selesai! +{g} koin', { name: ev.name, g: gold }));
+  run.events = run.events.filter((e) => e !== ev);
+}
+function endHappening(run, ev, why) {
+  clearFoes(run, ev);
+  run.events = run.events.filter((e) => e !== ev);
+  if (why) run.showBanner(why);
+}
+
+let happenN = 0;
+const roadPts = new Map(); // world → sampled roads
+function nearRoad(run, a, b) { // a stretch of road starting a..b away from the player
+  let all = roadPts.get(run.fmap);
+  if (!all) { all = run.fmap.paths.map((p) => sample(p, 90)); roadPts.set(run.fmap, all); }
+  const found = [];
+  for (const pts of all) pts.forEach(([x, y], i) => { const d2 = (x - run.px) ** 2 + (y - run.py) ** 2; if (d2 > a * a && d2 < b * b && i + 22 < pts.length) found.push([pts, i]); });
+  if (!found.length) return null;
+  const [pts, i] = found[Math.floor(rand() * found.length)];
+  return pts.slice(i, i + Math.round(HAPPEN.caravan.len / 90) + 1);
+}
+function pickKind() {
+  const list = Object.entries(HAPPEN.kinds);
+  let roll = rand() * list.reduce((n, [, w]) => n + w, 0);
+  for (const [k, w] of list) if ((roll -= w) < 0) return k;
+  return list[0][0];
+}
+
+// A happening near the player, now and then (spec §42): a caravan attacked (a short escort),
+// a raid on a crossing (a short defence), a meteor shower (dodge, pick up crystals).
+export function stepHappenings(run, dt) {
+  for (const ev of (run.events || []).filter((e) => e.world)) {
+    const far = (run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2 > HAPPEN.far * HAPPEN.far;
+    if (ev.state === 'wait' && ((ev.age += dt) > HAPPEN.expire || far)) endHappening(run, ev, null);
+  }
+  if (run.events?.some((e) => e.world)) return;
+  if (run.happenT == null) run.happenT = HAPPEN.first;
+  if ((run.happenT -= dt) > 0) return;
+  run.happenT = rrange(HAPPEN.every[0], HAPPEN.every[1]);
+  if (inHub(run.px, run.py) || run.region.id === 'eclipse') return;
+  const kind = pickKind(), key = `world:${++happenN}`;
+  let ev = null;
+  if (kind === 'caravan') {
+    const route = nearRoad(run, HAPPEN.dist[0], HAPPEN.dist[1]);
+    if (route) ev = { key, kind: 'escort', world: true, name: t('Karavan Pedagang'), title: t('Pedagang'), look: { hair: 1, hairColor: 3 }, outfit: ['#a8763a', '#7a5226'], route, start: { x: route[0][0], y: route[0][1] }, purse: HAPPEN.caravan.gold };
+  } else {
+    const cross = kind === 'raid' && run.fmap.crossings.find((c) => { const d2 = (c.x - run.px) ** 2 + (c.y - run.py) ** 2; return d2 < 3000 * 3000 && d2 > 400 * 400; });
+    const p = cross ? { x: cross.x, y: cross.y + 140 } : ringSpot(run, run.px, run.py, HAPPEN.dist);
+    if (p && kind === 'raid') ev = { key, kind: 'defend', world: true, name: t('Barikade'), start: p, time: HAPPEN.raid.time, waves: HAPPEN.raid.waves, hpMul: HAPPEN.raid.hp, purse: HAPPEN.raid.gold };
+    if (p && kind === 'meteor') ev = { key, kind: 'meteor', world: true, name: t('Hujan Meteor'), start: p, purse: 0 };
+  }
+  if (!ev) return;
+  const made = freshEvent(ev);
+  made.age = 0;
+  run.events = [...run.events, made];
+  run.showBanner(t('Peristiwa: {name}! Lihat tanda di peta.', { name: ev.name }));
+}
+
+function stepMeteor(run, ev, dt) {
+  const M = HAPPEN.meteor;
+  ev.t += dt;
+  if ((ev.next -= dt) <= 0 && ev.t < M.time) { // the next stone: near the player half the time
+    ev.next = M.every;
+    const aim = rand() < 0.5 ? { x: run.px, y: run.py } : ev.start, a = rand() * Math.PI * 2, d = rand() * (aim === ev.start ? M.r : 160);
+    ev.falls.push({ x: aim.x + Math.cos(a) * d, y: aim.y + Math.sin(a) * d, t: M.warn });
+  }
+  for (let i = ev.falls.length - 1; i >= 0; i--) {
+    const f = ev.falls[i];
+    if ((f.t -= dt) > 0) continue;
+    ev.falls.splice(i, 1);
+    ev.booms.push({ x: f.x, y: f.y, t: 0.35 });
+    if ((run.px - f.x) ** 2 + (run.py - f.y) ** 2 < M.blast * M.blast) run.hurtPlayer(run.stats.maxHp * M.dmg, null, null);
+    ev.crystals.push({ x: f.x, y: f.y, life: M.life });
+    run.addShake?.('small');
+  }
+  for (let i = ev.booms.length - 1; i >= 0; i--) if ((ev.booms[i].t -= dt) <= 0) ev.booms.splice(i, 1);
+  for (let i = ev.crystals.length - 1; i >= 0; i--) {
+    const c = ev.crystals[i];
+    if ((c.life -= dt) <= 0) { ev.crystals.splice(i, 1); continue; }
+    if ((run.px - c.x) ** 2 + (run.py - c.y) ** 2 < M.pick * M.pick) {
+      ev.crystals.splice(i, 1); ev.got++;
+      addMats(run, { crystal: 1 });
+      run.addGold(purseOf(run, M.gold));
+    }
+  }
+  if ((run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2 > M.leave * M.leave) { endHappening(run, ev, null); return; }
+  if (ev.t >= M.time && !ev.falls.length && !ev.crystals.length) succeed(run, ev);
+}
+
 const FAR = 2600; // an outlaw left this far behind slips away (and lurks again)
 // how close the player must come for an event to begin
-const reach = (ev) => (ev.kind === 'outlaw' ? OUTLAW.seen : ev.kind === 'nest' ? NEST.near : ev.kind === 'rescue' ? RESCUE.near : START_R);
+const reach = (ev) => (ev.kind === 'outlaw' ? OUTLAW.seen : ev.kind === 'nest' ? NEST.near : ev.kind === 'rescue' ? RESCUE.near : ev.kind === 'meteor' ? HAPPEN.meteor.near : START_R);
 
 export function stepEvents(run, dt) {
   for (const ev of run.events || []) {
@@ -261,7 +362,9 @@ export function stepEvents(run, dt) {
     else if (ev.kind === 'nest') stepNest(run, ev, dt);
     else if (ev.kind === 'rescue') stepRescue(run, ev, dt);
     else if (ev.kind === 'race') stepRace(run, ev, dt);
+    else if (ev.kind === 'meteor') stepMeteor(run, ev, dt);
   }
+  stepHappenings(run, dt);
 }
 
 // the running event's guarded one (for the target arrow / map), else its start

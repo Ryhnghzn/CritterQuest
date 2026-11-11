@@ -227,6 +227,18 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
     if (hd.mark) { g.font = `900 ${opts.labels ? 13 : 9}px Barlow, system-ui, sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#2a1606'; const ms = markStyle(hd.mark); g.strokeText(ms.ch, x, y - 15 * k); g.fillStyle = ms.fill; g.fillText(ms.ch, x, y - 15 * k); }
     if (opts.labels) label(g, hd.name, x, y + 13, '#f3e2b8', 'center', 11);
   }
+  // quest events & happenings (spec §42): an orange "!" where each waits or runs (an outlaw only once seen)
+  for (const ev of opts.events || []) {
+    if (ev.state === 'done' || (ev.kind === 'outlaw' && ev.state !== 'run')) continue;
+    const p = ev.state === 'run' ? (ev.npc || ev.altar || (ev.foe && { x: ev.foe.x, y: ev.foe.y }) || ev.start) : ev.start;
+    const x = sx(p.x), y = sy(p.y);
+    if (x < ox + 4 || x > ox + w - 4 || y < oy + 4 || y > oy + h - 4) { if (ev.world) edgeArrow(g, ox, oy, w, h, x, y, '#ff9a3c'); continue; }
+    const r = opts.labels ? 8 : 5;
+    g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = ev.world ? '#ff9a3c' : '#ffd24a'; g.fill(); g.lineWidth = 1.2; g.strokeStyle = '#2a1606'; g.stroke();
+    g.font = `900 ${opts.labels ? 11 : 8}px Barlow, system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#2a1606'; g.fillText('!', x, y + 0.5); g.textBaseline = 'alphabetic';
+    if (opts.labels) label(g, ev.name, x, y + 16, '#ffd9a0', 'center', 11);
+  }
   // quest target (spec §26.3): a hint circle around a gate not found yet, else a "!" pin
   const q = opts.quest;
   if (q) {

@@ -67,3 +67,19 @@ export const RACE = {
   pace: { bronze: 135, silver: 200, gold: 260 },
   bonus: { bronze: 0.5, silver: 1, gold: 2 }, // × QUEST_REWARD gold at the player's level, paid at the finish
 };
+
+// Peristiwa dunia: chance happenings near the player, not part of a quest; ignored ones fade
+export const HAPPEN = {
+  first: 150, every: [300, 480],     // seconds before the first, between the next ones
+  dist: [900, 1400],                 // how far from the player one appears
+  expire: 150, far: 2800,            // gone if not started in this many seconds, or left this far behind
+  kinds: { caravan: 1, raid: 1, meteor: 1 }, // weights
+  caravan: { len: 1800, gold: 1.5 }, // a short escort along the nearest road; purse × QUEST_REWARD gold
+  raid: { time: 40, waves: [[0, 4], [13, 6], [26, 8]], gold: 2, hp: 0.7 }, // a short defence; barricade HP × DEFEND.hp
+  meteor: {
+    time: 22, every: 0.9, r: 380, near: 400,   // seconds, between falls, area radius, start distance
+    warn: 1.1, blast: 85, dmg: 0.16,           // warning before impact, blast radius, damage × max HP
+    pick: 55, life: 14, gold: 0.15,            // crystal pickup radius, seconds it lies there, coins each × QUEST_REWARD gold
+    leave: 1200,                               // walking this far from the shower ends it
+  },
+};

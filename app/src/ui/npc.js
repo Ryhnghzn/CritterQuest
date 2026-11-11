@@ -174,6 +174,16 @@ function questBox(o, onQuest, char) {
   box.append(el('span', 'pill', def.main ? t('Bab {n}: {title}', { n: def.ch + 1, title: o.title }) : o.title));
   if (o.give) box.append(giveList(o.give, o.can, char));
   if (o.ends || o.start) { const rw = el('div', 'qreward'); rw.append(el('span', 'qrlabel', tr('Hadiah')), rewardChips(char, o.reward)); box.append(rw); }
+  if (o.choice) { // spec §42: two answers, each with what it adds to the reward
+    const opts = el('div', 'qchoice');
+    o.choice.forEach((op, i) => {
+      const b = button(tr(op.label), 'btn small', () => onQuest(o.id, i));
+      if (Object.keys(op.reward).length) b.append(el('span', 'qchoicerw', null), rewardChips(char, op.reward));
+      opts.append(b);
+    });
+    box.append(opts);
+    return box;
+  }
   const label = o.give ? tr('Serahkan') : o.start ? tr('Terima') : o.ends ? tr('Lapor & ambil hadiah') : tr('Lanjut');
   const b = button(o.give && o.ends ? tr('Serahkan & ambil hadiah') : label, 'btn small', () => onQuest(o.id));
   b.id = 'quest-go';

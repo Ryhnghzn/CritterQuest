@@ -19,3 +19,6 @@
 - [x] C3 Balapan: cincin di jalan utama tiap 900, waktu medali dari panjang rute (perunggu bisa jalan kaki, emas perlu mount), hadiah koin per medali, rekor di save, jam di layar.
 - [x] C4 4 quest (Ayah Kai, Murid Pandai Kaca, Jalur Pemburu, Balapan Kafilah) + kamus EN + tes.
 ## Bagian D — Pilihan (langkah `choice`, 2 quest) & Peristiwa dunia (3 jenis)
+- [x] D1 Langkah `choice`: tombol jawaban di dialog (kota & wild), hadiah jawaban ditambahkan ke hadiah quest, jawaban di `quests.choices`; 2 quest (Kantong yang Jatuh, Telur di Lereng Api).
+- [x] D2 Peristiwa dunia (`stepHappenings`): tiap 5–8 menit di dekat pemain — Karavan diserang (kawal singkat di jalan terdekat), Serbuan (bertahan 40 dtk, di penyeberangan bila dekat), Hujan meteor (lingkaran peringatan, kristal dipungut); hilang bila diabaikan; koin langsung.
+- [x] D3 Tanda "!" event & peristiwa di peta mini/penuh; gambar meteor; kamus EN; tes.

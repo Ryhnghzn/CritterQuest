@@ -319,6 +319,8 @@ export const NPC_LINE_EN = {
 };
 
 // quests (spec §26): titles and what people say, keyed by the Indonesian text
+// the answers of choice steps (spec §42)
+const CHOICE_EN = { 'Kembalikan ke Omar': 'Return it to Omar', 'Simpan saja': 'Keep it', 'Kembalikan ke kawah': 'Return it to the crater', 'Jual ke pedagang malam': 'Sell it to the night trader' };
 // the people and places of quest events (spec §42)
 const EVENT_EN = { 'Ayah Kai': "Kai's Father", Pemburu: 'Hunter', 'Murid Seruni': "Seruni's Apprentice", 'Peniup Kaca': 'Glassblower', 'Jalur Pemburu': "the Hunter's Trail", 'Jalur Kafilah': 'the Caravan Road', 'Si Ekor Merah': 'Redtail', 'Lidah Bara': 'Embertongue', 'Sarang Gurun': 'the Desert Nests', 'Sarang Kawah': 'the Crater Nests', 'Peziarah Tua': 'Old Pilgrim', Peziarah: 'Pilgrim', 'Murid Liv': "Liv's Apprentice", 'Pemahat Muda': 'Young Sculptor', 'Pos Jaga': 'the Watchpost', 'Altar Cahaya': 'the Altar of Light' };
 const QUEST_TITLE_EN = {
@@ -340,6 +342,8 @@ const QUEST_TITLE_EN = {
   "Murid Pandai Kaca": "The Glassmaker's Apprentice",
   "Jalur Pemburu": "The Hunter's Trail",
   "Balapan Kafilah": "The Caravan Race",
+  "Kantong yang Jatuh": "The Dropped Purse",
+  "Telur di Lereng Api": "The Egg on the Fiery Slope",
 };
 export const QUEST_LINE_EN = {
   "Lima pecahan… Hangatnya terasa sampai ke tulangku. Tapi lihat langit di timur, Nak. Gerhana itu tidak menunggu. Retakan sudah terbuka di balik Baraapi: Tanah Gerhana. Di ujungnya berdiri menaranya. Pergilah, dan akhiri ini.": "Five shards… I can feel their warmth in my bones. But look at the eastern sky, child. The eclipse will not wait. A rift has opened beyond Emberfall: the Eclipse Lands. Its spire stands at the far end. Go, and end this.",
@@ -378,6 +382,14 @@ export const QUEST_LINE_EN = {
   "Cepat juga kau! Catatanmu kutulis di papan pemburu. Coba kalahkan sendiri lain kali.": "You're quick! I'll write your time on the hunters' board. Try to beat it yourself next time.",
   "Setiap tahun ada balapan di jalan kafilah! Lewati semua cincin cahaya secepat mungkin. Kalau dapat emas, aku traktir kurma!": "Every year there's a race on the caravan road! Pass every ring of light as fast as you can. If you get gold, the dates are on me!",
   "Wuih, debunya sampai ke sini! Hebat! Ini kurmanya… eh, maksudku hadiahnya.": "Whoa, the dust reached all the way here! Amazing! Here are the dates… er, I mean your prize.",
+  "Pencopet merampas kantong emas Omar di pasar lalu kabur ke Gurun Merah bersama kawanannya. Kalahkan pemimpin mereka, rebut kantongnya, lalu temui aku.": "A pickpocket snatched Omar's purse of gold in the market and fled into the Red Desert with his pack. Beat their leader, take the purse back, then come see me.",
+  "Kau dapat kantongnya! Isinya… banyak sekali. Omar tidak tahu siapa yang menemukannya. Jadi, mau kau apakan?": "You got the purse! There's… so much in it. Omar doesn't know who found it. So, what will you do with it?",
+  "Omar sampai menangis. Seluruh pasar akan tahu namamu, dan para pedagang akan mengingatnya.": "Omar actually cried. The whole market will know your name, and the merchants won't forget it.",
+  "Hmm… terserah kamu. Aku tidak melihat apa-apa. Tapi gurun punya banyak mata.": "Hmm… your call. I didn't see a thing. But the desert has many eyes.",
+  "Aku menemukan telur besar yang hangat di lereng! Tapi salamander di sana jadi mengamuk. Tenangkan lereng itu dulu, ya. Lalu kita putuskan telurnya diapakan.": "I found a big warm egg on the slope! But the salamanders there have gone wild. Calm the slope down first, okay? Then we'll decide what to do with the egg.",
+  "Lereng sudah tenang. Telurnya masih hangat… Pedagang malam mau membelinya mahal sekali. Atau kita kembalikan ke kawah?": "The slope is calm. The egg is still warm… The night trader wants to pay a fortune for it. Or should we take it back to the crater?",
+  "Kita taruh pelan-pelan… Lihat, cahaya di kawah berdenyut. Seperti ucapan terima kasih.": "We set it down gently… Look, the light in the crater is pulsing. Like a thank-you.",
+  "Wah, kantong koinnya berat! Tapi… kenapa gunungnya bergemuruh, ya?": "Wow, that's a heavy purse! But… why is the mountain rumbling?",
 };
 
 // side quests & people in the wild (spec §26.5)
@@ -569,6 +581,7 @@ export function localizeData() {
     for (const st of q.steps) {
       swap(st, 'say', QUEST_LINE_EN); swap(st, 'say', WILD_EN);
       swap(st, 'name', EVENT_EN); swap(st, 'title', EVENT_EN); // quest events (spec §42)
+      for (const op of st.options || []) { swap(op, 'label', CHOICE_EN); swap(op, 'say', QUEST_LINE_EN); }
       if (st.who) st.who = WILD_NAME_EN[st.who] || NPC_NAME_EN[st.who] || nameEn(st.who);
     }
   }

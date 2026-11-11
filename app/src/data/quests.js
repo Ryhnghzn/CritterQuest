@@ -13,6 +13,8 @@
 //         (enemy '*' = any; night: only after dark)
 //   guard { region, n?, lord? }     — treasure guardians beaten (chests of the region opened)
 //   give  { town, npc, who, say, mats?, gems?, potions?, gear? } — hand things over (ends a talk)
+//   choice { town, npc, who, say, options: [{ label, say, reward }] } — answer one way or the other
+//         (spec §42); the option's reward adds to the quest's, the answer is kept in quests.choices
 //   event { event, region, name, … } — something happens out in the world (spec §42, run/questev.js):
 //         escort { from: fx on the zone's main road, to?: fx (null: the zone's town), title, look, outfit }
 //         defend { at: [fx, fy] of the zone }
@@ -391,5 +393,22 @@ export const SIDE = [
     { kind: 'event', event: 'race', region: 'desert', from: 0.3, to: 0.65, name: 'Jalur Kafilah' },
     { kind: 'talk', town: 'pasir', npc: 'folk2', who: 'Ali', say: 'Wuih, debunya sampai ke sini! Hebat! Ini kurmanya… eh, maksudku hadiahnya.' },
   ], reward: { gold: 5, exp: 5, marks: 3, potions: { wind: 2, rage: 2 } } },
+  // a choice at the end: two answers, two rewards, two outcomes (spec §42)
+  { id: 'p_kantong', title: 'Kantong yang Jatuh', steps: [
+    { kind: 'talk', town: 'pasir', npc: 'folk1', who: 'Zahra', say: 'Pencopet merampas kantong emas Omar di pasar lalu kabur ke Gurun Merah bersama kawanannya. Kalahkan pemimpin mereka, rebut kantongnya, lalu temui aku.' },
+    { kind: 'elite', n: 1, region: 'desert' },
+    { kind: 'choice', town: 'pasir', npc: 'folk1', who: 'Zahra', say: 'Kau dapat kantongnya! Isinya… banyak sekali. Omar tidak tahu siapa yang menemukannya. Jadi, mau kau apakan?', options: [
+      { label: 'Kembalikan ke Omar', say: 'Omar sampai menangis. Seluruh pasar akan tahu namamu, dan para pedagang akan mengingatnya.', reward: { marks: 5, exp: 3 } },
+      { label: 'Simpan saja', say: 'Hmm… terserah kamu. Aku tidak melihat apa-apa. Tapi gurun punya banyak mata.', reward: { gold: 8 } },
+    ] },
+  ], reward: { gold: 3, exp: 4, marks: 1 } },
+  { id: 'p_telur', title: 'Telur di Lereng Api', steps: [
+    { kind: 'talk', town: 'bara', npc: 'folk2', who: 'Puntung', say: 'Aku menemukan telur besar yang hangat di lereng! Tapi salamander di sana jadi mengamuk. Tenangkan lereng itu dulu, ya. Lalu kita putuskan telurnya diapakan.' },
+    { kind: 'kill', enemy: 'salamander', n: 12, region: 'volcano' },
+    { kind: 'choice', town: 'bara', npc: 'folk2', who: 'Puntung', say: 'Lereng sudah tenang. Telurnya masih hangat… Pedagang malam mau membelinya mahal sekali. Atau kita kembalikan ke kawah?', options: [
+      { label: 'Kembalikan ke kawah', say: 'Kita taruh pelan-pelan… Lihat, cahaya di kawah berdenyut. Seperti ucapan terima kasih.', reward: { marks: 4, gems: [{ tier: 3 }] } },
+      { label: 'Jual ke pedagang malam', say: 'Wah, kantong koinnya berat! Tapi… kenapa gunungnya bergemuruh, ya?', reward: { gold: 12 } },
+    ] },
+  ], reward: { gold: 4, exp: 6, marks: 2 } },
 ];
 export const QUEST_IDS = [...MAIN_IDS, ...SIDE.map((q) => q.id)];
