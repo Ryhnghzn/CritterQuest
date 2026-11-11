@@ -1314,10 +1314,11 @@ Prinsip untuk semua proyek: musuh dan bos baru harus **memaksa bergerak atau mem
 | Pemanggil | memanggil 2 kroco biome-nya tiap 6 dtk (maks 4) |
 | Berduri | saat kena serangan, paling sering tiap 1 dtk menembakkan 8 duri ke segala arah |
 | Meledak | saat mati: lingkaran bahaya radius 110, 1 dtk |
-| Beraura | meninggalkan genangan sesuai biome (es memperlambat, api membakar, racun) tiap 2 dtk |
+| Beraura | tiap 1,6 dtk meninggalkan letupan kecil di tempatnya (radius 44), membawa efek musuh itu (lambat/bakar/racun) |
 | Penjelajah | tiap 5 dtk menghilang dan muncul di dekat pemain (tanda 0,5 dtk) |
 
 - Peluang dan hadiah elite tetap (`ELITE` di dungeon, `FIELD.eliteChance` di dunia); sifat tidak mengubah drop di proyek A.
+- Uji manual: panel cheat (Wilayah/Dungeon) punya tombol "Elite 2 sifat".
 - Sifat dipilih dengan RNG simulasi (deterministik per seed seperti spawn); efek gambar memakai RNG efek.
 - Gambar musuh baru dibuat lewat kode di gaya yang sama dengan musuh sekarang (§36/§39), satu sprite per musuh + varian kecil (anak Kumbang, tungau).
 

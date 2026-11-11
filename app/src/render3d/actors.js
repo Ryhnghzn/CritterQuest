@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { LOOK } from '../data/look.js';
 import { S, sharp } from './stage.js';
-import { Renderer, MAJESTIC_BY_ID, mountDust } from '../render/world.js';
+import { Renderer, MAJESTIC_BY_ID, mountDust, eliteTags } from '../render/world.js';
 import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
@@ -320,6 +320,7 @@ export class Actors {
         const w = Math.max(26, e.r * 2 * p.k) * dpr, h = (e.boss ? 6 : 4) * dpr, x = p.x * dpr - w / 2, y = p.y * dpr;
         g.fillStyle = 'rgba(8,5,12,.85)'; g.fillRect(x - dpr, y - dpr, w + 2 * dpr, h + 2 * dpr);
         g.fillStyle = e.boss ? '#e0303e' : e.elite ? '#ffb347' : '#e05a4a'; g.fillRect(x, y, w * Math.max(0, e.hp / e.maxHp), h);
+        if (e.affixes?.length) eliteTags(g, e, x, y, w, dpr);
       }
       for (const f of game.floaters) {
         if (f.dmg && !this.flat.numbersOn) continue;

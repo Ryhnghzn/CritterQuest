@@ -8,7 +8,7 @@ import { RARITIES, SLOTS, VARIANTS, BONUSES, EFFECTS, UNIQUES, CHESTS } from '..
 import { MARK_SHOP } from '../data/bounties.js';
 import { MAJESTIC_MOUNTS } from '../art/mounts.js';
 import { REGIONS, TOWNS } from '../data/world.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, AFFIXES } from '../data/enemies.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { POTIONS } from '../data/potions.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
@@ -36,6 +36,7 @@ function strings() {
   for (const m of MAJESTIC_MOUNTS) out.push(m.name, m.desc, m.tag, ...m.skins.map((s) => s.name));
   out.push(...REGIONS.map((r) => r.name), ...Object.values(TOWNS).map((tw) => tw.name));
   out.push(...Object.values(ENEMIES).map((e) => e.name).filter((n) => n !== 'Golem'));
+  out.push(...Object.values(AFFIXES).map((a) => a.name));
   for (const d of DUNGEONS) out.push(d.name, d.short);
   for (const p of Object.values(POTIONS)) out.push(p.name, p.desc);
   out.push(...Object.values(MATS).map((m) => m.name), ...Object.values(GEMS).map((g) => g.name), ...GEM_TIER_NAMES);

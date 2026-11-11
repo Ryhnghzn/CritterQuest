@@ -189,6 +189,7 @@ export default {
   'Kebal: NYALA': 'God mode: ON',
   'Kebal: mati': 'God mode: off',
   'Bunuh semua musuh': 'Kill all enemies',
+  'Elite 2 sifat': 'Elite, 2 traits',
   'Bersihkan lantai': 'Clear floor',
   'Jatuhkan gear di dekatku': 'Drop gear near me',
   'Jatuhkan 1': 'Drop 1',

@@ -10,7 +10,8 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { makeRoom, inside, confine, SHAPES } from './room.js';
 import { ELITE, DROP, RARITIES, MYTHIC } from '../data/items.js';
 import { MYTHIC_PICK } from '../data/itemfx.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, AFFIX_COUNT } from '../data/enemies.js';
+import { rollAffixes, affixCount } from './affix.js';
 import { dropItem, itemName, itemLevelFor } from '../meta/itemgen.js';
 import { CHAR_LEVEL_MAX, HORDE } from '../data/balance.js';
 import { MAT_DROPS, MATS, GEM_IDS, GEMS } from '../data/forge.js';
@@ -73,7 +74,7 @@ export function spawnFromLane(run, type, lane = null) {
   const e = run.spawnEnemy(type);
   if (!e.boss) { // the horde: weaker one by one, elites a bit rarer (spec §33.2)
     e.hp *= HORDE.hp; e.maxHp *= HORDE.hp;
-    if (rand() < ELITE.chance[run.floor - 1] * HORDE.eliteMul) makeElite(e);
+    if (rand() < ELITE.chance[run.floor - 1] * HORDE.eliteMul) makeElite(e, affixCount({ floor: run.floor }));
   }
   e.x = lane.x + lane.dx * along - lane.dy * side;
   e.y = lane.y + lane.dy * along + lane.dx * side;
@@ -84,12 +85,14 @@ export function spawnFromLane(run, type, lane = null) {
 }
 
 // Elite (spec §5.4): bigger, tougher, golden glow, always drops gear.
-export function makeElite(e) {
+// n: how many traits it rolls (spec §41.1, run/affix.js)
+export function makeElite(e, n = AFFIX_COUNT.base) {
   e.elite = true;
   e.hp *= ELITE.hpMul; e.maxHp *= ELITE.hpMul;
   e.dmg *= ELITE.dmgMul;
   e.r *= ELITE.size;
   e.xp *= ELITE.xpMul;
+  if (n > 0) rollAffixes(e, n);
 }
 
 // Where an enemy walks: down its lane to the room, then at the player.

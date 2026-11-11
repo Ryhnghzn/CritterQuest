@@ -26,7 +26,7 @@ const toward = (e, x, y, speed) => {
 export function aiStep(run, e, dt) {
   const b = ENEMIES[e.type];
   if (e.modeT > 0) e.modeT -= dt;
-  if (e.actT > 0) e.actT -= dt;
+  if (e.actT > 0) e.actT -= dt * (e.tempo || 1); // Cepat elites act sooner (run/affix.js)
   switch (e.ai) {
     case 'ranged': case 'summon': case 'heal': return caster(run, e, b, dt);
     case 'charge': return charge(run, e, b, dt);

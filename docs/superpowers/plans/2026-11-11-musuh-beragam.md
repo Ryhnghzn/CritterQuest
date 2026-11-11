@@ -13,10 +13,10 @@
 - `data/world.js` `enemies` per zona + `data/dungeons.js` gelombang: memasukkan musuh baru.
 
 ## Bagian A1 — Elite bersifat acak (cek manual)
-- [ ] A1.1 `data/enemies.js` `AFFIXES` (Cepat, Berlapis, Pemanggil, Berduri, Meledak, Beraura, Penjelajah; `not` = perilaku yang tidak cocok) + `AFFIX_COUNT` (1 sifat; 2 di level dunia ≥ 25 / lantai ≥ 4).
-- [ ] A1.2 `run/affix.js` + tes `run/affix.test.js`: sifat berbeda dan cocok dengan perilaku; Cepat mempercepat aksi; Berlapis menyerap lalu pulih setelah 4 dtk tanpa diserang; Pemanggil maks 4; Berduri paling sering tiap 1 dtk; Meledak meninggalkan lingkaran bahaya; Penjelajah memberi tanda lalu muncul dekat pemain.
-- [ ] A1.3 Sambungkan: `makeElite(e, n)` (dungeon & dunia), `damageEnemy` → `affixHit`, langkah musuh → `affixStep`, `killEnemy` → `affixDeath`.
-- [ ] A1.4 Tampilan: nama sifat di atas elite ("Cepat · Berlapis"), bilah perisai putih kebiruan di atas bilah HP (3D & 2D). Kamus EN.
+- [x] A1.1 `data/enemies.js` `AFFIXES` (Cepat, Berlapis, Pemanggil, Berduri, Meledak, Beraura, Penjelajah; `not` = perilaku yang tidak cocok) + `AFFIX_COUNT` (1 sifat; 2 di level dunia ≥ 25 / lantai ≥ 4).
+- [x] A1.2 `run/affix.js` + tes `run/affix.test.js`: sifat berbeda dan cocok dengan perilaku; Cepat mempercepat aksi; Berlapis menyerap lalu pulih setelah 4 dtk tanpa diserang; Pemanggil maks 4; Berduri paling sering tiap 1 dtk; Meledak meninggalkan lingkaran bahaya; Penjelajah memberi tanda lalu muncul dekat pemain.
+- [x] A1.3 Sambungkan: `makeElite(e, n)` (dungeon & dunia), `damageEnemy` → `affixHit`, langkah musuh → `affixStep`, `killEnemy` → `affixDeath`.
+- [x] A1.4 Tampilan: nama sifat di atas elite ("Cepat · Berlapis"), bilah perisai putih kebiruan di atas bilah HP (3D & 2D). Kamus EN.
 - [ ] A1.5 `npm test`, `npm run build`, server lokal → **cek manual pemilik**.
 
 ## Bagian A2 — Hutan & Es (cek manual)

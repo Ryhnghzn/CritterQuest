@@ -7,6 +7,7 @@ import { rand, rrange, rint } from '../core/rng.js';
 import { FIELD, FIELD_SCALE, TREASURE, regionById } from '../data/world.js';
 import { WORLD, CROSS_MIX, ECLIPSE } from '../data/worldmap.js';
 import { ENEMIES } from '../data/enemies.js';
+import { affixCount } from './affix.js';
 import { dungeonById } from '../data/dungeons.js';
 import { buildWorld, zoneAt, levelAt, inHub, pushOut, blocked, ensureChunks } from './worldmap.js';
 import { canCrossWater } from './mount.js';
@@ -122,7 +123,7 @@ export function spawnPack(run) {
     const a = rand() * Math.PI * 2;
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
     pushOut(map, e, e.r);
-    if (rand() < FIELD.eliteChance * HORDE.eliteMul) makeElite(e);
+    if (rand() < FIELD.eliteChance * HORDE.eliteMul) makeElite(e, affixCount({ level }));
   }
   return n;
 }

@@ -17,6 +17,7 @@ import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
+import { affixStep, affixHit, affixDeath } from './affix.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
@@ -411,7 +412,7 @@ export class Game {
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
-    e.hp -= dmg;
+    e.hp -= affixHit(this, e, dmg); // an elite's Berlapis shield soaks first (run/affix.js)
     if (h.execute && e.hp > 0 && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) { e.hp = 0; executeFx(this, e); } // Kombo at max (spec §31.5, §31.8)
     const basic = BASIC_FX.has(h.fx) && !h.skill;
     const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
@@ -473,6 +474,7 @@ export class Game {
       if (e.flash > 0) e.flash -= dt;
       if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
+      affixStep(this, e, dt); // elite traits (spec §41.1)
       // walk in through the lane, then the enemy's own behaviour (run/enemies.js)
       let vx, vy;
       const goal = this.field ? { x: this.px, y: this.py } : enemyGoal(this, e);
@@ -526,6 +528,7 @@ export class Game {
 
   killEnemy(e) {
     onDeath(this, e);
+    affixDeath(this, e);
     this.kills += 1;
     const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin
     this.killsBy[kin] = (this.killsBy[kin] || 0) + 1;

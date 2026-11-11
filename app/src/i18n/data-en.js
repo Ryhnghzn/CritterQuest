@@ -6,7 +6,7 @@
 import { getLang } from '../i18n.js';
 import { CLASSES } from '../data/classes.js';
 import { RARITIES, SLOTS, VARIANTS, BONUSES, EFFECTS, UNIQUES, CHESTS } from '../data/items.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, AFFIXES } from '../data/enemies.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { POTIONS } from '../data/potions.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
@@ -181,6 +181,7 @@ const ENEMY_EN = {
   'Lendir Pasir': 'Sand Ooze', 'Burung Nasar': 'Vulture', Kalajengking: 'Scorpion', 'Cacing Pasir': 'Sandworm',
   'Lendir Magma': 'Magma Ooze', 'Jamur Bara': 'Ember Shroom', 'Imp Api': 'Fire Imp', 'Raja Mumi': 'Mummy King',
 };
+const AFFIX_EN = { Cepat: 'Swift', Berlapis: 'Armored', Pemanggil: 'Summoner', Berduri: 'Thorned', Meledak: 'Volatile', Beraura: 'Searing', Penjelajah: 'Blinking' };
 const PHASE_NAME_EN = { 'Matahari Hitam': 'Black Sun', 'GERHANA!': 'ECLIPSE!', 'KEHAMPAAN!': 'THE VOID!' };
 const DUNGEON_EN = {
   'Menara Gerhana': ['Eclipse Spire', 'Spire'], 'Ruang Bawah Tanah Bayangan': ['Shadow Crypt', 'Shadow'], 'Gua Kristal': ['Crystal Cave', 'Crystal'],
@@ -508,6 +509,7 @@ export function localizeData() {
     swap(m, 'tag', MOUNT_TAG_EN);
     for (const sk of m.skins) swap(sk, 'name', SKIN_EN);
   }
+  for (const a of Object.values(AFFIXES)) swap(a, 'name', AFFIX_EN);
   for (const e of Object.values(ENEMIES)) { swap(e, 'name', ENEMY_EN); for (const ph of e.phases || []) swap(ph, 'name', PHASE_NAME_EN); }
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }
   for (const p of Object.values(POTIONS)) { const en = POTION_EN[p.name]; if (en) [p.name, p.desc] = en; }

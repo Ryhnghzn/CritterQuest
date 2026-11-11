@@ -6,7 +6,7 @@ import { tr, t as tf } from '../i18n.js';
 import { PORTAL } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, AFFIXES } from '../data/enemies.js';
 import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
 import { drawItemIcon } from '../art/gear.js';
 import { DROP_BEAM } from '../data/itemfx.js';
@@ -179,6 +179,7 @@ export class Renderer {
     for (const e of game.enemies) {
       if (!visible(e.x, e.y, 40)) continue;
       if (e.hidden && e.ai === 'blink') continue; // a wraith between places (spec §26.7)
+      if (e.hidden && e.ai !== 'burrow') continue; // an elite blinking to the player (spec §41.1)
       if (e.hidden) { sandMound(g, e, t); continue; } // a burrowed sandworm (spec §25.4)
       shadow(g, e.x, e.y + e.r * 0.75, e.r * 0.85, e.r * 0.3);
       const squash = 1 + Math.sin(e.wob) * 0.06;
@@ -193,6 +194,7 @@ export class Renderer {
       if (e.ai === 'shield') guard(g, e);
       if (e.mini) crown(g, e.x, e.y - e.r * 1.25 - 14, e.r * 0.5, e.lord);
       if (e.boss || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.boss ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
+      if (e.affixes?.length) eliteTags(g, e, e.x - e.r, e.y - e.r * 1.25, e.r * 2, 0.7);
     }
 
     // player
@@ -418,6 +420,24 @@ function aimMarker(g, x, y, ax, ay) {
   g.beginPath(); g.moveTo(R + 2, -4); g.lineTo(R + 8, 0); g.lineTo(R + 2, 4);
   g.lineJoin = 'round'; g.lineWidth = 2.4; g.strokeStyle = 'rgba(255,255,255,.85)'; g.stroke();
   g.restore();
+}
+
+// an elite's traits over its head, "Cepat · Berlapis" (spec §41.1); '' when it has none
+export const affixLabel = (e) => (e.affixes?.length ? e.affixes.map((id) => AFFIXES[id].name).join(' · ') : '');
+// the elite's label and Berlapis shield bar above its HP bar; (x, y) = top-left of the HP bar, w its width
+export function eliteTags(g, e, x, y, w, s = 1) {
+  if (e.armorMax) {
+    const h = 3 * s, by = y - h - 2 * s;
+    g.fillStyle = 'rgba(8,5,12,.85)'; g.fillRect(x - s, by - s, w + 2 * s, h + 2 * s);
+    g.fillStyle = '#cfe8ff'; g.fillRect(x, by, w * Math.max(0, e.armor / e.armorMax), h);
+    y = by;
+  }
+  const text = affixLabel(e);
+  if (!text) return;
+  g.font = `700 ${Math.round(11 * s)}px Barlow, system-ui, sans-serif`;
+  g.textAlign = 'center'; g.textBaseline = 'bottom';
+  g.lineWidth = 3 * s; g.strokeStyle = 'rgba(8,5,12,.9)'; g.strokeText(text, x + w / 2, y - 3 * s);
+  g.fillStyle = '#ffd27a'; g.fillText(text, x + w / 2, y - 3 * s);
 }
 
 function hpPill(g, x, y, w, k, elite = false) {

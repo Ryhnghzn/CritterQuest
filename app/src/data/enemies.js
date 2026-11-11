@@ -169,3 +169,17 @@ export const ENEMIES = {
 
 // Basic attacks hit a shield; skills (and gear lightning) go through it.
 export const SHIELD_PIERCING = ['spin', 'rain', 'pierce', 'nova', 'chain', 'shadow', 'dagger', 'shout'];
+
+// Elite traits (spec §41.1): each elite rolls AFFIX_COUNT of these (no two alike). `not`: behaviours
+// a trait does not fit (they already hide or teleport). Shown over the elite as "Cepat · Berlapis".
+export const AFFIXES = {
+  fast: { name: 'Cepat', speed: 1.5, tempo: 1 / 0.7 },                       // walks ×1.5, acts every ×0.7
+  armored: { name: 'Berlapis', shield: 0.35, idle: 4, regen: 0.25 },          // shield = 35% max HP; refills 25%/s after 4 s untouched
+  caller: { name: 'Pemanggil', every: 6, count: 2, max: 4, type: 'mini' },
+  thorny: { name: 'Berduri', cd: 1, dmgMul: 0.5, shot: { count: 8, speed: 170, r: 5, color: '#e6c27a' } }, // thorn damage = touch damage × dmgMul
+  volatile: { name: 'Meledak', radius: 110, fuse: 1, dmgMul: 2 },            // on death: a danger circle, damage × the elite's touch damage
+  aura: { name: 'Beraura', every: 1.6, r: 44, fuse: 0.9, dmgMul: 0.6 },      // small bursts left behind; the biome's onHit (slow / burn / poison)
+  blinker: { name: 'Penjelajah', every: 5, warn: 0.5, near: [80, 140], not: ['burrow', 'blink', 'boss'] },
+};
+// how many traits: 1, or 2 from world level / dungeon floor on
+export const AFFIX_COUNT = { base: 1, more: 2, level: 25, floor: 4 };

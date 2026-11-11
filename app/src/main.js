@@ -47,7 +47,7 @@ import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
 import { CHAR_LEVEL_MAX, INVENTORY_MAX, POINTS_PER_LEVEL, ULT } from './data/balance.js';
 import { DUNGEONS, dungeonById } from './data/dungeons.js';
-import { startFloor } from './run/dungeon.js';
+import { startFloor, makeElite } from './run/dungeon.js';
 import { freshMount } from './run/mount.js';
 import { GAME_MIN_PER_SEC } from './data/time.js';
 import { FIELD, TREASURE, TOWNS, TOWN_IDS, REGIONS, regionById, regionOfDungeon, regionOpen } from './data/world.js';
@@ -1109,6 +1109,14 @@ const cheatActions = {
   revealMap: () => { if (game.fog) game.fog.fill(255); toast(tr('Peta terbuka')); },
   warp: (k) => { if (!game.field) return; game.px = game.fmap.w * k; game.py = game.fmap.paths[0].reduce((b, p) => (Math.abs(p[0] - game.px) < Math.abs(b[0] - game.px) ? p : b))[1]; },
   killAll: () => { for (const e of game.enemies) e.hp = 0; },
+  elite: () => { // an elite with 2 random traits, a little in front of the player (spec §41.1)
+    const pool = ['tank', 'spitter', 'charger', 'slink', 'wolf', 'healer'];
+    const e = game.spawnEnemy(pool[Math.floor(Math.random() * pool.length)]);
+    const a = Math.random() * Math.PI * 2;
+    e.x = game.px + Math.cos(a) * 220; e.y = game.py + Math.sin(a) * 220;
+    if (game.field) { e.level = game.enemies.find((o) => o.level)?.level ?? 1; e.zone = game.region?.id; }
+    makeElite(e, 2);
+  },
   clearFloor: () => {
     if (game.floorClear) return;
     game.wave = game.dungeon.floors[game.floor - 1].waves.length - 1;
