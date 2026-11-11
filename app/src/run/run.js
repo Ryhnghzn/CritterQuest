@@ -2,7 +2,7 @@
 // (entities live in reused objects and are swap-removed when they die).
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
-import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL, ENEMY_POWER } from '../data/balance.js';
 import { expToNext, levelCap } from '../meta/character.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
@@ -12,6 +12,7 @@ import { decoyFor, runeFeed } from './summons.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
+import { ELITE } from '../data/items.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
 import { stepAttack, stepSkills, skillCooldown, chargeUlt, skillCost } from './skills.js';
@@ -27,7 +28,7 @@ import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedU
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
 import { landAt } from './worldmap.js';
-import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
+import { startField, stepField, confineFieldEnemy, questDrop, fieldScale } from './field.js';
 import { stepEvents } from './questev.js';
 import { FIELD } from '../data/world.js';
 import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
@@ -51,6 +52,18 @@ const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
 // potion buffs: stat → multiplier field on the potion (spec §15.2)
 const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
 const BUFFED = ['moveSpd', 'atk', 'atkSpd', 'crit', 'critDmg']; // stats potions & skill buffs can change
+
+// How hard an enemy's shots and danger zones hit (spec §43.8): like its touch damage — the dungeon's
+// difficulty, the world level, an elite's bonus, ENEMY_POWER.dmg. Applied once, to what it just made.
+export function foePower(run, e) {
+  return (run.dungeon?.dmgMul || 1) * (e.level ? fieldScale(e.level).dmg : 1) * (e.elite && !e.boss ? ELITE.dmgMul : 1) * (e.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg);
+}
+function scaleMade(run, e, s0, h0) {
+  if (run.shots.length <= s0 && run.hazards.length <= h0) return;
+  const k = foePower(run, e);
+  for (let j = s0; j < run.shots.length; j++) run.shots[j].dmg *= k;
+  for (let j = h0; j < run.hazards.length; j++) if (run.hazards[j].dmg) run.hazards[j].dmg *= k;
+}
 
 export class Game {
   constructor() {
@@ -359,10 +372,11 @@ export class Game {
   spawnEnemy(typeId) {
     const base = ENEMIES[typeId];
     const hp = base.hp * hpMul(Math.max(1, this.floor), this.dungeon);
+    const power = ENEMY_POWER.hp * (base.boss ? ENEMY_POWER.bossHp : 1); // spec §43.8
     const e = {
       type: typeId, x: this.px, y: this.py,
-      hp, maxHp: hp,
-      speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg * this.dungeon.dmgMul,
+      hp: hp * power, maxHp: hp * power,
+      speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg * this.dungeon.dmgMul * (base.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg),
       r: base.r, xp: Math.round(base.xp * this.dungeon.rewardMul), sprite: base.sprite, score: base.score,
       wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
       lane: null, entering: false, elite: false, boss: !!base.boss,
@@ -448,7 +462,7 @@ export class Game {
       if (slot >= 0) this.skillCd[slot] = 0;
     }
     e.flash = 0.12;
-    if (h.freeze) e.frozen = Math.max(e.frozen, h.freeze);
+    if (h.freeze && !(e.armor > 0)) e.frozen = Math.max(e.frozen, h.freeze); // a Berlapis shield shrugs off stuns (spec §43.8)
     const el = elementOf(h.fx);
     const kind = h.ult ? 'ult' : crit ? 'crit' : 'normal';
     const color = kind === 'normal' ? '#ffffff' : el === 'steel' ? '#ffd166' : PALETTES[el][1];
@@ -493,6 +507,7 @@ export class Game {
       if (e.flash > 0) e.flash -= dt;
       if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
+      const s0 = this.shots.length, h0 = this.hazards.length; // what this enemy makes now is scaled to it (spec §43.8)
       affixStep(this, e, dt); // elite traits (spec §41.1)
       foeStep(this, e, dt, ENEMIES[e.type]); // totem gifts, twin beams (run/foes.js)
       // walk in through the lane, then the enemy's own behaviour (run/enemies.js)
@@ -508,6 +523,7 @@ export class Game {
         if (lure) { const px = this.px, py = this.py; this.px = lure.x; this.py = lure.y; ({ vx, vy } = aiStep(this, e, dt)); this.px = px; this.py = py; }
         else ({ vx, vy } = aiStep(this, e, dt));
       }
+      scaleMade(this, e, s0, h0);
       if (e.type === 'dart' || e.type === 'vulture') { // zig-zag flight
         const z = Math.sin(e.wob) * 0.7, c = Math.cos(z), s = Math.sin(z);
         [vx, vy] = [vx * c - vy * s, vx * s + vy * c];
@@ -554,9 +570,11 @@ export class Game {
   }
 
   killEnemy(e) {
+    const s0 = this.shots.length, h0 = this.hazards.length;
     onDeath(this, e);
     affixDeath(this, e);
     levelDeath(this, e); // Nova Es L5 shards, Naluri Pembunuh L5 (run/skilllevel.js)
+    scaleMade(this, e, s0, h0); // a death blast hits as hard as its maker
     splitDeath(this, e, ENEMIES[e.type]); // Kumbang Pembelah (spec §41.1)
     this.kills += 1;
     const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin

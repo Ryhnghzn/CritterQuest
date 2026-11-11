@@ -99,7 +99,7 @@ export const TREASURE = {
 };
 
 // enemy strength by level (matches the dungeon tiers: LV 26 ≈ Benteng Lava)
-export const FIELD_SCALE = { hp: 0.2, dmg: 0.075, reward: 0.16 };
+export const FIELD_SCALE = { hp: 0.32, dmg: 0.06, reward: 0.16 };
 
 // Expeditions (spec §25.5): find a dungeon's gate and clear `floors` floors in it.
 export const EXPEDITIONS = {

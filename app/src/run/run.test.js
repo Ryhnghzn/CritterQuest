@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { expToNext } from '../meta/character.js';
-import { TEMPO } from '../data/balance.js';
+import { TEMPO, ENEMY_POWER } from '../data/balance.js';
 import { MOUNT } from '../data/mounts.js';
 
 const setup = (classId) => ({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats } });
@@ -84,10 +84,10 @@ describe('stat kelas', () => {
     const g = new Game();
     g.start({ ...setup('warrior'), stats: { ...setup('warrior').stats, def: 5 } });
     g.spawnT = 1e9;
-    const e = g.spawnEnemy('slink'); // dmg 8
+    const e = g.spawnEnemy('slink'); // dmg 8 × ENEMY_POWER.dmg
     e.x = 0; e.y = 0;
     g.step(1 / 60);
-    expect(g.stats.hp).toBe(140 - 3);
+    expect(g.stats.hp).toBeCloseTo(140 - (8 * ENEMY_POWER.dmg - 5));
   });
 });
 
@@ -161,7 +161,7 @@ describe('HP awal & ramuan di dungeon', () => {
     const e = g.spawnEnemy('slink'); e.x = 0; e.y = 0; // dmg 8 − def 2
     step(g);
     expect(g.stats.hp).toBe(140);
-    expect(g.shield).toBeCloseTo(42 - 6);
+    expect(g.shield).toBeCloseTo(Math.max(0, 42 - (8 * ENEMY_POWER.dmg - 2)));
     e.hp = 0;
     wait(g, 8.1);
     expect(g.shield).toBe(0);

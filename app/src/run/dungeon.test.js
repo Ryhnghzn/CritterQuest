@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Game, ST } from './run.js';
 import { waveQueue, FLOOR_COUNT, makeElite, spawnFromLane, stepDungeon, hpMul, normalChance, addMats } from './dungeon.js';
-import { HORDE } from '../data/balance.js';
+import { HORDE, ENEMY_POWER } from '../data/balance.js';
 import { inside } from './room.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { ELITE } from '../data/items.js';
@@ -103,8 +103,8 @@ describe('gelombang', () => {
   it('HP musuh gerombolan × HORDE.hp, bos tidak', () => {
     const g = start();
     const s = spawnFromLane(g, 'slink');
-    if (!s.elite) expect(s.maxHp).toBeCloseTo(ENEMIES.slink.hp * hpMul(1, g.dungeon) * HORDE.hp);
-    expect(spawnFromLane(g, 'boss').maxHp).toBeCloseTo(ENEMIES.boss.hp * hpMul(1, g.dungeon));
+    if (!s.elite) expect(s.maxHp).toBeCloseTo(ENEMIES.slink.hp * hpMul(1, g.dungeon) * HORDE.hp * ENEMY_POWER.hp);
+    expect(spawnFromLane(g, 'boss').maxHp).toBeCloseTo(ENEMIES.boss.hp * hpMul(1, g.dungeon) * ENEMY_POWER.hp * ENEMY_POWER.bossHp);
   });
 
   it('peluang elite × HORDE.eliteMul', () => {
@@ -147,7 +147,7 @@ describe('gelombang', () => {
   it('HP musuh × (1 + 0,25 × (lantai − 1))', () => {
     const g = start();
     g.floor = 3;
-    expect(g.spawnEnemy('slink').maxHp).toBeCloseTo(ENEMIES.slink.hp * 1.5);
+    expect(g.spawnEnemy('slink').maxHp).toBeCloseTo(ENEMIES.slink.hp * 1.5 * ENEMY_POWER.hp);
   });
 });
 
@@ -285,7 +285,7 @@ describe('gear & elite', () => {
     g.spawnT = 1e9;
     const e = g.spawnEnemy('slink');
     makeElite(e);
-    expect(e.maxHp).toBeCloseTo(ENEMIES.slink.hp * ELITE.hpMul);
+    expect(e.maxHp).toBeCloseTo(ENEMIES.slink.hp * ELITE.hpMul * ENEMY_POWER.hp);
     expect(e.r).toBeCloseTo(ENEMIES.slink.r * ELITE.size);
     e.x = 300; e.hp = 0;
     step(g);

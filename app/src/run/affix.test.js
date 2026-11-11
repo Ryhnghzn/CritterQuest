@@ -141,3 +141,15 @@ describe('sifat elite', () => {
     expect(Math.hypot(e.x - g.px, e.y - g.py)).toBeLessThan(AFFIXES.blinker.near[1] + 40);
   });
 });
+
+describe('Berlapis vs stuns (spec §43.8)', () => {
+  it('no freeze while the shield holds; frozen once it is broken', () => {
+    const g = start();
+    const e = elite(g, 'tank', ['armored']);
+    g.damageEnemy({ mult: 0.01, fx: 'nova', freeze: 1.5, x: g.px, y: g.py }, e);
+    expect(e.frozen).toBe(0);
+    e.armor = 0;
+    g.damageEnemy({ mult: 0.01, fx: 'nova', freeze: 1.5, x: g.px, y: g.py }, e);
+    expect(e.frozen).toBeGreaterThan(1);
+  });
+});

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../core/audio.js', () => ({ sfx: new Proxy({}, { get: () => () => {} }) }));
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { REGIONS, FIELD, regionById } from '../data/world.js';
+import { REGIONS, FIELD, regionById, FIELD_SCALE } from '../data/world.js';
 import { WORLD, ECLIPSE } from '../data/worldmap.js';
 import { buildWorld, blocked, pushOut, landAt, zoneToWorld, zoneAt, townGate } from './worldmap.js';
 import { fieldScale, spawnPack, spawnGroup, spawnGuardian, questDrop, townExit } from './field.js';
@@ -26,7 +26,7 @@ describe('mode dunia', () => {
     g.explore(setup());
     expect(g.region.id).toBe('forest');
     expect(fieldScale(1)).toEqual({ hp: 1, dmg: 1, reward: 1 });
-    expect(fieldScale(26).hp).toBeCloseTo(6, 5);
+    expect(fieldScale(26).hp).toBeCloseTo(1 + FIELD_SCALE.hp * 25, 5);
   });
   it('mulai di depan gerbang kota, kelompok musuh muncul di luar layar & dibatasi', () => {
     const g = new Game();

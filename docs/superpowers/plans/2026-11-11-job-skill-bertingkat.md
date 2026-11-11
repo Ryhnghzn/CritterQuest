@@ -64,11 +64,11 @@
 ## Bagian F — Ultimate Fokus (cek manual)
 - [x] F1 `data/classes.js` `ults: [luas, fokus]` (Luas = ultimate lama), 4 Fokus persis §43.5. Mekanik baru + tes: lompat ke titik bidik lalu hantam (Hantaman Langit), sinar lurus setelah bidik (Panah Penembus Langit), sedot lalu ledak (Matahari Runtuh, tanpa Panas berlebih), teleport ke belakang + 3 tebasan + eksekusi (Eksekusi Bayangan, +10%/Kombo). Bonus mekanik khas (Murka penuh +30%, Bidik penuh = kritikal).
 - [x] F2 `setUlt` di tab Skill (gratis, tidak saat bertarung). Tanda bidik singkat menyala, getar keras + waktu melambat saat kena. Kamus EN.
-- [ ] F3 Tes, build, server → **cek manual pemilik**.
+- [x] F3 Tes, build, server → **cek manual pemilik**.
 
 ## Bagian G — Keseimbangan & tes patokan (cek manual)
-- [ ] G1 `run/bench.test.js`: bot (build rata-rata per job di level 10/20/30/40: SP disebar ke 4 skill utama + pasif, gear rarity sesuai level, atribut rata) melawan rombongan wilayah selevel, rombongan elite, dan bos selevel, kesulitan Normal, RNG tetap. Target §43.8: rombongan biasa 4–8 dtk, elite 40–60% HP hilang tanpa menghindar, bos 60–90 dtk dengan Fokus.
-- [ ] G2 Setel kurva HP/ATK musuh per level (`data/balance.js`) dan angka skill sampai patokan lulus. Elite Berlapis kebal pingsan selama perisai ada.
+- [x] G1 `run/bench.test.js`: bot (build rata-rata per job di level 10/20/30/40: SP disebar ke 4 skill utama + pasif, gear rarity sesuai level, atribut rata) melawan rombongan wilayah selevel, rombongan elite, dan bos selevel, kesulitan Normal, RNG tetap. Target §43.8: rombongan biasa 4–8 dtk, elite 40–60% HP hilang tanpa menghindar, bos 60–90 dtk dengan Fokus.
+- [x] G2 Setel kurva HP/ATK musuh per level (`data/balance.js`) dan angka skill sampai patokan lulus. Elite Berlapis kebal pingsan selama perisai ada.
 - [ ] G3 Tes, build, server → **cek manual pemilik** (main mage dari level rendah; harus terasa berbahaya).
 
 ## Bagian H — Job Lanjutan
