@@ -17,6 +17,7 @@ import { PHASES } from '../data/time.js';
 import { TOWN_DEFS } from '../data/towns.js';
 import { HAIR_NAMES, HAIR_COLOR_NAMES } from '../art/doll.js';
 import { MARK_SHOP } from '../data/bounties.js';
+import { MAJESTIC_MOUNTS } from '../art/mounts.js';
 import { REGIONS, TOWNS } from '../data/world.js';
 import { MAIN, SIDE, HIDDEN, DROP_ITEMS } from '../data/quests.js';
 
@@ -149,6 +150,26 @@ const MARK_EN = {
   'Inti Kegelapan': ['Dark Core', 'Forging material for +10 and up'],
   'Permata acak': ['Random gem', '1 gem of Common tier'],
   'Debu Rune ×20': ['Rune Dust ×20', 'Forging material'],
+  'Singa Kerajaan': ['Royal Lion', 'Epic mount · Max HP +5%'],
+};
+
+// the mounts of art/mounts.js: name, tag and description by mount, colour names by Indonesian name
+const MOUNT_EN = {
+  'Kuda Perang': ['War Horse', 'Armoured warhorse, loyal to the very end. Reward of chapter 1.'],
+  'Serigala Raksasa': ['Great Wolf', 'A northern wolf as big as a horse, wearing a collar of armour.'],
+  'Rusa Cahaya': ['Stag of Light', 'A holy forest stag; the tips of its antlers glow.'],
+  'Singa Kerajaan': ['Royal Lion', "The king's guard lion, thick-maned and clad in golden armour."],
+  'Harimau Putih': ['White Tiger', 'A tiger that guards the mountains, clad in steel war armour.'],
+  'Pegasus Fajar': ['Dawn Pegasus', 'A winged horse that carries the light; it flies across rivers.'],
+  Griffin: ['Griffin', 'Half eagle, half lion, the mount of the sky knights.'],
+  Naga: ['Dragon', 'An ancient dragon crowned with horns; it kneels only to the conqueror of the eclipse.'],
+  'Paus Langit': ['Sky Whale', 'A whale that swims among the stars, crowned with light.'],
+};
+const MOUNT_TAG_EN = { Normal: 'Common', Agung: 'Epic', Legenda: 'Legendary', Mitos: 'Mythic' };
+const SKIN_EN = {
+  Kastanye: 'Chestnut', 'Putih Salju': 'Snow White', 'Hitam Bangsawan': 'Noble Black', Salju: 'Snow', 'Abu Perak': 'Silver Grey', 'Emas Senja': 'Dusk Gold',
+  'Perak Bulan': 'Moon Silver', 'Emas Hutan': 'Forest Gold', Fajar: 'Dawn', Emas: 'Gold', Putih: 'White', 'Malam Berbintang': 'Starry Night',
+  'Emas Loreng': 'Striped Gold', Senja: 'Dusk', Bintang: 'Star', Badai: 'Storm', 'Bara Emas': 'Golden Ember', Es: 'Ice', Giok: 'Jade', Malam: 'Night', Aurora: 'Aurora',
 };
 
 const ENEMY_EN = {
@@ -482,6 +503,11 @@ export function localizeData() {
   for (const r of REGIONS) swap(r, 'name', REGION_EN);
   for (const tw of Object.values(TOWNS)) swap(tw, 'name', TOWN_EN);
   for (const o of MARK_SHOP) { const en = MARK_EN[o.name]; if (en) [o.name, o.desc] = en; }
+  for (const m of MAJESTIC_MOUNTS) {
+    const en = MOUNT_EN[m.name]; if (en) [m.name, m.desc] = en;
+    swap(m, 'tag', MOUNT_TAG_EN);
+    for (const sk of m.skins) swap(sk, 'name', SKIN_EN);
+  }
   for (const e of Object.values(ENEMIES)) { swap(e, 'name', ENEMY_EN); for (const ph of e.phases || []) swap(ph, 'name', PHASE_NAME_EN); }
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }
   for (const p of Object.values(POTIONS)) { const en = POTION_EN[p.name]; if (en) [p.name, p.desc] = en; }

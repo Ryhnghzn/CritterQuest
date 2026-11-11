@@ -6,6 +6,7 @@ import { localizeData } from './data-en.js';
 import { CLASSES } from '../data/classes.js';
 import { RARITIES, SLOTS, VARIANTS, BONUSES, EFFECTS, UNIQUES, CHESTS } from '../data/items.js';
 import { MARK_SHOP } from '../data/bounties.js';
+import { MAJESTIC_MOUNTS } from '../art/mounts.js';
 import { REGIONS, TOWNS } from '../data/world.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DUNGEONS } from '../data/dungeons.js';
@@ -32,6 +33,7 @@ function strings() {
   for (const b of Object.values(BONUSES)) out.push(b.suffix);
   out.push(...Object.values(EFFECTS).map((e) => e.desc), ...UNIQUES.map((u) => u.name), ...Object.values(CHESTS).map((c) => c.name));
   for (const o of MARK_SHOP) out.push(o.name, o.desc);
+  for (const m of MAJESTIC_MOUNTS) out.push(m.name, m.desc, m.tag, ...m.skins.map((s) => s.name));
   out.push(...REGIONS.map((r) => r.name), ...Object.values(TOWNS).map((tw) => tw.name));
   out.push(...Object.values(ENEMIES).map((e) => e.name).filter((n) => n !== 'Golem'));
   for (const d of DUNGEONS) out.push(d.name, d.short);
@@ -50,7 +52,7 @@ function strings() {
 }
 
 // words that are the same in both languages
-const SAME = ['Meteor', 'Shuriken', 'Armor', 'Yeti', 'Salamander', 'EXP +{v}%', 'Lava', 'ATK +3%', 'ATK +5%', 'Magnet +20'];
+const SAME = ['Meteor', 'Shuriken', 'Armor', 'Yeti', 'Salamander', 'EXP +{v}%', 'Lava', 'ATK +3%', 'ATK +5%', 'Magnet +20', 'Griffin', 'Aurora'];
 
 const item = (o) => ({ slot: 'weapon', classId: 'warrior', variant: 1, rarity: 1, itemLevel: 5, base: {}, bonuses: [], unique: null, plus: 0, sockets: [], ...o });
 
@@ -84,6 +86,12 @@ describe('localizeData (English)', () => {
     const odo = TOWN_DEFS.home.npcs.find((n) => n.name === 'Old Odo');
     expect(odo.title).toBe('Town Elder');
     expect(odo.lines).toContain('This bonfire has never gone out since the town was founded.');
+  });
+
+  it('names the mounts and their colours', () => {
+    expect(MAJESTIC_MOUNTS.map((m) => m.name)).toEqual(['War Horse', 'Great Wolf', 'Stag of Light', 'Royal Lion', 'White Tiger', 'Dawn Pegasus', 'Griffin', 'Dragon', 'Sky Whale']);
+    expect(MAJESTIC_MOUNTS[0].skins.map((s) => s.name)).toEqual(['Chestnut', 'Snow White', 'Noble Black']);
+    expect(MARK_SHOP.find((o) => o.id === 'lion')).toMatchObject({ name: 'Royal Lion', desc: 'Epic mount · Max HP +5%' });
   });
 
   it('puts the bonus word in front and uses a decimal point', () => {

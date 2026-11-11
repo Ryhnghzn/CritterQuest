@@ -1,3 +1,4 @@
+import { MOUNT_DEFS } from './mounts.js';
 // Bounty board (spec §24): three tasks at a time; a task counts only once it is taken (Ambil).
 //   need: [min, max] rolled count (kill: scaled by the enemy's weight);
 //   weight: how often a kind is rolled. Rewards scale with character level.
@@ -28,6 +29,7 @@ export const MARK_SHOP = [
   { id: 'core', name: 'Inti Kegelapan', desc: 'Bahan tempa +10 ke atas', price: 5, mats: { core: 1 } },
   { id: 'gem', name: 'Permata acak', desc: '1 permata tingkat Biasa', price: 6, gem: 2 },
   { id: 'dust', name: 'Debu Rune ×20', desc: 'Bahan tempa', price: 2, mats: { dust: 20 } },
+  { id: 'lion', name: 'Singa Kerajaan', desc: 'Mount Epik · HP maks +5%', price: MOUNT_DEFS.lion.marks, mount: 'lion' },
 ];
 
 // the board of a new (or migrated) character

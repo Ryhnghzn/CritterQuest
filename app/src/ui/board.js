@@ -64,10 +64,11 @@ export function markShop(char, onMarkBuy) {
     const row = el('div', 'shoprow');
     const txt = el('div', 'stx');
     txt.append(el('b', null, o.name), el('span', null, o.desc));
-    const b = button(String(o.price), 'btn small buy', () => onMarkBuy(o.id));
-    b.prepend(el('span', 'markic'));
+    const owned = !!(o.mount && char.mounts.owned[o.mount]);
+    const b = button(owned ? tr('Dimiliki') : String(o.price), 'btn small buy', () => onMarkBuy(o.id));
+    if (!owned) b.prepend(el('span', 'markic'));
     b.dataset.mark = o.id;
-    b.disabled = char.marks < o.price;
+    b.disabled = owned || char.marks < o.price;
     row.append(txt, b);
     list.append(row);
   }

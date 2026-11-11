@@ -7,6 +7,7 @@ import { GEM_IDS } from '../data/forge.js';
 import { INVENTORY_MAX } from '../data/balance.js';
 import { makeItem } from './itemgen.js';
 import { addExp } from './character.js';
+import { grantMount } from './stable.js';
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 const between = ([a, b], rng) => a + Math.floor(rng() * (b - a + 1));
@@ -129,6 +130,7 @@ export function buyWithMarks(char, id, rng, now) {
   if (!offer) return { ok: false, reason: 'none' };
   if (char.marks < offer.price) return { ok: false, reason: 'marks' };
   if (offer.item && char.inventory.length >= INVENTORY_MAX) return { ok: false, reason: 'bag' };
+  if (offer.mount && char.mounts.owned[offer.mount]) return { ok: false, reason: 'owned' };
   const c = structuredClone(char);
   c.marks -= offer.price;
   const out = { ok: true, char: c };
@@ -139,6 +141,7 @@ export function buyWithMarks(char, id, rng, now) {
     while (c.inventory.some((x) => x.id === out.item.id)) out.item.id += 'x';
     c.inventory.push(out.item);
   }
+  if (offer.mount) { grantMount(c, offer.mount, rng); out.mount = offer.mount; }
   if (offer.gem) {
     out.gem = { gem: pick(GEM_IDS, rng), tier: offer.gem };
     c.gems[out.gem.gem][offer.gem - 1] += 1;

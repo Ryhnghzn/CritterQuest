@@ -163,4 +163,13 @@ export default {
   'Tidur di Penginapan memulihkan HP penuh.': 'Sleeping at the Inn restores full HP.',
   'Peti harta di wilayah dijaga. Kalahkan penjaganya dulu.': 'Treasure chests in the regions are guarded. Defeat the guardian first.',
   'Ramuan di sabuk dipakai dengan Z X C V.': 'Belt potions are used with Z X C V.',
+  // Mount (spec §35)
+  'Mount baru: {name}!': 'New mount: {name}!',
+  'Warna baru: {mount} {colour}!': 'New colour: {mount} {colour}!',
+  '{name} kini milikmu!': '{name} is yours now!',
+  'Warna {name} ditambahkan.': '{name} colour added.',
+  '{name} siap ditunggangi (tekan R di wilayah).': '{name} is ready to ride (press R in a region).',
+  'Tekan R (atau tombol kuda) di wilayah untuk menunggang.': 'Press R (or the horse button) in a region to ride.',
+  'Belum punya mount': "You don't have a mount yet",
+  'Sudah kamu miliki.': 'You already have it.',
 };

@@ -3,6 +3,7 @@ import { rollBounty, progressOf, advanceBounties, claimBounty, rerollBounty, rer
 import { createCharacter, applyTrip } from './character.js';
 import { validateSlot } from './schema.js';
 import { INVENTORY_MAX } from '../data/balance.js';
+import { MOUNT_DEFS } from '../data/mounts.js';
 
 const make = () => createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'mage' }, 1);
 const seq = (...v) => { let i = 0; return () => v[i++ % v.length]; };
@@ -130,5 +131,18 @@ describe('toko Lencana', () => {
     expect(buyWithMarks({ ...c, marks: 1 }, 'core', Math.random, 5).reason).toBe('marks');
     const full = { ...c, marks: 50, inventory: Array(INVENTORY_MAX).fill(null) };
     expect(buyWithMarks(full, 'chest', Math.random, 5).reason).toBe('bag');
+  });
+  it('Singa Kerajaan: beli sekali memberi mount, kedua kali ditolak (owned)', () => {
+    const c = make(); c.marks = 200;
+    const r = buyWithMarks(c, 'lion', Math.random, 5);
+    expect(r.ok).toBe(true);
+    expect(r.mount).toBe('lion');
+    expect(r.char.mounts.owned.lion).toEqual([0]);
+    expect(r.char.marks).toBe(200 - MOUNT_DEFS.lion.marks);
+    expect(validateSlot(r.char)).toEqual([]);
+    const again = buyWithMarks(r.char, 'lion', Math.random, 6);
+    expect(again.ok).toBe(false);
+    expect(again.reason).toBe('owned');
+    expect(c.mounts.owned.lion).toBeUndefined();
   });
 });

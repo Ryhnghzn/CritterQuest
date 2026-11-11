@@ -428,9 +428,11 @@ function openNpc(npc, message = null) {
     onBountyReroll: (i) => serve((c, now) => rerollBounty(c, i, Math.random, now), tr('Tugas baru ditempel di papan.')),
     onBountyTake: (i) => serve((c, now) => takeBounty(c, i, now), tr('Tugas diambil. Progresnya mulai dihitung dari perjalanan berikutnya.')),
     onBountyDrop: (i) => serve((c, now) => dropBounty(c, i, now), tr('Tugas dikembalikan ke papan.')),
-    onMarkBuy: (id) => serve((c, now) => buyWithMarks(c, id, Math.random, now), (r) => (r.item
+    onMarkBuy: (id) => { const before = current; serve((c, now) => buyWithMarks(c, id, Math.random, now), (r) => (r.mount
+      ? (!Object.keys(before.mounts.owned).length && toast(tr('Tekan R (atau tombol kuda) di wilayah untuk menunggang.')), mountGainText({ id: r.mount, isNew: true, skins: [] }))
+      : r.item
       ? { text: t('Kau mendapat {item} ({rarity})!', { item: itemName(r.item), rarity: RARITIES[r.item.rarity].name }), color: RARITIES[r.item.rarity].color }
-      : r.gem ? t('Kau mendapat {gem}!', { gem: gemName(r.gem.gem, r.gem.tier) }) : tr('Bahan masuk ke tasmu.'))),
+      : r.gem ? t('Kau mendapat {gem}!', { gem: gemName(r.gem.gem, r.gem.tier) }) : tr('Bahan masuk ke tasmu.'))); },
     onEnter: enterDungeon,
     onExpTake: (id) => serve((c, now) => takeExpedition(c, id, now), (r) => t('Ekspedisi diterima: {d}. Gerbangnya kutandai di petamu.', { d: dungeonById(r.char.expedition.dungeon).name })),
     onExpDrop: () => serve(dropExpedition, tr('Ekspedisi dibatalkan.')),
@@ -453,7 +455,7 @@ const REFUSE = {
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',
-  marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh. Selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.', taken: 'Tugas itu sudah kau ambil.', nottaken: 'Tugas itu belum kau ambil.',
+  owned: 'Sudah kamu miliki.', marks: 'Lencanamu belum cukup.', journal: 'Jurnalmu sudah penuh. Selesaikan atau batalkan side quest dulu.', give: 'Barangnya belum lengkap.', notdone: 'Tugas itu belum selesai.', taken: 'Tugas itu sudah kau ambil.', nottaken: 'Tugas itu belum kau ambil.',
   mats: 'Bahanmu belum cukup.', here: 'Kamu sudah di sini.', closed: 'Tokonya sedang tutup.', stashfull: 'Gudang sudah penuh.', soldout: 'Sudah habis untuk hari ini.', unknown: 'Kamu belum pernah ke sana.', socket: 'Soket itu tidak bisa dipakai.', gem: 'Permatamu belum cukup.', missing: 'Barang itu tidak ada.',
 };
 
