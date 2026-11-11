@@ -87,6 +87,31 @@ export const ENEMIES = {
     ai: 'blink', keep: 220, every: 3.4, fade: 0.55, appear: 0.45, near: [130, 190],
     ring: { count: 10, speed: 160, dmg: 12, r: 6, color: '#c79bff' },
   },
+  // §41.1 new behaviours — Hutan
+  // Katak Rawa: marks a circle where the player stands, flies there over `windup` s and lands on it
+  marshfrog: {
+    name: 'Katak Rawa', hp: 40, speed: 46, dmg: 12, r: 12, xp: 3, sprite: 'marshfrog', score: 3,
+    ai: 'leap', range: 280, every: 2.6, windup: 0.7, rest: 0.5, land: { radius: 50, dmg: 18 },
+  },
+  // Semak Penyergap: a bush that cannot be targeted; pounces when the player comes within `trigger`,
+  // fights, and hides again after `rehide` s far (> `lose`) from the player
+  bushling: {
+    name: 'Semak Penyergap', hp: 55, speed: 44, dmg: 14, r: 13, xp: 4, sprite: 'bushling', score: 4,
+    ai: 'ambush', trigger: 110, dash: { speed: 420, time: 0.28 }, lose: 320, rehide: 3,
+  },
+  // §41.1 — Padang Es
+  // Roh Embun: drifts at the player and leaves icy puddles (zone hazard) that slow
+  mistwisp: {
+    name: 'Roh Embun', hp: 34, speed: 54, dmg: 6, r: 10, xp: 3, sprite: 'mistwisp', score: 3,
+    ai: 'trail', spacing: 26, puddle: { r: 34, life: 4, slow: [0.4, 0.5] },
+  },
+  // Penjaga Cermin: every `every` s flashes (`windup`) then holds a mirror for `hold` s; player
+  // projectiles striking it from the front (within `arc`°) fly back at the player as `reflect`
+  mirrorguard: {
+    name: 'Penjaga Cermin', hp: 95, speed: 34, dmg: 14, r: 16, xp: 6, sprite: 'mirrorguard', score: 6,
+    ai: 'mirror', every: 4, windup: 0.4, hold: 1.5, arc: 140, turn: 2.2,
+    reflect: { speed: 260, dmg: 12, r: 6, color: '#cfefff', look: 'crystal' },
+  },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {
@@ -235,7 +260,7 @@ export const AFFIXES = {
   thorny: { name: 'Berduri', cd: 1, dmgMul: 0.5, shot: { count: 8, speed: 170, r: 5, color: '#e6c27a' } }, // thorn damage = touch damage × dmgMul
   volatile: { name: 'Meledak', radius: 110, fuse: 1, dmgMul: 2 },            // on death: a danger circle, damage × the elite's touch damage
   aura: { name: 'Beraura', every: 1.6, r: 44, fuse: 0.9, dmgMul: 0.6 },      // small bursts left behind; the biome's onHit (slow / burn / poison)
-  blinker: { name: 'Penjelajah', every: 5, warn: 0.5, near: [80, 140], not: ['burrow', 'blink', 'boss'] },
+  blinker: { name: 'Penjelajah', every: 5, warn: 0.5, near: [80, 140], not: ['burrow', 'blink', 'boss', 'ambush'] },
 };
 // how many traits: 1, or 2 from world level / dungeon floor on
 export const AFFIX_COUNT = { base: 1, more: 2, level: 25, floor: 4 };

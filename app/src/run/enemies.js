@@ -4,6 +4,7 @@
 import { rand, rrange } from '../core/rng.js';
 import { ENEMIES, SHIELD_PIERCING } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
+import { leap, ambush, trail, mirror, stepPuddle } from './foes.js';
 
 const TAU = Math.PI * 2;
 const PIERCE = new Set(SHIELD_PIERCING);
@@ -40,6 +41,10 @@ export function aiStep(run, e, dt) {
     case 'boss': return boss(run, e, b, dt);
     case 'burrow': return burrow(run, e, b);
     case 'blink': return blink(run, e, b);
+    case 'leap': return leap(run, e, b); // spec §41.1 (run/foes.js)
+    case 'ambush': return ambush(run, e, b, dt);
+    case 'trail': return trail(run, e, b);
+    case 'mirror': return mirror(run, e, b, dt);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }
@@ -394,6 +399,10 @@ export function stepHazards(run, dt) {
   for (let i = H.length - 1; i >= 0; i--) {
     const h = H[i];
     h.t -= dt;
+    if (h.kind === 'puddle') { // an icy puddle that slows (Roh Embun, run/foes.js)
+      if (stepPuddle(run, h)) { H[i] = H[H.length - 1]; H.pop(); }
+      continue;
+    }
     if (h.bomber) { h.x = h.bomber.x; h.y = h.bomber.y; }
     if (h.chase && h.max - h.t < h.chase) { h.x = run.px; h.y = run.py; } // a curse mark: follows, then stops
     if (h.kind === 'push') { // a gust (Badai Pasir): shoves the player while it blows

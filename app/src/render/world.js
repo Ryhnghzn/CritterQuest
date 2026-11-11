@@ -23,6 +23,7 @@ import { groundTile, drawField, fieldDecorLights, targetArrow } from './field.js
 import { REGIONS } from '../data/world.js';
 import { skyAt } from '../meta/clock.js';
 import { drawVfx, drawFlashes, drawFloaters } from './fxkit.js';
+import { bushDisguise, mirrorMark, puddle, leapHeight } from './foes.js';
 import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, playerAlpha } from './skillfx.js';
 import { SHAKE_PX } from '../data/fx.js';
 
@@ -180,6 +181,7 @@ export class Renderer {
     for (const e of game.enemies) {
       if (!visible(e.x, e.y, 40)) continue;
       if (e.hidden && e.ai === 'blink') continue; // a wraith between places (spec §26.7)
+      if (e.hidden && e.ai === 'ambush') { bushDisguise(g, e, t, (e.x - game.px) ** 2 + (e.y - game.py) ** 2 < 160 ** 2); continue; } // spec §41.1
       if (e.hidden && e.ai !== 'burrow') continue; // an elite blinking to the player (spec §41.1)
       if (e.hidden) { sandMound(g, e, t); continue; } // a burrowed sandworm (spec §25.4)
       shadow(g, e.x, e.y + e.r * 0.75, e.r * 0.85, e.r * 0.3);
@@ -191,8 +193,9 @@ export class Renderer {
       const warn = (e.mode === 'wind' || e.mode === 'fuse') && ((t * 14) | 0) % 2 === 0;
       const look = warn ? SPRITES[`${e.type}Flash`] : sprite;
       const flip = e.mode === 'dash' ? e.dirX < 0 : game.px < e.x;
-      drawBaked(g, look, e.x, e.y, k / squash, k * squash, flip);
+      drawBaked(g, look, e.x, e.y - leapHeight(e), k / squash, k * squash, flip);
       if (e.ai === 'shield') guard(g, e);
+      if (e.ai === 'mirror') mirrorMark(g, e, t);
       if (e.mini) crown(g, e.x, e.y - e.r * 1.25 - 14, e.r * 0.5, e.lord);
       if (e.boss || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.boss ? artExt(e.type) : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
       if (e.affixes?.length) eliteTags(g, e, e.x - e.r, e.y - e.r * 1.25, e.r * 2, 0.7);
@@ -453,6 +456,7 @@ function hpPill(g, x, y, w, k, elite = false) {
 
 // telegraphed danger: red zone filling up until it goes off
 function hazard(g, h, t) {
+  if (h.kind === 'puddle') { puddle(g, h, t); return; } // Roh Embun (render/foes.js)
   const k = 1 - Math.max(0, h.t) / h.max;
   g.save();
   if (h.kind === 'line') {
@@ -496,6 +500,7 @@ function hazard(g, h, t) {
 
 // outline of a telegraph, redrawn over the effects layer
 function hazardEdge(g, h, t) {
+  if (h.kind === 'puddle') return; // slows only: no red edge
   g.save();
   g.lineWidth = 1.5; g.strokeStyle = `rgba(255,120,130,${0.55 + 0.35 * Math.sin(t * 20) ** 2})`;
   g.setLineDash([7, 5]); g.lineDashOffset = -t * 30;

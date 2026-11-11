@@ -14,6 +14,7 @@ import { BOSS_ART, BOSS_AURAS, BOSS_BOX, BOSS_K, drawBoss } from '../art/bosses/
 import { drawDoll } from '../art/doll.js';
 import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
 import { setFxSink, drawFx } from '../art/anime/elemfx.js';
+import { bushDisguise, mirrorMark, leapHeight } from '../render/foes.js';
 import { pickWing } from '../art/anime/wingpick.js';
 import { gaitRate } from '../art/hero/rig.js';
 import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
@@ -196,7 +197,9 @@ export class Actors {
       ghost.vfx = Object.assign(Object.create(game.vfx), gv);
       D.drawRun(g, ghost, t, visible);
       for (const e of game.enemies) { // soft shadows under the standing monsters
+        if (e.hidden && e.ai === 'ambush' && visible(e.x, e.y, 40)) { bushDisguise(g, e, t, (e.x - game.px) ** 2 + (e.y - game.py) ** 2 < 160 ** 2); continue; } // spec §41.1
         if (e.hidden || !visible(e.x, e.y, 40)) continue;
+        if (e.ai === 'mirror') mirrorMark(g, e, t);
         g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 0.9, e.r * 0.34, 0, 0, Math.PI * 2); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill();
         if (e.elite) { g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.2, e.r * 0.45, 0, 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = 'rgba(255,190,80,.8)'; g.stroke(); }
       }
@@ -305,7 +308,7 @@ export class Actors {
       turnTo(f, e.mode === 'dash' ? screenX(e.dirX, e.dirY, yaw) : screenX(game.px - e.x, game.py - e.y, yaw), t);
       const turn = pose2d(f, t);
       m.scale.set(size / squash * turn.w, size * squash, 1);
-      m.position.set(e.x * S, (e.r * 0.9 * k + turn.hop) * S, (e.y + e.r * 0.75) * S);
+      m.position.set(e.x * S, (e.r * 0.9 * k + turn.hop + leapHeight(e)) * S, (e.y + e.r * 0.75) * S); // leapHeight: Katak Rawa mid-jump
       m.rotation.y = yaw;
       m.visible = true;
     }

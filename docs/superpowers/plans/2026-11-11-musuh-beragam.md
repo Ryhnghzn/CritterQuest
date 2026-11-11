@@ -17,13 +17,13 @@
 - [x] A1.2 `run/affix.js` + tes `run/affix.test.js`: sifat berbeda dan cocok dengan perilaku; Cepat mempercepat aksi; Berlapis menyerap lalu pulih setelah 4 dtk tanpa diserang; Pemanggil maks 4; Berduri paling sering tiap 1 dtk; Meledak meninggalkan lingkaran bahaya; Penjelajah memberi tanda lalu muncul dekat pemain.
 - [x] A1.3 Sambungkan: `makeElite(e, n)` (dungeon & dunia), `damageEnemy` → `affixHit`, langkah musuh → `affixStep`, `killEnemy` → `affixDeath`.
 - [x] A1.4 Tampilan: nama sifat di atas elite ("Cepat · Berlapis"), bilah perisai putih kebiruan di atas bilah HP (3D & 2D). Kamus EN.
-- [ ] A1.5 `npm test`, `npm run build`, server lokal → **cek manual pemilik**.
+- [x] A1.5 `npm test`, `npm run build`, server lokal → **cek manual pemilik**.
 
 ## Bagian A2 — Hutan & Es (cek manual)
-- [ ] A2.1 Katak Rawa `leap`, Semak Penyergap `ambush` + tes.
-- [ ] A2.2 Roh Embun `trail` (genangan es memperlambat; hazard `zone` baru, digambar 3D & 2D), Penjaga Cermin `mirror` (memantulkan proyektil pemain dari depan) + tes.
-- [ ] A2.3 Sprite keempatnya; masuk `data/world.js` (Hutan, Padang Es) dan gelombang dungeon Bayangan/Jamur & Kristal.
-- [ ] A2.4 Tes, build, server → **cek manual pemilik**.
+- [x] A2.1 Katak Rawa `leap`, Semak Penyergap `ambush` + tes (logika di `run/foes.js`).
+- [x] A2.2 Roh Embun `trail` (genangan es memperlambat; hazard sendiri `puddle` karena `zone` dipakai bos B), Penjaga Cermin `mirror` (memantulkan proyektil pemain dari depan) + tes.
+- [x] A2.3 Sprite keempatnya dengan kit anime (`art/foes.js`, galeri `app/musuh.html`); semak menyamar, cermin, genangan & lompatan digambar 2D/3D (`render/foes.js`); masuk `data/world.js` (Hutan, Padang Es) dan gelombang dungeon Bayangan/Jamur (Katak Rawa) & Kristal (Roh Embun, Penjaga Cermin). Semak Penyergap hanya di wilayah (di dungeon musuh berjalan masuk lewat lorong, menyamar tidak masuk akal). Cheat: tombol 4 musuh baru.
+- [x] A2.4 Tes, build, server → **cek manual pemilik**.
 
 ## Bagian A3 — Gurun & Gunung Api (cek manual)
 - [ ] A3.1 Hyena Pasir `pack` (mengepung, lolongan, serbu bersamaan), Kumbang Pembelah `split` (2 kecil → 2 tungau) + tes.

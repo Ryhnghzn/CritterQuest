@@ -18,6 +18,7 @@ import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { affixStep, affixHit, affixDeath } from './affix.js';
+import { reflectShot } from './foes.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
@@ -69,6 +70,7 @@ export class Game {
       get aimPX() { return run.aimPX; }, get aimPY() { return run.aimPY; }, // where an orbiting blade is thrown
       onHit: (h, e) => this.damageEnemy(h, e),
       add: (h) => this.hits.push(h),
+      reflect: (h, e) => e.ai === 'mirror' && reflectShot(this, h, e, ENEMIES[e.type]),
     };
   }
 

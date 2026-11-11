@@ -3,6 +3,7 @@
 // biome colour, glowing eyes. Drawn facing right around the origin in units of r and
 // kept inside ±1.6 r (the baked sprite box). Baked once per size, so cost is per bake.
 import { cel, poly, glow, pal, mix, INK, TAU } from './hero/cel.js';
+import { FOE_ART, FOE_UNIT } from './foes.js';
 
 const RIM = {
   toxic: 'rgba(150,255,110,.85)', shadow: 'rgba(190,120,255,.85)', fire: 'rgba(255,130,60,.9)',
@@ -177,6 +178,11 @@ const MONSTERS = {
     fangs(g, r, 0.42, 0.92, -0.26, 4, 0.12);
     eye(g, r, 0.42, -0.52, 0.09, '#9fe8ff'); eye(g, r, 0.78, -0.5, 0.08, '#9fe8ff');
   },
+  // spec §41.1: drawn with the anime kit (art/foes.js), scaled from kit units to r
+  marshfrog(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.marshfrog(g); g.restore(); },
+  bushling(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.bushling(g); g.restore(); },
+  mistwisp(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.mistwisp(g); g.restore(); },
+  mirrorguard(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.mirrorguard(g); g.restore(); },
   icewisp(g, r) { // floating frost spirit with orbiting shards
     glow(g, 0, 0, 1.3 * r, '#7fd8ff', 0.5);
     part(g, r, [[0, -1.0], [0.55, -0.1], [0.3, 0.7], [0, 1.0], [-0.3, 0.7], [-0.55, -0.1]], P('#6ab8e8', 'ice', { hi: '#ffffff' }), 0.3);

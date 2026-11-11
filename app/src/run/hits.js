@@ -177,6 +177,7 @@ function stepProjectile(h, enemies, dt, ctx) {
   for (const e of enemies) {
     if (e.hp <= 0 || h.hitSet.has(e) || !inShape(h, e)) continue;
     h.hitSet.add(e);
+    if (ctx.reflect?.(h, e)) return; // a raised mirror sends it back (Penjaga Cermin, spec §41.1)
     if (h.explode) {
       const blast = makeArea({ x: h.x, y: h.y, r: h.explode.r, mult: h.mult, fx: 'boom' });
       ctx.add(inherit(blast, h)); // a skill's explosion still counts as the skill, looks like it and keeps Kombo

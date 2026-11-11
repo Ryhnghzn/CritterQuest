@@ -25,14 +25,14 @@ export const REGIONS = [
   {
     id: 'forest', name: 'Hutan Kelam', biome: 'forest', levels: [1, 15], from: 'home', to: 'rimba', ...BIG, seed: 7,
     branches: 6, rivers: 2, lakes: 7, ruins: 16, density: { tree: 46, rock: 7 },
-    enemies: { slink: 5, dart: 4, spitter: 3, wolf: 3, bomber: 2, charger: 2, healer: 1, shielder: 1, summoner: 1, tank: 1 },
+    enemies: { slink: 5, dart: 4, spitter: 3, wolf: 3, marshfrog: 3, bushling: 2, bomber: 2, charger: 2, healer: 1, shielder: 1, summoner: 1, tank: 1 },
     dungeons: [{ id: 'shadow', at: [0.05, 0.18] }, { id: 'fungus', at: [0.72, 0.92] }],
     theme: { ground: ['#1d2a1c', '#172317'], path: '#3a3022', water: '#1b3a4a', ambient: 'rgba(4,10,8,.78)' },
   },
   {
     id: 'ice', name: 'Padang Es', biome: 'ice', levels: [10, 25], from: 'home', to: 'beku', ...BIG, seed: 21,
     branches: 5, rivers: 2, lakes: 9, ruins: 12, density: { tree: 20, rock: 14 },
-    enemies: { icewisp: 3, frostspitter: 3, frostslink: 3, yeti: 2, frosttank: 2, shielder: 2, dart: 2, summoner: 1, healer: 1 },
+    enemies: { icewisp: 3, frostspitter: 3, frostslink: 3, mistwisp: 3, mirrorguard: 2, yeti: 2, frosttank: 2, shielder: 2, dart: 2, summoner: 1, healer: 1 },
     dungeons: [{ id: 'crystal', at: [0.08, 0.4] }],
     theme: { ground: ['#2a3442', '#222b38'], path: '#4a5566', water: '#2b5878', ambient: 'rgba(6,10,20,.8)' },
   },

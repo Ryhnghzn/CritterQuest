@@ -1124,6 +1124,12 @@ const cheatActions = {
     if (game.field) { e.level = game.enemies.find((o) => o.level)?.level ?? 1; e.zone = game.region?.id; }
     makeElite(e, 2);
   },
+  foe: (type) => { // one of the new enemies (spec §41.1) a little in front of the player
+    const e = game.spawnEnemy(type);
+    const a = Math.random() * Math.PI * 2;
+    e.x = game.px + Math.cos(a) * 240; e.y = game.py + Math.sin(a) * 240;
+    if (game.field) { e.level = game.enemies.find((o) => o.level)?.level ?? 1; e.zone = game.region?.id; }
+  },
   clearFloor: () => {
     if (game.floorClear) return;
     game.wave = game.dungeon.floors[game.floor - 1].waves.length - 1;

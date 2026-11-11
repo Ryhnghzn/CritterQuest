@@ -238,3 +238,117 @@ describe('Sang Gerhana (spec §26.7)', () => {
     expect(g.px).toBeGreaterThan(x0 + 20);
   });
 });
+
+describe('Katak Rawa (spec §41.1)', () => {
+  it('menandai lingkaran di posisi pemain, melompat ke sana, lalu mendarat melukai', () => {
+    const g = start();
+    const e = place(g, 'marshfrog', 200, 0);
+    step(g);
+    expect(e.mode).toBe('air');
+    const mark = g.hazards.find((h) => h.kind === 'circle' && h.by === 'marshfrog');
+    expect(mark).toBeTruthy();
+    expect(Math.hypot(mark.x - g.px, mark.y - g.py)).toBeLessThan(1);
+    const hp = g.stats.hp;
+    step(g, secs(ENEMIES.marshfrog.windup) + 2);
+    expect(Math.hypot(e.x - mark.x, e.y - mark.y)).toBeLessThan(12);
+    expect(g.stats.hp).toBeLessThan(hp);
+  });
+
+  it('pemain yang pindah keluar lingkaran aman', () => {
+    const g = start();
+    place(g, 'marshfrog', 200, 0);
+    step(g);
+    const hp = g.stats.hp;
+    g.px = -200;
+    step(g, secs(ENEMIES.marshfrog.windup) + 2);
+    expect(g.stats.hp).toBe(hp);
+  });
+});
+
+describe('Semak Penyergap (spec §41.1)', () => {
+  it('diam menyamar (tak bisa dipukul) sampai pemain mendekat, lalu menerjang', () => {
+    const g = start();
+    const e = place(g, 'bushling', 300, 0);
+    step(g, 30);
+    expect(e.hidden).toBe(true);
+    expect(e.x).toBe(300);
+    const hp = e.hp;
+    g.damageEnemy({ mult: 5, fx: 'slash' }, e);
+    expect(e.hp).toBe(hp);
+    g.px = 300 - ENEMIES.bushling.trigger + 10;
+    step(g);
+    expect(e.hidden).toBe(false);
+    expect(e.mode).toBe('pounce');
+    const x0 = e.x;
+    step(g, 6);
+    expect(e.x).toBeLessThan(x0 - 20);
+  });
+
+  it('bersembunyi lagi bila pemain lama menjauh', () => {
+    const g = start();
+    const e = place(g, 'bushling', 60, 0);
+    step(g, secs(1));
+    expect(e.hidden).toBe(false);
+    g.px = -2000;
+    step(g, secs(ENEMIES.bushling.rehide + 0.5));
+    expect(e.hidden).toBe(true);
+  });
+});
+
+describe('Roh Embun (spec §41.1)', () => {
+  it('meninggalkan genangan es yang memperlambat pemain di dalamnya', () => {
+    const g = start();
+    place(g, 'mistwisp', 300, 0);
+    step(g, secs(2));
+    const zones = g.hazards.filter((h) => h.kind === 'puddle');
+    expect(zones.length).toBeGreaterThan(2);
+    const z = zones[0];
+    g.px = z.x; g.py = z.y;
+    g.slowT = 0;
+    step(g, 2);
+    expect(g.slowT).toBeGreaterThan(0);
+    expect(g.slowK).toBeCloseTo(ENEMIES.mistwisp.puddle.slow[0]);
+  });
+
+  it('genangan hilang setelah umurnya habis', () => {
+    const g = start();
+    const e = place(g, 'mistwisp', 300, 0);
+    step(g, secs(1));
+    e.hp = 0; e.speed = 0;
+    step(g, secs(ENEMIES.mistwisp.puddle.life + 0.2));
+    expect(g.hazards.filter((h) => h.kind === 'puddle').length).toBe(0);
+  });
+});
+
+describe('Penjaga Cermin (spec §41.1)', () => {
+  const arrow = (g, x, vx) => ({ kind: 'proj', x, y: 0, vx, vy: 0, angle: vx > 0 ? 0 : Math.PI, speed: Math.abs(vx), range: 900, dist: 0, r: 4, mult: 1, pierce: 0, hitSet: new Set(), fx: 'arrow', trailT: 0 });
+
+  it('berkilat lalu mengangkat cermin; panah dari depan dipantulkan ke pemain', () => {
+    const g = start();
+    const e = place(g, 'mirrorguard', 200, 0);
+    step(g);
+    expect(e.mode).toBe('flash');
+    step(g, secs(ENEMIES.mirrorguard.windup) + 1);
+    expect(e.mode).toBe('hold');
+    const hp = e.hp;
+    g.hits.push(arrow(g, 150, 400));
+    step(g, 10);
+    expect(e.hp).toBe(hp);
+    expect(g.shots.some((s) => s.by === 'mirrorguard' && s.vx < 0)).toBe(true);
+  });
+
+  it('panah dari belakang tetap melukai, juga saat cermin turun', () => {
+    const g = start();
+    const e = place(g, 'mirrorguard', 200, 0);
+    step(g, secs(ENEMIES.mirrorguard.windup) + 2);
+    const hp = e.hp;
+    g.hits.push(arrow(g, 260, -400));
+    step(g, 10);
+    expect(e.hp).toBeLessThan(hp);
+    e.mode = 'walk'; e.actT = 99;
+    const hp2 = e.hp;
+    g.hits.push(arrow(g, 150, 400));
+    step(g, 10);
+    expect(e.hp).toBeLessThan(hp2);
+  });
+});
