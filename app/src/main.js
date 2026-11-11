@@ -76,9 +76,9 @@ import { renderCharPanel, setCharTab } from './ui/charpanel.js';
 import { stepText } from './ui/journal.js';
 import { bountyText } from './ui/board.js';
 import { setEvents, eventPoint } from './run/questev.js';
-import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest, questDef } from './meta/quests.js';
 import { playCutscene, cutscenePlaying } from './ui/cutscene.js';
 import { SCENES, momentScene } from './data/scenes.js';
+import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest, questDef } from './meta/quests.js';
 import { SHARDS, DROP_ITEMS } from './data/quests.js';
 import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker, updatePointsBadge } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
@@ -335,8 +335,8 @@ async function createChar(slot, form) {
   // ask the browser not to evict our data (spec §9.3); ignore if unsupported/denied
   if (first && store.persistent) navigator.storage?.persist?.().catch(() => {});
   ensureAudio(); sfx.pickCard();
-  enterTown(char, 'spawn');
   await playCutscene('opening', heroOf(char)); // the story begins (spec §44)
+  enterTown(char, 'spawn');
 }
 
 async function deleteSlot(slot) {
@@ -506,8 +506,8 @@ function questText(r) {
   for (const [m, n] of Object.entries(g.mats)) bits.push(`+${n} ${MATS[m].name}`);
   for (const [p, n] of Object.entries(g.potions)) bits.push(`+${n} ${POTIONS[p].name}`);
   rewardPop(tr('Quest selesai!'), questDef(r.id)?.title, g, g.levelsGained);
-  const reply = r.pick != null && r.say ? `“${r.say}” ` : ''; // the answer to a choice (spec §42)
   if (g.shard) { const n = shards(r.char); setTimeout(() => story(`shard${n}`, ...(n >= SHARDS ? ['eclipse'] : [])), 300); } // spec §44
+  const reply = r.pick != null && r.say ? `“${r.say}” ` : ''; // the answer to a choice (spec §42)
   return { text: `${reply}${tr('Quest selesai!')} ${bits.join(' · ')}${g.levelsGained ? ` ${tr('Naik level!')}` : ''}`, color: '#ffd24a' };
 }
 
@@ -590,8 +590,8 @@ function openCharPanel() {
     },
     quest: {
       onTrack: (id) => changeGear((c, now) => trackQuest(c, id, now)),
-      onAbandon: async (id) => {
       onMemory: (id) => story(id), // Kenangan (spec §44)
+      onAbandon: async (id) => {
         if (await confirmDialog(tr('Batalkan quest ini? Progresnya hilang, tapi bisa diambil lagi.'), tr('Batalkan'))) changeGear((c, now) => abandonQuest(c, id, now));
         else openCharPanel();
       },
@@ -628,7 +628,6 @@ async function changeGear(action) {
 
 // classId + look with the visible gear, plus what drives the auras (unique effects, level)
 // set: lowest rarity over all slots (full-set pillar); lite: effects setting (spec "Efek Lebay" §D)
-const avatarOf = (c) => ({ classId: c.classId, look: { ...c.look, gear: dollGear(c) }, fx: gearEffects(c), level: c.level,
 // cutscenes (spec §44): the player's character on the stage; scenes played one after another
 const heroOf = (c) => ({ classId: c.classId, look: avatarOf(c).look });
 async function story(...ids) {
@@ -642,6 +641,7 @@ async function sceneInPlay(scene) {
   await playCutscene(scene, heroOf(current));
   if (game.state === ST.PAUSE && was === ST.PLAY) game.state = ST.PLAY;
 }
+const avatarOf = (c) => ({ classId: c.classId, look: { ...c.look, gear: dollGear(c) }, fx: gearEffects(c), level: c.level,
   set: setRarity(c), lite: activeQuality(settings.effects, fxForcedLite) === 'lite' });
 
 async function allocateInTown(add) {
@@ -1058,11 +1058,11 @@ function addToBag(c, items) {
 }
 
 const cheatActions = {
-  close: toggleCheat,
   scene: (id) => { // spec §44
     const m = id.startsWith('moment:') && momentScene(id.slice(7), { name: 'Peziarah Tua', look: { hair: 4, hairColor: 3 }, outfit: ['#8a7a5a', '#5e523c'], bg: id.endsWith('escort') ? 'town' : 'ice' });
     if (scene === 'run' && game.state === ST.PLAY) sceneInPlay(m || id); else playCutscene(m || id, heroOf(current));
   },
+  close: toggleCheat,
   mount: async (ids) => { // 'horse' or 'all'
     const give = (c) => { for (const id of ids === 'all' ? MOUNT_IDS : [ids]) grantMount(c, id); };
     const msg = ids === 'all' ? 'Semua mount didapat' : 'Kuda didapat';
@@ -1257,9 +1257,6 @@ function tickRun(pressed) {
     game.night = phaseOf(worldClock).icon === 'moon';
     if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged || game.eventsDone.length)) commitField();
   }
-  if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearGate) { openGate(game.nearGate); return false; }
-  if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearHidden) { openWild(game.nearHidden); return false; }
-  const wasPlaying = game.state === ST.PLAY;
   if (game.state === ST.PLAY && game.bossIntro) { // a boss's entrance (spec §44)
     const type = game.bossIntro; game.bossIntro = null;
     if (SCENES[`boss:${type}`] && !bossSeen.has(type)) { bossSeen.add(type); sceneInPlay(`boss:${type}`); return false; }
@@ -1269,6 +1266,9 @@ function tickRun(pressed) {
     sceneInPlay(momentScene(m.kind, { ...m, bg: m.kind === 'escort' ? 'town' : regionById(m.region)?.biome }));
     return false;
   }
+  if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearGate) { openGate(game.nearGate); return false; }
+  if (game.field && game.state === ST.PLAY && pressed.has('talk') && game.nearHidden) { openWild(game.nearHidden); return false; }
+  const wasPlaying = game.state === ST.PLAY;
   game.step(STEP);
   // react only on the PLAY -> OVER transition
   if (!wasPlaying) return false;
