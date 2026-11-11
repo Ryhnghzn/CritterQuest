@@ -14,17 +14,16 @@ export function passiveCrit(run, e) {
 }
 
 // Bilah Racun: poison e for a while (a new hit restarts it)
-export function poisonFoe(run, e) {
-  const P = PASSIVE_RULES.poison;
-  e.psn = { t: P.time, tick: P.every, dmg: run.stats.atk * P.mult };
-}
+export function poisonFoe(run, e) { dotFoe(run, e, PASSIVE_RULES.poison); }
+// any damage over time on an enemy: { time, every, mult (× ATK) } — poison, Semburan Api L5's burn
+export function dotFoe(run, e, d) { e.psn = { t: d.time, tick: d.every, every: d.every, dmg: run.stats.atk * d.mult }; }
 
 // once per step for a poisoned enemy: a little damage every tick (it can kill; the run removes the dead)
 export function poisonStep(run, e, dt) {
   const p = e.psn;
   if ((p.t -= dt) <= 0) { e.psn = null; return; }
   if ((p.tick -= dt) > 0) return;
-  p.tick += PASSIVE_RULES.poison.every;
+  p.tick += p.every || PASSIVE_RULES.poison.every;
   e.hp -= p.dmg; e.flash = Math.max(e.flash, 0.06);
   run.addFloater?.(e.x, e.y - e.r, String(Math.round(p.dmg)), '#9dff6a', null, true);
 }

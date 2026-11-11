@@ -1290,6 +1290,7 @@ function tickRun(pressed) {
     move: runView() !== R ? STAGE.toWorld(input.x, input.y) : { x: input.x, y: input.y }, aimAt, attack, auto,
     dodge: pressed.has('dodge'), mount: pressed.has('mount'), potion: potionSlot(pressed), ult: pressed.has('ult'),
     skill1: pressed.has('skill1'), skill2: pressed.has('skill2'), skill3: pressed.has('skill3'), skill4: pressed.has('skill4'), swap: pressed.has('swap'),
+    held: [1, 2, 3, 4].map((n) => input.held.has(`skill${n}`)), cancel: pressed.has('cancel'), // tempo skills (spec §43.7)
   };
   if (game.page !== undefined && current.jobs?.[current.classId] && game.page !== current.jobs[current.classId].page) { // the page in use is remembered (spec §43.6)
     current = { ...current, jobs: { ...current.jobs, [current.classId]: { ...current.jobs[current.classId], page: game.page } } };

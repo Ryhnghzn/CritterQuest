@@ -392,7 +392,7 @@ export function stepShots(run, dt, bound, cx = 0, cy = 0) {
     const s = S[i];
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     const hit = (s.x - run.px) ** 2 + (s.y - run.py) ** 2 < (s.r + 9) ** 2;
-    if (hit && run.hurtPlayer(s.dmg, s.onHit, s.by)) s.life = 0;
+    if (hit && run.hurtPlayer(s.dmg, s.onHit, s.by, s)) s.life = 0;
     if (s.life <= 0 || (s.x - cx) ** 2 + (s.y - cy) ** 2 > (bound + 40) ** 2) { S[i] = S[S.length - 1]; S.pop(); }
   }
 }

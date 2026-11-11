@@ -7,6 +7,7 @@ import { makeArea, makeSweep, makeProjectile, makeOrbit } from './hits.js';
 import { sfx } from '../core/audio.js';
 import { castFx, focusShotFx } from './skillfx.js';
 import { traitMods, traitCast, traitCastExecute, traitFocusShot, traitRage } from './traits.js';
+import { isHeld, beginHeld, stepHeld, openParry } from './tempo.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -75,13 +76,20 @@ export function stepSkills(run, intent, dt) {
   if (run.noEnergyT > 0) run.noEnergyT -= dt;
   const skills = run.skillDefs;
   if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
+  stepHeld(run, intent, dt); // tempo skills being held, the parry window (spec §43.4)
   const pressed = [intent.skill1, intent.skill2, intent.skill3, intent.skill4];
   const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
   for (let i = 0; i < SKILL_SLOTS; i++) {
-    if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
+    if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0 || run.held) continue;
     const cost = skillCost(run, skills[i]);
     if (run.energy < cost) { if (run.noEnergyT <= 0) sfx.noEnergy(); run.noEnergyT = 0.4; continue; }
     run.energy -= cost;
+    if (isHeld(skills[i])) { // charge / channel: fires while / when let go; the cooldown starts at the end (run/tempo.js)
+      run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
+      traitCast(run, skills[i]);
+      beginHeld(run, i, skills[i]); markCast(run, skills[i]); sfx.skill(skills[i].id);
+      continue;
+    }
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
     if (skills[i].charges > 1) { // L3 (spec §43.4): a second cast right after the first; the cooldown waits for it
@@ -216,6 +224,9 @@ function castSkill(run, s) {
       if (s.echo) path(s.r * 1.5, (x, y, at) => later(run, { r: s.r, mult: s.mult * 0.6, duration: 0.1 }, x, y, s.echo + at, s.look || s.id));
       break;
     }
+    case 'parry':
+      openParry(run, s);
+      break;
     case 'buff':
       run.buffT = s.duration;
       run.dmgTakenMul = s.dmgTaken;

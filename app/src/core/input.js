@@ -10,6 +10,7 @@ export const input = {
   attackHeld: false,                // touch attack button held
   touch: matchMedia('(pointer: coarse)').matches, // touch controls in use
   pressed: new Set(),               // queued one-shot actions
+  held: new Set(),                  // actions whose key / button is down right now (tempo skills, spec §43.7)
   onAction: [],                     // code => void ; menus/shortcuts (Esc, M, 1-3, …)
   onTouchMode: [],                  // () => void ; first touch switches to touch controls
   aim: null,                        // { action } while a skill waits for a left click (spec §37)
@@ -47,12 +48,12 @@ addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, textarea')) return; // typing a name, not playing
   if (KEYMAP[e.code]) { input.keys.add(e.code); e.preventDefault(); }
   if (e.code === 'Escape' && input.aim) { input.aim = null; return; } // Esc cancels the aim (not a pause)
-  if (ACTION_KEYS[e.code]) { e.preventDefault(); if (!e.repeat) queueAction(ACTION_KEYS[e.code]); }
+  if (ACTION_KEYS[e.code]) { e.preventDefault(); input.held.add(ACTION_KEYS[e.code]); if (!e.repeat) queueAction(ACTION_KEYS[e.code]); }
   for (const cb of input.onAction) cb(e.code);
 });
-addEventListener('keyup', (e) => input.keys.delete(e.code));
+addEventListener('keyup', (e) => { input.keys.delete(e.code); if (ACTION_KEYS[e.code]) input.held.delete(ACTION_KEYS[e.code]); });
 addEventListener('focusout', (e) => { if (e.target.matches('input, textarea')) scrollTo(0, 0); }); // iPhone leaves the page shifted after its keyboard closes
-addEventListener('blur', () => { input.keys.clear(); input.mouse.down = false; input.attackHeld = false; input.joy = null; input.aim = null; });
+addEventListener('blur', () => { input.keys.clear(); input.held.clear(); input.mouse.down = false; input.attackHeld = false; input.joy = null; input.aim = null; });
 
 addEventListener('mousemove', (e) => {
   if (input.touch) return; // ignore the emulated mouse events that follow taps
@@ -68,6 +69,7 @@ addEventListener('mousedown', (e) => {
   if (e.button === 0) input.mouse.down = true;
 });
 addEventListener('mouseup', (e) => { if (e.button === 0) input.mouse.down = false; });
+addEventListener('mousedown', (e) => { if (e.button === 2 && input.held.size) input.pressed.add('cancel'); }); // right click lets a charging skill go unused (spec §43.7)
 
 function setTouchMode() {
   if (input.touch) return;

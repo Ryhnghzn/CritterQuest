@@ -196,4 +196,5 @@ export default {
   'Tekan R (atau tombol kuda) di wilayah untuk menunggang.': 'Press R (or the horse button) in a region to ride.',
   'Belum punya mount': "You don't have a mount yet",
   'Sudah kamu miliki.': 'You already have it.',
+  'TANGKIS!': 'PARRY!',
 };

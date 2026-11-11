@@ -67,6 +67,14 @@ function rageAdd(run, c, n) {
   }
 }
 
+// Panas added while channelling (Semburan Api); overheats like a cast does.
+export function traitHeat(run, n) {
+  const c = cfg(run), t = run.trait;
+  if (c?.id !== 'heat' || !t || t.lock > 0) return;
+  t.v += n;
+  if (t.v >= c.max) { t.v = 0; t.lock = c.overheat.duration; run.showBanner(tr('KEPANASAN!')); }
+}
+
 // Murka added at once (Amarah Perang L5); nothing for the other jobs.
 export function traitRage(run, n) {
   const c = cfg(run);

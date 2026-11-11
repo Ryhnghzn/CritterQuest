@@ -6,7 +6,8 @@ import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL } fr
 import { expToNext, levelCap } from '../meta/character.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
-import { passiveCrit, poisonFoe } from './passives.js';
+import { passiveCrit, poisonFoe, dotFoe } from './passives.js';
+import { tryParry, cancelHeld } from './tempo.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -44,7 +45,7 @@ const DEFAULT_START = { classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.w
 // hits from basic attacks fill energy (spec §18.2)
 const BASIC_FX = new Set(['slash', 'stab', 'arrow', 'fireball', 'boom']);
 // potion: belt slot to drink from this step (0–3), or -1
-const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, swap: false, ult: false, mount: false, potion: -1 };
+const IDLE = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, auto: false, skill1: false, skill2: false, skill3: false, skill4: false, swap: false, held: [false, false, false, false], cancel: false, ult: false, mount: false, potion: -1 };
 const NO_POTIONS = Object.fromEntries(POTION_IDS.map((id) => [id, 0]));
 // potion buffs: stat → multiplier field on the potion (spec §15.2)
 const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
@@ -237,7 +238,7 @@ export class Game {
   // Q / ⇄: instant; any held or chained skill is let go (part E hooks into cancelHeld)
   swapPage() {
     if (!this.canSwap()) { if (this.level < PAGE_B_LEVEL) this.addFloater(this.px, this.py - 40, t('Halaman B terbuka di level {n}', { n: PAGE_B_LEVEL }), '#9fd8ff'); return false; }
-    this.cancelHeld?.();
+    cancelHeld(this);
     this.usePage(1 - this.page);
     sfx.pickCard?.();
     return true;
@@ -420,6 +421,8 @@ export class Game {
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
+    if (h.breakShield) { e.armor = 0; if (e.ward) e.ward = 0; } // Tebasan Raksasa at full
+    if (h.burn) dotFoe(this, e, h.burn);                    // Semburan Api L5
     if (h.vuln) { e.vulnT = VULN_TIME; e.vulnK = h.vuln; }          // Kabut Racun L5 marks the foes inside
     if (e.vulnT > 0) dmg *= 1 + e.vulnK;
     e.hp -= affixHit(this, e, dmg); // an elite's Berlapis shield soaks first (run/affix.js)
@@ -520,7 +523,8 @@ export class Game {
   // short invulnerability. Returns false when it did not land (dodging / invulnerable).
   // onHit: { slow: [k, s] } | { poison | burn: [k × damage per second, s] } (biome enemies, spec §25.4)
   // by: enemy type that dealt it (death dialog)
-  hurtPlayer(raw, onHit = null, by = null) {
+  hurtPlayer(raw, onHit = null, by = null, src = null) {
+    if (tryParry(this, src)) return false; // Tangkis Baja (run/tempo.js); src: the shot / hazard, if any
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
     if (by) this.lastFoe = by;
     let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul * traitMods(this).dmgTaken;

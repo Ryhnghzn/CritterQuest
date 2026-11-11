@@ -1505,6 +1505,8 @@ Enam skill lama tetap (angka §31/`data/classes.js` = level 1). Dua skill **temp
 
 **Dua halaman skill di game (bagian D, 2026-11-11):** run menyimpan `pageDefs`/`pageCd`/`pageCdMax` (2 × 4); `skillDefs`/`skillCd`/`skillCdMax` = halaman yang dipakai, jeda kedua halaman berjalan. **Q** (`core/input.js`) / tombol **⇄** kecil di samping tombol skill (A/B + 4 ikon redup halaman tersembunyi dengan jedanya) menukar seketika; terkunci di bawah level 15 atau bila halaman B kosong. Halaman terakhir diingat di `jobs[id].page`. Tab Skill: baris A1–A4 dan B1–B4 (B mulai level 15). Spanduk sekali saat mencapai level 15.
 
+**Skill tempo di game (bagian E-1, 2026-11-11):** `run/tempo.js` (tahan-isi, salur, tangkis), `input.held` (tombol angka / tombol sentuh yang masih ditekan), klik kanan = batal. Tebasan Raksasa (Warrior, level 8), Tangkis Baja (Warrior, level 12), Semburan Api (Mage, level 12). Jeda mulai setelah tahan/salur selesai; skill lain tidak bisa dipakai selama menahan; tukar halaman membatalkan. Tanda di tanah: cincin terisi (terang saat penuh) dan perisai emas selama jendela tangkis. Gerak tubuh sementara meminjam Retakan Bumi / Teriakan Baja / Nova Es.
+
 ### 43.5 Dua ultimate per job
 - Keduanya buka **level 25**; satu dipasang di tombol 5 (tab Skill), tukar gratis di luar pertarungan; bar isi sama (`ULT`). Ultimate cabang (Job Lanjutan) = pilihan ketiga.
 - **Luas** (yang sekarang): area besar, beberapa detik, damage tersebar. **Fokus** (baru): keluar < 1 dtk, area kecil, total ke satu sasaran ≈ **1,8×** Luas; meleset = bar tetap habis. Fokus punya tanda bidik singkat yang menyala, lalu getar layar keras + waktu melambat sesaat saat kena.

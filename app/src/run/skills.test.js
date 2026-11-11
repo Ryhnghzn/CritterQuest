@@ -342,7 +342,7 @@ describe('pool skill (6 per kelas)', () => {
           expect(g2.stats.atk > atk || g2.stats.crit > c0, s.id).toBe(true);
           hold(g2, s.duration + 0.5, { attack: false });
           expect(g2.stats.atk, s.id).toBeCloseTo(atk);
-        } else if (s.mult > 0 || s.blast) {
+        } else if ((s.mult > 0 || s.blast) && s.kind !== 'parry' && s.kind !== 'channel') { // those two need a hit / a held key (run/tempo.test.js)
           expect(1e6 - e.hp, s.id).toBeGreaterThan(0);
         }
       }

@@ -57,7 +57,7 @@ export function stepPlayer(run, intent, dt) {
     run.py += run.dodgeY * run.dashSpeed * step;
     run.dodgeT -= dt;
   } else {
-    const spd = run.stats.moveSpd * TEMPO.move * mountSpeedMul(run.mount ?? NONE) * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow); // frost slows (spec §25.4), Kepanasan too (§31.3)
+    const spd = run.stats.moveSpd * TEMPO.move * mountSpeedMul(run.mount ?? NONE) * (run.slowT > 0 ? 1 - run.slowK : 1) * (1 - traitMods(run).slow) * (1 - (run.heldSlow || 0)); // channelling slows (spec §43.4); frost slows (spec §25.4), Kepanasan too (§31.3)
     run.px += mx * spd * dt;
     run.py += my * spd * dt;
   }

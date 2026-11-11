@@ -254,6 +254,7 @@ export class Renderer {
       g.restore();
     }
     playerStatus(g, game, t);
+    tempoMarks(g, game, t);
 
   }
 
@@ -662,6 +663,23 @@ function sandMound(g, e, t) {
 }
 
 // what clings to the player: frost (slowed), poison bubbles, flames (spec §25.4)
+// tempo skills (spec §43.4): a ring filling while a charge is held (bright when full), a gold guard while a parry is open
+function tempoMarks(g, game, t) {
+  const H = game.held, x = game.px, y = game.py + 10;
+  if (H?.s.kind === 'charge') {
+    const k = Math.min(1, H.t / H.s.full), full = k >= 1;
+    g.save(); g.lineWidth = full ? 4 : 3; g.lineCap = 'round';
+    g.beginPath(); g.ellipse(x, y, 34, 13, 0, 0, TAU); g.strokeStyle = 'rgba(20,14,10,.55)'; g.stroke();
+    g.beginPath(); g.ellipse(x, y, 34, 13, 0, -Math.PI / 2, -Math.PI / 2 + TAU * k); g.strokeStyle = full ? `rgba(255,236,170,${0.75 + 0.25 * Math.sin(t * 20)})` : '#e6a83a'; g.stroke();
+    g.restore();
+  }
+  if (game.parryT > 0) {
+    g.save(); g.globalAlpha = Math.min(1, game.parryT * 4);
+    g.beginPath(); g.ellipse(x, y - 18, 30, 34, 0, 0, TAU); g.lineWidth = 3; g.strokeStyle = '#ffd27a'; g.stroke();
+    g.restore();
+  }
+}
+
 function playerStatus(g, game, t) {
   const x = game.px, y = game.py;
   if (game.slowT > 0) {

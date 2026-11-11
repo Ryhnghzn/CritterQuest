@@ -19,8 +19,11 @@ export function setupTouch() {
     // pointerdown, not click: a thumb resting on the button should react at once
     b.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      b.setPointerCapture?.(e.pointerId);
+      input.held.add(b.dataset.action); // a tempo skill charges / channels while the finger stays (spec §43.7)
       queueAction(b.dataset.action, e.pointerType === 'mouse'); // clicked with a mouse: aims like its key
     });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => input.held.delete(b.dataset.action));
   }
 }
 
