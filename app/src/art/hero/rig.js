@@ -90,6 +90,20 @@ const NPC_IDLE = {
   child: (t, s, m) => [0.3 - s * 0.6 * m + Math.sin(t * 4) * 0.3, 0.6, 0.06, -Math.abs(Math.sin(t * 3)) * 2.4, 0, -0.2 + s * 0.6 * m - Math.sin(t * 4) * 0.3, 0, 0],
   stance: (t) => [1.35, 0.4, 0.08, 2.4 + Math.sin(t * 2) * 0.3, 2, 1.25, 0, 0],
 };
+// Sitting by a fire (the title screen, spec §29): what the arms do, per class →
+// [phi, k, lean, crouch, step, phiB, x1, x2]; the hips sit on a log, the feet rest in front.
+const SIT_ACT = {
+  // sword across the knees, the front hand drawing a whetstone along it
+  warrior: (t) => { const u = Math.sin(t * 2.6); return [1.25 + u * 0.22, 0.32, 0.22, 0, 0, 1.05 - u * 0.12, 0, 0]; },
+  // the bow held up before the eyes, turned a little now and then, checking the string
+  archer: (t) => [1.75 + Math.sin(t * 0.7) * 0.08, 1.57, 0.12, 0, 0, 1.45 + Math.max(0, Math.sin(t * 1.3)) ** 4 * 0.5, 0, 0.5 + Math.sin(t * 1.3) * 0.2],
+  // the staff leaning on the shoulder, the free hand held out to the warmth
+  mage: (t) => [0.95, Math.PI - 0.5, 0.18, 0, 0, 1.45 + Math.sin(t * 1.1) * 0.08, 0.15 + Math.sin(t * 2) * 0.1, 0],
+  // leaning back, a dagger flipped over and over in the front hand
+  assassin: (t) => { const f = (t * 1.6) % 1; return [1.35 + Math.sin(f * Math.PI * 2) * 0.35, 2.84 + f * Math.PI * 2, -0.08, 0, 0, 0.55, 2.84, 0]; },
+};
+export const SIT = { hip: -19.5, feet: [13, 9.5], breathe: 0.35 }; // hip height on a log, feet forward
+
 // Running, one gait per class (spec §39; used when pose.gait is set — the anime heroes).
 // stride / lift (foot height) / bob (hip bounce) in skeleton units, rate = how fast the legs turn
 // over (× the walk phase), and arms(s, c, m) → the idle row while running:
@@ -182,7 +196,7 @@ export function rig(classId, pose) {
   const fF = { x: 4 + s * stride, y: -2.5 - Math.max(0, c) * footLift };
   const fB = { x: -4 - s * stride, y: -2.5 - Math.max(0, -c) * footLift };
 
-  const idle = [...(G ? G.arms(s, c, moving) : C.idle(s, moving, t, pose.kind)), 0];
+  const idle = [...(pose.sit ? (SIT_ACT[classId] || SIT_ACT.mage)(t) : G ? G.arms(s, c, moving) : C.idle(s, moving, t, pose.kind)), 0];
   let [phi, k, lean, crouch, step, phiB, x1, x2, lift] = idle;
   let swing = 0, trail = 0, flip = 1;
   const M = pose.move && MOVES[classId]?.[pose.move.id];
@@ -215,7 +229,8 @@ export function rig(classId, pose) {
   fF.x += step; fB.x -= step * 0.25; fB.y -= Math.max(0, step) * 0.18;
   if (lift > 0) { fF.y -= lift * 0.7; fB.y -= lift * 0.55; fF.x -= lift * 0.2; } // airborne: feet leave the ground, knees tuck
 
-  const hip = { x: step * 0.45, y: -38.5 + bob + crouch - lift };
+  const hip = pose.sit ? { x: -2, y: SIT.hip + Math.sin(t * 1.8) * SIT.breathe } : { x: step * 0.45, y: -38.5 + bob + crouch - lift };
+  if (pose.sit) { fF.x = SIT.feet[0]; fF.y = -2.5; fB.x = SIT.feet[1]; fB.y = -2.5; } // seated: knees up, feet in front
   const cl = Math.cos(lean), sl = Math.sin(lean);
   const W = (lx, ly) => ({ x: hip.x + lx * cl - ly * sl, y: hip.y + lx * sl + ly * cl });
   const hipF = W(2.6, 0), hipB = W(-2.6, 0);

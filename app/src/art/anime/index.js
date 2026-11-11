@@ -59,7 +59,7 @@ export function drawAnime(g, classId, o, pose = {}) {
     ringGlint(g, G.ring, pose.view === 'front' ? B.aL.h : B.aR.h, look.t);
     at = { head: [0, -146 + B.b], body: [0, -100 + B.b], hand: pose.view === 'front' ? B.aL.h : B.aR.h };
   } else {
-    const rp = { gait: true, t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, hurt: !!pose.hurt, attack: pose.attackPhase ?? -1, snappy: pose.attackPhase != null && !pose.slow, move: pose.move, dodge: pose.dodge };
+    const rp = { gait: true, t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, hurt: !!pose.hurt, attack: pose.attackPhase ?? -1, snappy: pose.attackPhase != null && !pose.slow, move: pose.move, dodge: pose.dodge, sit: pose.sit };
     const R = rig(classId, rp);
     g.scale(R.flip, 1);
     const G = o.gear || {}, hp0 = P(R.hip);

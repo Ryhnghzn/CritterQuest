@@ -2,8 +2,8 @@
 // with flickering light and rising embers. The painted backdrop (public/img/title_bg.webp) is
 // drawn to cover the screen; the light and embers are drawn on top of it. Until it has loaded
 // (or if it fails) the same night is drawn by code, with the fire in the same spot. Drawn in
-// CSS pixels (the caller sets the device-pixel transform); the four classes sit around it as
-// DOM portraits (ui/title.js), placed with artPoint().
+// CSS pixels (the caller sets the device-pixel transform); the four classes sit on its logs,
+// drawn by ui/title.js at spots found with artPoint().
 const TAU = Math.PI * 2;
 const AR = 2752 / 1536;                 // the painting's aspect
 const FOCUS = { x: 0.66, y: 0.4 };      // where the fire lands across the screen; how much of the vertical crop comes off the top

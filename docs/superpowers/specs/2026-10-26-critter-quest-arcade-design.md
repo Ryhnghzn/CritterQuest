@@ -978,6 +978,8 @@ Konsep dipilih pemilik dari `app/masuk.html`: **A. Api Unggun** + menu Pengatura
   - Bahasa: `lang` (masih memuat ulang halaman).
   - `migrate()` v4 → v5: `effects` 'full' → 'auto', volume 80/80, `view` '25d', `sharp` 'normal', `zoom` 'far', `shake`/`dmgNumbers` aktif, `showFps` mati.
 
+- **Api unggun hidup (2026-11-11, permintaan pemilik):** keempat kelas tidak lagi potret yang berdiri menghadap pemain. Mereka duduk di batang kayu lukisan, menyamping menghadap api, masing-masing sibuk (Warrior mengasah pedang, Archer memeriksa busur, Mage menghangatkan tangan, Assassin memutar belati; pose `sit` di `art/hero/rig.js`), bernapas, digambar pixel seperti game dan diwarnai cahaya api (hangat di sisi api, bayangan ungu di sisi lain); gear polos tanpa cahaya rarity. Hero terakhir dimainkan duduk di depan kiri dengan rambutnya sendiri.
+
 ## 27. HP Hanya Landscape (permintaan pemilik 2026-10-28)
 - Di HP (layar sentuh, lebar ≤ 900 px) game **hanya bisa dimainkan mendatar**. Dalam posisi tegak muncul kartu "Putar HP-mu ke posisi mendatar". Perjalanan yang sedang berlangsung dijeda saat HP diputar tegak. Di Android, sentuhan yang selesai (jari diangkat) mencoba layar penuh + kunci landscape; kalau ditolak, sentuhan berikutnya mencoba lagi sampai berhasil sekali. iPhone tidak punya layar penuh untuk halaman web, jadi di sana game mengikuti ukuran jendela browser.
 - Di itch.io game berjalan dalam iframe seukuran embed, dan game tidak bisa mengubah ukuran iframe itu dari dalam. Supaya pas di HP, halaman itch memakai "Click to launch in fullscreen". Di layar sentuh joystick hanya mulai dari kanvas `#game`; sentuhan pada elemen lain dibiarkan menjadi `click`.

@@ -371,6 +371,7 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 /* ═══════════ title "Api Unggun" (ui/title.js, art/titlebg.js — spec §29) ═══════════ */
 #ui #title{display:block;padding:0;overflow:hidden;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 #title .tseats{position:absolute;inset:0;pointer-events:none}
+#title .tcamp{position:absolute;inset:0;width:100%;height:100%;display:block}
 #title .tseat{position:absolute;transform:translateX(-50%);animation:cq-firelit 3.2s ease-in-out infinite}
 #title .tseat canvas{display:block;width:auto!important;height:var(--h)!important}
 #title .tseat.flip canvas{transform:scaleX(-1)}
