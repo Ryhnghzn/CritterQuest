@@ -1,0 +1,70 @@
+# Job & Skill Bertingkat — Rencana Kerja
+
+> **Untuk agen:** kerjakan per bagian (A–H), berhenti tiap bagian untuk **cek manual pemilik**, commit setelah oke. Spesifikasi §43 (sumber kebenaran; angka di sana). `run/` & `meta/` murni + tes Vitest. Semua angka di `data/`. Teks baru `tr()`/`t()` + kamus EN (`src/i18n/`). Commit tanpa Co-Authored-By. Sesi lain mungkin mengubah file yang sama: stage hanya hunk sendiri. **Mulai setelah §41 proyek A (musuh beragam) dan B (bos khas) selesai.** Saat mulai: baca ulang `run/skills.js`, `run/run.js`, `meta/talents.js`, `meta/schema.js`, `ui/skilltab.js`, `main.js` (bisa sudah berubah), lalu tulis langkah kode rinci per bagian sebelum mengerjakannya.
+
+**Arsitektur:** susunan per job disimpan di `char.jobs[classId]` (SP, halaman, ultimate, cabang). `meta/jobs.js` = semua aturan SP, pasang skill, pilih/ganti job, harga (menggantikan `meta/talents.js`). `run/skilllevel.js` mengubah definisi skill + level → definisi siap pakai (damage +12%/level, tambalan `lv3`/`lv5`), sehingga `run/skills.js` tetap menerima definisi biasa. Jenis tempo baru (`charge`, `channel`, `chain`, `parry`, `turret`, `clone`, `rune`) masing-masing di `run/` dengan state di `run.held` / `run.chain` / benda di `run.hits`. Halaman aktif dipilih di `run.page`; `run.skillDefs` = 2 × 4.
+
+**Urutan bagian berbeda dari daftar §43.9:** fondasi save + SP dikerjakan lebih dulu (bagian A di sini = §43.9 B + save), karena semua bagian lain bergantung padanya. Pemetaan: A = §43.2/43.3 + save, B = §43.1, C = level skill, D = §43.6, E = §43.4 tempo + §43.7, F = §43.5, G = §43.8, H = Job Lanjutan.
+
+## Nama bersama (dipakai lintas bagian)
+- `data/classes.js`: `JOB_IDS = ['warrior','archer','mage','assassin']`; `CLASSES.novice`; skill punya `lv3`, `lv5` (tambalan objek); `ults: [luas, fokus]` menggantikan `ult`.
+- `data/skilltree.js`: `SP_PER_LEVEL = 2`, `SKILL_COST = [1,1,2,2,2]`, `SKILL_MAX = 5`, `ULT_COST = 3`, `ULT_MAX = 3`, `PASSIVE_COST = 2`, `PASSIVE_MAX = 3`, `UMUM_COST = 1`, `PASSIVES { [jobId]: [{ id, name, desc, max, fx | trait }] }`, `UMUM` (= 8 bakat lama, `TALENTS` dipindah ke sini), `SP_RESPEC { base: 80, perLevel: 15 }`, `LEVEL_DMG = 0.12`, `ULT_LEVEL_DMG = 0.15`.
+- `data/balance.js`: `JOB_PICK_LEVEL = 5`, `NOVICE_EXP_CAP = 10`, `JOB_CHANGE { base: 200, perLevel: 30, growth: 1.5 }`, `PAGE_B_LEVEL = 15`.
+- `meta/jobs.js`: `jobOf(char)`, `newJob(classId)`, `spTotal(level)`, `spSpent(job, classId)`, `spFree(char)`, `levelOf(char, id)`, `raise(char, id, now)`, `spRespecPrice(char)`, `respecSp(char, now)`, `equip(char, page, slot, id, now)`, `wornSkills(char, page)`, `equippedUlt(char)`, `setUlt(char, id, now)`, `umumFx(char)`, `passiveFx(char)`, `pickJob(char, id, now)`, `jobChangePrice(char)`, `changeJob(char, id, now)`. Perubahan mengembalikan `{ ok: true, char }` atau `{ ok: false, reason }` (`'locked' | 'max' | 'sp' | 'gold' | 'bad' | 'same' | 'town'`).
+- `run/skilllevel.js`: `leveled(def, level)` → definisi baru (tidak mengubah `def`).
+- Save: `char.jobs { [classId]: { sp: { [id]: level }, pages: [[a,b,c,d],[e,f,g,h]], page: 0|1, ult: id|null, branch: null, freeRespec: bool } }`, `char.jobChanges`, `char.spNotice`; `char.skills` & `char.talents` dihapus.
+
+## Bagian A — Fondasi: save, SP & pohon skill, tab Skill baru (cek manual)
+- [ ] A1 `data/skilltree.js` (angka di atas, `PASSIVES` sesuai §43.3, `UMUM` dari `data/talents.js`; `data/talents.js` dihapus, impor diganti). Tes data: id unik per job (skill + ult + pasif + umum), tiap pasif `max` 3, `UMUM` 8 item.
+- [ ] A2 `meta/jobs.js` + `meta/jobs.test.js`, menggantikan `meta/talents.js`:
+  - `spTotal(1) === 0`, `spTotal(50) === 98`.
+  - `raise`: skill aktif level 0→1 biaya 1, 2→3 biaya 2; tolak `locked` bila `unlock > level`, `max` di 5, `sp` bila SP kurang; pasif biaya 2 maks 3; ultimate biaya 3 maks 3 dan terkunci < 25; umum biaya 1 maks 5.
+  - `respecSp`: semua SP kembali, halaman & `ult` dikosongkan, lalu skill pertama job (`skills[0]`, buka level 1) otomatis level 1 di A1 (biaya 1 SP) supaya selalu ada satu skill; harga `80 + 15 × level`; gratis bila `freeRespec` (lalu `freeRespec = false`); tolak `gold`.
+  - `equip(char, page, slot, id)`: tolak skill level 0 (`locked`); skill yang sudah di slot lain (halaman mana pun) pindah; `id null` melepas; minimal satu skill terpasang di halaman A.
+  - `umumFx` sama dengan `talentFx` lama untuk rank yang sama; `passiveFx` menjumlah efek pasif × level.
+- [ ] A3 Save **v24** (atau versi berikut yang tersedia) di `meta/schema.js`: validasi bentuk `jobs` (kunci = `classId` yang dikenal, `pages` 2 × 4, id dalam pohon job itu, satu id paling banyak sekali, `spSpent ≤ spTotal(level)`), `jobChanges` int ≥ 0, `spNotice` bool. `migrate()`: `jobs = { [classId]: { sp: { [tiap skill terpasang]: 1 }, pages: [skills lama, [null×4]], page: 0, ult: null, branch: null, freeRespec: true } }`, `jobChanges = 0`, `spNotice = true`, hapus `skills`, `talents`. Tes: save v23 lama → lolos validasi, skill terpasang sama, SP bebas = total − jumlah skill terpasang.
+- [ ] A4 Sambungkan konsumen: `run/run.js` (`skillDefs` dari `wornSkills(char, 0)`, `ult` dari `equippedUlt`), `meta/character.js` (`finalStats` memakai `umumFx`/`passiveFx` alih-alih `char.talents`), `main.js` (efek, simpan perubahan), `ui/cheat.js` bila menyentuh bakat. `grep -rn "talents\|char\.skills\|ultimateOf\|talentFx"` harus kosong di luar tes lama yang dihapus. Semua pasif masuk `run.passive` (objek efek dari `passiveFx`) dan dibaca di tempatnya, masing-masing dengan tes: mekanik khas di `run/traits.js` (Darah Panas, Darah Dingin, Napas Tenang, Ingatan Otot, Kulit Baja); `run/skills.js` (Tebasan Lebar → lebar `arc`, Hemat Mana → biaya energi, Ledakan Besar → `r` skill area, Bilah Racun → racun pada serangan biasa); hitung kritis (Mata Tajam: jarak > 250); menghindar (Lolos Tipis: kritis +10% selama 2 dtk). Kaki Ringan = stat gerak lewat `finalStats`.
+- [ ] A5 `ui/skilltab.js` ditulis ulang: tab Aktif · Ultimate · Pasif · Umum, sisa SP, baris (ikon, nama, ●●●○○, **+**, pasang ke slot A1–A4), slot ultimate, tombol Atur Ulang di Pelatih (`ui/npc.js`) menggantikan atur ulang bakat. Pesan sekali `spNotice` saat masuk kota. Kamus EN. Gaya `theme-dark.css`.
+- [ ] A6 `npm test`, `npm run build`, server lokal → **cek manual pemilik** (karakter lama: skill tetap terpasang, SP bisa dipakai, Umum = bakat lama, atur ulang).
+
+## Bagian B — Pengembara, pilih & ganti job, Coba Job (cek manual)
+- [ ] B1 `CLASSES.novice` (stat, serangan, Ayunan Lebar & Guling Serang tanpa level, `trait: null`, `ults: []`) + `JOB_IDS`. Audit semua `Object.keys/values(CLASSES)` → `JOB_IDS` di tempat yang hanya untuk job (toko senjata, `meta/itemgen.js` senjata, buat karakter, koleksi, sprite). `run/traits.js` & HUD tahan `trait: null`. Tes: Pengembara bisa menjalankan run tanpa trait/ult.
+- [ ] B2 `meta/jobs.js`: `pickJob` (level ≥ 5, hanya dari `novice`, gratis, buat `jobs[id]` + senjata awal via `meta/itemgen.js` rarity 0 level = level karakter), `jobChangePrice = (200 + 30 × level) × 1,5^jobChanges`, `changeJob` (tolak `same`, `gold`; kembalikan poin atribut; pertama kali job baru → senjata awal + `freeRespec`). `meta/character.js` `addExp`: Pengembara berhenti di level 10. `meta/itemgen.js`: tanpa senjata jatuh untuk `novice`. Tes untuk semua aturan + biaya contoh level 20: 800, 1200, 1800.
+- [ ] B3 Save: `classId` boleh `'novice'` (`jobs` boleh kosong untuk Pengembara). Buat Karakter (`ui/create.js`): pilihan kelas dihapus, karakter baru `novice`. Tes schema.
+- [ ] B4 Pelatih (`ui/npc.js`): menu **Pilih Job** (level ≥ 5, quest "Pilih Jalanmu" di `data/quests.js`), **Ganti Job** (harga, konfirmasi, hanya di kota), **Coba Job** → arena latihan: run sementara (`run/run.js` dengan `trial: true`: job pilihan, skill bawaan level 1, boneka + gelombang lemah, tanpa EXP/koin/drop, tidak disimpan), keluar = kembali kota sebagai Pengembara. Gelar job di atas nama. Kamus EN.
+- [ ] B5 Tes, build, server → **cek manual pemilik** (karakter baru dari nol sampai memilih job, Coba Job keempat job, ganti job & susunan per job kembali).
+
+## Bagian C — Level skill & efek L3/L5 (cek manual)
+- [ ] C1 `run/skilllevel.js` + tes: `leveled(def, 1)` = def; level n → `mult × (1 + 0,12 × (n − 1))` termasuk `mult` bersarang (`blast`, `throw`, `trail`, `explode.shards`, `split`); level ≥ 3 menerapkan `def.lv3`, level 5 juga `def.lv5` (tambalan digabung dalam, angka bersarang ditimpa). Ultimate: +15%/level; level 3: Luas `duration + 0,5`, Fokus `r × 1,2`.
+- [ ] C2 `lv3`/`lv5` untuk 24 skill lama di `data/classes.js` persis tabel §43.4. Efek yang belum ada mekaniknya dibuat di `run/` + tes masing-masing: pusaran tertinggal (Putaran Pedang L5), jejak api dash (Terjang L5), ledakan pilar terakhir (Retakan Bumi L5), kapak kedua / jeda putar di ujung (Kapak Bumerang), Murka +40 (Amarah Perang L5), pantulan pecahan (Panah Pecah L5), dua naga (Panah Naga L5), 2× berturut (`charges: 2` untuk Lompatan Mundur, Teleportasi, Langkah Bayangan), Bidik penuh (Lompatan L5), ledakan akhir jebakan, panah biasa menembus selama buff (Mata Elang L5), serpihan es saat mati beku (Nova Es L5), setrum area (Badai Petir L5), lava (Meteor L5), ledakan es titik awal (Teleportasi L5), meledak dua kali (Matahari Kecil L5), ledakan akhir Perisai Mana, bayangan menebas ulang, belati kembali, kabut menambah damage diterima, kebal saat Bom Asap, shuriken membelah, perpanjangan Naluri Pembunuh.
+- [ ] C3 `run/run.js` memakai `leveled(def, levelOf(char, id))`. Tab Skill menampilkan efek L3/L5 (abu-abu bila belum). Kamus EN.
+- [ ] C4 Tes, build, server → **cek manual pemilik** (cheat: SP penuh; tiap efek L3/L5 terlihat).
+
+## Bagian D — Dua halaman skill (cek manual)
+- [ ] D1 `run`: `run.skillDefs` 2 × 4, `run.page`, cooldown 8 slot; intent `swap` (Q di `core/input.js`, tombol ⇄ di `ui/touch.js`); tukar membatalkan `run.held`/`run.chain` (ditambah di E; siapkan kait `cancelHeld(run)`). Halaman B terkunci < level 15. Tes: cooldown halaman tersembunyi tetap turun; tukar instan; level 14 tidak bisa tukar.
+- [ ] D2 HUD (`ui/hud.js`): 4 ikon kecil redup halaman tersembunyi + putaran cooldown, huruf A/B; tab Skill dua baris slot; pesan sekali saat level 15. Halaman terakhir disimpan `jobs[id].page`. Kamus EN.
+- [ ] D3 Tes, build, server → **cek manual pemilik** (PC & HP).
+
+## Bagian E — Skill tempo (dua cek manual)
+- [ ] E1 Mesin tahan & rantai: intent membawa `held[i]` (tombol masih ditekan) selain `pressed`; `run/tempo.js` + tes: `charge` (isi 0→1 dalam `full`, lepas → `onRelease(power)`, klik kanan/tukar batal), `channel` (tick tiap `1/rate`, kuras `drain`/dtk, berhenti saat lepas/energi habis/`max`, gerak × `slow`), `chain` (tahap, jendela, cooldown mulai saat putus), `parry` (jendela; `damagePlayer` memeriksa `run.parryT` lalu membatalkan + balasan; peluru `unparryable` tetap kena). Kontrol PC (§43.7) di `core/input.js` + `run/aim.js`; HP di `ui/touch.js` (tahan tombol). Tes semuanya.
+- [ ] E2 Warrior **Tebasan Raksasa** (charge) & **Tangkis Baja** (parry); Mage **Semburan Api** (channel, Panas +20/dtk lewat `run/traits.js`). Angka, `lv3`/`lv5` §43.4. Gambar: cincin isi, kilat penuh "ting", kerucut api, kilatan tangkis + waktu melambat 0,15 dtk (`run.addHitStop`). Bunyi sintetis di `core/audio.js` bila belum ada file.
+- [ ] E3 Tes, build, server → **cek manual pemilik** (bagian E-1).
+- [ ] E4 Benda di arena: `run/summons.js` + tes: `turret` (umur, tembak terdekat tiap `every`, batas `max`), `clone` (umur, meniru serangan biasa × `mult`, separuh musuh dalam radius beralih sasaran, diabaikan bila pemain < 80 dari musuh itu), `rune` (sumbu `fuse`, tambahan +10% per pukulan pemain di dalamnya maks +100%, ledakan). Archer **Sinar Panah** (channel) & **Menara Panah**; Mage **Bom Waktu**; Assassin **Tarian Tiga Tebasan** (chain) & **Klon Bayangan**. Angka & `lv3`/`lv5` §43.4. Gambar & bunyi tiap jenis (§43.4 "tampilan").
+- [ ] E5 Peluru merah tak tertangkis: tanda `unparryable` di sebagian pola bos/penembak (`data/enemies.js`), digambar merah. Kamus EN semua skill baru.
+- [ ] E6 Tes, build, server → **cek manual pemilik** (bagian E-2).
+
+## Bagian F — Ultimate Fokus (cek manual)
+- [ ] F1 `data/classes.js` `ults: [luas, fokus]` (Luas = ultimate lama), 4 Fokus persis §43.5. Mekanik baru + tes: lompat ke titik bidik lalu hantam (Hantaman Langit), sinar lurus setelah bidik (Panah Penembus Langit), sedot lalu ledak (Matahari Runtuh, tanpa Panas berlebih), teleport ke belakang + 3 tebasan + eksekusi (Eksekusi Bayangan, +10%/Kombo). Bonus mekanik khas (Murka penuh +30%, Bidik penuh = kritikal).
+- [ ] F2 `setUlt` di tab Skill (gratis, tidak saat bertarung). Tanda bidik singkat menyala, getar keras + waktu melambat saat kena. Kamus EN.
+- [ ] F3 Tes, build, server → **cek manual pemilik**.
+
+## Bagian G — Keseimbangan & tes patokan (cek manual)
+- [ ] G1 `run/bench.test.js`: bot (build rata-rata per job di level 10/20/30/40: SP disebar ke 4 skill utama + pasif, gear rarity sesuai level, atribut rata) melawan rombongan wilayah selevel, rombongan elite, dan bos selevel, kesulitan Normal, RNG tetap. Target §43.8: rombongan biasa 4–8 dtk, elite 40–60% HP hilang tanpa menghindar, bos 60–90 dtk dengan Fokus.
+- [ ] G2 Setel kurva HP/ATK musuh per level (`data/balance.js`) dan angka skill sampai patokan lulus. Elite Berlapis kebal pingsan selama perisai ada.
+- [ ] G3 Tes, build, server → **cek manual pemilik** (main mage dari level rendah; harus terasa berbahaya).
+
+## Bagian H — Job Lanjutan
+- [ ] H1 Tulis rencana rinci H setelah G dicek: ujian Bayangan Diri (angka keras sendiri), 8 cabang (§41.4) masing-masing 2 skill + 1 ultimate + 2 pasif, gelar & aura cabang, ganti cabang di Pelatih. Rincian masuk spesifikasi §43 sebagai §43.10 dulu, setujui pemilik, lalu kerjakan.
+
+## Selesai
+- [ ] Z1 `CLAUDE.md` status, centang rencana; ingatkan pemilik build + `butler push` ke itch.io.
