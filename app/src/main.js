@@ -34,7 +34,7 @@ import { MOUNT_IDS } from './data/mounts.js';
 import { mountGainText } from './ui/stable.js';
 import { MAJESTIC_BY_ID } from './render/world.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
-import { equipSkill, allocateTalents, talentFx, mergeFx, respecTalents, talentRespecPrice, ultimateOf, talentPoints, spentTalents } from './meta/talents.js';
+import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf } from './meta/jobs.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
 import { equip, unequip, discard, gearEffects, dollGear } from './meta/gear.js';
@@ -306,7 +306,7 @@ let ptsSeen = 0;
 function pointsLeft() {
   const run = scene === 'run', lv = run ? game.level : current.level;
   const tripSpent = run ? Object.values(tripAttrs).reduce((a, b) => a + b, 0) : 0;
-  return { attr: POINTS_PER_LEVEL * (lv - 1) - spentPoints(current) - tripSpent, talent: talentPoints(lv) - spentTalents(current) };
+  return { attr: POINTS_PER_LEVEL * (lv - 1) - spentPoints(current) - tripSpent, talent: spFree({ ...current, level: lv }) }; // talent = skill points (spec §43)
 }
 // The badge on the Karakter button, and a toast whenever the count goes up.
 function checkPoints() {
@@ -316,7 +316,7 @@ function checkPoints() {
   if (n > ptsSeen) {
     const bits = [];
     if (p.attr > 0) bits.push(t('{n} poin atribut', { n: p.attr }));
-    if (p.talent > 0) bits.push(t('{n} poin bakat', { n: p.talent }));
+    if (p.talent > 0) bits.push(t('{n} SP', { n: p.talent }));
     toast(t('{what} belum dibagi. Buka Karakter (I)', { what: bits.join(' & ') }));
   }
   ptsSeen = n;
@@ -350,6 +350,10 @@ async function deleteSlot(slot) {
 // town
 function enterTown(char, at) {
   current = syncQuests(structuredClone(char)); // older saves catch up with what was already done
+  if (current.spNotice) { // once after the skill-point update (spec §43)
+    current = { ...current, spNotice: false };
+    setTimeout(() => confirmDialog(tr('Bakat kini menjadi Poin Skill (SP): 2 SP tiap naik level untuk menaikkan level skill, ultimate, pasif, dan bakat Umum. Buka Karakter → Skill. Atur ulang SP pertama gratis di Pelatih.'), tr('Mengerti')).then(() => saveCurrent()), 600);
+  }
 
   worldClock = char.clock;
   settings.lastSlot = char.slot;
@@ -412,9 +416,10 @@ function openNpc(npc, message = null) {
     onSocket: (id, slot, gem, tier) => serve((c, now) => socketGem(c, id, slot, gem, tier, now), tr('Permata terpasang. Berkilau, bukan?')),
     onUnsocket: (id, slot) => serve((c, now) => unsocket(c, id, slot, now), tr('Permata dilepas dan kembali ke tasmu.')),
     onCombine: (gem, tier) => serve((c, now) => combineGems(c, gem, tier, now), tr('Tiga menjadi satu: permata naik tingkat!')),
-    onTalentRespec: async () => {
-      if (await confirmDialog(t('Atur ulang semua bakat seharga {n} koin?', { n: talentRespecPrice(current) }), tr('Atur ulang'))) {
-        serve(respecTalents, tr('Bakatmu kembali. Bagi lagi di tab Skill.'));
+    onTalentRespec: async () => { // skill points (spec §43): free the first time
+      const price = jobOf(current).freeRespec ? 0 : spRespecPrice(current);
+      if (await confirmDialog(price ? t('Atur ulang semua SP seharga {n} koin?', { n: price }) : tr('Atur ulang semua SP? Kali ini gratis.'), tr('Atur ulang'))) {
+        serve(respecSp, tr('SP-mu kembali. Bagi lagi di tab Skill.'));
       } else openNpc(townNpc);
     },
     onUpgrade: (id) => serve((c, now) => buyUpgrade(c, id, now), t('{name} selesai. Kau makin kuat!', { name: UPGRADES[id].name })),
@@ -553,22 +558,18 @@ function closeTownOverlay() {
 }
 
 // The character as it stands mid-trip: EXP so far and points spent in the dungeon.
-// During a trip the running Game is the source of truth for the worn skills (spec §31.6):
-// addExp would re-run its auto-equip from the trip's start level and refill slots the player emptied.
-function runSkillIds() { return game.skillDefs.map((s) => s?.id ?? null); }
-
 function tripChar() {
   const { char } = addExp(current, game.expGained);
-  const c = allocate(char, tripAttrs, char.updatedAt) || char;
-  return { ...c, skills: runSkillIds() };
+  return allocate(char, tripAttrs, char.updatedAt) || char;
 }
 
 // Skill change mid-trip (spec §31.6): saved at once, the new skill starts on its full cooldown.
-function equipInRun(slot, id) {
-  const r = equipSkill(tripChar(), slot, id, Date.now()); // levels gained in the trip count
+// The worn skills live in the job's build (spec §43), so the save carries them.
+function equipInRun(page, slot, id) {
+  const r = equipSkill(tripChar(), page, slot, id, Date.now());
   if (!r.ok) { openCharPanel(); return; }
-  current = { ...current, skills: r.char.skills };
-  game.setSkills(current.skills);
+  current = { ...current, jobs: r.char.jobs };
+  game.setSkills(wornIds(current, 0));
   saveCurrent();
   openCharPanel();
 }
@@ -576,7 +577,7 @@ function equipInRun(slot, id) {
 function openCharPanel() {
   if (scene === 'run') {
     game.state = ST.PAUSE;
-    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false }, skill: { editable: true, talentsEditable: false, onEquip: equipInRun } });
+    renderCharPanel($('charpanel'), tripChar(), game.stats.hp, { onClose: resume, onAllocate: allocateInRun, gear: { editable: false }, skill: { editable: true, treeEditable: false, onEquip: equipInRun } });
     showOverlay('charpanel');
     return;
   }
@@ -584,9 +585,10 @@ function openCharPanel() {
   renderCharPanel($('charpanel'), current, town.hp, {
     onClose: closeTownOverlay, onAllocate: allocateInTown,
     skill: {
-      editable: true, talentsEditable: true,
-      onEquip: (slot, id) => changeGear((c, now) => equipSkill(c, slot, id, now)),
-      onTalents: (add) => changeGear((c, now) => { const n = allocateTalents(c, add, now); return n ? { ok: true, char: n } : { ok: false }; }),
+      editable: true, treeEditable: true, // skill points are spent in town (spec §43)
+      onEquip: (page, slot, id) => changeGear((c, now) => equipSkill(c, page, slot, id, now)),
+      onRaise: (id) => changeGear((c, now) => raise(c, id, now)),
+      onUlt: (id) => changeGear((c, now) => setUlt(c, id, now)),
     },
     quest: {
       onTrack: (id) => changeGear((c, now) => trackQuest(c, id, now)),
@@ -705,7 +707,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), ult: equippedUlt(current), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
   });
   tripAttrs = {};
   setupRunUI();
@@ -733,7 +735,7 @@ async function explore(at = current.location) {
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(gearEffects(current), talentFx(current)), codexFx(current)), mountFx(current)), skills: current.skills, ult: ultimateOf(current),
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), ult: equippedUlt(current),
     at, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
     eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });
@@ -788,7 +790,7 @@ async function commitField() {
   game.zoneChanged = false;
   const r = applyField(current, { ...part, region: zone, fog: encodeFog(game.fog), found: game.gatesFound.splice(0), opened: game.treasuresOpened.splice(0), attrs: tripAttrs }, Date.now(), Math.random);
   tripAttrs = {};
-  current = { ...r.char, skills: runSkillIds() };
+  current = r.char;
   fieldSaveT = 0;
   refreshFieldQuests();
   mountNews(before, current, r.mountsFound);
@@ -961,7 +963,7 @@ async function endRun(died) {
   const before = current;
   const applied = applyTrip(current, trip, Date.now(), Math.random);
   const gains = mountGains(before, applied.char, applied.mountsFound);
-  current = { ...applied.char, skills: runSkillIds() }; // keep progress in memory even if the write fails
+  current = applied.char; // keep progress in memory even if the write fails
   questNews(before);
   const saveError = await saveCurrent();
   // back out of a gate in a region (gold portal), or wake in town (spec §25.5)

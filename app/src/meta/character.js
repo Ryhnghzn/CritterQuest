@@ -5,12 +5,12 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
-import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshTalents, freshBounties, freshBestiary, freshQuests, worldSeed } from './schema.js';
+import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshBounties, freshBestiary, freshQuests, worldSeed } from './schema.js';
 import { countQuests } from './quests.js';
 import { regionOfDungeon } from '../data/world.js';
 import { collectionStats, addKills, discover } from './collection.js';
 import { advanceBounties, isDone } from './bounties.js';
-import { TALENTS } from '../data/talents.js';
+import { newJob, treeStats } from './jobs.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { itemStats } from './itemgen.js';
@@ -33,8 +33,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     gold: 0,
     clock: START_TIME,
     mats: freshMats(), gems: freshGems(),
-    skills: CLASSES[classId] ? [...CLASSES[classId].skills.slice(0, 2).map((s) => s.id), null, null] : [null, null, null, null],
-    talents: freshTalents(),
+    jobs: CLASSES[classId] ? { [classId]: newJob(classId, false) } : {}, jobChanges: 0, spNotice: false, // skill points (spec §43)
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot), fog: '' }, found: [], expedition: null,
@@ -55,18 +54,10 @@ export function createCharacter({ slot, name, look, classId }, now) {
 
 export function expToNext(level) { return CHAR_EXP_BASE + CHAR_EXP_GROWTH * level; }
 
-// Skills whose unlock level was just passed (from < unlock <= to) and that are not worn yet
-// go into the first empty slots of `skills` (mutated); returns [{ id, slot }] (spec §31.6).
-export function autoEquip(classId, skills, from, to) {
-  const out = [];
-  for (const s of CLASSES[classId].skills) {
-    if (s.unlock <= from || s.unlock > to || skills.includes(s.id)) continue;
-    const slot = skills.indexOf(null);
-    if (slot < 0) break;
-    skills[slot] = s.id;
-    out.push({ id: s.id, slot });
-  }
-  return out;
+// Skills whose unlock level was just passed (from < unlock <= to): they can now be learned with
+// skill points (spec §43; they are no longer worn by themselves). Returns [{ id }].
+export function newlyOpen(classId, from, to) {
+  return (CLASSES[classId]?.skills || []).filter((s) => s.unlock > from && s.unlock <= to).map((s) => ({ id: s.id }));
 }
 
 export function addExp(char, amount) {
@@ -80,7 +71,7 @@ export function addExp(char, amount) {
     levelsGained++;
   }
   if (c.level >= CHAR_LEVEL_MAX) c.exp = 0;
-  const newSkills = autoEquip(c.classId, c.skills, from, c.level);
+  const newSkills = newlyOpen(c.classId, from, c.level);
   return { char: c, levelsGained, newSkills };
 }
 
@@ -110,10 +101,9 @@ export function finalStats(char) {
   }
   for (const [stat, v] of Object.entries(gearStats(char))) s[stat] += v;
   for (const [stat, v] of Object.entries(collectionStats(char))) s[stat] += v; // bestiary (spec §24)
-  for (const t of TALENTS) { // talents (spec §21)
-    const n = char.talents?.[t.id] || 0;
-    for (const [stat, v] of Object.entries(t.pct || {})) s[stat] *= 1 + v * n;
-    for (const [stat, v] of Object.entries(t.add || {})) s[stat] += v * n;
+  for (const m of treeStats(char)) { // Umum talents & job passives (spec §43)
+    for (const [stat, v] of Object.entries(m.pct)) s[stat] *= 1 + v;
+    for (const [stat, v] of Object.entries(m.add)) s[stat] += v;
   }
   for (const [id, u] of Object.entries(UPGRADES)) {
     const n = char.upgrades[id];

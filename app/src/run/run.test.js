@@ -310,37 +310,15 @@ describe('efek item unik', () => {
     expect(g.skillCd[0]).toBe(0.5);
   });
 
-  it('naik level di dalam run memasang skill baru ke slot kosong pertama', () => {
-    const g = new Game();
-    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 4 });
-    expect(g.skillDefs[2]).toBeNull();
-    g.gems.push({ x: g.px, y: g.py, v: expToNext(4) + 1 });
-    g.step(1 / 60);
-    expect(g.level).toBe(5);
-    expect(g.skillDefs[2]?.id).toBe('quake');
-    expect(g.bannerT).toBeGreaterThan(0);
-  });
-
-  it('naik ke level ultimate di dalam run langsung membuka ultimate', () => {
+  it('naik level di dalam run: +SP diberitahu, skill & ultimate tidak berubah sendiri (spec §43)', () => {
     const g = new Game();
     g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 24 });
-    expect(g.ult).toBeNull();
     g.gems.push({ x: g.px, y: g.py, v: expToNext(24) + 1 });
     g.step(1 / 60);
     expect(g.level).toBe(25);
-    expect(g.ult?.id).toBe('bladestorm');
-    expect(g.bannerT).toBeGreaterThan(0);
-  });
-
-  it('level-up di run tidak mengisi lagi slot yang dikosongkan lewat setSkills di level yang sama', () => {
-    const g = new Game();
-    g.start({ classId: 'warrior', stats: { ...CLASS_BASE, ...CLASSES.warrior.stats }, skills: ['spin', 'shout', null, null], level: 4 });
-    g.gems.push({ x: g.px, y: g.py, v: expToNext(4) + 1 });
-    g.step(1 / 60);
-    expect(g.skillDefs[2]?.id).toBe('quake');
-    g.setSkills(['spin', 'shout', null, null]); // player unequips it
-    g.step(1 / 60);
-    expect(g.skillDefs[2]).toBeNull(); // the run never re-equips on its own
+    expect(g.skillDefs.map((d) => d?.id ?? null)).toEqual(['spin', 'shout', null, null]);
+    expect(g.ult).toBeNull();
+    expect(g.floaters.some((f) => /SP/.test(f.text))).toBe(true);
   });
 });
 

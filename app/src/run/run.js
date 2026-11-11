@@ -3,14 +3,15 @@
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE } from '../data/balance.js';
-import { expToNext, autoEquip } from '../meta/character.js';
-import { ultimateOf } from '../meta/talents.js';
+import { expToNext } from '../meta/character.js';
+import { SP_PER_LEVEL } from '../data/skilltree.js';
+import { passiveCrit, poisonFoe } from './passives.js';
 import { POTIONS, POTION_IDS, POTION_CD, DEFAULT_BELT } from '../data/potions.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { ENEMIES } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
 import { stepPlayer } from './player.js';
-import { stepAttack, stepSkills, skillCooldown, chargeUlt } from './skills.js';
+import { stepAttack, stepSkills, skillCooldown, chargeUlt, skillCost } from './skills.js';
 import { stepHits } from './hits.js';
 import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods } from './traits.js';
 import { FX } from '../data/dungeon.js';
@@ -107,7 +108,7 @@ export class Game {
   // effects: special effects of the equipped unique gear, { effect: value } (meta/gear.js)
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
-  // ult: the class ultimate when unlocked (meta/talents.js ultimateOf), else null
+  // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
   reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false }) {
     resetRng();
     this.classId = classId;
@@ -134,7 +135,7 @@ export class Game {
     this.skillBuff = null; this.skillBuffT = 0; // atk / atkSpd / crit / critDmg from a buff skill
     this.buffT = 0; this.dmgTakenMul = 1;
     this.dashSpeed = 0; this.skillDash = false;
-    this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0;
+    this.dodgeT = 0; this.dodgeCd = 0; this.dodgeInv = 0; this.dodgeX = 0; this.dodgeY = 0; this.closeCallT = 0;
     this.time = 0; this.kills = 0;
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
     this.questItems = {}; this.reached = []; this.questSpots = []; this.questDrops = []; this.hidden = []; this.nearHidden = null; // quests (spec §26.5)
@@ -225,22 +226,6 @@ export class Game {
     });
   }
 
-  // A skill unlocked by the level just reached goes to the first empty slot (spec §31.6).
-  autoEquipSkills(level) {
-    const ids = this.skillDefs.map((sk) => sk?.id ?? null);
-    const got = autoEquip(this.classId, ids, level - 1, level);
-    if (!got.length) return;
-    this.setSkills(ids);
-    this.showBanner(got.map((g) => t('Skill baru: {name} (tombol {n})', { name: this.skillDefs[g.slot].name, n: g.slot + 1 })).join(' · '));
-  }
-
-  // The class ultimate opens as soon as its level is reached, mid-trip too (spec §22).
-  unlockUlt(level) {
-    if (this.ult) return;
-    this.ult = ultimateOf({ classId: this.classId, level });
-    if (this.ult) this.showBanner(t('Ultimate terbuka: {name} (tombol 5)', { name: this.ult.name }));
-  }
-
   // stats = base stats × active potion buffs
   applyBuffs() {
     for (const k of BUFFED) this.stats[k] = this.baseStats[k];
@@ -281,7 +266,7 @@ export class Game {
   mountCan() {
     const locked = traitMods(this).locked;
     return {
-      skill: this.skillDefs.map((s, i) => !locked && !!s && this.skillCd[i] <= 0 && this.energy >= s.cost),
+      skill: this.skillDefs.map((s, i) => !locked && !!s && this.skillCd[i] <= 0 && this.energy >= skillCost(this, s)),
       dodge: this.dodgeCd <= 0 && this.dodgeT <= 0,
       ult: !!this.ult && this.ultCharge >= ULT.max,
     };
@@ -411,7 +396,7 @@ export class Game {
   damageEnemy(h, e) {
     if (e.hidden) return; // a sand worm under the sand
     const s = this.stats;
-    const crit = h.crit || rand() * 100 < s.crit; // h.crit: Bidik's focus shot never rolls
+    const crit = h.crit || rand() * 100 < s.crit + passiveCrit(this, e); // h.crit: Bidik's focus shot never rolls
     const fx = this.fx;
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
@@ -422,6 +407,7 @@ export class Game {
     const steal = (fx.lifesteal || 0) + (basic ? traitMods(this).lifesteal : 0); // read before the hit can trigger Mengamuk
     traitDealt(this);
     if (basic) traitBasicHit(this);
+    if (basic && fx.poisonChance && rand() < fx.poisonChance) poisonFoe(this, e); // Bilah Racun (spec §43.3)
     if (basic) this.energy = Math.min(ENERGY.max, this.energy + CLASSES[this.classId].attack.energy * (1 + (fx.energy || 0)));
     if (h.knock && !e.boss) { // push away from (or pull toward) the area's centre
       const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy) || 1;
@@ -623,9 +609,8 @@ export class Game {
         this.xpNeed = expToNext(this.level);
         this.showBanner(t('Naik level! LV {n}', { n: this.level }));
         this.addFloater(this.px, this.py - 44, t('+{n} poin', { n: POINTS_PER_LEVEL }), '#8fffc0');
+        this.addFloater(this.px, this.py - 62, t('+{n} SP', { n: SP_PER_LEVEL }), '#9fd8ff'); // skill points (spec §43): spent in town
         sfx.levelup();
-        this.autoEquipSkills(this.level);
-        this.unlockUlt(this.level);
       }
     }
   }

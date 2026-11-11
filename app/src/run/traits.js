@@ -11,6 +11,9 @@ let castExecute = 0; // execute threshold of the skill cast last (Combo at max),
 
 function cfg(run) { return CLASSES[run.classId].trait || null; }
 
+// a job passive's value from the run's effects (meta/jobs.js passiveFx, spec §43.3), 0 when absent
+const pv = (run, k) => run.fx?.[k] || 0;
+
 export function initTrait(run) {
   run.trait = { v: 0, idle: 0, on: 0, lock: 0, hits: 0, focus: false };
 }
@@ -32,19 +35,19 @@ export function traitStep(run, dt, moving, attacking) {
       break;
     case 'heat':
       if (t.lock > 0) { t.lock -= dt; if (t.lock < 0) t.lock = 0; } // overheated: the bar sits at 0 until it ends
-      else if (t.v > 0) t.v = Math.max(0, t.v - c.decay * dt);
+      else if (t.v > 0) t.v = Math.max(0, t.v - c.decay * (1 + pv(run, 'heatDrop')) * dt); // Darah Dingin (spec §43.3)
       break;
     case 'focus':
       if (moving) { t.v = 0; t.focus = false; }
       else if (attacking && !t.focus) {
-        t.v = Math.min(c.max, t.v + c.rate * dt);
+        t.v = Math.min(c.max, t.v + c.rate * (1 + pv(run, 'focusGain')) * dt); // Napas Tenang
         if (t.v >= c.max) t.focus = true;
       }
       break;
     case 'combo':
       if (t.v > 0 || t.hits > 0) {
         t.idle += dt;
-        if (t.idle >= c.idleAfter) { t.v = 0; t.hits = 0; }
+        if (t.idle >= c.idleAfter + pv(run, 'comboHold')) { t.v = 0; t.hits = 0; } // Ingatan Otot
       }
       break;
   }
@@ -54,7 +57,7 @@ function rageAdd(run, c, n) {
   const t = run.trait;
   t.idle = 0;
   if (t.on > 0) return;
-  t.v = Math.min(c.max, t.v + n);
+  t.v = Math.min(c.max, t.v + n * (1 + pv(run, 'rageGain'))); // Darah Panas
   if (t.v >= c.max) {
     t.v = 0; t.on = c.frenzy.duration;
     run.slowT = 0; // Mengamuk shrugs off an active slow
@@ -145,10 +148,12 @@ export function traitMods(run) {
     m.lifesteal = c.lifesteal * k;
     m.dmgTaken = 1 - c.dmgTaken * k;
     m.slowImmune = run.trait.on > 0;
+    if (run.trait.on > 0 || run.trait.v > c.max / 2) m.dmgTaken *= 1 - pv(run, 'rageArmor'); // Kulit Baja
   } else if (c && run.trait && c.id === 'heat') {
     const t = run.trait;
     if (t.lock > 0) { m.locked = true; m.slow = c.overheat.slow; }
     else m.skillDmg = c.skillDmg * Math.min(1, t.v / c.bonusAt);
   }
+  m.arcDeg *= 1 + pv(run, 'arcWide'); // Tebasan Lebar
   return m;
 }

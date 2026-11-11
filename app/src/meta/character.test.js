@@ -30,13 +30,13 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 24, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 25, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
       mats: { dust: 0, crystal: 0, core: 0 },
       gems: { ruby: [0, 0, 0, 0, 0], emerald: [0, 0, 0, 0, 0], diamond: [0, 0, 0, 0, 0], topaz: [0, 0, 0, 0, 0], amethyst: [0, 0, 0, 0, 0], sapphire: [0, 0, 0, 0, 0] },
-      skills: ['spin', 'shout', null, null],
-      talents: { might: 0, vigor: 0, precision: 0, focus: 0, flow: 0, evasion: 0, vamp: 0, fortune: 0 },
+      jobs: { warrior: { sp: { spin: 1, shout: 1 }, pages: [['spin', 'shout', null, null], [null, null, null, null]], page: 0, ult: null, branch: null, freeRespec: false } },
+      jobChanges: 0, spNotice: false,
       bounties: [
         { kind: 'kill', target: 'slink', need: 25, have: 0, taken: false },
         { kind: 'elite', target: null, need: 3, have: 0, taken: false },
@@ -144,19 +144,17 @@ const trip = (over = {}) => ({
   exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 0, cleared: false, died: false, hp: 100, potions: pots(), ...over,
 });
 
-describe('addExp: pasang skill otomatis', () => {
-  it('skill yang terbuka masuk ke slot kosong pertama', () => {
-    const c = make(); c.level = 4; c.exp = 0; c.skills = ['spin', 'shout', null, null];
+describe('addExp: skill yang baru terbuka (spec §43)', () => {
+  it('disebut untuk dipelajari dengan SP, tidak dipasang sendiri', () => {
+    const c = make(); c.level = 4; c.exp = 0;
     const r = addExp(c, expToNext(4));
     expect(r.char.level).toBe(5);
-    expect(r.char.skills[2]).toBe('quake');
-    expect(r.newSkills).toEqual([{ id: 'quake', slot: 2 }]);
+    expect(r.newSkills).toEqual([{ id: 'quake' }]);
+    expect(r.char.jobs.warrior.pages[0]).toEqual(['spin', 'shout', null, null]);
   });
-  it('semua slot penuh: tidak ada perubahan', () => {
-    const c = make(); c.level = 4; c.exp = 0; c.skills = ['spin', 'shout', 'charge', 'axe'];
-    const r = addExp(c, expToNext(4));
-    expect(r.char.skills).toEqual(['spin', 'shout', 'charge', 'axe']);
-    expect(r.newSkills).toEqual([]);
+  it('tidak ada skill baru di level itu: daftar kosong', () => {
+    const c = make(); c.level = 5; c.exp = 0;
+    expect(addExp(c, expToNext(5)).newSkills).toEqual([]);
   });
 });
 

@@ -60,6 +60,9 @@ function markCast(run, skill) {
   run.castPose = { id: skill.id, n: (run.castPose?.n || 0) + 1, dur: skill.duration || 0 };
 }
 
+// energy a skill costs this run: Hemat Mana (spec §43.3) takes a share off
+export const skillCost = (run, s) => s.cost * (1 - (run.fx?.manaSave || 0));
+
 export function stepSkills(run, intent, dt) {
   for (let i = 0; i < SKILL_SLOTS; i++) if (run.skillCd[i] > 0) run.skillCd[i] -= dt;
   if (run.buffT > 0) { run.buffT -= dt; if (run.buffT <= 0) run.dmgTakenMul = 1; }
@@ -71,8 +74,9 @@ export function stepSkills(run, intent, dt) {
   const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
   for (let i = 0; i < SKILL_SLOTS; i++) {
     if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
-    if (run.energy < skills[i].cost) { if (run.noEnergyT <= 0) sfx.noEnergy(); run.noEnergyT = 0.4; continue; }
-    run.energy -= skills[i].cost;
+    const cost = skillCost(run, skills[i]);
+    if (run.energy < cost) { if (run.noEnergyT <= 0) sfx.noEnergy(); run.noEnergyT = 0.4; continue; }
+    run.energy -= cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
     const before = run.hits.length;
@@ -82,6 +86,7 @@ export function stepSkills(run, intent, dt) {
       const h = run.hits[k];
       h.skill = true; h.mult *= mul;
       if (exec) h.execute = exec;
+      if (skills[i].kind === 'area' && run.fx?.areaUp && h.r) h.r *= 1 + run.fx.areaUp; // Ledakan Besar
     }
     castFx(run, skills[i], before);
     run.attackT = ATTACK_POSE;

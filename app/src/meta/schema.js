@@ -11,7 +11,8 @@ import { DUNGEON_IDS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
 import { MAT_IDS, GEM_IDS, GEM_TIERS, SOCKETS, ENHANCE } from '../data/forge.js';
 import { SETTING_CHOICES, SETTING_DEFAULTS } from '../data/settings.js';
-import { TALENTS, TALENT_IDS, TALENT_EVERY } from '../data/talents.js';
+import { UMUM_IDS } from '../data/skilltree.js';
+import { newJob, nodeOf, spSpent, spTotal } from './jobs.js';
 import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
 import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
@@ -21,7 +22,7 @@ import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts, storyMounts } from './stable.js';
 
-export const SAVE_VERSION = 24;
+export const SAVE_VERSION = 25;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -128,6 +129,24 @@ export const MIGRATIONS = {
   22: (d) => ({ ...d, version: 23, quests: isObj(d.quests) ? { ...d.quests, choices: {}, races: {} } : d.quests }),
   // v24 (spec §41.1): the new enemies in the bestiary.
   23: (d) => ({ ...d, version: 24, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
+  // v25 (spec §43): skill points per job instead of a worn list + talents. The worn skills become
+  // level 1 (the job's two starting skills free), each talent rank a level of the same Umum talent,
+  // a character already past the ultimate's level keeps it (level 1, picked). One free respec.
+  24: (d) => {
+    const { skills, talents, ...out } = d;
+    out.version = 25; out.jobChanges = 0; out.spNotice = true;
+    if (!Object.hasOwn(CLASSES, d.classId)) return out;
+    const job = newJob(d.classId, true), C = CLASSES[d.classId];
+    if (Array.isArray(skills)) {
+      job.pages[0] = [0, 1, 2, 3].map((i) => (C.skills.some((s) => s.id === skills[i]) ? skills[i] : null));
+      for (const id of job.pages[0]) if (id) job.sp[id] = Math.max(job.sp[id] || 0, 1);
+      if (!job.pages[0].some(Boolean)) job.pages[0] = newJob(d.classId).pages[0];
+    }
+    if (isObj(talents)) for (const id of UMUM_IDS) if (isInt(talents[id], 1)) job.sp[id] = talents[id];
+    if (isInt(d.level) && d.level >= C.ult.unlock) { job.sp[C.ult.id] = 1; job.ult = C.ult.id; }
+    out.jobs = { [d.classId]: job };
+    return out;
+  },
   21: (d) => ({
     ...d, version: 22,
     world: isObj(d.world) ? { ...d.world, fog: '' } : d.world,
@@ -141,7 +160,7 @@ export const worldSeed = (now, slot) => (Math.floor(Math.abs(now)) + slot * 7919
 
 export const freshBounties = () => structuredClone(STARTER_BOUNTIES);
 export const freshBestiary = () => Object.fromEntries(BESTIARY_IDS.map((id) => [id, 0]));
-export const freshTalents = () => Object.fromEntries(TALENT_IDS.map((id) => [id, 0]));
+export const freshTalents = () => Object.fromEntries(UMUM_IDS.map((id) => [id, 0])); // old saves (v8) only
 export const freshMats = () => Object.fromEntries(MAT_IDS.map((id) => [id, 0]));
 export const freshGems = () => Object.fromEntries(GEM_IDS.map((id) => [id, Array(GEM_TIERS).fill(0)]));
 
@@ -192,6 +211,20 @@ function validateItem(it) {
 }
 
 // Returns a list of problems; empty means the slot is valid for SAVE_VERSION.
+// One job's build (spec §43): levels within the tree, two pages of four, a skill worn once and
+// learned, the ultimate learned, no more SP spent than the level gives.
+function validJob(classId, j, level) {
+  if (!isObj(j) || !isObj(j.sp) || !Array.isArray(j.pages) || j.pages.length !== 2) return false;
+  for (const [id, lv] of Object.entries(j.sp)) { const n = nodeOf(classId, id); if (!n || !isInt(lv, 1, n.max)) return false; }
+  const worn = j.pages.flat();
+  if (!j.pages.every((p) => Array.isArray(p) && p.length === SKILL_SLOTS)) return false;
+  const ids = worn.filter((id) => id !== null);
+  if (new Set(ids).size !== ids.length || !ids.every((id) => nodeOf(classId, id)?.kind === 'skill' && j.sp[id] > 0)) return false;
+  if (!(j.page === 0 || j.page === 1) || typeof j.freeRespec !== 'boolean' || j.branch !== null) return false;
+  if (j.ult !== null && !(nodeOf(classId, j.ult)?.kind === 'ult' && j.sp[j.ult] > 0)) return false;
+  return !isInt(level, 1) || spSpent(j, classId) <= spTotal(level);
+}
+
 export function validateSlot(d) {
   if (!isObj(d)) return ['bukan objek'];
   const err = [];
@@ -209,12 +242,10 @@ export function validateSlot(d) {
   need(isInt(d.gold, 0), 'gold');
   need(isInt(d.clock, 0), 'clock');
   need(isObj(d.mats) && MAT_IDS.every((k) => isInt(d.mats[k], 0)), 'mats');
-  const pool = Object.hasOwn(CLASSES, d.classId) ? CLASSES[d.classId].skills.map((s) => s.id) : [];
-  const worn = Array.isArray(d.skills) ? d.skills.filter((id) => id !== null) : [];
-  need(Array.isArray(d.skills) && d.skills.length === SKILL_SLOTS && new Set(worn).size === worn.length && worn.every((id) => pool.includes(id)), 'skills');
-  const talentsOk = isObj(d.talents) && TALENTS.every((t) => isInt(d.talents[t.id], 0, t.max));
-  need(talentsOk, 'talents');
-  if (talentsOk && isInt(d.level, 1)) need(Object.values(d.talents).reduce((a, b) => a + b, 0) <= Math.floor(d.level / TALENT_EVERY), 'talents: poin melebihi level');
+  need(isObj(d.jobs) && Object.keys(d.jobs).every((id) => Object.hasOwn(CLASSES, id) && validJob(id, d.jobs[id], d.level))
+    && Object.hasOwn(d.jobs, d.classId), 'jobs');
+  need(isInt(d.jobChanges, 0), 'jobChanges');
+  need(typeof d.spNotice === 'boolean', 'spNotice');
   need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');
   need(d.hp === null || isInt(d.hp, 0), 'hp');
   need(isInt(d.marks, 0), 'marks');

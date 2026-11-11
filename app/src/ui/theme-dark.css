@@ -486,3 +486,8 @@ body.touch #ui :is(#act-s1,#act-s2,#act-s3,#act-s4) .cd{inset:-5%}
 @keyframes cq-breathe{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.012,1.018)}}
 @media (prefers-reduced-motion:reduce){#ui .npchead.bust,#ui .npchead.bust canvas{animation:none}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#ui .npchead.bust{height:190px}}
+
+/* skill tab (spec §43): level dots and the four tree tabs */
+#ui .skill .lvdots{display:block;font-size:12px;letter-spacing:2px;color:var(--cq-gold);margin:1px 0}
+#ui .sktabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px}
+#ui .skill .skbtns{display:flex;gap:6px;align-items:center}

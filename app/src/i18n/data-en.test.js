@@ -12,7 +12,7 @@ import { ENEMIES, AFFIXES } from '../data/enemies.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { POTIONS } from '../data/potions.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
-import { TALENTS } from '../data/talents.js';
+import { UMUM, PASSIVES } from '../data/skilltree.js';
 import { UPGRADES } from '../data/shop.js';
 import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
@@ -40,7 +40,7 @@ function strings() {
   for (const d of DUNGEONS) out.push(d.name, d.short);
   for (const p of Object.values(POTIONS)) out.push(p.name, p.desc);
   out.push(...Object.values(MATS).map((m) => m.name), ...Object.values(GEMS).map((g) => g.name), ...GEM_TIER_NAMES);
-  for (const t of TALENTS) out.push(t.name, t.desc);
+  for (const t of [...UMUM, ...Object.values(PASSIVES).flat()]) out.push(t.name, t.desc);
   for (const u of Object.values(UPGRADES)) out.push(u.name, u.desc);
   out.push(...ATTRS.slice(1).map((a) => a.desc), ...PHASES.map((p) => p.name));
   out.push(...HAIR_NAMES.filter((h) => h !== 'Bob'), ...HAIR_COLOR_NAMES);

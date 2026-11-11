@@ -3,6 +3,7 @@
 //   { move: {x, y} (length ≤ 1), aimAt: {x, y} world point | null (auto-aim), dodge: bool, … }
 // Also keeps run.aimPX/aimPY: the world point skills target (mouse, auto target, or ahead).
 import { DODGE, AUTO_AIM_RANGE, TEMPO } from '../data/balance.js';
+import { PASSIVE_RULES } from '../data/skilltree.js';
 import { confinePlayer } from './dungeon.js';
 import { confineFieldPlayer } from './field.js';
 import { sfx } from '../core/audio.js';
@@ -44,9 +45,11 @@ export function stepPlayer(run, intent, dt) {
     run.skillDash = false; // a real dodge (clears Bidik), unlike a skill dash
     run.dodgeCd = DODGE.cooldown * run.dodgeCdMul;
     run.dodgeInv = DODGE.invuln;
+    if (run.fx?.dodgeCrit) run.closeCallT = PASSIVE_RULES.closeCall.time; // Lolos Tipis (spec §43.3)
     sfx.dodge();
   }
   if (run.dodgeInv > 0) run.dodgeInv -= dt; // the dodge frame itself counts
+  if (run.closeCallT > 0) run.closeCallT -= dt;
 
   if (run.dodgeT > 0) {
     const step = Math.min(dt, run.dodgeT);

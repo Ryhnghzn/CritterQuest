@@ -10,7 +10,7 @@ import {
 } from '../data/skilltree.js';
 
 const ultsOf = (classId) => CLASSES[classId].ults || [CLASSES[classId].ult]; // Fokus joins in part F
-const starters = (classId) => CLASSES[classId].skills.filter((s) => s.unlock <= 1).map((s) => s.id);
+const starters = (classId) => CLASSES[classId].skills.filter((s) => s.unlock <= 1).slice(0, 2).map((s) => s.id); // the first two
 
 // What an id is in a job's tree: { kind: 'skill' | 'ult' | 'passive' | 'umum', def } or null
 export function nodeOf(classId, id) {
@@ -71,6 +71,20 @@ export function raise(char, id, now) {
   if (lv >= node.max) return { ok: false, reason: 'max' };
   if (cost(char.classId, id, node.kind, lv, lv + 1) > spFree(char)) return { ok: false, reason: 'sp' };
   return withJob(char, now, (job) => { job.sp[id] = lv + 1; });
+}
+
+// SP for the next level of a node, or null at its max / unknown
+export function nextCost(char, id) {
+  const node = nodeOf(char.classId, id), lv = levelOf(char, id);
+  return !node || lv >= node.max ? null : cost(char.classId, id, node.kind, lv, lv + 1);
+}
+// the job's tree as rows per tab: { skill: [...], ult: [...], passive: [...], umum: [...] } of { id, def, max, level }
+export function treeRows(char) {
+  const C = CLASSES[char.classId], row = (def, kind, max) => ({ id: def.id, def, kind, max, level: levelOf(char, def.id) });
+  return {
+    skill: C.skills.map((d) => row(d, 'skill', SKILL_MAX)), ult: ultsOf(char.classId).map((d) => row(d, 'ult', ULT_MAX)),
+    passive: (PASSIVES[char.classId] || []).map((d) => row(d, 'passive', d.max ?? PASSIVE_MAX)), umum: UMUM.map((d) => row(d, 'umum', d.max)),
+  };
 }
 
 export const spRespecPrice = (char) => SP_RESPEC.base + SP_RESPEC.perLevel * char.level;

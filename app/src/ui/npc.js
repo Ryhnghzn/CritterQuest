@@ -9,7 +9,7 @@ import { POTIONS, POTION_IDS, POTION_MAX } from '../data/potions.js';
 import { innPrice, chestPrice, junkIds, respecPrice } from '../meta/shop.js';
 import { UPGRADES, upgradePrice, BARBER_PRICE } from '../data/shop.js';
 import { spentPoints } from '../meta/character.js';
-import { spentTalents, talentRespecPrice } from '../meta/talents.js';
+import { jobOf, spRespecPrice, spTotal, spFree } from '../meta/jobs.js';
 import { dungeonById } from '../data/dungeons.js';
 import { REGIONS, TOWNS, TOWN_IDS, regionOfDungeon, regionOpen } from '../data/world.js';
 import { teleportPrice } from '../meta/world.js';
@@ -343,17 +343,17 @@ function trainerList(char, onUpgrade, onRespec, onTalentRespec) {
   b.disabled = !spentPoints(char) || char.gold < price;
   row.append(ic, txt, el('span', 'have', t('{n} poin', { n: spentPoints(char) })), b);
   list.append(row);
-  // talents (spec §21)
+  // skill points of the current job (spec §43): the first reset is free
   const trow = el('div', 'shoprow');
   const tic = el('span', 'sic'); tic.append(iconCanvas('hst', 28));
   const ttx = el('div', 'stx');
-  ttx.append(el('b', null, tr('Atur Ulang Bakat')), el('span', null, tr('Semua poin bakat kembali, bisa dibagi lagi')));
-  const tp = talentRespecPrice(char);
-  const tb = button(String(tp), 'btn small buy', onTalentRespec);
-  tb.prepend(el('span', 'coin'));
+  ttx.append(el('b', null, tr('Atur Ulang SP')), el('span', null, tr('Semua SP job ini kembali; skill bawaan tetap level 1')));
+  const free = jobOf(char).freeRespec, tp = free ? 0 : spRespecPrice(char), used = spTotal(char.level) - spFree(char);
+  const tb = button(free ? tr('Gratis') : String(tp), 'btn small buy', onTalentRespec);
+  if (!free) tb.prepend(el('span', 'coin'));
   tb.id = 'npc-talent-respec';
-  tb.disabled = !spentTalents(char) || char.gold < tp;
-  trow.append(tic, ttx, el('span', 'have', t('{n} poin', { n: spentTalents(char) })), tb);
+  tb.disabled = !used || char.gold < tp;
+  trow.append(tic, ttx, el('span', 'have', t('{n} SP', { n: used })), tb);
   list.append(trow);
   return list;
 }

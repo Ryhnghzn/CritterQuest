@@ -10,7 +10,7 @@ import { ENEMIES, AFFIXES } from '../data/enemies.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { POTIONS } from '../data/potions.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
-import { TALENTS } from '../data/talents.js';
+import { UMUM, PASSIVES } from '../data/skilltree.js';
 import { UPGRADES } from '../data/shop.js';
 import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
@@ -199,6 +199,16 @@ const POTION_EN = {
 const MAT_EN = { 'Debu Rune': 'Rune Dust', 'Kristal Arkana': 'Arcane Crystal', 'Inti Kegelapan': 'Dark Core' };
 const GEM_EN = { Rubi: 'Ruby', Zamrud: 'Emerald', Berlian: 'Diamond', Topas: 'Topaz', Kecubung: 'Amethyst', Safir: 'Sapphire' };
 const GEM_TIER_EN = { Retak: 'Chipped', Biasa: 'Flawed', Jernih: 'Clear', Sempurna: 'Flawless', Agung: 'Royal' };
+// job passives (spec §43.3): name → [name, desc]
+const PASSIVE_EN = {
+  'Darah Panas': ['Hot Blood', 'Rage gain +15% per level'], 'Kulit Baja': ['Steel Skin', 'Damage taken −4% per level while Rage > 50'],
+  'Tebasan Lebar': ['Wide Slash', 'Basic slash width +8% per level'], 'Napas Tenang': ['Calm Breath', 'Focus fills +15% per level'],
+  'Kaki Ringan': ['Light Feet', 'Move speed +4% per level'], 'Mata Tajam': ['Sharp Eye', 'Crit +3% per level against enemies farther than 250'],
+  'Darah Dingin': ['Cold Blood', 'Heat drops +15% per level'], 'Hemat Mana': ['Mana Saver', 'Skill energy −5% per level'],
+  'Ledakan Besar': ['Big Blast', 'Skill area +6% per level'], 'Ingatan Otot': ['Muscle Memory', 'Combo lasts +1 second per level'],
+  'Bilah Racun': ['Venom Blade', '5% chance per level for basic attacks to poison (3 seconds, 20% ATK every 0.5 seconds)'],
+  'Lolos Tipis': ['Close Call', 'Crit +10% per level for 2 seconds after a dodge'],
+};
 const TALENT_EN = {
   Kekuatan: ['Might', 'ATK +3%'], Ketahanan: ['Vigor', 'Max HP +4%'], Ketajaman: ['Precision', 'Crit +1.5%'],
   'Fokus Sihir': ['Arcane Focus', 'Skill damage +8%'], 'Aliran Energi': ['Energy Flow', 'Energy from attacks +10%'],
@@ -569,7 +579,8 @@ export function localizeData() {
   for (const m of Object.values(MATS)) swap(m, 'name', MAT_EN);
   for (const g of Object.values(GEMS)) swap(g, 'name', GEM_EN);
   swapAll(GEM_TIER_NAMES, GEM_TIER_EN);
-  for (const tl of TALENTS) { const en = TALENT_EN[tl.name]; if (en) [tl.name, tl.desc] = en; }
+  for (const tl of UMUM) { const en = TALENT_EN[tl.name]; if (en) [tl.name, tl.desc] = en; }
+  for (const p of Object.values(PASSIVES).flat()) { const en = PASSIVE_EN[p.name]; if (en) [p.name, p.desc] = en; }
   for (const u of Object.values(UPGRADES)) { const en = UPGRADE_EN[u.name]; if (en) [u.name, u.desc] = en; }
   for (const a of ATTRS) swap(a, 'desc', ATTR_EN);
   for (const p of PHASES) swap(p, 'name', PHASE_EN);

@@ -49,10 +49,13 @@ describe('validateSlot', () => {
     ['tempa melebihi +15', (c) => { c.inventory = [item({ plus: 16 })]; }],
     ['soket tidak sesuai rarity', (c) => { c.inventory = [item({ sockets: [null] })]; }],
     ['material negatif', (c) => { c.mats.dust = -1; }],
-    ['skill kelas lain', (c) => { c.skills = ['spin', 'nova', null, null]; }],
-    ['skill sama di dua slot', (c) => { c.skills = ['nova', 'nova', null, null]; }],
-    ['slot skill bukan 4', (c) => { c.skills = ['nova', 'chain']; }],
-    ['bakat melebihi level', (c) => { c.talents.might = 3; }],
+    ['skill kelas lain', (c) => { c.jobs.mage.pages[0][2] = 'spin'; }],
+    ['skill sama di dua slot', (c) => { c.jobs.mage.pages[0] = ['nova', 'nova', null, null]; }],
+    ['halaman skill bukan 4', (c) => { c.jobs.mage.pages[0] = ['nova', 'chain']; }],
+    ['SP melebihi level', (c) => { c.jobs.mage.sp.might = 3; }],
+    ['skill terpasang belum dipelajari', (c) => { c.jobs.mage.pages[0][2] = 'meteor'; }],
+    ['susunan job sekarang hilang', (c) => { c.jobs = {}; }],
+    ['job asing', (c) => { c.jobs.ninja = c.jobs.mage; }],
     ['rekor bukan angka', (c) => { c.records.kills = 'banyak'; }],
     ['inventori > 60', (c) => { c.inventory = Array.from({ length: 61 }, (_, i) => item({ id: `it_${i}` })); }],
     ['id item ganda', (c) => { c.inventory = [item(), item()]; }],
@@ -140,13 +143,29 @@ describe('save versi 2', () => {
     expect(r.data.inventory[0].sockets).toEqual([null, null]);
   });
 
-  it('migrasi v7 → v8 → v9: skill bawaan kelas di slot 1–2, bakat nol', () => {
+  it('migrasi v7 → … → v25: skill bawaan kelas di slot 1–2, tanpa bakat', () => {
     const v7 = { ...fresh(), version: 7 };
-    delete v7.skills; delete v7.talents;
+    delete v7.jobs; delete v7.jobChanges; delete v7.spNotice;
     const r = readSlot(v7);
     expect(r.status).toBe('ok');
-    expect(r.data.skills).toEqual(['nova', 'chain', null, null]);
-    expect(r.data.talents.might).toBe(0);
+    expect(r.data.jobs.mage.pages[0]).toEqual(['nova', 'chain', null, null]);
+    expect(r.data.jobs.mage.sp.might).toBeUndefined();
+  });
+
+  it('migrasi v24 → v25 (spec §43): skill terpasang jadi level 1, bakat jadi Umum, ultimate tetap, atur ulang gratis', () => {
+    const v24 = structuredClone(fresh());
+    delete v24.jobs; delete v24.jobChanges; delete v24.spNotice;
+    Object.assign(v24, { version: 24, level: 26, skills: ['nova', 'meteor', null, 'blink'], talents: { might: 2, vigor: 0, precision: 0, focus: 3, flow: 0, evasion: 0, vamp: 0, fortune: 1 } });
+    const r = readSlot(v24);
+    expect(r.status).toBe('ok');
+    const j = r.data.jobs.mage;
+    expect(j.pages[0]).toEqual(['nova', 'meteor', null, 'blink']);
+    expect(j.sp).toMatchObject({ nova: 1, chain: 1, meteor: 1, blink: 1, might: 2, focus: 3, fortune: 1, meteorstorm: 1 });
+    expect(j.ult).toBe('meteorstorm');
+    expect(j.freeRespec).toBe(true);
+    expect(r.data.skills).toBeUndefined(); expect(r.data.talents).toBeUndefined();
+    expect(r.data.spNotice).toBe(true);
+    expect(validateSlot(r.data)).toEqual([]);
   });
 
   it('migrasi v9 → v10: papan tugas awal, Lencana nol, bestiari kosong, kodeks dari tas', () => {
@@ -269,7 +288,7 @@ describe('save versi 2', () => {
     const { mounts, ...rest } = structuredClone(fresh());
     const r = readSlot({ ...rest, version: 20 });
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(24);
+    expect(r.data.version).toBe(25);
     expect(r.data.mounts).toEqual({ owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } });
     expect(validateSlot(r.data)).toEqual([]);
   });
@@ -441,7 +460,7 @@ describe('save v24 (spec §41.1)', () => {
     old.records.bestiary.slink = 7;
     const r = readSlot(old);
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(24);
+    expect(r.data.version).toBe(25); // v24, then v25 (§43) on top
     expect(r.data.records.bestiary.slink).toBe(7);
     expect(r.data.records.bestiary.hyena).toBe(0);
     expect(r.data.records.bestiary.voidtwin).toBe(0);
