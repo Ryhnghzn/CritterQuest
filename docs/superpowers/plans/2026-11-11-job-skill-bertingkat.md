@@ -72,7 +72,11 @@
 - [ ] G3 Tes, build, server → **cek manual pemilik** (main mage dari level rendah; harus terasa berbahaya).
 
 ## Bagian H — Job Lanjutan
-- [ ] H1 Tulis rencana rinci H setelah G dicek: ujian Bayangan Diri (angka keras sendiri), 8 cabang (§41.4) masing-masing 2 skill + 1 ultimate + 2 pasif, gelar & aura cabang, ganti cabang di Pelatih. Rincian masuk spesifikasi §43 sebagai §43.10 dulu, setujui pemilik, lalu kerjakan.
+- [x] H1 Rincian H ditulis sebagai spesifikasi §43.10 (pemilik: "lakukan semuanya")
+- [ ] H2 H-a: ujian Bayangan Diri, pilih/ganti cabang di Pelatih, gelar, kerangka efek cabang. Tes.
+- [ ] H3 H-b: isi cabang Warrior & Archer. Tes.
+- [ ] H4 H-c: isi cabang Mage & Assassin. Tes.
+- (catatan lama) Tulis rencana rinci H setelah G dicek: ujian Bayangan Diri (angka keras sendiri), 8 cabang (§41.4) masing-masing 2 skill + 1 ultimate + 2 pasif, gelar & aura cabang, ganti cabang di Pelatih. Rincian masuk spesifikasi §43 sebagai §43.10 dulu, setujui pemilik, lalu kerjakan.
 
 ## Selesai
 - [ ] Z1 `CLAUDE.md` status, centang rencana; ingatkan pemilik build + `butler push` ke itch.io.
