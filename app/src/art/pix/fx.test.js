@@ -58,3 +58,10 @@ describe('archer frames (plan B4)', () => {
     expect(glowing(FX.arrow(2))).toBe(0);
   });
 });
+
+describe('assassin frames (plan B4)', () => {
+  it('every frame drawn; the thrust glows violet', () => {
+    for (const fr of [FX.stab(2), [FX.dagger(2)], FX.shuriken(2), FX.poisonPuff(2), FX.novaRing(1, 2, 'arcane')]) for (const sp of fr) expect(opaque(sp)).toBeGreaterThan(0);
+    expect(glowing(FX.stab(2)[1])).toBe(opaque(FX.stab(2)[1]));
+  });
+});

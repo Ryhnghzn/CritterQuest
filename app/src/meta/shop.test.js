@@ -137,4 +137,10 @@ describe('Tukang Cukur', () => {
     expect(changeLook(make({ gold: 60 }), { hair: 9, hairColor: 0 }, NOW).reason).toBe('bad');
     expect(changeLook(make({ gold: 5 }), { hair: 1, hairColor: 0 }, NOW).reason).toBe('gold');
   });
+
+  it('menerima gaya rambut ke-6 (spec §39)', () => {
+    const r = changeLook(make({ gold: 60 }), { hair: 5, hairColor: 0 }, NOW);
+    expect(r.ok).toBe(true);
+    expect(r.char.look).toEqual({ hair: 5, hairColor: 0 });
+  });
 });

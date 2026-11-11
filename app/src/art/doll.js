@@ -8,6 +8,9 @@ import { drawWeapon, drawHelm, drawArmor, drawBoot, helmHidesHair, INK, halo } f
 import { RARITIES, MYTHIC } from '../data/items.js';
 import { DOLL_FX } from '../data/itemfx.js';
 import { drawHero } from './hero/index.js';
+import { LOOK } from '../data/look.js';
+import { pickWing } from './anime/wingpick.js';
+import { pixelData } from './pixeldata.js';
 
 const TAU = Math.PI * 2;
 const SKIN = ['#e3bfa3', '#b98a6e'];
@@ -22,7 +25,7 @@ export const OUTFIT = {
   assassin: ['#474a5e', '#2a2c39'],
 };
 
-export const HAIR_NAMES = ['Pendek', 'Jabrik', 'Panjang', 'Bob', 'Kuncir'];
+export const HAIR_NAMES = ['Pendek', 'Jabrik', 'Panjang', 'Bob', 'Kuncir', 'Poni Samping'];
 export const HAIR_COLOR_NAMES = ['Hitam', 'Cokelat', 'Pirang', 'Merah', 'Biru', 'Putih'];
 export const HAIR_PALETTE = [
   ['#2e2a36', '#18151e'],
@@ -215,7 +218,7 @@ export function drawDoll(g, classId, look, pose = {}) {
   sk.addColorStop(0, '#f0d2bb'); sk.addColorStop(1, SKIN[0]);
   ink(g, sk);
   g.beginPath(); g.ellipse(hx - hr * 0.42, hy + 0.6, 1.2, 1.6, 0, 0, TAU); ink(g, SKIN[1], 0.6); // ear
-  if (!hideHair) HAIR_FRONT[look.hair](g, hx, hy, hr, hairFill);
+  if (!hideHair) (HAIR_FRONT[look.hair] || HAIR_FRONT[0])(g, hx, hy, hr, hairFill);
 
   // face: almond eyes, brows, nose, mouth — no blush
   const ey = hy + 0.6;
@@ -264,18 +267,45 @@ export function drawDoll(g, classId, look, pose = {}) {
   return { head: { x: hx, y: hy, r: hr }, body: { x: 0, y: -21 + bob }, hand: { x: handX, y: handY } };
 }
 
-// A crisp <canvas> portrait (idle pose) for menus; height in CSS px.
+// A crisp <canvas> portrait (idle pose) for menus; height in CSS px. Anime heroes (spec §39) get
+// a square, front-facing, pixel-art portrait; NPCs and ?lama keep the style-D 0.8-wide frame.
 export function portrait(classId, look, height) {
   const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
-  const width = Math.round(height * 0.8);
+  const anime = LOOK.anime && classId;
+  const width = Math.round(height * (anime ? 1 : 0.8));
   const c = document.createElement('canvas');
   c.width = Math.round(width * dpr); c.height = Math.round(height * dpr);
   c.style.width = `${width}px`; c.style.height = `${height}px`;
   const g = c.getContext('2d');
-  const s = (c.height / 52);
-  g.translate(c.width / 2, c.height - 3 * s);
+  const s = (c.height / (anime ? 70 : 52));
+  g.translate(c.width / 2, c.height - (anime ? 4 : 3) * s);
   g.scale(s, s);
   g.beginPath(); g.ellipse(0, 0, 10, 2.4, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.25)'; g.fill();
-  drawDoll(g, classId, look, { t: 1 });
+  if (anime) {
+    const wings = pickWing({ classId, look, fx: {}, set: -1 });
+    if (LOOK.pixel) { // pixel art (spec §39): draw half-size, pixelate, blit without smoothing
+      const sm = document.createElement('canvas');
+      sm.width = sm.height = Math.round(height / 2);
+      const sg = sm.getContext('2d', { willReadFrequently: true });
+      const ss = (sm.height / 70);
+      sg.translate(sm.width / 2, sm.height - 4 * ss);
+      sg.scale(ss, ss);
+      sg.beginPath(); sg.ellipse(0, 0, 10, 2.4, 0, 0, TAU); sg.fillStyle = 'rgba(0,0,0,.25)'; sg.fill();
+      drawDoll(sg, classId, look, { t: 1, anime: true, view: 'front', wings });
+      const img = sg.getImageData(0, 0, sm.width, sm.height);
+      pixelData(img.data, sm.width, sm.height, LOOK.pixel);
+      sg.putImageData(img, 0, 0);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, c.width, c.height);
+      const smooth = g.imageSmoothingEnabled;
+      g.imageSmoothingEnabled = false;
+      g.drawImage(sm, 0, 0, c.width, c.height);
+      g.imageSmoothingEnabled = smooth;
+    } else {
+      drawDoll(g, classId, look, { t: 1, anime: true, view: 'front', wings });
+    }
+  } else {
+    drawDoll(g, classId, look, { t: 1 });
+  }
   return c;
 }

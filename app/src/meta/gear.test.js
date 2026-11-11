@@ -76,4 +76,13 @@ describe('perbandingan & efek', () => {
     const c = equip(make([item('h1', { variant: 4, rarity: 3 })]), 'h1', NOW).char;
     expect(dollGear(c)).toEqual({ helm: { tier: 4, rarity: 3 } });
   });
+
+  it('kalung & cincin ikut ke paper doll (spec §39)', () => {
+    const ring = item('r1', { slot: 'ring', rarity: 4 });
+    const amu = item('a1', { slot: 'amulet', rarity: 5 });
+    let c = make([ring, amu]);
+    c = equip(c, 'r1', NOW).char;
+    c = equip(c, 'a1', NOW).char;
+    expect(dollGear(c)).toEqual({ ring: { tier: 2, rarity: 4 }, amulet: { tier: 2, rarity: 5 } });
+  });
 });

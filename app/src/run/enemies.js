@@ -60,7 +60,7 @@ function caster(run, e, b) {
 function act(run, e, b) {
   if (b.shot) {
     const a = Math.atan2(run.py - e.y, run.px - e.x), n = b.shot.count || 1;
-    for (let i = 0; i < n; i++) fire(run, e.x, e.y, a + (i - (n - 1) / 2) * (b.shot.spread || 0), b.shot);
+    for (let i = 0; i < n; i++) fire(run, e.x, e.y, a + (i - (n - 1) / 2) * (b.shot.spread || 0), b.shot, e.type);
   } else if (b.summon) summon(run, e, b.summon);
   else if (b.heal) {
     for (const o of run.enemies) {
@@ -71,8 +71,9 @@ function act(run, e, b) {
   }
 }
 
-export function fire(run, x, y, angle, s) {
-  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null });
+// by: the enemy type firing it (death dialog)
+export function fire(run, x, y, angle, s, by = null) {
+  run.shots.push({ x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, r: s.r, dmg: s.dmg, life: 5, color: s.color, onHit: s.onHit || null, by });
 }
 
 function summon(run, e, s) {
@@ -98,7 +99,7 @@ function charge(run, e, b, dt = 1 / 60) {
     if (e.modeT <= 0) { e.mode = 'rest'; e.modeT = b.rest; }
     if (b.trail && (e.trailT = (e.trailT || 0) - dt) <= 0) { // fire bursts left behind (Salamander)
       e.trailT = b.trail.every;
-      run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.trail.r, t: b.trail.fuse, max: b.trail.fuse, dmg: e.dmg * b.trail.dmg, onHit: b.onHit || null, small: true });
+      run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.trail.r, t: b.trail.fuse, max: b.trail.fuse, dmg: e.dmg * b.trail.dmg, onHit: b.onHit || null, small: true, by: e.type });
     }
     return { vx: e.dirX * b.dash.speed, vy: e.dirY * b.dash.speed };
   }
@@ -126,7 +127,7 @@ function bomb(run, e, b) {
 
 function explodeLater(run, e, b) {
   e.mode = 'fuse';
-  run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.fuse, max: b.fuse, dmg: b.blast.dmg, bomber: e, onHit: b.blast.onHit || null });
+  run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.fuse, max: b.fuse, dmg: b.blast.dmg, bomber: e, onHit: b.blast.onHit || null, by: e.type });
 }
 
 // Cacing Pasir (spec §25.4): swims under the sand (can't be hit) toward the player,
@@ -137,7 +138,7 @@ function burrow(run, e, b) {
     const t = toward(e, run.px, run.py, e.speed);
     if (e.modeT <= 0 || t.d < 30) {
       e.mode = 'rise'; e.modeT = b.rise;
-      run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.rise, max: b.rise, dmg: b.blast.dmg });
+      run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: b.rise, max: b.rise, dmg: b.blast.dmg, by: e.type });
       return { vx: 0, vy: 0 };
     }
     return t;
@@ -164,7 +165,7 @@ function blink(run, e, b) {
   }
   if (e.mode === 'appear') {
     if (e.modeT <= 0) {
-      for (let i = 0; i < b.ring.count; i++) fire(run, e.x, e.y, (i / b.ring.count) * TAU, b.ring);
+      for (let i = 0; i < b.ring.count; i++) fire(run, e.x, e.y, (i / b.ring.count) * TAU, b.ring, e.type);
       e.mode = 'walk'; e.actT = b.every;
     }
     return { vx: 0, vy: 0 };
@@ -184,7 +185,7 @@ function blink(run, e, b) {
 export function onDeath(run, e) {
   const b = ENEMIES[e.type];
   if (e.ai === 'bomb' && e.mode !== 'fuse') {
-    run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: 0.4, max: 0.4, dmg: b.blast.dmg, onHit: b.blast.onHit || null });
+    run.hazards.push({ kind: 'circle', x: e.x, y: e.y, r: b.blast.radius, t: 0.4, max: 0.4, dmg: b.blast.dmg, onHit: b.blast.onHit || null, by: e.type });
   }
 }
 
@@ -244,20 +245,20 @@ function stepPattern(run, e, b0, dt, enraged) {
     const r = b.ring, waves = r.waves + (enraged ? 1 : 0), count = r.count + (enraged ? 6 : 0);
     if (p.fireT <= 0 && p.n < waves) {
       const off = p.a0 + (p.n % 2) * (Math.PI / count);
-      for (let i = 0; i < count; i++) fire(run, e.x, e.y, off + (i / count) * TAU, r);
+      for (let i = 0; i < count; i++) fire(run, e.x, e.y, off + (i / count) * TAU, r, e.type);
       p.n++; p.fireT = r.gap;
     } else if (p.n >= waves && p.fireT <= 0) done();
   } else if (p.id === 'spiral') {
     const s = b.spiral, arms = s.arms + (enraged ? 1 : 0);
     if (p.fireT <= 0) {
-      for (let i = 0; i < arms; i++) fire(run, e.x, e.y, p.a0 + p.t * s.turn + (i / arms) * TAU, s);
+      for (let i = 0; i < arms; i++) fire(run, e.x, e.y, p.a0 + p.t * s.turn + (i / arms) * TAU, s, e.type);
       p.fireT = s.every;
     }
     if (p.t >= s.time) done();
   } else if (p.id === 'slam') {
     const s = b.slam, count = s.count + (enraged ? 2 : 0);
     if (p.fireT <= 0 && p.n < count) {
-      run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.radius, t: s.fuse, max: s.fuse, dmg: s.dmg });
+      run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.radius, t: s.fuse, max: s.fuse, dmg: s.dmg, by: e.type });
       p.n++; p.fireT = s.gap * (enraged ? 0.75 : 1);
     } else if (p.n >= count && p.fireT <= 0) done();
   } else if (p.id === 'beam') { // beams from the boss outward, each sweep turned a little further
@@ -265,7 +266,7 @@ function stepPattern(run, e, b0, dt, enraged) {
     if (p.fireT <= 0 && p.n < s.sweeps) {
       for (let i = 0; i < s.count; i++) {
         const a = p.a0 + p.n * s.turn + (i / s.count) * TAU;
-        run.hazards.push({ kind: 'line', x: e.x, y: e.y, x2: e.x + Math.cos(a) * s.len, y2: e.y + Math.sin(a) * s.len, w: s.w, t: s.fuse, max: s.fuse, dmg: s.dmg });
+        run.hazards.push({ kind: 'line', x: e.x, y: e.y, x2: e.x + Math.cos(a) * s.len, y2: e.y + Math.sin(a) * s.len, w: s.w, t: s.fuse, max: s.fuse, dmg: s.dmg, by: e.type });
       }
       p.n++; p.fireT = s.gap;
     } else if (p.n >= s.sweeps && p.fireT <= 0) done();
@@ -273,7 +274,7 @@ function stepPattern(run, e, b0, dt, enraged) {
     const s = b.hole;
     for (let i = 0; i < s.count; i++) {
       const a = rand() * TAU, d = 90 + rand() * 120;
-      run.hazards.push({ kind: 'hole', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, pull: s.pull });
+      run.hazards.push({ kind: 'hole', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, pull: s.pull, by: e.type });
     }
     done();
   } else done();
@@ -287,7 +288,7 @@ export function stepShots(run, dt, bound, cx = 0, cy = 0) {
     const s = S[i];
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     const hit = (s.x - run.px) ** 2 + (s.y - run.py) ** 2 < (s.r + 9) ** 2;
-    if (hit && run.hurtPlayer(s.dmg, s.onHit)) s.life = 0;
+    if (hit && run.hurtPlayer(s.dmg, s.onHit, s.by)) s.life = 0;
     if (s.life <= 0 || (s.x - cx) ** 2 + (s.y - cy) ** 2 > (bound + 40) ** 2) { S[i] = S[S.length - 1]; S.pop(); }
   }
 }
@@ -306,19 +307,19 @@ export function stepHazards(run, dt) {
     if (h.t > 0) continue;
     if (h.kind === 'line' && h.dmg > 0) {
       const lx = h.x2 - h.x, ly = h.y2 - h.y, k = Math.max(0, Math.min(1, ((run.px - h.x) * lx + (run.py - h.y) * ly) / (lx * lx + ly * ly)));
-      if (Math.hypot(h.x + lx * k - run.px, h.y + ly * k - run.py) < h.w / 2 + 8) run.hurtPlayer(h.dmg, h.onHit);
+      if (Math.hypot(h.x + lx * k - run.px, h.y + ly * k - run.py) < h.w / 2 + 8) run.hurtPlayer(h.dmg, h.onHit, h.by);
       run.pulses.push({ x: h.x2, y: h.y2, r: 30, t: 0.25, max: 0.25, color: '199,155,255' });
     }
     if (h.kind === 'hole' && h.dmg > 0) {
-      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r * 0.6) ** 2) run.hurtPlayer(h.dmg, h.onHit);
+      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r * 0.6) ** 2) run.hurtPlayer(h.dmg, h.onHit, h.by);
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.4, max: 0.4, color: '150,90,255' });
       run.addShake?.('medium');
     }
     if (h.kind === 'circle' && h.dmg > 0) {
-      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg, h.onHit);
+      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg, h.onHit, h.by);
       run.spawnBurst(h.x, h.y, '#ff7a3c', h.small ? 6 : 18);
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.3, max: 0.3, color: '255,140,60' });
-      if (!h.small) { run.addShake('medium'); sfx.hurt(); }
+      if (!h.small) { run.addShake('medium'); sfx.blast(); }
       if (h.bomber) h.bomber.hp = 0;
     }
     H[i] = H[H.length - 1]; H.pop();

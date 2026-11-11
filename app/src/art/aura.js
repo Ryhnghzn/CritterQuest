@@ -167,8 +167,8 @@ export function auraBack(g, x, y, fx, t, o = {}) {
   if (pk > 0) setPillar(g, x, y, pk, t, lite, o.set);
 
   // Mitos: red-gold wings of light
-  if (best >= 5) lightWings(g, x, y, t, lite);
-  if (fx.phoenix) phoenixWings(g, x, y, t, lite);
+  if (best >= 5 && !o.anime) lightWings(g, x, y, t, lite); // anime heroes draw their own (art/anime/wings.js)
+  if (fx.phoenix && !o.anime) phoenixWings(g, x, y, t, lite);
   if (fx.lifesteal) { // red mist turning around the body
     const L = UNIQUE_AURA.lifesteal, n = cnt(L.mist, lite);
     for (let i = 0; i < n; i++) {

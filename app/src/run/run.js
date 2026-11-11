@@ -22,6 +22,7 @@ import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } f
 import { MOUNT } from '../data/mounts.js';
 import { startField, stepField, confineFieldEnemy, questDrop } from './field.js';
 import { FIELD } from '../data/world.js';
+import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
 import { Vfx } from './vfx.js';
 import { stepHitFx, impactFx, stepPlayerFx, executeFx } from './skillfx.js';
 import { bloodThread, thornsBurst, killBlast, phoenixRise, shieldFlash, goldGlint } from './auraevents.js';
@@ -80,7 +81,14 @@ export class Game {
   // Pause → Menyerah: ends the trip; the caller treats it like dying (spec §13.4).
   surrender() {
     dismount(this.mount, 'leave');
+    this.surrendered = true;
     this.state = ST.OVER;
+  }
+
+  // What ended the trip, for the death dialog: foe = enemy type of the last hit (or the poison's source),
+  // dot = 'poison' | 'burn' when the damage over time finished the player.
+  deathCause() {
+    return { foe: this.diedOf?.foe ?? null, dot: this.diedOf?.dot ?? null, surrender: this.surrendered };
   }
 
   // effects: special effects of the equipped unique gear, { effect: value } (meta/gear.js)
@@ -141,6 +149,7 @@ export class Game {
     this.applyBuffs();
     this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0;
     this.slowT = 0; this.slowK = 0; this.dotT = 0; this.dotDps = 0; this.dotKind = null; // biome status (spec §25.4)
+    this.lastFoe = null; this.dotFoe = null; this.diedOf = null; this.surrendered = false; // what felled the player (death dialog)
     this.dashSid = null; this.buffSid = null; // skill whose dash trail / buff aura is showing (run/skillfx.js)
     this.banner = null; this.bannerT = 0;
     this.deathT = 0;
@@ -269,7 +278,7 @@ export class Game {
     if (this.dotT > 0) { // poison / burn: damage over time, ignores the hit invulnerability
       this.dotT -= dt;
       this.stats.hp -= this.dotDps * dt;
-      if (this.stats.hp <= 0) { this.die(); return; }
+      if (this.stats.hp <= 0) { this.die(this.dotKind, this.dotFoe); return; }
     }
     if (this.flash > 0) this.flash -= dt;
     if (this.shake > 0) this.shake -= dt * SHAKE_DECAY;
@@ -458,7 +467,7 @@ export class Game {
       if (this.field) confineFieldEnemy(this, e); else confineEnemy(this, e);
       // touch damage
       const rr = e.r + 10;
-      if (e.dmg > 0 && !e.hidden && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg, ENEMIES[e.type].onHit)) {
+      if (e.dmg > 0 && !e.hidden && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg, ENEMIES[e.type].onHit, e.type)) {
         const a = Math.atan2(this.py - e.y, this.px - e.x);
         if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; thornsBurst(this, e); }
         e.kx = -Math.cos(a) * 220; e.ky = -Math.sin(a) * 220;
@@ -470,12 +479,14 @@ export class Game {
   // Any damage to the player (touch, projectile, blast): def, Teriakan Baja, shield,
   // short invulnerability. Returns false when it did not land (dodging / invulnerable).
   // onHit: { slow: [k, s] } | { poison | burn: [k × damage per second, s] } (biome enemies, spec §25.4)
-  hurtPlayer(raw, onHit = null) {
+  // by: enemy type that dealt it (death dialog)
+  hurtPlayer(raw, onHit = null, by = null) {
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
+    if (by) this.lastFoe = by;
     let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul * traitMods(this).dmgTaken;
     if (onHit?.slow && !traitMods(this).slowImmune) { this.slowK = onHit.slow[0]; this.slowT = Math.max(this.slowT, onHit.slow[1]); }
     const dot = onHit?.poison ? 'poison' : onHit?.burn ? 'burn' : null;
-    if (dot) { this.dotKind = dot; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }
+    if (dot) { this.dotKind = dot; this.dotFoe = by; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }
     if (this.shield > 0) { const soak = Math.min(this.shield, dmg); this.shield -= soak; dmg -= soak; shieldFlash(this); }
     this.stats.hp -= dmg;
     const wasRiding = isRiding(this.mount);
@@ -483,9 +494,9 @@ export class Game {
     traitHurt(this, dmg);
     chargeUlt(this, (dmg / this.stats.maxHp) * ULT.hurtPct);
     this.invuln = 0.7; this.flash = 0.25; this.addShake('medium');
-    sfx.hurt();
+    sfx.hurt(dmg >= this.stats.maxHp * HURT_HEAVY);
     this.spawnBurst(this.px, this.py, '#ff5a6e', 8);
-    if (this.stats.hp <= 0) this.die();
+    if (this.stats.hp <= 0) this.die(null, by);
     return true;
   }
 
@@ -497,7 +508,7 @@ export class Game {
     if (e.elite) { this.elites += 1; this.elitesBy[kin] = (this.elitesBy[kin] || 0) + 1; }
     if (this.field && this.questDrops.length) questDrop(this, e, kin);
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
-    sfx.enemyDie();
+    sfx.enemyDie(e.boss ? 'dieBoss' : e.elite || e.r >= BIG_ENEMY_R ? 'dieBig' : 'dieSmall');
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);
     dropLoot(this, e);
     if (this.fx.goldfind) goldGlint(this, e);
@@ -582,7 +593,7 @@ export class Game {
     }
   }
 
-  die() {
+  die(dot = null, foe = null) {
     if (this.god) { this.stats.hp = this.stats.maxHp; return; } // cheat panel
     if (this.fx.phoenix && !this.revived) { // Cincin Phoenix: rise once per trip
       this.revived = true;
@@ -595,6 +606,7 @@ export class Game {
     }
     this.stats.hp = 0;
     dismount(this.mount, 'leave');
+    this.diedOf = { foe: foe ?? this.lastFoe, dot };
     this.state = ST.OVER;
     sfx.gameover();
     this.spawnBurst(this.px, this.py, '#ff5a6e', 30);

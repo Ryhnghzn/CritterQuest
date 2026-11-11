@@ -10,6 +10,11 @@ import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
 import { drawDoll } from '../art/doll.js';
+import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
+import { setFxSink, drawFx } from '../art/anime/elemfx.js';
+import { pickWing } from '../art/anime/wingpick.js';
+import { gaitRate } from '../art/hero/rig.js';
+import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
 import { auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { moveDuration } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -56,7 +61,7 @@ export function canvasTexture(c) { const t = new THREE.CanvasTexture(c); t.color
 export class Actors {
   constructor(view, flat, stage, scene) {
     this.view = view; this.flat = flat; this.stage = stage; this.scene = scene;
-    this.facing = 1; this.walk = 0; this.atkStart = -9; this.lastAttackT = 0; this.lastCast = null; this.move = null;
+    this.facing = 1; this.face = makeFacing(); this.enemyFace = new WeakMap(); this.walk = 0; this.atkStart = -9; this.lastAttackT = 0; this.lastCast = null; this.move = null;
     // a second 2D renderer, never constructed (no re-baking), that paints the ground decals
     this.decalR = Object.assign(Object.create(Renderer.prototype), {
       view, lighting: null, rect: { x0: 0, y0: 0, x1: 0, y1: 0 }, avatar: null, trail: [], facing: 1, walk: 0,
@@ -69,7 +74,7 @@ export class Actors {
     this.decalMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: this.decalTex, transparent: true, depthWrite: false }));
     this.decalMesh.rotation.x = -Math.PI / 2; this.decalMesh.renderOrder = 1; scene.add(this.decalMesh);
     this.heroCanvas = document.createElement('canvas');
-    this.heroTex = canvasTexture(this.heroCanvas);
+    this.heroTex = pixelTexture(canvasTexture(this.heroCanvas));
     this.hero = new THREE.Mesh(new THREE.PlaneGeometry((HX * 2) * S, (HT + HB) * S), billMat(this.heroTex, LOOK.heroBill));
     this.hero.renderOrder = 2; scene.add(this.hero);
     this.enemies = new THREE.Group(); scene.add(this.enemies);
@@ -106,6 +111,7 @@ export class Actors {
     };
     if (playing) {
       for (const h of game.hits) {
+        if (h.kind === 'orbit' && this.spells) continue; // drawn shuriken (spell3d.js)
         if (h.kind === 'orbit') { // the giant shuriken circling the hero (the flat shape is on the ground decal)
           put(h.x, h.y, PROJ_H, h.r * 1.8 + 10, '#dfe6f2', 0.9);
           put(h.x, h.y, PROJ_H, h.r * 0.8 + 4, '#ffffff', 1);
@@ -113,6 +119,7 @@ export class Actors {
         }
         if (h.kind !== 'proj' || h.dead || (h.delay > 0 && !h.hover)) continue; // a delayed arrow is still being drawn back
         if (this.spells && (h.fx === 'fireball' || h.fx === 'axe' || h.fx === 'arrow' || h.fx === 'pierce')) continue; // drawn billboards instead (spell3d.js)
+        if (this.spells && h.fx === 'dagger') continue; // drawn daggers (spell3d.js)
         if (h.delay > 0) { // a dagger floating in the Dagger Circle: it pulses
           const pu = 0.5 + 0.5 * Math.sin(game.time * 14 + h.angle * 3);
           put(h.x, h.y, PROJ_H, 12 + pu * 8, PROJ_COLOR.dagger, 0.6 + 0.4 * pu);
@@ -203,7 +210,7 @@ export class Actors {
     const mounted = game.field && game.mount.state !== 'none', riding = mounted && game.mount.state === 'riding';
     const big = mounted || (game.field && game.mountFxT > 0); // the big box also holds the dust after a knock-off
     const bx = big ? MOUNT.box.hx : HX, bt = big ? MOUNT.box.ht : HT;
-    const k = sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(bx * 2 * k), h = Math.ceil((bt + HB) * k);
+    const k = LOOK.pixel ? LOOK.pixel.k : sharp('hero', lite), c = this.heroCanvas, w = Math.ceil(bx * 2 * k), h = Math.ceil((bt + HB) * k);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; this.heroTex.dispose(); }
     mesh.scale.set(bx / HX, (bt + HB) / (HT + HB), 1);
     const g = c.getContext('2d');
@@ -212,8 +219,11 @@ export class Actors {
     g.lineJoin = 'round';
     // pose: the same rules as the 2D renderer
     const moving = Math.min(1, Math.hypot(game.moveX, game.moveY));
-    if (game.aimX > 0.05) this.facing = 1; else if (game.aimX < -0.05) this.facing = -1;
-    this.walk += moving * 0.22;
+    // faces where it aims, measured on screen (spec §38): right whichever way the camera is turned
+    const yaw = this.stage.yaw;
+    this.facing = turnTo(this.face, screenX(game.aimX, game.aimY, yaw), t).face;
+    const turn = pose2d(this.face, t, screenX(game.moveX, game.moveY, yaw));
+    this.walk += moving * 0.22 * (LOOK.anime ? gaitRate(a.classId) : 1); // each anime class runs at its own cadence
     if (game.attackT > this.lastAttackT + 1e-6) this.atkStart = t;
     this.lastAttackT = game.attackT;
     const ph = (t - this.atkStart) / ATTACK_ANIM;
@@ -222,28 +232,38 @@ export class Actors {
     let move;
     if (this.move) { const mp = (t - this.move.t0) / this.move.dur; if (mp >= 0 && mp < 1) move = { id: this.move.id, ph: mp, dur: this.move.dur }; else this.move = null; }
     const dodge = game.dodgeT > 0 ? 1 - game.dodgeT / DODGE.duration : undefined;
+    // front / back while walking toward / away from the camera; side-on while attacking (spec §38)
+    const busy = !!move || (ph >= 0 && ph < 1) || game.attackT > 0 || dodge !== undefined;
+    viewTo(this.face, screenX(game.moveX, game.moveY, yaw), towardCam(game.moveX, game.moveY, yaw), t, busy);
+    const vw = viewNow(this.face, t), side = vw.view === 'side';
     // the gear's own effects (glow, wings, mists, sparks) are painted on the billboard, around the body
-    const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn };
+    const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn, anime: LOOK.anime };
+    const wings = LOOK.anime ? pickWing(a) : null; // anime wings (art/anime/wings.js)
     auraBack(g, 0, 0, game.fx, t, opt);
     const blink = game.invuln > 0 && ((t * 18) | 0) % 2 === 0;
     if (game.field && game.mountFxT > 0) mountDust(g, 1 - game.mountFxT / MOUNT.fxTime); // not hidden by the hit blink
     if (!blink) {
       g.save();
       g.globalAlpha = playerAlpha(game);
-      if (game.dodgeT > 0) g.rotate(game.dodgeX * 0.25);
+      if (game.dodgeT > 0) g.rotate(screenX(game.dodgeX, game.dodgeY, yaw) * 0.25);
+      g.translate(0, -turn.hop); g.rotate(turn.lean);
       const hs = heroScale(game, game.vfx.mul < 1); // Mengamuk (spec §31.8), not with lite effects
       if (mounted && !riding) drawSummonRing(g, game.mount.t / MOUNT.summon, t, 30 * MAJESTIC_BY_ID[game.mount.id].scale);
-      if (riding) {
-        g.scale(this.facing, 1);
+      if (riding) { // the mount is always drawn side-on; turn.w carries the paper-turn facing (spec §38)
+        g.scale(turn.w, 1);
         drawMajesticRidden(g, MAJESTIC_BY_ID[game.mount.id], { t, m: moving, w: this.walk * 1.4, skin: game.mount.skin }, { classId: a.classId, look: a.look }, drawDoll);
       } else {
-        g.scale(DOLL_SCALE * this.facing * hs, DOLL_SCALE * hs);
-        const hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0 });
+        g.scale(DOLL_SCALE * (side ? turn.w : 1) * vw.squash * hs, DOLL_SCALE * hs);
+        if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []); // element effects: kept out of the pixel filter
+        let hero;
+        try { hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0, view: vw.view, turn: this.face.cur, anime: LOOK.anime, wings }); } finally { setFxSink(null); }
         drawTraitHero(g, game, t, hero);
       }
       g.restore();
     }
     auraFront(g, 0, 0, game.fx, bestRarity(a.look.gear), t, { ...opt, level: game.level, facing: this.facing, enemies: game.enemies, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });
+    pixelateCanvas(c, LOOK.pixel); // pixel art (spec §39); nothing with ?lama
+    if (this.fxList?.length) { drawFx(g, this.fxList, new DOMMatrix()); this.fxList = null; }
     this.heroTex.needsUpdate = true;
     mesh.position.set(game.px * S, (bt - (bt + HB) / 2) * S, (game.py + 10) * S);
     mesh.rotation.y = this.stage.yaw; // face the camera
@@ -251,7 +271,7 @@ export class Actors {
 
   spriteTex(s) {
     let tex = this.texOf.get(s.img);
-    if (!tex) { tex = canvasTexture(s.img); this.texOf.set(s.img, tex); }
+    if (!tex) { tex = LOOK.pixel ? pixelTexture(canvasTexture(pixelCopy(s.img, s.ext))) : canvasTexture(s.img); this.texOf.set(s.img, tex); }
     return tex;
   }
   drawEnemies(game, t, playing) {
@@ -268,10 +288,15 @@ export class Actors {
       const tex = this.spriteTex(s);
       if (m.material.map !== tex) { m.material.map = tex; m.material.emissiveMap = tex; m.material.needsUpdate = true; }
       const k = e.r / (ENEMIES[e.type]?.r || e.r), squash = 1 + Math.sin(e.wob || 0) * 0.06;
-      const size = s.ext * 2 * k * S, flip = e.mode === 'dash' ? e.dirX < 0 : game.px < e.x;
-      m.scale.set(size / squash * (flip ? -1 : 1), size * squash, 1);
-      m.position.set(e.x * S, e.r * 0.9 * k * S, (e.y + e.r * 0.75) * S);
-      m.rotation.y = this.stage.yaw;
+      // faces the hero (or its dash), on screen, with the same paper turn as the hero (spec §38)
+      const yaw = this.stage.yaw, size = s.ext * 2 * k * S;
+      let f = this.enemyFace.get(e);
+      if (!f) { f = makeFacing(screenX(game.px - e.x, game.py - e.y, yaw) < 0 ? -1 : 1); this.enemyFace.set(e, f); }
+      turnTo(f, e.mode === 'dash' ? screenX(e.dirX, e.dirY, yaw) : screenX(game.px - e.x, game.py - e.y, yaw), t);
+      const turn = pose2d(f, t);
+      m.scale.set(size / squash * turn.w, size * squash, 1);
+      m.position.set(e.x * S, (e.r * 0.9 * k + turn.hop) * S, (e.y + e.r * 0.75) * S);
+      m.rotation.y = yaw;
       m.visible = true;
     }
     for (const [e, m] of this.enemyMesh) if (!seen.has(e)) { this.enemies.remove(m); m.geometry.dispose(); m.material.dispose(); this.enemyMesh.delete(e); }

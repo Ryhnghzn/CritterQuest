@@ -233,3 +233,46 @@ export function thorns(k = 1) {
     return s.outline();
   });
 }
+
+// ---- plan B4: Assassin ----------------------------------------------------------------------
+// a twin thrust: two thin violet streaks to the right with an X flash at the tip
+export function stab(k = 1) {
+  return [0.5, 1, 1, 0.8].map((reach, f) => {
+    const s = new PixelSprite(46, 22, k), cy = 11, L = 4 + 36 * reach;
+    for (const tilt of [-1.6, 1.6]) s.paint(capsule(4, cy + tilt * 0.4, L, cy + tilt, 0.4, 1.1), 'arcane', { level: f === 3 ? 2 : 3, edge: false });
+    s.paint(capsule(8, cy, L + 2, cy, 0.3, 0.7), 'arcane', { level: 4, edge: false });
+    if (f >= 1) { const x = L + 1, d = f === 1 ? 4 : 5.5; for (const sg of [-1, 1]) s.paint(capsule(x - d, cy - d * sg, x + d, cy + d * sg, 0.9, 0.9), 'arcane', { level: f === 3 ? 3 : 4, edge: false }); }
+    return s;
+  });
+}
+// a throwing dagger pointing +x (tip at the right edge)
+export function dagger(k = 1) {
+  const s = new PixelSprite(28, 10, k), y = 5;
+  s.paint(capsule(2, y, 9, y, 1.1), 'wood', { bias: -0.6 });
+  s.paint(capsule(9, y - 2.8, 9, y + 2.8, 0.8), 'metal');
+  s.paint(poly([[10, y - 1.8], [27.5, y], [10, y + 1.8]]), 'metal', { rim: true });
+  s.paint(capsule(11, y - 0.4, 25, y - 0.1, 0.25), 'metal', { level: 4, edge: false });
+  return s.outline();
+}
+// the giant shuriken, four steps of its spin
+export function shuriken(k = 1) {
+  return [0, 1, 2, 3].map((f) => {
+    const s = new PixelSprite(40, 40, k), c = 20, a0 = (f / 4) * (Math.PI / 2);
+    for (let i = 0; i < 4; i++) {
+      const a = a0 + (i * Math.PI) / 2, P = (r, da) => [c + Math.cos(a + da) * r, c + Math.sin(a + da) * r];
+      s.paint(poly([P(4, -0.9), P(19, 0), P(9, 0.55), P(4, 0.9)]), 'metal', { rim: true });
+    }
+    s.paint(ellipse(c, c, 5, 5), 'metal', { bias: -0.6 });
+    s.paint(ellipse(c, c, 2, 2), 'arcane', { level: 3, edge: false });
+    return s.outline();
+  });
+}
+// a puff of poison: swells, glows a sickly green, thins away
+export function poisonPuff(k = 1) {
+  return [0, 1, 2, 3, 4].map((f) => {
+    const s = new PixelSprite(32, 26, k), r = rng(91 + f), t = f / 4;
+    for (let i = 0; i < 6; i++) s.paint(ellipse(16 + (r() - 0.5) * 14 * (0.6 + t), 15 - t * 4 + (r() - 0.5) * 5, 4.5 + t * 3.5 + r() * 2, 3.5 + t * 2.5 + r()), 'poison', { bias: 0.2 - t * 0.9 });
+    if (f < 3) for (let i = 0; i < 3; i++) s.dot(Math.round(8 + r() * 16), Math.round(8 + r() * 10), 'poison', 4);
+    return s;
+  });
+}

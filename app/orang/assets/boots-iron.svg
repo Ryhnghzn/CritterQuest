@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Boots — iron greaves and sabatons</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#1e1c1d;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#1e1c1d;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .ir{fill:#8f979e}.irS{fill:#646b72}.irD{fill:#474c52}.irH{fill:#bcc3c8}.irX{fill:#e1e6e9}
+      .lea{fill:#4f3523}
+      .rv{fill:#c9cfd3;stroke:#1e1c1d;stroke-width:1.1}
+    </style>
+    <clipPath id="ironC">
+      <path d="M207,574 C208,620 210,660 212,700 L246,700 C246,660 247,620 249,574 Z"/>
+      <path d="M208,546 C208,532 247,532 247,546 L246,574 C240,585 215,585 209,574 Z"/>
+      <path d="M209,698 L248,698 L250,712 L207,712 Z"/>
+      <path d="M207,710 L251,710 L253,724 L206,724 Z"/>
+      <path d="M206,722 L253,722 C256,730 256,740 247,744 Q230,748 213,744 C205,740 203,730 206,722 Z"/>
+    </clipPath>
+  </defs>
+  <g id="legIronL">
+    <!-- leather straps behind greave -->
+    <path class="lea" d="M205,606 L251,606 L251,614 L205,614 Z M206,664 L249,664 L249,672 L206,672 Z"/>
+    <!-- sabaton: toe, then lames overlapping downward -->
+    <path class="ir" d="M206,722 L253,722 C256,730 256,740 247,744 Q230,748 213,744 C205,740 203,730 206,722 Z"/>
+    <path class="ln" d="M206,722 L253,722 C256,730 256,740 247,744 Q230,748 213,744 C205,740 203,730 206,722 Z"/>
+    <path class="ir" d="M207,710 L251,710 L253,724 L206,724 Z"/>
+    <path class="ln" d="M207,710 L251,710 L253,724 L206,724 Z"/>
+    <path class="ir" d="M209,698 L248,698 L250,712 L207,712 Z"/>
+    <path class="ln" d="M209,698 L248,698 L250,712 L207,712 Z"/>
+    <!-- greave -->
+    <path class="ir" d="M207,574 C208,620 210,660 212,700 L246,700 C246,660 247,620 249,574 Z"/>
+    <path class="ln" d="M207,574 C208,620 210,660 212,700 L246,700 C246,660 247,620 249,574 Z"/>
+    <!-- poleyn -->
+    <path class="ir" d="M201,550 C196,556 196,566 201,574 L210,570 L210,552 Z"/>
+    <path class="ln" d="M201,550 C196,556 196,566 201,574 L210,570 L210,552 Z"/>
+    <path class="ir" d="M208,546 C208,532 247,532 247,546 L246,574 C240,585 215,585 209,574 Z"/>
+    <!-- shared shading over every plate -->
+    <g clip-path="url(#ironC)">
+      <path class="irS" d="M232,520 L260,520 L260,750 L232,750 Z"/>
+      <path class="irD" d="M243,520 L260,520 L260,750 L245,750 C248,700 247,620 243,520 Z"/>
+      <path class="irH" d="M213,580 C214,620 216,660 217,696 L222,696 C221,660 219,620 219,580 Z"/>
+      <path class="irX" d="M215,586 L218,586 L219,640 L216,640 Z"/>
+      <path class="irH" d="M214,540 C220,536 230,536 236,538 C228,542 220,548 216,556 Z"/>
+      <path class="irD" opacity="0.6" d="M200,566 C214,580 240,580 252,566 L252,590 L200,590 Z"/>
+      <path class="irH" d="M212,726 C218,724 226,724 230,726 L228,730 C222,729 216,729 212,731 Z"/>
+      <path class="irD" opacity="0.6" d="M200,706 L256,706 L256,712 L200,712 Z M200,719 L256,719 L256,724 L200,724 Z"/>
+    </g>
+    <path class="ln" d="M208,546 C208,532 247,532 247,546 L246,574 C240,585 215,585 209,574 Z"/>
+    <path class="fn" d="M210,560 C220,566 236,566 246,560"/>
+    <path d="M229,586 L230,698" stroke="#dfe5e8" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
+    <circle class="rv" cx="227.5" cy="552" r="2.6"/>
+    <circle class="rv" cx="213" cy="610" r="2"/><circle class="rv" cx="243" cy="610" r="2"/>
+    <circle class="rv" cx="214" cy="668" r="2"/><circle class="rv" cx="242" cy="668" r="2"/>
+  </g>
+  <use href="#legIronL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

@@ -5,6 +5,7 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { REGIONS, FIELD, regionById } from '../data/world.js';
 import { buildFieldMap, blocked, sample } from './fieldmap.js';
 import { fieldLevel, fieldScale, spawnPack, spawnGuardian, questDrop } from './field.js';
+import { fire } from './enemies.js';
 import { HORDE } from '../data/balance.js';
 import { TREASURE } from '../data/world.js';
 import { fogSize } from '../meta/world.js';
@@ -251,6 +252,34 @@ describe('musuh biome (§25.4)', () => {
     expect(g.stats.hp).toBeLessThan(hp - 1);
     for (let i = 0; i < 120; i++) g.step(1 / 60);
     expect(g.dotT).toBeLessThanOrEqual(0);
+  });
+
+  it('penyebab tumbang tercatat: musuh terakhir yang memukul, racun, atau menyerah', () => {
+    const g = fresh();
+    expect(g.deathCause()).toEqual({ foe: null, dot: null, surrender: false });
+    g.hurtPlayer(1, null, 'slink');
+    g.invuln = 0;
+    g.hurtPlayer(9999, null, 'tank');
+    expect(g.state).toBe(ST.OVER);
+    expect(g.deathCause()).toEqual({ foe: 'tank', dot: null, surrender: false });
+
+    const p = fresh();
+    p.hurtPlayer(1, { poison: [50, 5] }, 'scorpion');
+    for (let i = 0; i < 600 && p.state === ST.PLAY; i++) p.step(1 / 60);
+    expect(p.deathCause()).toEqual({ foe: 'scorpion', dot: 'poison', surrender: false });
+
+    const s = fresh();
+    s.surrender();
+    expect(s.deathCause().surrender).toBe(true);
+  });
+
+  it('tembakan & ledakan musuh membawa jenis musuhnya', () => {
+    const g = fresh();
+    const e = g.spawnEnemy('slink');
+    e.x = g.px + 600; e.y = g.py; e.dmg = 0;
+    fire(g, g.px, g.py, 0, { speed: 0, r: 10, dmg: 9999 }, e.type);
+    g.step(1 / 60);
+    expect(g.deathCause().foe).toBe('slink');
   });
 
   it('cacing pasir tidak bisa dipukul saat menyelam, lalu muncul dengan semburan', () => {

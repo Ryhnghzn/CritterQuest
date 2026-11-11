@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Boots — celestial greaves</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#1f2433;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#1f2433;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round}
+      .wp{fill:#eef1f6}.wpS{fill:#bcc6d4}.wpD{fill:#8b97ab}.wpH{fill:#ffffff}
+      .gd{fill:#d8b45f}.gdS{fill:#a07f38}.gdH{fill:#f6e2a2}
+      .cl{fill:#26396e}.clS{fill:#18264d}.clH{fill:#3a529a}
+      .az{fill:#5cc8ff}.azC{fill:#e4f8ff}
+      .gt{fill:none;stroke:#c9a24c;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      .fl{fill:none;stroke:#d8b45f;stroke-width:1.4;stroke-linecap:round}
+      .fe{fill:#f3f5fa}.feS{fill:#d3dbe8}.feD{fill:#aab6ca}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    
+  </defs>
+<g id="legL">
+
+<path class="wp" d="M208,698 L248,698 L253,722 C256,734 248,748 228,752 C210,748 202,734 206,722 Z" />
+<clipPath id="sabC"><path d="M208,698 L248,698 L253,722 C256,734 248,748 228,752 C210,748 202,734 206,722 Z"/></clipPath><g clip-path="url(#sabC)"><path class="wpS" d="M232,690 L262,690 L262,756 L232,756 Z"/><path class="wpH" d="M212,712 L220,712 L217,736 L211,734 Z"/></g>
+<path class="ln" d="M208,698 L248,698 L253,722 C256,734 248,748 228,752 C210,748 202,734 206,722 Z" />
+  <path class="gt" d="M207,712 L251,712"/><path class="fl" d="M228,716 L228,744"/>
+<path class="wp" d="M206,574 C207,620 209,660 211,700 L247,700 C247,660 248,620 250,574 Z" />
+<clipPath id="grvC"><path d="M206,574 C207,620 209,660 211,700 L247,700 C247,660 248,620 250,574 Z"/></clipPath><g clip-path="url(#grvC)"><path class="wpS" d="M236,560 L262,560 L262,710 L236,710 Z"/><path class="wpH" d="M212,584 L218,584 L217,690 L213,690 Z"/></g>
+<path class="ln" d="M206,574 C207,620 209,660 211,700 L247,700 C247,660 248,620 250,574 Z" />
+  <path class="gt" d="M207,580 L249,580 M210,694 L248,694"/>
+  <path class="fl" d="M228,590 C220,610 220,630 228,648 C236,666 236,680 228,690"/>
+  <path class="fe" d="M210,676 C196,668 186,654 184,636 C192,646 198,650 204,650 C196,642 194,632 196,620 C202,636 208,644 214,648 Z"/>
+  <path class="ln" d="M210,676 C196,668 186,654 184,636 C192,646 198,650 204,650 C196,642 194,632 196,620 C202,636 208,644 214,648 Z"/>
+<path class="wp" d="M206,546 C206,530 248,530 248,546 L246,574 C240,586 214,586 208,574 Z" />
+<clipPath id="kneeC"><path d="M206,546 C206,530 248,530 248,546 L246,574 C240,586 214,586 208,574 Z"/></clipPath><g clip-path="url(#kneeC)"><path class="wpS" d="M230,520 L256,520 L256,590 L230,590 Z"/><path class="wpH" d="M212,542 C216,536 226,534 232,536 C224,540 218,546 214,554 Z"/></g>
+<path class="ln" d="M206,546 C206,530 248,530 248,546 L246,574 C240,586 214,586 208,574 Z" />
+  <path class="gt" d="M209,572 C216,580 238,580 245,572"/>
+  <g filter="url(#glowBig)" fill="#5cc8ff" stroke="#5cc8ff" class="pulse"><path d="M227,547 L232.25,554 L227,561 L221.75,554 Z"/></g>
+  <path class="gd" d="M227,544 L235.25,554 L227,564 L218.75,554 Z"/><path class="ln" d="M227,544 L235.25,554 L227,564 L218.75,554 Z"/>
+  <path class="az" d="M227,547 L232.25,554 L227,561 L221.75,554 Z"/><path class="azC" d="M227,549.1 L229.1,554 L227,555.4 L224.2,553.3 Z"/>
+</g>
+<use href="#legL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

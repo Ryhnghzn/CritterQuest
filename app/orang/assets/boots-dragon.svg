@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Boots — dragon greaves</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#140f10;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#140f10;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .st{fill:#2c2528}.stS{fill:#1a1517}.stH{fill:#4d4347}.stX{fill:#8a7c80}
+      .rd{fill:#8a1f22}.rdS{fill:#561114}.rdH{fill:#c0392f}
+      .gd{fill:#c9963f}.gdS{fill:#8a6224}.gdH{fill:#f0cf7c}
+      .iv{fill:#e1d4b8}.ivS{fill:#a8977a}.ivD{fill:#6f6250}
+      .em{fill:#ff8a2a}.emC{fill:#ffe08a}
+      .gt{fill:none;stroke:#c9963f;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      .crack{fill:none;stroke:#ffb347;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    <pattern id="scale" width="12" height="9" patternUnits="userSpaceOnUse">
+      <rect width="12" height="9" fill="#7a1b1e"/>
+      <path d="M0,0 A6,7 0 0 0 12,0" fill="#93272a" stroke="#2a0a0c" stroke-width="1.1"/>
+      <path d="M-6,4.5 A6,7 0 0 0 6,4.5 M6,4.5 A6,7 0 0 0 18,4.5" fill="#8a2124" stroke="#2a0a0c" stroke-width="1.1"/>
+      <path d="M3,1.5 A3,2.5 0 0 0 7,1.5" fill="none" stroke="#c0392f" stroke-width="0.9"/>
+    </pattern>
+  </defs>
+<g id="legL">
+
+<path class="st" d="M207,698 L249,698 L254,722 C258,734 256,742 246,746 L214,746 C204,742 202,734 206,722 Z" />
+<clipPath id="sabC"><path d="M207,698 L249,698 L254,722 C258,734 256,742 246,746 L214,746 C204,742 202,734 206,722 Z"/></clipPath><g clip-path="url(#sabC)"><path class="stS" d="M232,690 L262,690 L262,750 L232,750 Z"/><path class="stH" d="M212,712 L222,712 L218,738 L210,736 Z"/></g>
+<path class="ln" d="M207,698 L249,698 L254,722 C258,734 256,742 246,746 L214,746 C204,742 202,734 206,722 Z" />
+  <path class="fn" d="M207,712 L252,712 M206,726 L254,726"/>
+  <g class="iv"><path d="M214,744 L208,756 L220,746 Z"/><path d="M227,746 L227,759 L234,746 Z"/><path d="M240,745 L248,756 L246,743 Z"/></g>
+  <g class="fn"><path d="M214,744 L208,756 L220,746 Z"/><path d="M227,746 L227,759 L234,746 Z"/><path d="M240,745 L248,756 L246,743 Z"/></g>
+<path class="st" d="M205,574 C206,620 208,660 210,700 L248,700 C248,660 249,620 251,574 Z" />
+<clipPath id="grvC"><path d="M205,574 C206,620 208,660 210,700 L248,700 C248,660 249,620 251,574 Z"/></clipPath><g clip-path="url(#grvC)"><path class="stS" d="M236,560 L262,560 L262,710 L236,710 Z"/><path class="stH" d="M210,584 L216,584 L215,690 L211,690 Z"/><path fill="url(#scale)" d="M218,590 L238,590 L236,680 L227,692 L220,680 Z"/></g>
+<path class="ln" d="M205,574 C206,620 208,660 210,700 L248,700 C248,660 249,620 251,574 Z" />
+  <path class="fn" d="M218,590 L238,590 L236,680 L227,692 L220,680 Z"/>
+  <path class="gt" d="M206,690 L249,690"/>
+  <g filter="url(#glow)" fill="#ff6a12" stroke="#ff6a12" class="pulse"><path d="M212,600 L214,640 L211,680 M244,600 L242,640 L245,680" fill="none" stroke-width="4"/></g>
+  <path class="crack" d="M212,600 L214,640 L211,680 M244,600 L242,640 L245,680"/>
+  <path class="st" d="M210,548 L182,524 L214,566 Z"/><path class="stH" d="M210,548 L182,524 L198,548 Z"/><path class="ln" d="M210,548 L182,524 L214,566 Z"/>
+<path class="st" d="M206,544 C206,528 248,528 248,544 L246,574 C240,586 214,586 208,574 Z" />
+<clipPath id="kneeC"><path d="M206,544 C206,528 248,528 248,544 L246,574 C240,586 214,586 208,574 Z"/></clipPath><g clip-path="url(#kneeC)"><path class="stS" d="M230,520 L256,520 L256,590 L230,590 Z"/><path class="stH" d="M212,540 C216,534 226,532 232,534 C224,538 218,544 214,552 Z"/></g>
+<path class="ln" d="M206,544 C206,528 248,528 248,544 L246,574 C240,586 214,586 208,574 Z" />
+  <path class="iv" d="M222,536 L227,506 L234,536 Z"/><path class="ivS" d="M227,506 L234,536 L228,536 Z"/><path class="ln" d="M222,536 L227,506 L234,536 Z"/>
+  <g filter="url(#glow)" fill="#ff7a1a" stroke="#ff7a1a" class="pulse"><circle cx="227" cy="556" r="5"/></g>
+  <circle cx="227" cy="556" r="6" class="gd"/><circle cx="227" cy="556" r="6" class="ln"/><circle cx="227" cy="556" r="3.2" class="em"/>
+</g>
+<use href="#legL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

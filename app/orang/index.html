@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adventurer Outfitter</title>
+<style>
+  :root {
+    --bg: #15131a; --panel: #1f1c25; --panel2: #29252f; --line: #3a3442;
+    --text: #e8e1d4; --mute: #9d93a4; --gold: #c9a45c; --gold2: #8a7040;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 15px/1.4 Georgia, 'Times New Roman', serif;
+    display: grid; grid-template-columns: minmax(0, 1fr) 380px;
+  }
+  header { grid-column: 1 / -1; padding: 18px 24px 0; display: flex; align-items: baseline; gap: 14px; }
+  h1 { margin: 0; font-size: 22px; letter-spacing: .04em; color: var(--gold); font-weight: normal; }
+  header p { margin: 0; color: var(--mute); font-size: 13px; }
+
+  .stage-wrap { display: grid; place-items: center; padding: 16px; }
+  .stage {
+    position: relative; height: min(84vh, 768px); aspect-ratio: 512 / 768;
+    border-radius: 14px; border: 1px solid var(--line);
+    background: radial-gradient(ellipse at 50% 42%, #3a3340 0%, #24202a 55%, #18161c 100%);
+    box-shadow: inset 0 0 60px #0008;
+  }
+  .stage.checker {
+    background: repeating-conic-gradient(#d9d4cc 0 25%, #f2eee8 0 50%) 0 0 / 24px 24px;
+  }
+  .stage::after { /* ground shadow under the feet */
+    content: ''; position: absolute; left: 34%; right: 34%; bottom: 2.2%; height: 2.6%;
+    background: radial-gradient(#0009, transparent 70%); z-index: 0;
+  }
+  .stage.checker::after { display: none; }
+  .layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+  .layer[hidden] { display: none; }
+
+  aside { background: var(--panel); border-left: 1px solid var(--line); padding: 18px; overflow-y: auto; max-height: 100vh; position: sticky; top: 0; }
+  .slot { margin-bottom: 18px; }
+  .slot h2 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--mute); font-weight: normal; }
+  .items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .item {
+    appearance: none; border: 1px solid var(--line); background: var(--panel2); color: var(--text);
+    border-radius: 10px; padding: 6px 4px 7px; cursor: pointer; font: inherit; font-size: 11.5px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 92px;
+  }
+  .item:hover { border-color: #5a5062; }
+  .item:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .item[aria-pressed="true"] { border-color: var(--gold); background: #332b26; box-shadow: 0 0 0 1px var(--gold2) inset; }
+  .thumb { width: 58px; height: 58px; border-radius: 7px; background-color: #17151b; background-repeat: no-repeat; }
+  .thumb.none { display: grid; place-items: center; color: #5a5062; font-size: 22px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .tools button {
+    appearance: none; font: inherit; font-size: 13px; color: var(--text); background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer;
+  }
+  .tools button:hover { border-color: var(--gold2); }
+  .tools button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+  .sets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sets button {
+    appearance: none; font: inherit; font-size: 13px; color: var(--gold); background: #2a2420;
+    border: 1px solid var(--gold2); border-radius: 8px; padding: 9px 10px; cursor: pointer;
+  }
+  .sets button:hover { background: #3a3028; }
+  .loadout { margin-top: 12px; color: var(--mute); font-size: 12.5px; }
+
+  @media (max-width: 860px) {
+    body { grid-template-columns: 1fr; }
+    aside { position: static; max-height: none; border-left: 0; border-top: 1px solid var(--line); padding: 16px; }
+    .stage { height: auto; width: min(100%, 420px); }
+    header { padding: 14px 16px 0; flex-direction: column; gap: 2px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Adventurer Outfitter</h1>
+  <p>Modular SVG character · every part shares viewBox 0 0 512 768</p>
+</header>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage" aria-label="Character preview"></div>
+</div>
+
+<aside>
+  <section class="slot">
+    <h2>Sets</h2>
+    <div class="sets" id="sets"></div>
+  </section>
+  <div id="slots"></div>
+  <div class="tools">
+    <button type="button" id="random">Random loadout</button>
+    <button type="button" id="strip">Unequip all</button>
+    <button type="button" id="checker" aria-pressed="false">Transparency grid</button>
+  </div>
+  <div class="loadout" id="loadout"></div>
+</aside>
+
+<script>
+  const ASSETS = 'assets/';
+  // z is the paint order: the sword sits under the body so the fist wraps the grip,
+  // the shield sits over everything because it is strapped to the front of the forearm.
+  // crop = [x, y, size] in the shared 512x768 space, used for the item thumbnails.
+  const SLOTS = [
+    { id: 'helmet', label: 'Helmet', z: 6, crop: [150, 0, 212], items: [
+      { file: 'helmet-leather', name: 'Leather Cap' },
+      { file: 'helmet-iron', name: 'Iron Helm' },
+      { file: 'helmet-knight', name: 'Knight Helm' },
+      { file: 'helmet-dragon', name: 'Dragon Helm' },
+      { file: 'helmet-celestial', name: 'Celestial Helm' },
+      { file: 'helmet-void', name: 'Void Crown' },
+    ] },
+    { id: 'chest', label: 'Chest', z: 5, crop: [100, 110, 312], items: [
+      { file: 'chest-leather', name: 'Leather Armor' },
+      { file: 'chest-iron', name: 'Iron Armor' },
+      { file: 'chest-darkknight', name: 'Dark Knight' },
+      { file: 'chest-dragon', name: 'Dragon Plate' },
+      { file: 'chest-celestial', name: 'Celestial Plate' },
+      { file: 'chest-void', name: 'Void Plate' },
+    ] },
+    { id: 'boots', label: 'Boots', z: 4, crop: [146, 500, 250], items: [
+      { file: 'boots-leather', name: 'Leather Boots' },
+      { file: 'boots-iron', name: 'Iron Boots' },
+      { file: 'boots-dragon', name: 'Dragon Greaves' },
+      { file: 'boots-celestial', name: 'Celestial Greaves' },
+      { file: 'boots-void', name: 'Void Greaves' },
+    ] },
+    { id: 'weapon', label: 'Weapon', z: 2, crop: [0, 0, 768], items: [
+      { file: 'weapon-sword-iron', name: 'Iron Sword' },
+      { file: 'weapon-dragon-greatsword', name: 'Dragonfang' },
+      { file: 'weapon-celestial-spear', name: 'Celestial Spear' },
+      { file: 'weapon-void-scythe', name: 'Void Scythe' },
+    ] },
+    { id: 'offhand', label: 'Off-hand', z: 7, crop: [274, 342, 164], items: [
+      { file: 'offhand-shield-wood', name: 'Wooden Shield' },
+    ] },
+    { id: 'back', label: 'Back', z: 1, crop: [0, 0, 512], items: [
+      { file: 'back-dragon-wings', name: 'Dragon Wings' },
+      { file: 'back-celestial-wings', name: 'Angel Wings' },
+      { file: 'back-void-cape', name: 'Void Cape' },
+    ] },
+  ];
+  // one click dresses the whole set; slots not listed are emptied
+  const SETS = [
+    { name: 'Adventurer', gear: { chest: 'chest-leather', boots: 'boots-leather', weapon: 'weapon-sword-iron' } },
+    { name: 'Dragon Knight', gear: { helmet: 'helmet-dragon', chest: 'chest-dragon', boots: 'boots-dragon', weapon: 'weapon-dragon-greatsword', back: 'back-dragon-wings' } },
+    { name: 'Celestial Knight', gear: { helmet: 'helmet-celestial', chest: 'chest-celestial', boots: 'boots-celestial', weapon: 'weapon-celestial-spear', back: 'back-celestial-wings' } },
+    { name: 'Void Lord', gear: { helmet: 'helmet-void', chest: 'chest-void', boots: 'boots-void', weapon: 'weapon-void-scythe', back: 'back-void-cape' } },
+  ];
+
+  const stage = document.getElementById('stage');
+  const state = {};
+  const layers = {};
+
+  const base = new Image();
+  base.src = ASSETS + 'base-body.svg';
+  base.alt = '';
+  base.className = 'layer';
+  base.style.zIndex = 3;
+  stage.append(base);
+
+  for (const slot of SLOTS) {
+    const img = new Image();
+    img.alt = '';
+    img.className = 'layer';
+    img.style.zIndex = slot.z;
+    img.hidden = true;
+    stage.append(img);
+    layers[slot.id] = img;
+    for (const it of slot.items) new Image().src = ASSETS + it.file + '.svg'; // preload
+  }
+
+  function thumb(file, [x, y, size]) {
+    const t = document.createElement('span');
+    t.className = 'thumb';
+    if (!file) { t.classList.add('none'); t.textContent = '—'; return t; }
+    const k = 58 / size;
+    t.style.backgroundImage = `url(${ASSETS}${file}.svg)`;
+    t.style.backgroundSize = `${512 * k}px ${768 * k}px`;
+    t.style.backgroundPosition = `${-x * k}px ${-y * k}px`;
+    return t;
+  }
+
+  const slotsEl = document.getElementById('slots');
+  for (const slot of SLOTS) {
+    const sec = document.createElement('section');
+    sec.className = 'slot';
+    sec.innerHTML = `<h2 id="h-${slot.id}">${slot.label}</h2>`;
+    const row = document.createElement('div');
+    row.className = 'items';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-labelledby', `h-${slot.id}`);
+    for (const it of [null, ...slot.items]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'item';
+      b.dataset.slot = slot.id;
+      b.dataset.file = it ? it.file : '';
+      b.append(thumb(it && it.file, slot.crop), it ? it.name : 'None');
+      b.addEventListener('click', () => equip(slot.id, b.dataset.file));
+      row.append(b);
+    }
+    sec.append(row);
+    slotsEl.append(sec);
+  }
+
+  function equip(slotId, file) {
+    state[slotId] = file;
+    const img = layers[slotId];
+    if (file) { img.src = ASSETS + file + '.svg'; img.hidden = false; } else { img.hidden = true; }
+    for (const b of document.querySelectorAll(`.item[data-slot="${slotId}"]`)) {
+      b.setAttribute('aria-pressed', String(b.dataset.file === file));
+    }
+    renderLoadout();
+  }
+
+  function renderLoadout() {
+    const names = SLOTS.map((s) => s.items.find((i) => i.file === state[s.id])?.name).filter(Boolean);
+    document.getElementById('loadout').textContent = names.length ? 'Equipped: ' + names.join(', ') : 'Nothing equipped';
+  }
+
+  document.getElementById('random').addEventListener('click', () => {
+    for (const s of SLOTS) {
+      const pool = ['', ...s.items.map((i) => i.file)];
+      equip(s.id, pool[Math.floor(Math.random() * pool.length)]);
+    }
+  });
+  document.getElementById('strip').addEventListener('click', () => SLOTS.forEach((s) => equip(s.id, '')));
+  document.getElementById('checker').addEventListener('click', (e) => {
+    const on = stage.classList.toggle('checker');
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+  });
+
+  function wear(set) { for (const s of SLOTS) equip(s.id, set.gear[s.id] || ''); }
+  const setsEl = document.getElementById('sets');
+  for (const set of SETS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = set.name;
+    b.addEventListener('click', () => wear(set));
+    setsEl.append(b);
+  }
+
+  wear(SETS[1]);
+</script>
+</body>
+</html>

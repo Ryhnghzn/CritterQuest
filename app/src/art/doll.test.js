@@ -40,6 +40,10 @@ describe('paper doll vektor', () => {
       }
     }
   });
+
+  it('gaya D dengan rambut ke-6 (Poni Samping) tidak error (spec §39)', () => {
+    expect(() => drawDoll(fakeCtx(), 'warrior', { hair: 5, hairColor: 0 }, {})).not.toThrow();
+  });
 });
 
 describe('sprite vektor', () => {

@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Chest — dark knight armor</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#141216;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#141216;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .pl{fill:#3b3c44}.plS{fill:#26272d}.plD{fill:#1b1c21}.plH{fill:#5d606b}.plX{fill:#8d91a0}
+      .gd{fill:#a3864f}.gdS{fill:#735c33}
+      .gt{fill:none;stroke:#a3864f;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      .cr{fill:#6e2129}.crS{fill:#4a151b}.crH{fill:#8a3038}
+      .lea{fill:#2e221b}
+      .rv{fill:#b7995e;stroke:#141216;stroke-width:1.1}
+    </style>
+    <pattern id="mail" width="8" height="6" patternUnits="userSpaceOnUse">
+      <rect width="8" height="6" fill="#26272c"/>
+      <path d="M0,4 A4,3 0 0 1 8,4" fill="none" stroke="#5a5d66" stroke-width="1.3"/>
+      <path d="M-4,7 A4,3 0 0 1 4,7 M4,7 A4,3 0 0 1 12,7 M-4,1 A4,3 0 0 1 4,1 M4,1 A4,3 0 0 1 12,1" fill="none" stroke="#141418" stroke-width="1.1"/>
+    </pattern>
+    <clipPath id="bpC"><path d="M234,176 L198,190 C190,216 192,244 198,264 L206,340 L256,352 L306,340 L314,264 C320,244 322,216 314,190 L278,176 L256,196 Z"/></clipPath>
+    <clipPath id="p1C"><path d="M206,184 L174,178 L150,196 L144,230 C160,240 188,238 212,228 Z"/></clipPath>
+    <clipPath id="tabC"><path d="M230,368 L282,368 L286,522 L256,548 L226,522 Z"/></clipPath>
+  </defs>
+
+  <!-- dark mail sleeves -->
+  <g id="sleeveL">
+    <path fill="url(#mail)" d="M184,194 C163,200 152,226 152,258 L152,318 C166,323 181,324 193,322 C194,300 196,276 198,252 C200,228 197,206 184,194 Z"/>
+    <path class="ln" d="M184,194 C163,200 152,226 152,258 L152,318 C166,323 181,324 193,322 C194,300 196,276 198,252"/>
+    <path class="crS" d="M150,312 C166,318 182,319 195,317 L195,326 C182,328 166,327 150,322 Z"/>
+    <path class="fn" d="M150,312 C166,318 182,319 195,317 L195,326 C182,328 166,327 150,322 Z"/>
+  </g>
+  <use href="#sleeveL" transform="matrix(-1 0 0 1 512 0)"/>
+
+  <!-- mail skirt -->
+  <path fill="url(#mail)" d="M190,258 C197,292 203,330 207,362 C204,392 200,420 196,450 Q256,462 316,450 C312,420 308,392 305,362 C309,330 315,292 322,258 Z"/>
+  <path class="ln" d="M207,362 C204,392 200,420 196,450 Q256,462 316,450 C312,420 308,392 305,362"/>
+
+  <!-- tassets -->
+  <g id="tassetL">
+    <path class="pl" d="M206,384 L250,394 L246,456 L226,468 L202,450 Z"/>
+    <path class="plS" d="M236,391 L250,394 L246,456 L236,462 Z"/>
+    <path class="plH" d="M210,396 L216,397 L212,446 L206,442 Z"/>
+    <path class="ln" d="M206,384 L250,394 L246,456 L226,468 L202,450 Z"/>
+    <path class="gt" d="M205,446 L226,461 L243,451"/>
+    <path class="fn" d="M205,412 L249,420 M204,430 L247,438"/>
+    <circle class="rv" cx="228" cy="399" r="2.4"/>
+  </g>
+  <use href="#tassetL" transform="matrix(-1 0 0 1 512 0)"/>
+
+  <!-- tabard -->
+  <path class="cr" d="M230,368 L282,368 L286,522 L256,548 L226,522 Z"/>
+  <g clip-path="url(#tabC)">
+    <path class="crS" d="M268,360 L292,360 L292,556 L256,556 Z" opacity="0.85"/>
+    <path class="crH" d="M234,372 L240,372 L238,500 L232,498 Z" opacity="0.7"/>
+    <path class="crS" d="M244,420 C246,450 244,480 240,520 L243,522 C248,482 250,450 248,420 Z" opacity="0.7"/>
+  </g>
+  <path class="ln" d="M230,368 L282,368 L286,522 L256,548 L226,522 Z"/>
+  <path class="gt" d="M235,376 L277,376 L280,518 L256,539 L232,518 Z"/>
+  <!-- sigil: inverted blade inside a crescent -->
+  <g transform="translate(256,446)">
+    <path d="M-17,-14 A20,20 0 1 0 17,-14 A15,15 0 1 1 -17,-14 Z" fill="#b8bcc6" stroke="#141216" stroke-width="1.3"/>
+    <path d="M-2.4,-26 L2.4,-26 L2.4,6 L0,13 L-2.4,6 Z" fill="#d4d8e0" stroke="#141216" stroke-width="1.2"/>
+    <path d="M-9,-22 L9,-22 L9,-18 L-9,-18 Z" class="gd" stroke="#141216" stroke-width="1.1"/>
+  </g>
+
+  <!-- faulds -->
+  <path class="pl" d="M202,370 L256,384 L310,370 L312,390 L256,404 L200,390 Z"/>
+  <path class="plS" d="M201,383 L256,397 L311,383 L312,390 L256,404 L200,390 Z"/>
+  <path class="ln" d="M202,370 L256,384 L310,370 L312,390 L256,404 L200,390 Z"/>
+  <path class="pl" d="M204,354 L256,368 L308,354 L310,374 L256,388 L202,374 Z"/>
+  <path class="plS" d="M203,367 L256,381 L309,367 L310,374 L256,388 L202,374 Z"/>
+  <path class="ln" d="M204,354 L256,368 L308,354 L310,374 L256,388 L202,374 Z"/>
+  <path class="gt" d="M202,372 L256,386 L310,372"/>
+
+  <!-- belt -->
+  <path class="lea" d="M205,340 L256,352 L307,340 L308,356 L256,368 L204,356 Z"/>
+  <path class="ln" d="M205,340 L256,352 L307,340 L308,356 L256,368 L204,356 Z"/>
+  <path class="gd" d="M246,348 L266,348 L266,366 L256,372 L246,366 Z"/>
+  <path class="gdS" d="M256,348 L266,348 L266,366 L256,372 Z"/>
+  <path class="fn" d="M246,348 L266,348 L266,366 L256,372 L246,366 Z"/>
+  <circle cx="256" cy="358" r="3.2" class="cr" stroke="#141216" stroke-width="1.1"/>
+
+  <!-- breastplate -->
+  <path class="pl" d="M234,176 L198,190 C190,216 192,244 198,264 L206,340 L256,352 L306,340 L314,264 C320,244 322,216 314,190 L278,176 L256,196 Z"/>
+  <g clip-path="url(#bpC)">
+    <path class="plS" d="M256,180 L340,180 L340,360 L256,360 Z"/>
+    <path class="plD" d="M298,180 C314,230 318,290 312,360 L340,360 L340,180 Z"/>
+    <path class="plS" d="M184,180 C194,230 198,290 198,360 L180,360 L180,180 Z"/>
+    <path class="plH" d="M212,206 L232,198 L244,286 L228,292 Z"/>
+    <path class="plX" d="M220,208 L226,206 L236,268 L231,270 Z"/>
+    <path class="plD" d="M198,262 L256,290 L314,262 L314,276 L256,304 L198,276 Z" opacity="0.8"/>
+    <path class="plH" opacity="0.35" d="M266,206 L276,204 L282,280 L274,282 Z"/>
+  </g>
+  <path class="ln" d="M234,176 L198,190 C190,216 192,244 198,264 L206,340 L256,352 L306,340 L314,264 C320,244 322,216 314,190 L278,176 L256,196 Z"/>
+  <path d="M256,198 L256,348" stroke="#7b7f8c" stroke-width="2" stroke-linecap="round"/>
+  <path class="fn" d="M198,264 L256,292 L314,264"/>
+  <path class="gt" d="M236,182 L256,201 L276,182"/>
+  <path class="gt" d="M200,268 L256,296 L312,268"/>
+  <path class="gt" d="M209,334 L256,345 L303,334"/>
+
+  <!-- gorget -->
+  <path class="pl" d="M230,164 L256,176 L282,164 L290,188 L256,204 L222,188 Z"/>
+  <path class="plS" d="M256,176 L282,164 L290,188 L256,204 Z"/>
+  <path class="plH" d="M231,172 L236,174 L240,192 L234,190 Z"/>
+  <path class="ln" d="M230,164 L256,176 L282,164 L290,188 L256,204 L222,188 Z"/>
+  <path class="gt" d="M226,184 L256,198 L286,184"/>
+
+  <!-- pauldrons -->
+  <g id="pauldronL">
+    <path class="pl" d="M152,246 C168,256 190,256 210,246 L206,266 C190,276 170,274 156,264 Z"/>
+    <path class="plS" d="M154,258 C170,268 190,268 208,258 L206,266 C190,276 170,274 156,264 Z"/>
+    <path class="ln" d="M152,246 C168,256 190,256 210,246 L206,266 C190,276 170,274 156,264 Z"/>
+    <path class="pl" d="M148,226 C164,236 190,234 212,224 L210,248 C190,258 166,258 150,248 Z"/>
+    <path class="plS" d="M149,240 C166,250 190,250 211,240 L210,248 C190,258 166,258 150,248 Z"/>
+    <path class="ln" d="M148,226 C164,236 190,234 212,224 L210,248 C190,258 166,258 150,248 Z"/>
+    <path class="gt" d="M151,244 C166,253 190,253 209,244"/>
+    <!-- spike -->
+    <path class="pl" d="M168,190 L160,158 L184,184 Z"/>
+    <path class="plS" d="M164,174 L160,158 L184,184 L176,186 Z"/>
+    <path class="ln" d="M168,190 L160,158 L184,184 Z"/>
+    <path class="pl" d="M206,184 L174,178 L150,196 L144,230 C160,240 188,238 212,228 Z"/>
+    <g clip-path="url(#p1C)">
+      <path class="plS" d="M142,220 C160,232 188,232 214,220 L214,242 L142,242 Z"/>
+      <path class="plH" d="M154,198 L174,184 L188,186 L166,200 L156,222 L150,220 Z"/>
+      <path class="plX" d="M160,198 L172,190 L176,191 L164,200 Z"/>
+    </g>
+    <path class="ln" d="M206,184 L174,178 L150,196 L144,230 C160,240 188,238 212,228 Z"/>
+    <path class="gt" d="M147,226 C162,235 188,234 210,225"/>
+    <circle class="rv" cx="192" cy="206" r="2.6"/>
+    <!-- raised neck guard -->
+    <path class="pl" d="M204,190 L208,166 L222,176 L216,196 Z"/>
+    <path class="plS" d="M212,170 L222,176 L216,196 L210,194 Z"/>
+    <path class="ln" d="M204,190 L208,166 L222,176 L216,196 Z"/>
+    <path class="gt" d="M209,170 L220,178"/>
+  </g>
+  <use href="#pauldronL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

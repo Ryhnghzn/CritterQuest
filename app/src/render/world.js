@@ -8,7 +8,7 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
 import { ENEMIES } from '../data/enemies.js';
 import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
-import { drawGearIcon } from '../art/gear.js';
+import { drawItemIcon } from '../art/gear.js';
 import { DROP_BEAM } from '../data/itemfx.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { RARITIES, MYTHIC } from '../data/items.js';
@@ -558,7 +558,7 @@ function gearDrop(g, gm, t) {
   g.beginPath(); g.arc(gm.x, gm.y - 4 + bob, 8.5, 0, TAU);
   g.fillStyle = 'rgba(20,14,40,.85)'; g.fill();
   g.lineWidth = 1.8; g.strokeStyle = RARITIES[item.rarity].color; g.stroke();
-  g.save(); g.translate(gm.x, gm.y - 4 + bob); drawGearIcon(g, item, 15, t); g.restore();
+  g.save(); g.translate(gm.x, gm.y - 4 + bob); drawItemIcon(g, item, 15, t); g.restore();
 }
 
 // treasure guardian (spec §25.3): a golden crown over the head; the overlord's is red-jewelled

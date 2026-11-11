@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Chest — iron armor</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#1e1c1d;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#1e1c1d;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .ir{fill:#8f979e}.irS{fill:#646b72}.irD{fill:#474c52}.irH{fill:#bcc3c8}.irX{fill:#e1e6e9}
+      .lea{fill:#5a3b26}.leaS{fill:#3e281a}
+      .rv{fill:#c9cfd3;stroke:#1e1c1d;stroke-width:1.1}
+    </style>
+    <pattern id="mail" width="8" height="6" patternUnits="userSpaceOnUse">
+      <rect width="8" height="6" fill="#5d646a"/>
+      <path d="M0,4 A4,3 0 0 1 8,4" fill="none" stroke="#9aa2a8" stroke-width="1.3"/>
+      <path d="M-4,7 A4,3 0 0 1 4,7 M4,7 A4,3 0 0 1 12,7 M-4,1 A4,3 0 0 1 4,1 M4,1 A4,3 0 0 1 12,1" fill="none" stroke="#3d4247" stroke-width="1.1"/>
+    </pattern>
+    <clipPath id="bpC"><path d="M236,178 C220,184 202,190 190,198 C184,222 188,246 194,264 C199,292 202,318 205,342 Q256,354 307,342 C310,318 313,292 318,264 C324,246 328,222 322,198 C310,190 292,184 276,178 C270,190 263,196 256,197 C249,196 242,190 236,178 Z"/></clipPath>
+    <clipPath id="p1C"><path d="M198,186 C176,184 156,196 150,222 C162,232 184,234 204,226 C206,210 204,196 198,186 Z"/></clipPath>
+    <clipPath id="sleeveC"><path d="M184,194 C163,200 152,226 152,258 L152,318 C166,323 181,324 193,322 C194,300 196,276 198,252 C200,228 197,206 184,194 Z"/></clipPath>
+  </defs>
+
+  <!-- mail sleeves -->
+  <g id="sleeveL">
+    <path fill="url(#mail)" d="M184,194 C163,200 152,226 152,258 L152,318 C166,323 181,324 193,322 C194,300 196,276 198,252 C200,228 197,206 184,194 Z"/>
+    <g clip-path="url(#sleeveC)">
+      <path fill="#22262a" opacity="0.35" d="M198,248 C196,270 194,296 193,322 L183,322 C185,296 187,270 190,250 Z"/>
+      <path fill="#22262a" opacity="0.3" d="M150,312 C166,318 182,318 200,316 L200,326 L150,326 Z"/>
+    </g>
+    <path class="ln" d="M184,194 C163,200 152,226 152,258 L152,318 C166,323 181,324 193,322 C194,300 196,276 198,252"/>
+  </g>
+  <use href="#sleeveL" transform="matrix(-1 0 0 1 512 0)"/>
+
+  <!-- mail skirt -->
+  <path fill="url(#mail)" d="M190,258 C197,292 203,330 207,362 C204,392 200,418 196,446 Q256,458 316,446 C312,418 308,392 305,362 C309,330 315,292 322,258 Z"/>
+  <path fill="#22262a" opacity="0.3" d="M196,436 Q256,448 316,436 L316,446 Q256,458 196,446 Z"/>
+  <path class="ln" d="M207,362 C204,392 200,418 196,446 Q256,458 316,446 C312,418 308,392 305,362"/>
+
+  <!-- tassets -->
+  <g id="tassetL">
+    <path class="ir" d="M206,384 L250,394 L248,448 Q226,454 202,444 Z"/>
+    <path class="irS" d="M236,391 L250,394 L248,448 Q242,450 234,451 Z"/>
+    <path class="irH" d="M210,396 L216,397 L213,440 L207,438 Z" opacity="0.8"/>
+    <path class="ln" d="M206,384 L250,394 L248,448 Q226,454 202,444 Z"/>
+    <path class="fn" d="M205,410 L249,418 M204,428 L248,435"/>
+    <circle class="rv" cx="228" cy="398" r="2.4"/>
+  </g>
+  <use href="#tassetL" transform="matrix(-1 0 0 1 512 0)"/>
+
+  <!-- faulds (bottom lame first so upper ones overlap) -->
+  <g id="faulds">
+    <path class="ir" d="M202,370 Q256,382 310,370 L312,389 Q256,401 200,389 Z"/>
+    <path class="irS" d="M201,382 Q256,394 311,382 L312,389 Q256,401 200,389 Z"/>
+    <path class="ln" d="M202,370 Q256,382 310,370 L312,389 Q256,401 200,389 Z"/>
+    <path class="ir" d="M204,354 Q256,366 308,354 L310,373 Q256,385 202,373 Z"/>
+    <path class="irS" d="M203,366 Q256,378 309,366 L310,373 Q256,385 202,373 Z"/>
+    <path class="ln" d="M204,354 Q256,366 308,354 L310,373 Q256,385 202,373 Z"/>
+    <path class="ir" d="M206,338 Q256,350 306,338 L308,357 Q256,369 204,357 Z"/>
+    <path class="irS" d="M205,350 Q256,362 307,350 L308,357 Q256,369 204,357 Z"/>
+    <path class="ln" d="M206,338 Q256,350 306,338 L308,357 Q256,369 204,357 Z"/>
+    <circle class="rv" cx="212" cy="346" r="2.2"/><circle class="rv" cx="300" cy="346" r="2.2"/>
+    <circle class="rv" cx="210" cy="362" r="2.2"/><circle class="rv" cx="302" cy="362" r="2.2"/>
+    <circle class="rv" cx="208" cy="378" r="2.2"/><circle class="rv" cx="304" cy="378" r="2.2"/>
+  </g>
+
+  <!-- breastplate -->
+  <path class="ir" d="M236,178 C220,184 202,190 190,198 C184,222 188,246 194,264 C199,292 202,318 205,342 Q256,354 307,342 C310,318 313,292 318,264 C324,246 328,222 322,198 C310,190 292,184 276,178 C270,190 263,196 256,197 C249,196 242,190 236,178 Z"/>
+  <g clip-path="url(#bpC)">
+    <path class="irS" d="M256,190 L340,190 L340,360 L256,360 Z"/>
+    <path class="irD" d="M296,190 C312,230 316,290 310,360 L340,360 L340,190 Z"/>
+    <path class="irS" d="M182,190 C190,230 196,290 196,360 L180,360 L180,190 Z"/>
+    <path class="irH" d="M214,206 C220,236 226,270 234,300 L246,298 C238,268 232,236 228,204 Z"/>
+    <path class="irX" d="M222,214 C226,236 230,256 236,276 L240,275 C235,255 231,235 228,213 Z"/>
+    <path class="irD" opacity="0.6" d="M180,330 Q256,346 340,330 L340,360 L180,360 Z"/>
+    <path class="irH" opacity="0.5" d="M268,214 C274,240 278,270 280,300 L284,300 C283,270 279,240 273,214 Z"/>
+  </g>
+  <path class="ln" d="M236,178 C220,184 202,190 190,198 C184,222 188,246 194,264 C199,292 202,318 205,342 Q256,354 307,342 C310,318 313,292 318,264 C324,246 328,222 322,198 C310,190 292,184 276,178 C270,190 263,196 256,197 C249,196 242,190 236,178 Z"/>
+  <path d="M256,199 L256,346" stroke="#d8dee2" stroke-width="2" stroke-linecap="round"/>
+  <path d="M258,199 L258,346" stroke="#1e1c1d" stroke-width="1" opacity="0.5"/>
+  <path d="M238,184 C244,193 250,198 256,199 C262,198 268,193 274,184" fill="none" stroke="#474c52" stroke-width="5" stroke-linecap="round"/>
+  <path class="ln" d="M236,178 C242,190 249,196 256,197 C263,196 270,190 276,178"/>
+  <path class="fn" opacity="0.5" d="M206,300 Q256,316 306,300"/>
+
+  <!-- gorget -->
+  <path class="ir" d="M232,170 Q256,182 280,170 L288,188 Q256,204 224,188 Z"/>
+  <path class="irS" d="M256,176 Q270,175 280,170 L288,188 Q272,198 256,200 Z"/>
+  <path class="irH" d="M230,180 Q240,188 250,190 L249,194 Q238,192 228,185 Z"/>
+  <path class="ln" d="M232,170 Q256,182 280,170 L288,188 Q256,204 224,188 Z"/>
+  <path class="fn" d="M228,180 Q256,193 284,180"/>
+
+  <!-- pauldrons -->
+  <g id="pauldronL">
+    <path class="ir" d="M153,240 C166,250 184,252 203,244 L201,266 C184,274 166,272 155,262 Z"/>
+    <path class="irS" d="M154,255 C168,264 186,266 202,258 L201,266 C184,274 166,272 155,262 Z"/>
+    <path class="ln" d="M153,240 C166,250 184,252 203,244 L201,266 C184,274 166,272 155,262 Z"/>
+    <path class="ir" d="M151,218 C164,228 186,230 205,222 L203,246 C184,254 164,252 152,242 Z"/>
+    <path class="irS" d="M152,234 C166,244 186,246 204,238 L203,246 C184,254 164,252 152,242 Z"/>
+    <path class="ln" d="M151,218 C164,228 186,230 205,222 L203,246 C184,254 164,252 152,242 Z"/>
+    <path class="ir" d="M198,186 C176,184 156,196 150,222 C162,232 184,234 204,226 C206,210 204,196 198,186 Z"/>
+    <g clip-path="url(#p1C)">
+      <path class="irS" d="M148,214 C162,226 184,228 208,218 L208,236 L148,236 Z"/>
+      <path class="irH" d="M160,206 C168,194 182,190 192,192 C182,198 172,208 166,220 C162,216 160,212 160,206 Z"/>
+      <path class="irX" d="M168,204 C174,198 180,195 186,195 C180,199 175,204 171,210 Z"/>
+    </g>
+    <path class="ln" d="M198,186 C176,184 156,196 150,222 C162,232 184,234 204,226 C206,210 204,196 198,186 Z"/>
+    <circle class="rv" cx="190" cy="206" r="2.6"/>
+    <circle class="rv" cx="160" cy="234" r="2"/><circle class="rv" cx="198" cy="236" r="2"/>
+    <path class="lea" d="M194,190 L202,188 L206,224 L199,226 Z"/>
+    <path class="leaS" d="M199,189 L202,188 L206,224 L203,225 Z"/>
+    <path class="fn" d="M194,190 L202,188 L206,224 L199,226 Z"/>
+  </g>
+  <use href="#pauldronL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

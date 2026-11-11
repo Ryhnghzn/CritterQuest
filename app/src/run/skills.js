@@ -71,7 +71,7 @@ export function stepSkills(run, intent, dt) {
   const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
   for (let i = 0; i < SKILL_SLOTS; i++) {
     if (locked || !pressed[i] || !skills[i] || run.skillCd[i] > 0) continue;
-    if (run.energy < skills[i].cost) { run.noEnergyT = 0.4; continue; }
+    if (run.energy < skills[i].cost) { if (run.noEnergyT <= 0) sfx.noEnergy(); run.noEnergyT = 0.4; continue; }
     run.energy -= skills[i].cost;
     run.skillCdMax[i] = skillCooldown(run.stats, skills[i]);
     run.skillCd[i] = run.skillCdMax[i];
@@ -104,7 +104,7 @@ export function stepSkills(run, intent, dt) {
     run.addShake('heavy'); run.addHitStop('ult');
     run.vfx.flash('#fff3c4', 0.4, 0.18);
     run.vfx.ring(run.px, run.py, { r1: 120, life: 0.5, color: '#ffd166', width: 5 });
-    sfx.boss();
+    sfx.ult(u.id);
   }
 }
 

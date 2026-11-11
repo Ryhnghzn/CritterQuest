@@ -12,7 +12,7 @@ export const ATTRS = [
 // Permanent character progress (spec §4.3, §9).
 export const SLOT_COUNT = 3;
 export const NAME_MAX = 12;
-export const HAIR_STYLES = 5;
+export const HAIR_STYLES = 6;
 export const HAIR_COLORS = 6;
 export const CHAR_EXP_BASE = 30;      // exp to next level = base + growth * level
 export const CHAR_EXP_GROWTH = 20;

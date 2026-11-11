@@ -189,7 +189,7 @@ const ATTR_EN = {
   'Kritis +0,5%, CDR +0,4%': 'Crit +0.5%, CDR +0.4%', 'Dmg kritis +2%, magnet +2': 'Crit damage +2%, magnet +2',
 };
 const PHASE_EN = { Pagi: 'Morning', Siang: 'Day', Sore: 'Evening', Malam: 'Night' };
-const HAIR_EN = { Pendek: 'Short', Jabrik: 'Spiky', Panjang: 'Long', Bob: 'Bob', Kuncir: 'Ponytail' };
+const HAIR_EN = { Pendek: 'Short', Jabrik: 'Spiky', Panjang: 'Long', Bob: 'Bob', Kuncir: 'Ponytail', 'Poni Samping': 'Side Swept' };
 const HAIR_COLOR_EN = { Hitam: 'Black', Cokelat: 'Brown', Pirang: 'Blond', Merah: 'Red', Biru: 'Blue', Putih: 'White' };
 
 const BUILDING_EN = {

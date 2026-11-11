@@ -8,6 +8,10 @@ import { RARITIES, MYTHIC } from '../data/items.js';
 import { ICON_FX } from '../data/itemfx.js';
 import { glow } from '../render/fxkit.js';
 import { drawGearShape } from './hero/icons.js';
+import { LOOK } from '../data/look.js';
+import { drawAnimeItem } from './anime/items.js';
+import { CLASS_LOOK } from './anime/index.js';
+import { pixelData } from './pixeldata.js';
 
 const TAU = Math.PI * 2;
 export const INK = '#16121c';           // thin dark outline of the new style
@@ -537,6 +541,28 @@ export function drawGearIcon(g, item, size, t = 0) {
   g.restore();
 }
 
+// Item icon for the UI and the ground (spec §39): the anime icon as 40-px pixel art when the anime
+// look is on, the style-D icon otherwise (?lama). Centred at the origin inside size × size.
+const ICON_PX = 40; // pixel-art icon size (owner's choice, app/item.html)
+let small = null;
+export function drawItemIcon(g, item, size, t = 0) {
+  if (!LOOK.anime) { drawGearIcon(g, item, size, t); return; }
+  const element = CLASS_LOOK[item.classId]?.mythic || 'fire';
+  if (!LOOK.pixel || typeof document === 'undefined') { drawAnimeItem(g, item, size, t, element); return; }
+  small ||= document.createElement('canvas');
+  small.width = small.height = ICON_PX;
+  const sg = small.getContext('2d', { willReadFrequently: true });
+  sg.setTransform(1, 0, 0, 1, ICON_PX / 2, ICON_PX / 2);
+  drawAnimeItem(sg, item, ICON_PX, t, element);
+  const img = sg.getImageData(0, 0, ICON_PX, ICON_PX);
+  pixelData(img.data, ICON_PX, ICON_PX, LOOK.pixel);
+  sg.putImageData(img, 0, 0);
+  const smooth = g.imageSmoothingEnabled;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(small, -size / 2, -size / 2, size, size);
+  g.imageSmoothingEnabled = smooth;
+}
+
 // A crisp DOM <canvas> of an item icon. Legendaris+ keep animating while on screen
 // (one shared timer, ICON_FX.fps); a canvas taken out of the page drops out of it.
 const live = new Set();
@@ -555,7 +581,7 @@ function paintIcon(c, t) {
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, c.width, c.height);
   g.translate(c.width / 2, c.height / 2);
-  drawGearIcon(g, c._item, c.width, t);
+  drawItemIcon(g, c._item, c.width, t);
 }
 export function gearCanvas(item, cssSize) {
   const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);

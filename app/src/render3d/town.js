@@ -11,6 +11,10 @@ import { drawFrame } from './frame.js';
 const GREEN_TOWNS = new Set(['home', 'forest']);
 import { LOOK } from '../data/look.js';
 import { billMat, canvasTexture } from './actors.js';
+import { pixelateCanvas, pixelTexture } from './pixelate.js';
+import { setFxSink, drawFx } from '../art/anime/elemfx.js';
+import { pickWing } from '../art/anime/wingpick.js';
+import { gaitRate } from '../art/hero/rig.js';
 import { NightMats, setGhost, GEO } from './kit3d.js';
 import { occludes, nearest, facesCamera } from './townkit.js';
 import { buildTown } from './townbuild.js';
@@ -19,6 +23,7 @@ import { townDef } from '../data/towns.js';
 import { npcAt } from '../town/town.js';
 import { skyAt } from '../meta/clock.js';
 import { drawDoll } from '../art/doll.js';
+import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { tag, plate, questMark } from '../render/paint.js';
 import { doorFade } from '../render/town.js';
@@ -38,7 +43,7 @@ export class Town25 {
     this.places = new Map();
     this.bills = new Map(); this.shown = [];
     this.camX = 0; this.camY = 0; this.lastT = 0; this.frame = 0;
-    this.walk = 0; this.facing = 1;
+    this.walk = 0; this.facing = 1; this.face = makeFacing();
     this._v = new THREE.Vector3(); this._w = new THREE.Vector3();
     this._near = new Int32Array(8); this._d = new Float64Array(8); this._act = [];
     this.pose = { t: 0, moving: 0, walk: 0 };
@@ -128,7 +133,7 @@ export class Town25 {
   }
 
   makeBill() {
-    const c = document.createElement('canvas'), tex = canvasTexture(c);
+    const c = document.createElement('canvas'), tex = pixelTexture(canvasTexture(c));
     const mesh = new THREE.Mesh(this.billGeo, billMat(tex)); mesh.renderOrder = 2;
     const sh = new THREE.Mesh(GEO.disc, this.shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.02; sh.scale.set(24 * S, 9 * S, 1);
     const grp = new THREE.Group(); grp.add(sh, mesh); this.people.add(grp);
@@ -296,11 +301,11 @@ export class Town25 {
 
   // the hero and the townsfolk as upright 2D dolls facing the camera
   people_(place, town, t, avatar, lite, npcs) {
-    const yaw = this.stage.yaw, cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const yaw = this.stage.yaw;
     for (const b of this.shown) b.grp.visible = false;
     this.shown.length = 0;
     const hx = town ? town.x : this.camX, hy = town ? town.y : this.camY, nt = town ? town.t : t;
-    const kN = sharp('npc', lite);
+    const kN = LOOK.pixel ? LOOK.pixel.k : sharp('npc', lite);
     let i = 0;
     for (const n of npcs) {
       i++;
@@ -311,13 +316,21 @@ export class Town25 {
       let b = this.bills.get(n);
       if (!b) { b = this.makeBill(); b.look = { ...n.look, outfit: n.outfit, npc: n }; b.fresh = true; this.bills.set(n, b); }
       const sc = n.scale || 1;
-      const facing = moving ? (p.facing || 1) * (cy >= 0 ? 1 : -1) : ((hx - x) * cy - (hy - y) * sy < 0 ? -1 : 1);
-      if (b.fresh || (this.frame + i) % 2 === 0 || facing !== b.facing) { // redrawn every other frame
-        const g = this.canvasOf(b, kN), pose = b.pose;
+      // walking: faces its walk; standing: faces the hero; both measured on screen (spec §38)
+      const vx = b.px == null ? 0 : x - b.px, vy = b.py == null ? 0 : y - b.py;
+      b.px = x; b.py = y;
+      const look = moving ? screenX(vx, vy, yaw) : screenX(hx - x, hy - y, yaw);
+      b.face ||= makeFacing(look < 0 ? -1 : 1);
+      turnTo(b.face, look, t);
+      const turning = b.face.cur !== b.face.face;
+      if (b.fresh || turning || (this.frame + i) % 2 === 0) { // redrawn every other frame (every frame mid-turn)
+        const g = this.canvasOf(b, kN), pose = b.pose, tr = pose2d(b.face, t);
         pose.t = t + n.x; pose.moving = moving; pose.walk = t * 5 * moving;
-        g.scale(DOLL * facing, DOLL);
+        g.translate(0, -tr.hop);
+        g.scale(DOLL * tr.w, DOLL);
         drawDoll(g, null, b.look, pose);
-        b.tex.needsUpdate = true; b.fresh = false; b.facing = facing;
+        pixelateCanvas(b.c, LOOK.pixel);
+        b.tex.needsUpdate = true; b.fresh = false;
       }
       b.grp.position.set(x * S, 0, (y + 10 * sc) * S); b.grp.scale.setScalar(sc);
       b.mesh.rotation.y = yaw;
@@ -328,18 +341,26 @@ export class Town25 {
     H.grp.visible = !!(town && avatar);
     if (!H.grp.visible) return;
     const moving = Math.min(1, Math.hypot(town.moveX, town.moveY));
-    const sx = town.moveX * cy - town.moveY * sy; // screen-x of the walk (camera may be turned)
-    if (sx > 0.1) this.facing = 1; else if (sx < -0.1) this.facing = -1;
-    this.walk += moving * 0.22;
-    const g = this.canvasOf(H, sharp('hero', lite)), best = bestRarity(avatar.look.gear);
+    const sx = screenX(town.moveX, town.moveY, yaw); // screen-x of the walk (camera may be turned)
+    this.facing = turnTo(this.face, Math.abs(sx) > 0.1 ? sx : 0, t).face;
+    const tr = pose2d(this.face, t, sx);
+    viewTo(this.face, sx, towardCam(town.moveX, town.moveY, yaw), t); // front / back (spec §38)
+    const vw = viewNow(this.face, t), side = vw.view === 'side';
+    this.walk += moving * 0.22 * (LOOK.anime ? gaitRate(avatar.classId) : 1);
+    const g = this.canvasOf(H, LOOK.pixel ? LOOK.pixel.k : sharp('hero', lite)), best = bestRarity(avatar.look.gear);
     levelRing(g, 0, 0, avatar.level || 1, t, { lite });
-    const opt = { host: this, lite, best, set: avatar.set, frenzyOn: false };
+    const opt = { host: this, lite, best, set: avatar.set, frenzyOn: false, anime: LOOK.anime };
     auraBack(g, 0, 0, avatar.fx, t, opt);
-    g.save(); g.scale(DOLL * this.facing, DOLL);
-    const pose = this.pose; pose.t = t; pose.moving = moving; pose.walk = this.walk;
-    drawDoll(g, avatar.classId, avatar.look, pose);
+    g.save(); g.translate(0, -tr.hop); g.rotate(tr.lean); g.scale(DOLL * (side ? tr.w : 1) * vw.squash, DOLL);
+    const pose = this.pose; pose.view = vw.view; pose.turn = this.face.cur; pose.t = t; pose.moving = moving; pose.walk = this.walk;
+    pose.anime = LOOK.anime; pose.wings = LOOK.anime ? pickWing(avatar) : null;
+    const fx = LOOK.anime && LOOK.pixel ? [] : null;
+    setFxSink(fx);
+    try { drawDoll(g, avatar.classId, avatar.look, pose); } finally { setFxSink(null); }
     g.restore();
     auraFront(g, 0, 0, avatar.fx, best, t, { ...opt, level: avatar.level, facing: this.facing });
+    pixelateCanvas(H.c, LOOK.pixel); // pixel art (spec §39)
+    if (fx?.length) drawFx(H.g, fx, new DOMMatrix());
     H.tex.needsUpdate = true;
     H.grp.position.set(town.x * S, 0, (town.y + 10) * S);
     H.mesh.rotation.y = yaw;

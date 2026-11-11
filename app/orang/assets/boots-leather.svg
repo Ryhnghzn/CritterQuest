@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Boots — leather</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#231b16;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#231b16;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .st{fill:none;stroke:#c7a578;stroke-width:1.3;stroke-dasharray:3.2 3;stroke-linecap:round}
+      .lea{fill:#6e4a2f}.leaS{fill:#4f3420}.leaH{fill:#8a5f3f}
+      .cuf{fill:#86603f}.cufS{fill:#664730}
+      .sole{fill:#2a1f19}
+    </style>
+    <clipPath id="bootC"><path d="M205,600 C206,630 208,662 210,700 C208,712 205,724 205,732 C205,740 218,744 232,744 C246,744 255,740 255,731 C255,720 251,708 247,698 C246,664 248,632 250,600 Z"/></clipPath>
+  </defs>
+  <g id="bootL">
+    <path class="sole" d="M204,732 C204,742 218,748 232,748 C246,748 256,743 256,733 L256,738 C256,746 246,751 232,751 C218,751 204,746 204,738 Z"/>
+    <path class="lea" d="M205,600 C206,630 208,662 210,700 C208,712 205,724 205,732 C205,740 218,744 232,744 C246,744 255,740 255,731 C255,720 251,708 247,698 C246,664 248,632 250,600 Z"/>
+    <g clip-path="url(#bootC)">
+      <path class="leaS" d="M240,600 L256,600 L256,750 L246,750 C250,730 246,712 242,698 C240,664 240,632 240,600 Z"/>
+      <path class="leaH" d="M211,616 C212,650 214,680 215,700 L220,700 C219,680 217,650 217,616 Z"/>
+      <ellipse cx="222" cy="726" rx="9" ry="3.4" class="leaH"/>
+      <path class="leaS" d="M200,736 C214,742 244,742 260,734 L260,752 L200,752 Z"/>
+      <path class="leaS" opacity="0.7" d="M206,692 C216,698 236,698 250,692 L250,700 C236,706 216,706 206,700 Z"/>
+    </g>
+    <path class="ln" d="M205,600 C206,630 208,662 210,700 C208,712 205,724 205,732 C205,740 218,744 232,744 C246,744 255,740 255,731 C255,720 251,708 247,698 C246,664 248,632 250,600"/>
+    <path class="fn" d="M204,738 C216,745 246,745 256,736"/>
+    <path class="fn" opacity="0.5" d="M211,690 C220,694 236,694 246,690"/>
+    <path class="fn" opacity="0.5" d="M212,702 C222,707 236,707 246,702"/>
+    <!-- laces -->
+    <path class="fn" d="M224,622 L234,622 M224,640 L234,640 M224,658 L234,658 M224,676 L234,676"/>
+    <g fill="none" stroke="#c9ad80" stroke-width="1.5" stroke-linecap="round">
+      <path d="M223,620 L235,632 M235,620 L223,632"/>
+      <path d="M223,638 L235,650 M235,638 L223,650"/>
+      <path d="M223,656 L235,668 M235,656 L223,668"/>
+      <path d="M223,674 L235,686 M235,674 L223,686"/>
+    </g>
+    <circle cx="222" cy="620" r="1.3" fill="#231b16"/><circle cx="236" cy="620" r="1.3" fill="#231b16"/>
+    <circle cx="222" cy="686" r="1.3" fill="#231b16"/><circle cx="236" cy="686" r="1.3" fill="#231b16"/>
+    <!-- folded cuff -->
+    <path class="cuf" d="M202,592 Q227,586 253,592 L252,614 Q227,608 203,614 Z"/>
+    <path class="cufS" d="M240,589 Q247,590 253,592 L252,614 Q246,612 240,611 Z"/>
+    <path class="cufS" d="M203,608 Q227,602 252,608 L252,614 Q227,608 203,614 Z"/>
+    <path class="ln" d="M202,592 Q227,586 253,592 L252,614 Q227,608 203,614 Z"/>
+    <path class="st" d="M205,597 Q227,592 250,597"/>
+  </g>
+  <use href="#bootL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

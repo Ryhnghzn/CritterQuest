@@ -78,10 +78,12 @@ export function gearEffects(char) {
   return fx;
 }
 
-// What the paper doll wears: { slot: { tier, rarity } } for the visible slots.
+// What the paper doll wears: { slot: { tier, rarity } } for the visible slots. Kalung &
+// cincin ikut (spec §39) supaya liontin & kilau cincin anime muncul; gambar gaya D hanya
+// membaca weapon/helm/armor/boots, jadi kunci tambahan aman.
 export function dollGear(char) {
   const out = {};
-  for (const slot of ['weapon', 'helm', 'armor', 'boots']) {
+  for (const slot of ['weapon', 'helm', 'armor', 'boots', 'amulet', 'ring']) {
     const it = equippedItem(char, slot);
     if (it) out[slot] = { tier: it.variant, rarity: it.rarity };
   }

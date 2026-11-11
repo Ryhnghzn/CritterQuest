@@ -31,10 +31,15 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%}
 svg.i{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* screens */
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;
-  gap:18px;padding:72px 16px 40px;text-align:center;pointer-events:auto;overflow-y:auto;touch-action:pan-y;
+/* centred when it fits, top-aligned and scrollable when it does not: two empty flex items with auto margins
+   (works on every browser; `justify-content:safe center` is not understood everywhere and then pushes the
+   top out of reach). Bottom padding keeps the last button clear of a browser toolbar or home bar. */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:18px;padding:72px 16px calc(40px + env(safe-area-inset-bottom));text-align:center;pointer-events:auto;overflow-y:auto;touch-action:pan-y;
   background:radial-gradient(120% 90% at 50% 40%,rgba(28,20,64,.55),rgba(14,10,36,.88));
   backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fade .25s ease}
+.screen::before,.screen::after{content:'';flex:none;height:0;margin-top:auto}
+.screen::after{margin-top:0;margin-bottom:auto}
 .screen.title{background:radial-gradient(90% 70% at 50% 45%,rgba(14,10,36,.05),rgba(14,10,36,.6));backdrop-filter:none;-webkit-backdrop-filter:none}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -272,7 +277,8 @@ body.fxgray :is(#game,#game3d){filter:grayscale(1)}
 .dcard.sel{border-color:var(--c);box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 50%,transparent),0 0 18px color-mix(in srgb,var(--c) 30%,transparent)}
 .dcard.locked{opacity:.45;cursor:default;filter:grayscale(.6)}
 .floors{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
-.loot{display:flex;flex-direction:column;gap:6px;width:min(460px,100%);max-height:34vh;overflow-y:auto;padding:2px}
+/* flex-shrink:0 — a scrolling flex child may shrink to nothing when the screen is short (phone landscape) */
+.loot{display:flex;flex-direction:column;gap:6px;width:min(460px,100%);max-height:34vh;min-height:44px;overflow-y:auto;padding:2px;flex-shrink:0}
 .lootrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;text-align:left;padding:5px 12px 5px 6px;border-radius:12px;
   background:var(--glass2);border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);animation:rise .35s ease both}
 .lootrow .lic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1.5px var(--c)}
@@ -289,6 +295,8 @@ body.fxgray :is(#game,#game3d){filter:grayscale(1)}
 /* results */
 .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:min(620px,100%)}
 @media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tiles.two{grid-template-columns:repeat(2,minmax(0,1fr));width:min(340px,100%)}
+.deathcause{font-size:17px;color:#ffb3a8;max-width:min(460px,100%)}
 .tile{padding:16px 10px;border-radius:16px;background:var(--glass);border:1.5px solid var(--line);display:flex;flex-direction:column;gap:4px;animation:rise .35s ease both}
 .tile span{font-size:12px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
 .tile b{font-size:28px;font-weight:700}
@@ -419,7 +427,7 @@ body.playing:not(.touch) canvas#game{cursor:crosshair}
   background:rgba(22,17,46,.75);border:1.5px solid rgba(255,201,77,.6);box-shadow:0 0 24px rgba(255,201,77,.25);animation:rise .2s ease}
 body.touch #prompt{bottom:auto;top:calc(50% + 60px)}
 body.touch #prompt kbd{display:none}
-#toast{position:absolute;left:50%;top:90px;transform:translateX(-50%);font-size:16px;font-weight:600;padding:8px 16px;border-radius:999px;
+#toast{position:absolute;z-index:45;left:50%;top:90px;transform:translateX(-50%);font-size:16px;font-weight:600;padding:8px 16px;border-radius:999px;
   background:rgba(22,17,46,.85);border:1.5px solid var(--line);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1}
 .npcpanel{display:flex;flex-direction:column;gap:14px;align-items:center;width:min(480px,100%)}
@@ -612,7 +620,7 @@ button.skill:disabled{cursor:default;color:inherit}
   #prompt{zoom:.75}
   #toast{top:52px;font-size:13px}
   #banner{top:20%;font-size:26px}
-  .screen{padding:20px 12px 20px}
+  .screen{padding:20px 12px calc(56px + env(safe-area-inset-bottom))} /* room to scroll the last button above a toolbar */
   .screen>*{zoom:.72}
   .screen .swatch{width:61px;height:61px} /* 44px after the .72 zoom */
 }

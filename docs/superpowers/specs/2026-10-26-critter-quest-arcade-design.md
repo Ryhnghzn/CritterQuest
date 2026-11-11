@@ -1214,3 +1214,22 @@ Dengan mouse (PC, mode serang otomatis mati), skill yang butuh arah atau titik t
 Penanda per jenis skill (`run/aim.js`, digambar `render/aim.js` di atas dunia 2.5D maupun 2D): proyektil & garis & terjang → jalur berpanah sepanjang jangkauan (proyektil yang meledak: lingkaran ledakan di ujung); area di titik bidik → lingkaran jangkauan maksimal (garis putus) + lingkaran area yang berhenti di batas; kipas → kerucut; badai petir → jangkauan + titik awal rantai; pisau orbit → jangkauan lempar.
 
 **Tetap langsung keluar:** skill yang berpusat di pemain (buff, putaran, kipas 360°, ultimate area yang mengikuti), skill yang masih cooldown (supaya tetap ada umpan balik), mode serang otomatis, dan kontrol sentuh di HP (bidik otomatis). Logika skill (`run/skills.js`) tidak berubah: skill tetap mengarah ke posisi mouse saat dilepas. Save tidak berubah.
+
+## 38. Arah Hadap: Ikut Kamera, Berbalik seperti Kertas, Pose Depan/Belakang (permintaan pemilik 2026-11-07)
+
+Masalah: karakter, NPC, dan mount selalu terlihat menyamping, dan saat bertarung arah hadap diambil dari sumbu X dunia sehingga salah kalau kamera diputar. Contoh yang disetujui: `app/arah.html` (prototipe, tidak masuk game).
+
+- **A, arah ikut layar:** arah hadap dihitung dari arah di layar (`render3d/facing.js` `screenX`). Hero menghadap ke arah bidik, monster ke hero (atau ke arah terjangnya), warga yang berjalan ke arah jalannya, dan warga yang diam ke hero.
+- **B, berbalik seperti kertas:** saat ganti arah, gambar menyempit menjadi garis tipis lalu melebar terbalik, dengan lompatan kecil. Hero condong ke arah jalannya. Angka ada di `data/look.js` `facing` (`turn` 0,16 dtk, `hop` 4, `lean` 0,11 rad). `?lama` = langsung berbalik, tanpa lompat dan condong (A tetap berlaku).
+- **C ringan, pose depan & belakang:** hero dan NPC memakai pose depan saat berjalan mendekati kamera dan pose belakang saat menjauh. Pose depan/belakang hanya untuk berjalan dan diam. Saat menyerang, memakai skill, atau menghindar, karakter kembali menyamping menghadap bidikannya. NPC yang diam menghadap kamera. Mount, monster, dan pet tetap menyamping.
+
+Rencana: `docs/superpowers/plans/2026-11-09-arah-hadap.md`.
+
+## 39. Karakter Pixel Art (permintaan pemilik 2026-11-09)
+
+Pemilik lebih suka karakter versi pixel ("tidak terlihat seperti anak kecil") setelah melihat contoh `app/anime.html` (gaya anime fantasi, mode Pixel sedang). Arah: karakter dan monster jadi pixel art di dunia 3D Tampilan Matang (gaya HD-2D). Dunia, cahaya, dan efek skill tetap halus.
+
+- **Langkah 1 (lapisan pixel):** gambar karakter yang sekarang digambar kecil, `LOOK.pixel.k` = 2 piksel per satuan game (hero ±80 px), sama untuk hero, warga kota, dan monster supaya ukuran pikselnya seragam. Lalu diolah `render3d/pixelate.js`: tepi tajam (alpha di-dither pola Bayer 4×4, jadi cahaya bertitik), warna dibulatkan ke 7 tingkat per kanal, garis luar tinta 1 piksel. Teksturnya diperbesar tanpa penghalusan. `?lama` = gambar halus seperti dulu. NPC tersembunyi, penjaga gerbang, dan titik quest di wilayah (`render3d/field.js`, kartu yang memuat label teks) belum diubah.
+- **Berikutnya:** desain anime per kelas (Warrior dulu) di atas kerangka gerak `art/hero/rig.js`, frame disimpan jadi supaya ringan di HP, pose depan/belakang gaya anime menggantikan §38 bagian 2.
+- **Langkah 2 (hero anime di game, 2026-11-09):** empat job digambar ulang gaya anime fantasi di `src/art/anime/` (desain sendiri), digerakkan kerangka `art/hero/rig.js` sehingga jalan, serangan, skill, dan guling tetap sama. `drawHero` memakai gambar anime bila `pose.anime` (dinyalakan renderer bila `LOOK.anime`; `?lama` = gaya D halus). Rambut save → gaya anime (Pendek→Klimis, Jabrik, Panjang, Bob→Belah Tengah, Kuncir), warna rambut → 6 warna anime. Rarity senjata → elemen (Biasa/Bagus polos, Langka Es, Epik Kehampaan, Legendaris Cahaya, Mitos elemen khas job: Warrior Api, Archer Petir, Mage Kehampaan, Assassin Darah); tiap elemen punya efek sendiri (`art/anime/elemfx.js`), digambar setelah filter pixel supaya halus. Lari per job (`rig.js` `GAIT`, hanya bila `pose.gait`), pose depan/belakang gaya anime. Warga kota dan potret menu belum gaya anime. Ikon item gaya anime (`art/anime/items.js`, pixel 40 px) siap tetapi belum dipasang ke UI.
+- **Halaman contoh:** `app/anime.html` (desain karakter, semua job, arah, lari, skill, pixel/halus), `app/item.html` (ikon item per rarity, Mitos besar).

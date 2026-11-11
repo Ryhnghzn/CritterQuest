@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Weapon — void scythe (behind the body)</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#09070c;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#09070c;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .ob{fill:#2a2236}.obS{fill:#18131f}.obD{fill:#0e0b13}.obH{fill:#4a3e60}.obX{fill:#8676a8}
+      .cr{fill:#7b4dff}.crS{fill:#4a2aa8}.crH{fill:#c9b0ff}.crC{fill:#f2e8ff}
+      .vc{fill:#3a1856}.vcS{fill:#24103a}
+      .sv{fill:#9a93ad}
+      .rune{fill:none;stroke:#d7a8ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+      .gt{fill:none;stroke:#8676a8;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    
+  </defs>
+<g transform="translate(157,463) rotate(-6)">
+  <rect x="-4.5" y="-344" width="9" height="590" rx="3" class="ob"/>
+  <rect x="0" y="-344" width="4.5" height="590" class="obS"/>
+  <rect x="-4.5" y="-344" width="9" height="590" rx="3" class="ln"/>
+  <g class="sv" stroke="#09070c" stroke-width="1.2"><rect x="-6.5" y="-300" width="13" height="8" rx="2"/><rect x="-6.5" y="-36" width="13" height="8" rx="2"/><rect x="-6.5" y="30" width="13" height="8" rx="2"/></g>
+  <path class="ob" d="M-6,246 L6,246 L0,272 Z"/><path class="ln" d="M-6,246 L6,246 L0,272 Z"/>
+  <g filter="url(#glowBig)" fill="#a35cff" stroke="#a35cff" class="pulse"><path d="M0,-344 C-30,-372 -96,-366 -112,-286 C-92,-326 -50,-334 0,-312 Z"/></g>
+  <path class="ob" d="M0,-344 C-30,-372 -96,-366 -112,-286 C-92,-326 -50,-334 0,-312 Z"/>
+  <path class="obH" d="M0,-344 C-30,-372 -96,-366 -112,-286 C-100,-330 -50,-352 0,-334 Z"/>
+  <path class="cr" d="M-112,-286 C-92,-326 -50,-334 0,-312 L0,-320 C-50,-340 -88,-334 -106,-298 Z"/>
+  <path class="ln" d="M0,-344 C-30,-372 -96,-366 -112,-286 C-92,-326 -50,-334 0,-312 Z"/>
+  <g filter="url(#glow)" fill="#d7a8ff" stroke="#d7a8ff" class="pulse"><path d="M-108,-292 C-90,-326 -50,-332 -2,-314" fill="none" stroke-width="4"/></g>
+  <path d="M-108,-292 C-90,-326 -50,-332 -2,-314" fill="none" stroke="#f2e8ff" stroke-width="1.6" stroke-linecap="round"/>
+  <path class="ob" d="M4,-336 L30,-356 L8,-320 Z"/><path class="ln" d="M4,-336 L30,-356 L8,-320 Z"/>
+  <g transform="translate(0,-340) rotate(0)">
+    <g filter="url(#glow)" fill="#a35cff" stroke="#a35cff" class="pulse"><path d="M0,0 L7,-7.5 L3.5,-25.5 L0,-30 L-4.2,-24.0 L-7,-6.0 Z"/></g>
+    <path class="cr" d="M0,0 L7,-7.5 L3.5,-25.5 L0,-30 L-4.2,-24.0 L-7,-6.0 Z"/><path class="crS" d="M0,0 L7,-7.5 L3.5,-25.5 L0,-30 Z"/>
+    <path class="crH" d="M-3.8500000000000005,-7.5 L-2.1,-22.5 L-0.35000000000000003,-9.0 Z"/>
+    <path class="ln" d="M0,0 L7,-7.5 L3.5,-25.5 L0,-30 L-4.2,-24.0 L-7,-6.0 Z"/><path class="fn" d="M0,0 L0,-30"/></g>
+</g>
+</svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768" width="512" height="768">
+  <title>Back — dragon wings</title>
+  <defs>
+    <style>
+      .ln{fill:none;stroke:#140f10;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+      .fn{fill:none;stroke:#140f10;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+      .st{fill:#2c2528}.stS{fill:#1a1517}.stH{fill:#4d4347}.stX{fill:#8a7c80}
+      .rd{fill:#8a1f22}.rdS{fill:#561114}.rdH{fill:#c0392f}
+      .gd{fill:#c9963f}.gdS{fill:#8a6224}.gdH{fill:#f0cf7c}
+      .iv{fill:#e1d4b8}.ivS{fill:#a8977a}.ivD{fill:#6f6250}
+      .em{fill:#ff8a2a}.emC{fill:#ffe08a}
+      .gt{fill:none;stroke:#c9963f;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      .crack{fill:none;stroke:#ffb347;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+      @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}} .pulse{animation:pulse 2.6s ease-in-out infinite} @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .drift{animation:drift 3.2s ease-in-out infinite}
+    </style>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    
+  </defs>
+<g id="wingL">
+
+  <path class="rd" d="M112,118 L26,96 Q64,150 18,196 Q74,244 44,296 Q100,298 112,352 Q160,316 206,320 L222,226 Z"/>
+  <clipPath id="wingC"><path d="M112,118 L26,96 Q64,150 18,196 Q74,244 44,296 Q100,298 112,352 Q160,316 206,320 L222,226 Z"/></clipPath>
+  <g clip-path="url(#wingC)">
+    <path class="rdS" d="M112,118 L26,96 L18,196 L112,118 Z"/>
+    <path class="rdS" d="M112,118 L44,296 L112,352 Z" opacity="0.7"/>
+    <path class="rdH" opacity="0.55" d="M112,118 L150,210 L222,226 Z"/>
+    <g fill="none" stroke="#3a0b0e" stroke-width="1.1" opacity="0.8">
+      <path d="M70,120 C80,140 86,160 84,182"/><path d="M60,214 C80,226 92,244 96,262"/>
+      <path d="M92,300 C110,306 126,316 136,330"/><path d="M150,240 C160,262 170,284 176,306"/>
+    </g>
+  </g>
+  <path class="ln" d="M112,118 L26,96 Q64,150 18,196 Q74,244 44,296 Q100,298 112,352 Q160,316 206,320 L222,226 Z"/>
+  <g stroke-linecap="round" fill="none">
+    <path d="M222,226 L112,118 M112,118 L26,96 M112,118 L18,196 M112,118 L44,296 M112,118 L112,352" stroke="#140f10" stroke-width="9"/>
+    <path d="M222,226 L112,118 M112,118 L26,96 M112,118 L18,196 M112,118 L44,296 M112,118 L112,352" stroke="#3a3034" stroke-width="5"/>
+    <path d="M200,206 L120,126 M104,114 L40,98" stroke="#6a5c62" stroke-width="1.6"/>
+  </g>
+  <path class="iv" d="M108,122 L92,44 C100,50 108,58 118,112 Z"/>
+  <path class="ln" d="M108,122 L92,44 C100,50 108,58 118,112 Z"/>
+  <circle cx="112" cy="118" r="7" class="st"/><circle cx="112" cy="118" r="7" class="ln"/>
+  <g class="iv"><path d="M26,96 L12,90 L24,102 Z"/><path d="M18,196 L6,200 L20,204 Z"/><path d="M44,296 L36,308 L50,300 Z"/></g>
+</g>
+<use href="#wingL" transform="matrix(-1 0 0 1 512 0)"/>
+</svg>

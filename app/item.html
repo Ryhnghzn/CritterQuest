@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ikon Item Anime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a24a;--gold-d:#6e5426;--gold-l:#e8cf8e;--ink:#e8dcc4;--dim:#9a8f80}
+*{box-sizing:border-box}
+body{margin:0;background:#08060a;color:var(--ink);font-family:'Barlow',system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 22px 'Cinzel',serif;color:var(--gold-l);margin:0 0 4px;letter-spacing:1px}
+.intro{color:var(--dim);margin:0 0 14px;max-width:860px;line-height:1.5}
+.intro a{color:var(--gold-l)}
+.grp{margin-bottom:8px}
+.grp b,.lbl{display:block;font:700 12.5px 'Cinzel',serif;color:var(--gold-l);margin-bottom:5px;letter-spacing:1px}
+.opts{display:flex;gap:5px;flex-wrap:wrap}
+.btn{font:600 13px 'Barlow',sans-serif;color:var(--gold-l);background:#100c14;border:1px solid var(--gold-d);padding:6px 9px;cursor:pointer;min-height:32px}
+.btn.on{border-color:var(--gold);color:#fff1d6;background:#2a1d14}
+canvas{display:block;width:100%;background:#120e16;border:1px solid #2a2230}
+#imythic{aspect-ratio:9/2;margin-bottom:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row canvas{aspect-ratio:6/9}
+@media (max-width:640px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Ikon Item Anime</h1>
+  <p class="intro">Senjata sama persis dengan yang dipegang karakter (<a href="./anime.html">anime.html</a>), ditambah helm, zirah, sepatu, kalung, dan cincin. Efek naik per rarity; <b>Mitos</b>: lingkaran rune berputar, sinar merah-emas, api naik, serpihan emas mengorbit, dan efek elemen di senjata. Bawaan: pixel 40 px.</p>
+  <div class="grp"><b>Elemen senjata Mitos</b><div class="opts" id="element"></div></div>
+  <span class="lbl">Mitos (besar)</span>
+  <canvas id="imythic"></canvas>
+  <div class="grp"><b>Kisi semua rarity — kiri</b><div class="opts" id="ileft"></div></div>
+  <div class="grp"><b>Kanan</b><div class="opts" id="iright"></div></div>
+  <div class="grp"><b>Ukuran pixel</b><div class="opts" id="isize"></div></div>
+  <div class="row"><div><span class="lbl" id="ileftname"></span><canvas id="ileftc"></canvas></div><div><span class="lbl" id="irightname"></span><canvas id="irightc"></canvas></div></div>
+</main>
+<script type="module" src="./item/main.js"></script>
+</body>
+</html>
