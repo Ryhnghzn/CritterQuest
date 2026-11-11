@@ -69,12 +69,14 @@ export function renderCheat(box, ctx, actions, redraw) {
       section('Wilayah',
         row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll), b('Elite 2 sifat', actions.elite)),
         row(...['marshfrog', 'bushling', 'mistwisp', 'mirrorguard'].map((id) => button(ENEMIES[id].name, 'chb', () => actions.foe(id)))),
+        row(...['hyena', 'splitbeetle', 'mortar', 'embertotem', 'voidobelisk', 'voidtwin'].map((id) => button(ENEMIES[id].name, 'chb', () => actions.foe(id)))),
         row(b('Buka seluruh peta', actions.revealMap), b('+100 EXP', () => actions.exp(100))),
         row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5)), b('Ke gerbang', actions.warpGate), b('Ke harta', actions.warpTreasure)));
     } else {
       section('Dungeon',
         row(b(ctx.god ? 'Kebal: NYALA' : 'Kebal: mati', actions.god), b('Bunuh semua musuh', actions.killAll), b('Elite 2 sifat', actions.elite)),
         row(...['marshfrog', 'bushling', 'mistwisp', 'mirrorguard'].map((id) => button(ENEMIES[id].name, 'chb', () => actions.foe(id)))),
+        row(...['hyena', 'splitbeetle', 'mortar', 'embertotem', 'voidobelisk', 'voidtwin'].map((id) => button(ENEMIES[id].name, 'chb', () => actions.foe(id)))),
         row(b('Bersihkan lantai', actions.clearFloor), b('+100 EXP', () => actions.exp(100))),
         row(...[1, 2, 3, 4, 5].map((f) => button(t('Lantai {n}', { n: f }), 'chb', () => actions.floor(f)))));
     }

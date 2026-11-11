@@ -832,7 +832,7 @@ export class Field25 {
       }
     }
     for (const e of game.enemies) { // a burrowed sandworm: a moving hump of sand (spec §25.4)
-      if (!e.hidden || e.ai === 'blink' || e.ai === 'ambush' || !visible(e.x, e.y, 40)) continue; // ambush: a bush (render/foes.js)
+      if (!e.hidden || e.ai !== 'burrow' || !visible(e.x, e.y, 40)) continue; // only a sandworm digs (bushes, blinking elites, fallen twins are drawn elsewhere)
       const x = e.x + (e.mode === 'rise' ? Math.sin(t * 60) * 3 : 0), y = e.y + e.r * 0.4;
       g.beginPath(); g.ellipse(x, y, e.r * 1.1, e.r * 0.6, 0, 0, TAU); g.fillStyle = '#8a6440'; g.fill();
       g.lineWidth = 1.5; g.strokeStyle = 'rgba(30,18,10,.7)'; g.stroke();

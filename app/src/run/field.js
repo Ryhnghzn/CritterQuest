@@ -119,14 +119,20 @@ export function spawnPack(run) {
 // type: an enemy kind to send (null: one of the zone's, by weight)
 export function spawnGroup(run, x, y, n, zone, type = null) {
   const map = run.fmap;
-  type ||= pickType(regionById(zone));
+  const region = regionById(zone);
+  type ||= pickType(region);
+  const def = ENEMIES[type];
+  if (def.group) n = Math.min(n, rint(def.group[0], def.group[1])); // hyenas 4–6, twins in pairs (spec §41.1)
   const level = levelAt(map, x, y);
   const sc = fieldScale(level);
   const out = [];
   for (let i = 0; i < n; i++) {
-    const e = run.spawnEnemy(type);
+    let kind = type;
+    if (def.single && i > 0) for (let k = 0; k < 8 && (kind === type || ENEMIES[kind].single || ENEMIES[kind].group); k++) kind = pickType(region); // a totem comes alone with others
+    if (def.single && i > 0 && (ENEMIES[kind].single || ENEMIES[kind].group)) kind = 'slink';
+    const e = run.spawnEnemy(kind);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // §33.3: the horde, weaker one by one
-    e.xp = Math.round(ENEMIES[type].xp * sc.reward);
+    e.xp = Math.round(ENEMIES[kind].xp * sc.reward);
     e.level = level; e.zone = zone;
     const a = rand() * Math.PI * 2;
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
@@ -208,7 +214,7 @@ export const confineFieldEnemy = (run, e) => pushOut(run.fmap, e, e.r);
 export const fieldHere = (run) => (run.place === 'hub' ? t('Padang Kota Awal') : `${run.region.name} · LV ${levelAt(run.fmap, run.px, run.py)}`);
 
 // hidden treasure (spec §25.3)
-const GUARD_SKIP = ['healer', 'summoner', 'bomber']; // too soft to guard a chest
+const GUARD_SKIP = ['healer', 'summoner', 'bomber', 'embertotem', 'voidobelisk', 'voidtwin', 'bushling']; // too soft to guard a chest; still, paired or hidden (spec §41.1)
 
 // The guardian (a crowned, giant version of a regional enemy) and its escort.
 export function spawnGuardian(run, tr) {

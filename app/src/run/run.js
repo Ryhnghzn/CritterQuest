@@ -18,7 +18,7 @@ import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
 import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
 import { affixStep, affixHit, affixDeath } from './affix.js';
-import { reflectShot } from './foes.js';
+import { reflectShot, foeStep, twinDown, splitDeath } from './foes.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
@@ -471,6 +471,7 @@ export class Game {
     for (let i = E.length - 1; i >= 0; i--) {
       const e = E[i];
       if (e.hp <= 0) {
+        if (twinDown(this, e, dt, ENEMIES[e.type])) continue; // a Kembar Hampa only falls (spec §41.1)
         this.killEnemy(e);
         E[i] = E[E.length - 1]; E.pop();
         continue;
@@ -479,6 +480,7 @@ export class Game {
       if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
       affixStep(this, e, dt); // elite traits (spec §41.1)
+      foeStep(this, e, dt, ENEMIES[e.type]); // totem gifts, twin beams (run/foes.js)
       // walk in through the lane, then the enemy's own behaviour (run/enemies.js)
       let vx, vy;
       const goal = this.field ? { x: this.px, y: this.py } : enemyGoal(this, e);
@@ -535,6 +537,7 @@ export class Game {
   killEnemy(e) {
     onDeath(this, e);
     affixDeath(this, e);
+    splitDeath(this, e, ENEMIES[e.type]); // Kumbang Pembelah (spec §41.1)
     this.kills += 1;
     const kin = ENEMIES[e.type].kin || e.type; // biome variants count as their older kin
     this.killsBy[kin] = (this.killsBy[kin] || 0) + 1;

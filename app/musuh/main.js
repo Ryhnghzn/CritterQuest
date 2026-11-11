@@ -11,6 +11,14 @@ const NEW = [
   ['bushling', 'healer', 'Hutan — menyamar jadi semak, menerjang saat didekati'],
   ['mistwisp', 'icewisp', 'Padang Es — meninggalkan genangan es yang memperlambat'],
   ['mirrorguard', 'frosttank', 'Padang Es — mengangkat cermin, memantulkan proyektil dari depan'],
+  ['hyena', 'scorpion', 'Gurun — datang 4–6, mengepung, melolong lalu menyerbu bersamaan'],
+  ['splitbeetle', 'sandslink', 'Gurun — mati pecah jadi 2 kumbang kecil, lalu 2 tungau'],
+  ['beetlet', 'sandslink', 'Gurun — anak Kumbang Pembelah'],
+  ['mite', 'sandslink', 'Gurun — tungau, pecahan terakhir'],
+  ['mortar', 'imp', 'Gunung Api — berdiri jauh, menembak lambung ke posisimu'],
+  ['embertotem', 'emberbomber', 'Gunung Api — diam; musuh di sekitarnya lebih cepat & berperisai'],
+  ['voidobelisk', 'voidtank', 'Gerhana — totem dengan sinar berputar'],
+  ['voidtwin', 'wraith', 'Gerhana — berpasangan, sinar penghubung; bangkit lagi kecuali keduanya mati'],
 ];
 const PIXEL = { k: 2, levels: 7, solid: 0.8, ink: [19, 11, 26] }; // data/look.js pixel
 const W = 230, H = 190, GROUND = 168, ZOOM = 2;

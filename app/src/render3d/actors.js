@@ -14,7 +14,7 @@ import { BOSS_ART, BOSS_AURAS, BOSS_BOX, BOSS_K, drawBoss } from '../art/bosses/
 import { drawDoll } from '../art/doll.js';
 import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
 import { setFxSink, drawFx } from '../art/anime/elemfx.js';
-import { bushDisguise, mirrorMark, leapHeight } from '../render/foes.js';
+import { bushDisguise, mirrorMark, leapHeight, foeMarks } from '../render/foes.js';
 import { pickWing } from '../art/anime/wingpick.js';
 import { gaitRate } from '../art/hero/rig.js';
 import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from './facing.js';
@@ -203,6 +203,7 @@ export class Actors {
         g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 0.9, e.r * 0.34, 0, 0, Math.PI * 2); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill();
         if (e.elite) { g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.2, e.r * 0.45, 0, 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = 'rgba(255,190,80,.8)'; g.stroke(); }
       }
+      foeMarks(g, game, t, { shells: false }); // totems, beams, fallen twins (the ghost has no enemies)
       D.drawFx(g, ghost, t);
     }
     this.decalTex.needsUpdate = true;

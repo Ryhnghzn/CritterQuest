@@ -112,6 +112,45 @@ export const ENEMIES = {
     ai: 'mirror', every: 4, windup: 0.4, hold: 1.5, arc: 140, turn: 2.2,
     reflect: { speed: 260, dmg: 12, r: 6, color: '#cfefff', look: 'crystal' },
   },
+  // §41.1 — Gurun Merah
+  // Hyena Pasir: comes `group` at a time, circles the player at `ring`, then a howl (lines on the
+  // ground, `windup` s) and every hyena of the pack rushes in at once
+  hyena: {
+    name: 'Hyena Pasir', hp: 34, speed: 96, dmg: 10, r: 12, xp: 3, sprite: 'hyena', score: 3, group: [4, 6],
+    ai: 'pack', ring: 160, spin: 1.1, every: 3.4, windup: 0.8, dash: { speed: 460, time: 0.42 }, rest: 0.7,
+  },
+  // Kumbang Pembelah: bursts into `split.count` of `split.type` when it dies (they split once more)
+  splitbeetle: {
+    name: 'Kumbang Pembelah', hp: 64, speed: 40, dmg: 12, r: 15, xp: 4, sprite: 'splitbeetle', score: 4,
+    ai: 'split', split: { type: 'beetlet', count: 2 },
+  },
+  beetlet: { kin: 'splitbeetle', name: 'Kumbang Kecil', hp: 24, speed: 62, dmg: 8, r: 10, xp: 1, sprite: 'beetlet', score: 1, ai: 'split', split: { type: 'mite', count: 2 } },
+  mite: { kin: 'splitbeetle', name: 'Tungau', hp: 8, speed: 100, dmg: 5, r: 6, xp: 0, sprite: 'mite', score: 0 },
+  // §41.1 — Gunung Api
+  // Meriam Magma: stands back at `keep` (beyond a mage's reach) and lobs shells: a danger circle
+  // where the player stands, bursting after `lob.fuse` s
+  mortar: {
+    name: 'Meriam Magma', hp: 52, speed: 36, dmg: 6, r: 14, xp: 5, sprite: 'mortar', score: 5,
+    ai: 'mortar', keep: 360, every: 2.6, windup: 0.5, lob: { radius: 56, fuse: 1, dmg: 20, onHit: { burn: [0.3, 2] } },
+  },
+  // Totem Bara: does not move; enemies within `radius` are `haste` faster and get a ward of `ward` ×
+  // their max HP (soaked before HP) while it stands. `single`: comes alone with a pack of others
+  embertotem: {
+    name: 'Totem Bara', hp: 130, speed: 0, dmg: 0, r: 16, xp: 6, sprite: 'embertotem', score: 6, single: true,
+    ai: 'totem', radius: 200, haste: 0.3, ward: 0.2, color: '255,140,60',
+  },
+  // §41.1 — Tanah Gerhana
+  // Obelisk Hampa: a Totem Bara with a slowly turning beam that hurts every `beam.every` s it touches
+  voidobelisk: {
+    name: 'Obelisk Hampa', hp: 170, speed: 0, dmg: 14, r: 18, xp: 8, sprite: 'voidobelisk', score: 8, single: true,
+    ai: 'totem', radius: 200, haste: 0.3, ward: 0.2, color: '190,120,255', beam: { len: 280, w: 22, spin: 0.7, dmg: 14, every: 0.5 },
+  },
+  // Kembar Hampa: pairs bound by a beam (`link`) that hurts when crossed; they flank the player from
+  // both sides. One falls → it rises again after `revive` s at `reviveHp`, unless its twin falls too
+  voidtwin: {
+    name: 'Kembar Hampa', hp: 72, speed: 62, dmg: 12, r: 13, xp: 6, sprite: 'voidtwin', score: 6, group: [2, 2],
+    ai: 'twin', flank: 120, revive: 4, reviveHp: 0.5, link: { max: 340, w: 12, dmg: 10, every: 0.5 },
+  },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {
@@ -260,7 +299,7 @@ export const AFFIXES = {
   thorny: { name: 'Berduri', cd: 1, dmgMul: 0.5, shot: { count: 8, speed: 170, r: 5, color: '#e6c27a' } }, // thorn damage = touch damage × dmgMul
   volatile: { name: 'Meledak', radius: 110, fuse: 1, dmgMul: 2 },            // on death: a danger circle, damage × the elite's touch damage
   aura: { name: 'Beraura', every: 1.6, r: 44, fuse: 0.9, dmgMul: 0.6 },      // small bursts left behind; the biome's onHit (slow / burn / poison)
-  blinker: { name: 'Penjelajah', every: 5, warn: 0.5, near: [80, 140], not: ['burrow', 'blink', 'boss', 'ambush'] },
+  blinker: { name: 'Penjelajah', every: 5, warn: 0.5, near: [80, 140], not: ['burrow', 'blink', 'boss', 'ambush', 'totem'] },
 };
 // how many traits: 1, or 2 from world level / dungeon floor on
 export const AFFIX_COUNT = { base: 1, more: 2, level: 25, floor: 4 };

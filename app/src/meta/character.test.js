@@ -30,7 +30,7 @@ describe('createCharacter', () => {
   it('membuat slot versi terkini yang kosong progresnya', () => {
     const c = make();
     expect(c).toEqual({
-      version: 23, slot: 0, createdAt: NOW, updatedAt: NOW,
+      version: 24, slot: 0, createdAt: NOW, updatedAt: NOW,
       name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior',
       level: 1, exp: 0, gold: 0, clock: 7 * 60,
       mats: { dust: 0, crystal: 0, core: 0 },
@@ -54,7 +54,7 @@ describe('createCharacter', () => {
       equipped: { weapon: null, helm: null, armor: null, boots: null, amulet: null, ring: null },
       records: {
         trips: 0, kills: 0, bossKills: 0, dungeons: dungeonRecs(), uniques: [], ending: null,
-        bestiary: { slink: 0, mini: 0, dart: 0, tank: 0, spitter: 0, charger: 0, summoner: 0, healer: 0, bomber: 0, shielder: 0, wolf: 0, yeti: 0, icewisp: 0, scorpion: 0, sandworm: 0, imp: 0, salamander: 0, wraith: 0, boss: 0, crystalboss: 0, sporeboss: 0, tombboss: 0, lavaboss: 0, eclipseboss: 0 },
+        bestiary: { slink: 0, mini: 0, dart: 0, tank: 0, spitter: 0, charger: 0, summoner: 0, healer: 0, bomber: 0, shielder: 0, wolf: 0, yeti: 0, icewisp: 0, scorpion: 0, sandworm: 0, imp: 0, salamander: 0, wraith: 0, marshfrog: 0, bushling: 0, mistwisp: 0, mirrorguard: 0, hyena: 0, splitbeetle: 0, mortar: 0, embertotem: 0, voidobelisk: 0, voidtwin: 0, boss: 0, crystalboss: 0, sporeboss: 0, tombboss: 0, lavaboss: 0, eclipseboss: 0 },
       },
     });
   });

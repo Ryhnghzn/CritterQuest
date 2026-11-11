@@ -4,7 +4,7 @@
 import { rand, rrange } from '../core/rng.js';
 import { ENEMIES, SHIELD_PIERCING } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
-import { leap, ambush, trail, mirror, stepPuddle } from './foes.js';
+import { leap, ambush, trail, mirror, stepPuddle, pack, mortar, totem, twin } from './foes.js';
 
 const TAU = Math.PI * 2;
 const PIERCE = new Set(SHIELD_PIERCING);
@@ -45,6 +45,10 @@ export function aiStep(run, e, dt) {
     case 'ambush': return ambush(run, e, b, dt);
     case 'trail': return trail(run, e, b);
     case 'mirror': return mirror(run, e, b, dt);
+    case 'pack': return pack(run, e, b, dt);
+    case 'mortar': return mortar(run, e, b);
+    case 'totem': return totem(run, e, b, dt);
+    case 'twin': return twin(run, e, b);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }

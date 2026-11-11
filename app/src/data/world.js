@@ -39,14 +39,14 @@ export const REGIONS = [
   {
     id: 'desert', name: 'Gurun Merah', biome: 'desert', levels: [20, 35], from: 'home', to: 'pasir', ...BIG, seed: 33,
     branches: 5, rivers: 1, lakes: 4, ruins: 20, density: { tree: 6, rock: 16 },
-    enemies: { scorpion: 4, sandslink: 3, vulture: 3, sandworm: 2, spitter: 2, bomber: 2, charger: 2, summoner: 1, healer: 1 },
+    enemies: { scorpion: 4, sandslink: 3, vulture: 3, hyena: 3, splitbeetle: 3, sandworm: 2, spitter: 2, bomber: 2, charger: 2, summoner: 1, healer: 1 },
     dungeons: [{ id: 'tomb', at: [0.25, 0.7] }],
     theme: { ground: ['#4a3324', '#3f2b1e'], path: '#6a4c32', water: '#2f6a6a', ambient: 'rgba(16,8,4,.78)' },
   },
   {
     id: 'volcano', name: 'Gunung Api', biome: 'volcano', levels: [30, 50], from: 'home', to: 'bara', ...BIG, seed: 45,
     branches: 5, rivers: 1, lakes: 10, ruins: 12, density: { tree: 9, rock: 20 },
-    enemies: { imp: 3, salamander: 3, magmaslink: 3, emberbomber: 3, charger: 2, tank: 2, shielder: 2, summoner: 1, healer: 1 },
+    enemies: { imp: 3, salamander: 3, magmaslink: 3, emberbomber: 3, mortar: 3, embertotem: 2, charger: 2, tank: 2, shielder: 2, summoner: 1, healer: 1 },
     dungeons: [{ id: 'lava', at: [0.05, 0.35] }],
     theme: { ground: ['#2a1a18', '#221413'], path: '#3e2a24', water: '#c2410c', ambient: 'rgba(14,4,2,.8)' },
   },
@@ -55,7 +55,7 @@ export const REGIONS = [
   {
     id: 'eclipse', name: 'Tanah Gerhana', biome: 'eclipse', levels: [45, 50], from: 'bara', to: null, w: 8000, h: 5000, seed: 57,
     branches: 3, rivers: 1, lakes: 6, ruins: 10, density: { tree: 30, rock: 16 }, unlock: { shards: 5 },
-    enemies: { voidslink: 3, voidspitter: 3, wraith: 3, voiddart: 2, voidtank: 2, shielder: 1, summoner: 1, healer: 1 },
+    enemies: { voidslink: 3, voidspitter: 3, wraith: 3, voidtwin: 3, voidobelisk: 2, voiddart: 2, voidtank: 2, shielder: 1, summoner: 1, healer: 1 },
     dungeons: [{ id: 'spire', at: [0.84, 0.94] }],
     theme: { ground: ['#1c1426', '#160f1f'], path: '#33284a', water: '#2a1640', ambient: 'rgba(8,4,16,.82)' },
   },

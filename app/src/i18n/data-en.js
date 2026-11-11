@@ -181,6 +181,7 @@ const ENEMY_EN = {
   'Lendir Pasir': 'Sand Ooze', 'Burung Nasar': 'Vulture', Kalajengking: 'Scorpion', 'Cacing Pasir': 'Sandworm',
   'Lendir Magma': 'Magma Ooze', 'Jamur Bara': 'Ember Shroom', 'Imp Api': 'Fire Imp', 'Raja Mumi': 'Mummy King',
   'Katak Rawa': 'Bog Toad', 'Semak Penyergap': 'Lurking Bramble', 'Roh Embun': 'Mist Wraith', 'Penjaga Cermin': 'Mirror Warden', // spec §41.1
+  'Hyena Pasir': 'Dune Hyena', 'Kumbang Pembelah': 'Splitter Beetle', 'Kumbang Kecil': 'Beetle Spawn', Tungau: 'Mite', 'Meriam Magma': 'Magma Mortar', 'Totem Bara': 'Ember Totem', 'Obelisk Hampa': 'Void Obelisk', 'Kembar Hampa': 'Void Twin',
 };
 const AFFIX_EN = { Cepat: 'Swift', Berlapis: 'Armored', Pemanggil: 'Summoner', Berduri: 'Thorned', Meledak: 'Volatile', Beraura: 'Searing', Penjelajah: 'Blinking' };
 const PHASE_NAME_EN = { 'Matahari Hitam': 'Black Sun', 'GERHANA!': 'ECLIPSE!', 'KEHAMPAAN!': 'THE VOID!',

@@ -5,7 +5,8 @@ import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { REGIONS, FIELD, regionById } from '../data/world.js';
 import { WORLD, ECLIPSE } from '../data/worldmap.js';
 import { buildWorld, blocked, pushOut, landAt, zoneToWorld, zoneAt, townGate } from './worldmap.js';
-import { fieldScale, spawnPack, spawnGuardian, questDrop, townExit } from './field.js';
+import { fieldScale, spawnPack, spawnGroup, spawnGuardian, questDrop, townExit } from './field.js';
+import { ENEMIES } from '../data/enemies.js';
 import { fire } from './enemies.js';
 import { HORDE } from '../data/balance.js';
 import { TREASURE } from '../data/world.js';
@@ -364,5 +365,22 @@ describe('terbang di atas air (§35.1)', () => {
     expect(Math.hypot(g.px - lake.x, g.py - lake.y)).toBeLessThan(lake.r);
     g.invuln = 0; g.dodgeInv = 0; g.hurtPlayer(5); g.step(1 / 60);
     expect(blocked(g.fmap, g.px, g.py, 12)).toBe(false);
+  });
+});
+
+describe('rombongan musuh khusus (spec §41.1)', () => {
+  it('totem datang sendiri bersama musuh lain; hyena 4–6; kembar berpasangan', () => {
+    const g = new Game();
+    g.explore(setup());
+    const tot = spawnGroup(g, g.px + 300, g.py, 8, 'forest', 'embertotem');
+    expect(tot.length).toBe(8);
+    expect(tot.filter((e) => e.type === 'embertotem').length).toBe(1);
+    expect(tot.every((e) => e.type === 'embertotem' || !ENEMIES[e.type].single)).toBe(true);
+    for (let i = 0; i < 10; i++) {
+      const h = spawnGroup(g, g.px + 300, g.py, 10, 'forest', 'hyena');
+      expect(h.length).toBeGreaterThanOrEqual(4);
+      expect(h.length).toBeLessThanOrEqual(6);
+    }
+    expect(spawnGroup(g, g.px + 300, g.py, 9, 'forest', 'voidtwin').length).toBe(2);
   });
 });

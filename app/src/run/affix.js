@@ -83,6 +83,7 @@ export function affixStep(run, e, dt) {
 // A hit on an elite: the Berlapis shield soaks first, Berduri answers with thorns.
 // Returns the damage left for its HP.
 export function affixHit(run, e, dmg) {
+  if (e.ward > 0) { const soak = Math.min(e.ward, dmg); e.ward -= soak; dmg -= soak; } // a totem's ward (run/foes.js)
   if (!e.affixes?.length) return dmg;
   if (has(e, 'armored')) {
     e.armorIdle = 0;

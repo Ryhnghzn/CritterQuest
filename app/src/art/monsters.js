@@ -183,6 +183,14 @@ const MONSTERS = {
   bushling(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.bushling(g); g.restore(); },
   mistwisp(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.mistwisp(g); g.restore(); },
   mirrorguard(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.mirrorguard(g); g.restore(); },
+  hyena(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.hyena(g); g.restore(); },
+  splitbeetle(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.splitbeetle(g); g.restore(); },
+  beetlet(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.beetlet(g); g.restore(); },
+  mite(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.mite(g); g.restore(); },
+  mortar(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.mortar(g); g.restore(); },
+  embertotem(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.embertotem(g); g.restore(); },
+  voidobelisk(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.voidobelisk(g); g.restore(); },
+  voidtwin(g, r) { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); FOE_ART.voidtwin(g); g.restore(); },
   icewisp(g, r) { // floating frost spirit with orbiting shards
     glow(g, 0, 0, 1.3 * r, '#7fd8ff', 0.5);
     part(g, r, [[0, -1.0], [0.55, -0.1], [0.3, 0.7], [0, 1.0], [-0.3, 0.7], [-0.55, -0.1]], P('#6ab8e8', 'ice', { hi: '#ffffff' }), 0.3);

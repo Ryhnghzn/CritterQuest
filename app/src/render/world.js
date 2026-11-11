@@ -23,7 +23,7 @@ import { groundTile, drawField, fieldDecorLights, targetArrow } from './field.js
 import { REGIONS } from '../data/world.js';
 import { skyAt } from '../meta/clock.js';
 import { drawVfx, drawFlashes, drawFloaters } from './fxkit.js';
-import { bushDisguise, mirrorMark, puddle, leapHeight } from './foes.js';
+import { bushDisguise, mirrorMark, puddle, leapHeight, foeMarks } from './foes.js';
 import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, playerAlpha } from './skillfx.js';
 import { SHAKE_PX } from '../data/fx.js';
 
@@ -167,6 +167,7 @@ export class Renderer {
 
   drawRun(g, game, t, visible) {
     for (const h of game.hazards) hazard(g, h, t);
+    foeMarks(g, game, t); // spec §41.1: totems, beams, shells (render/foes.js)
     // pickups
     for (const gm of game.gems) {
       if (!visible(gm.x, gm.y)) continue;

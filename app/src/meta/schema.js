@@ -21,7 +21,7 @@ import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts, storyMounts } from './stable.js';
 
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -126,6 +126,8 @@ export const MIGRATIONS = {
   // fits), regions only mark the zones set foot in.
   // v23 (spec §42): varied quests — the answer picked in a choice step, the best race times.
   22: (d) => ({ ...d, version: 23, quests: isObj(d.quests) ? { ...d.quests, choices: {}, races: {} } : d.quests }),
+  // v24 (spec §41.1): the new enemies in the bestiary.
+  23: (d) => ({ ...d, version: 24, records: isObj(d.records) && isObj(d.records.bestiary) ? { ...d.records, bestiary: { ...freshBestiary(), ...d.records.bestiary } } : d.records }),
   21: (d) => ({
     ...d, version: 22,
     world: isObj(d.world) ? { ...d.world, fog: '' } : d.world,

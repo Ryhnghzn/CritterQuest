@@ -352,3 +352,124 @@ describe('Penjaga Cermin (spec §41.1)', () => {
     expect(e.hp).toBeLessThan(hp2);
   });
 });
+
+describe('Hyena Pasir (spec §41.1)', () => {
+  it('mengepung di jarak ring, lalu melolong bersamaan (garis) dan menyerbu', () => {
+    const g = start();
+    const b = ENEMIES.hyena;
+    const pack = [0, 1, 2, 3].map((i) => { const e = place(g, 'hyena', Math.cos(i * 1.6) * 400, Math.sin(i * 1.6) * 400); e.actT = 99; return e; });
+    step(g, secs(2.5));
+    for (const e of pack) expect(Math.abs(Math.hypot(e.x - g.px, e.y - g.py) - b.ring)).toBeLessThan(40);
+    pack[0].actT = 0;
+    step(g);
+    for (const e of pack) expect(e.mode).toBe('wind');
+    expect(g.hazards.filter((h) => h.kind === 'line' && h.by === 'hyena').length).toBe(4);
+    step(g, secs(b.windup) + 3);
+    for (const e of pack) expect(e.mode).toBe('dash');
+  });
+});
+
+describe('Kumbang Pembelah (spec §41.1)', () => {
+  it('mati → 2 kumbang kecil; kumbang kecil mati → 2 tungau; tungau tidak membelah', () => {
+    const g = start();
+    const e = place(g, 'splitbeetle', 300, 0);
+    e.hp = 0;
+    step(g);
+    const small = g.enemies.filter((o) => o.type === 'beetlet');
+    expect(small.length).toBe(2);
+    for (const o of small) o.hp = 0;
+    step(g);
+    const mites = g.enemies.filter((o) => o.type === 'mite');
+    expect(mites.length).toBe(4);
+    for (const o of mites) o.hp = 0;
+    step(g);
+    expect(g.enemies.length).toBe(0);
+  });
+});
+
+describe('Meriam Magma (spec §41.1)', () => {
+  it('menjaga jarak jauh dan menembak lambung: lingkaran di posisi pemain yang meledak', () => {
+    const g = start();
+    const b = ENEMIES.mortar;
+    const e = place(g, 'mortar', 150, 0);
+    e.actT = 99;
+    step(g, secs(1.5));
+    expect(e.x).toBeGreaterThan(200);
+    e.actT = 0;
+    step(g, secs(b.windup) + 2);
+    const shell = g.hazards.find((h) => h.by === 'mortar');
+    expect(shell).toBeTruthy();
+    expect(Math.hypot(shell.x - g.px, shell.y - g.py)).toBeLessThan(5);
+    const hp = g.stats.hp;
+    step(g, secs(b.lob.fuse) + 2);
+    expect(g.stats.hp).toBeLessThan(hp);
+  });
+});
+
+describe('Totem Bara (spec §41.1)', () => {
+  it('musuh di dekatnya lebih cepat & berperisai; perisai menyerap damage; hilang saat totem mati', () => {
+    const g = start();
+    const b = ENEMIES.embertotem;
+    const t = place(g, 'embertotem', 500, 0);
+    const o = place(g, 'tank', 560, 0);
+    const sp = o.speed;
+    step(g, 2);
+    expect(t.x).toBe(500);
+    expect(o.speed).toBeCloseTo(sp * (1 + b.haste));
+    expect(o.ward).toBeCloseTo(o.maxHp * b.ward);
+    const hp = o.hp;
+    g.damageEnemy({ mult: 0.5, fx: 'slash', crit: false }, o);
+    expect(o.hp).toBe(hp);
+    expect(o.ward).toBeLessThan(o.maxHp * b.ward);
+    t.hp = 0;
+    step(g, secs(0.5));
+    expect(o.speed).toBeCloseTo(sp);
+    expect(o.ward || 0).toBe(0);
+  });
+
+  it('obelisk: sinar berputar melukai pemain yang tersentuh', () => {
+    const g = start();
+    const b = ENEMIES.voidobelisk;
+    const ob = place(g, 'voidobelisk', 150, 0);
+    ob.beamA = Math.PI; // pointing at the player
+    const hp = g.stats.hp;
+    step(g, 2);
+    expect(g.stats.hp).toBeLessThan(hp);
+    const g2 = start();
+    const ob2 = place(g2, 'voidobelisk', 150, 0);
+    ob2.beamA = Math.PI / 2;
+    const hp2 = g2.stats.hp;
+    step(g2, 2);
+    expect(g2.stats.hp).toBe(hp2);
+    expect(b.beam.len).toBeGreaterThan(150);
+  });
+});
+
+describe('Kembar Hampa (spec §41.1)', () => {
+  it('berpasangan; sinar penghubung melukai pemain di antaranya', () => {
+    const g = start();
+    const a = place(g, 'voidtwin', 0, -120), c = place(g, 'voidtwin', 0, 120);
+    a.speed = 0; c.speed = 0;
+    const hp = g.stats.hp;
+    step(g, 3);
+    expect(a.partner).toBe(c);
+    expect(g.stats.hp).toBeLessThan(hp);
+  });
+
+  it('yang tumbang bangkit lagi setelah beberapa detik, kecuali kembarannya ikut tumbang', () => {
+    const g = start();
+    const b = ENEMIES.voidtwin;
+    const a = place(g, 'voidtwin', 400, -100), c = place(g, 'voidtwin', 400, 100);
+    step(g);
+    a.hp = 0;
+    step(g);
+    expect(g.enemies).toContain(a);
+    expect(a.down).toBe(true);
+    step(g, secs(b.revive) + 2);
+    expect(a.down).toBe(false);
+    expect(a.hp).toBeCloseTo(a.maxHp * b.reviveHp);
+    a.hp = 0; step(g);
+    c.hp = 0; step(g, 2);
+    expect(g.enemies.includes(a) || g.enemies.includes(c)).toBe(false);
+  });
+});

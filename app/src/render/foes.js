@@ -61,3 +61,56 @@ export function puddle(g, h, t) {
   }
   g.restore();
 }
+
+// A3/A4 marks (spec §41.1). shells: the Meriam Magma shells in flight (their hazards); enemies:
+// totem rings and the allies they ward, the obelisk's turning beam, the twins' beam, a fallen
+// twin's rising ring. The 3D decal layer calls it twice: shells with the ghost run, enemies with
+// the real one.
+export function foeMarks(g, game, t, { shells = true, enemies = true } = {}) {
+  g.save();
+  if (shells) for (const h of game.hazards) {
+    if (!h.shell) continue;
+    const k = 1 - Math.max(0, h.t) / h.max, x = h.shell.x + (h.x - h.shell.x) * k, y = h.shell.y + (h.y - h.shell.y) * k - Math.sin(Math.PI * k) * 120;
+    g.globalCompositeOperation = 'lighter';
+    const gr = g.createRadialGradient(x, y, 0, x, y, 14); gr.addColorStop(0, '#fff2b0'); gr.addColorStop(0.4, '#ff8a3c'); gr.addColorStop(1, 'rgba(255,90,30,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, 14, 0, TAU); g.fill();
+    g.globalCompositeOperation = 'source-over';
+  }
+  if (enemies) for (const e of game.enemies) {
+    const b = ENEMIES[e.type];
+    if (e.ai === 'totem' && e.hp > 0) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 3 + e.x);
+      g.setLineDash([10, 8]); g.lineDashOffset = -t * 20; g.lineWidth = 2;
+      g.strokeStyle = `rgba(${b.color},${0.35 + pulse * 0.25})`;
+      g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.6, b.radius, b.radius * 0.7, 0, 0, TAU); g.stroke(); g.setLineDash([]);
+      if (b.beam) {
+        const m = b.beam, a = e.beamA ?? 0, bx = e.x + Math.cos(a) * m.len, by = e.y + Math.sin(a) * m.len;
+        g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+        g.lineWidth = m.w; g.strokeStyle = 'rgba(150,80,255,.35)'; g.beginPath(); g.moveTo(e.x, e.y); g.lineTo(bx, by); g.stroke();
+        g.lineWidth = m.w * 0.35; g.strokeStyle = 'rgba(230,200,255,.9)'; g.stroke();
+        g.globalCompositeOperation = 'source-over';
+      }
+    }
+    if (e.warded && e.ward > 0 && e.hp > 0) { // a totem's gift: a glowing ring under the ally
+      g.lineWidth = 2.5; g.strokeStyle = `rgba(${e.wardBy || '255,140,60'},${0.55 + 0.3 * Math.sin(t * 8)})`;
+      g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.1, e.r * 0.42, 0, 0, TAU); g.stroke();
+    }
+    if (e.ai === 'twin') {
+      const p = e.partner;
+      if (e.lead && p && e.hp > 0 && p.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 <= b.link.max ** 2) {
+        const fl = 0.75 + 0.25 * Math.sin(t * 18);
+        g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+        g.lineWidth = b.link.w * 1.6; g.strokeStyle = `rgba(150,80,255,${0.35 * fl})`; g.beginPath(); g.moveTo(e.x, e.y); g.lineTo(p.x, p.y); g.stroke();
+        g.lineWidth = b.link.w * 0.4; g.strokeStyle = `rgba(235,215,255,${0.9 * fl})`; g.stroke();
+        g.globalCompositeOperation = 'source-over';
+      }
+      if (e.down) { // fallen: a ring closing as it is about to rise
+        const k = Math.max(0, e.reviveT) / b.revive;
+        g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.6, e.r * 1.4, e.r * 0.6, 0, 0, TAU); g.fillStyle = 'rgba(60,30,100,.55)'; g.fill();
+        g.lineWidth = 3; g.strokeStyle = 'rgba(199,155,255,.9)';
+        g.beginPath(); g.arc(e.x, e.y - e.r * 0.4, e.r * 1.2, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - k)); g.stroke();
+      }
+    }
+  }
+  g.restore();
+}

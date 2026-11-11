@@ -2,6 +2,7 @@
 // screens together and runs the fixed-timestep loop.
 // Flow (spec §13.1): Judul → Pilih Slot → [Buat Karakter] → KOTA ⇄ DUNGEON → Hasil Perjalanan → KOTA.
 // Scenes: 'menu' (title/slots/create/results over the town backdrop), 'town', 'run'.
+import { ENEMIES } from './data/enemies.js';
 import { setLang, getLang, applyDom, tr, t, num } from './i18n.js';
 import { localizeData } from './i18n/data-en.js';
 import { Game, ST } from './run/run.js';
@@ -1146,11 +1147,13 @@ const cheatActions = {
     if (game.field) { e.level = game.enemies.find((o) => o.level)?.level ?? 1; e.zone = game.region?.id; }
     makeElite(e, 2);
   },
-  foe: (type) => { // one of the new enemies (spec §41.1) a little in front of the player
-    const e = game.spawnEnemy(type);
-    const a = Math.random() * Math.PI * 2;
-    e.x = game.px + Math.cos(a) * 240; e.y = game.py + Math.sin(a) * 240;
-    if (game.field) { e.level = game.enemies.find((o) => o.level)?.level ?? 1; e.zone = game.region?.id; }
+  foe: (type) => { // one of the new enemies (spec §41.1) a little in front of the player; hyenas as a pack, twins as a pair
+    const n = ENEMIES[type].group?.[0] || 1, a0 = Math.random() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const e = game.spawnEnemy(type), a = a0 + i * 0.5;
+      e.x = game.px + Math.cos(a) * 240; e.y = game.py + Math.sin(a) * 240;
+      if (game.field) { e.level = game.enemies.find((o) => o.level)?.level ?? 1; e.zone = game.region?.id; }
+    }
   },
   clearFloor: () => {
     if (game.floorClear) return;
