@@ -59,11 +59,11 @@
 - [x] E3 Tes, build, server → **cek manual pemilik** (bagian E-1).
 - [x] E4 Benda di arena: `run/summons.js` + tes: `turret` (umur, tembak terdekat tiap `every`, batas `max`), `clone` (umur, meniru serangan biasa × `mult`, separuh musuh dalam radius beralih sasaran, diabaikan bila pemain < 80 dari musuh itu), `rune` (sumbu `fuse`, tambahan +10% per pukulan pemain di dalamnya maks +100%, ledakan). Archer **Sinar Panah** (channel) & **Menara Panah**; Mage **Bom Waktu**; Assassin **Tarian Tiga Tebasan** (chain) & **Klon Bayangan**. Angka & `lv3`/`lv5` §43.4. Gambar & bunyi tiap jenis (§43.4 "tampilan").
 - [x] E5 Peluru merah tak tertangkis: tanda `unparryable` di sebagian pola bos/penembak (`data/enemies.js`), digambar merah. Kamus EN semua skill baru.
-- [ ] E6 Tes, build, server → **cek manual pemilik** (bagian E-2).
+- [x] E6 Tes, build, server → **cek manual pemilik** (bagian E-2).
 
 ## Bagian F — Ultimate Fokus (cek manual)
-- [ ] F1 `data/classes.js` `ults: [luas, fokus]` (Luas = ultimate lama), 4 Fokus persis §43.5. Mekanik baru + tes: lompat ke titik bidik lalu hantam (Hantaman Langit), sinar lurus setelah bidik (Panah Penembus Langit), sedot lalu ledak (Matahari Runtuh, tanpa Panas berlebih), teleport ke belakang + 3 tebasan + eksekusi (Eksekusi Bayangan, +10%/Kombo). Bonus mekanik khas (Murka penuh +30%, Bidik penuh = kritikal).
-- [ ] F2 `setUlt` di tab Skill (gratis, tidak saat bertarung). Tanda bidik singkat menyala, getar keras + waktu melambat saat kena. Kamus EN.
+- [x] F1 `data/classes.js` `ults: [luas, fokus]` (Luas = ultimate lama), 4 Fokus persis §43.5. Mekanik baru + tes: lompat ke titik bidik lalu hantam (Hantaman Langit), sinar lurus setelah bidik (Panah Penembus Langit), sedot lalu ledak (Matahari Runtuh, tanpa Panas berlebih), teleport ke belakang + 3 tebasan + eksekusi (Eksekusi Bayangan, +10%/Kombo). Bonus mekanik khas (Murka penuh +30%, Bidik penuh = kritikal).
+- [x] F2 `setUlt` di tab Skill (gratis, tidak saat bertarung). Tanda bidik singkat menyala, getar keras + waktu melambat saat kena. Kamus EN.
 - [ ] F3 Tes, build, server → **cek manual pemilik**.
 
 ## Bagian G — Keseimbangan & tes patokan (cek manual)

@@ -674,6 +674,14 @@ function tempoMarks(g, game, t) {
     g.beginPath(); g.ellipse(x, y, 34, 13, 0, -Math.PI / 2, -Math.PI / 2 + TAU * k); g.strokeStyle = full ? `rgba(255,236,170,${0.75 + 0.25 * Math.sin(t * 20)})` : '#e6a83a'; g.stroke();
     g.restore();
   }
+  const F = game.focusMark; // a focused ultimate (spec §43.5): a short glowing mark where it lands
+  if (F) {
+    const k = 1 - Math.max(0, F.t) / F.max, a = 0.45 + 0.45 * Math.abs(Math.sin(t * 24));
+    g.save(); g.strokeStyle = `rgba(255,236,170,${a})`; g.fillStyle = `rgba(255,120,60,${0.12 + 0.2 * k})`; g.lineWidth = 3;
+    if (F.len) { g.translate(F.x, F.y); g.rotate(F.angle); g.fillRect(0, -F.w / 2, F.len * k, F.w); g.strokeRect(0, -F.w / 2, F.len, F.w); }
+    else { g.beginPath(); g.arc(F.x, F.y, F.r, 0, TAU); g.fill(); g.stroke(); g.beginPath(); g.arc(F.x, F.y, F.r * (1 - k), 0, TAU); g.stroke(); }
+    g.restore();
+  }
   if (game.parryT > 0) {
     g.save(); g.globalAlpha = Math.min(1, game.parryT * 4);
     g.beginPath(); g.ellipse(x, y - 18, 30, 34, 0, 0, TAU); g.lineWidth = 3; g.strokeStyle = '#ffd27a'; g.stroke();

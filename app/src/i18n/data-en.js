@@ -88,6 +88,10 @@ export const SKILL_EN = {
   'Jendela 1 detik': 'Window 1 second', 'Tahap ③ menebar gelombang 300% area 100': 'Step ③ sends out a 300% wave in an area of 100',
   'Klon Bayangan': 'Shadow Clone', 'Klon 6 detik meniru serangan biasamu 50%; separuh musuh di sekitar mengincar klon.': 'A clone for 6 seconds copies your basic attack at 50%; half the enemies nearby go after it.',
   'Damage klon 70%': 'Clone damage 70%', 'Klon meledak 400% area 90 saat habis': 'The clone bursts for 400% in an area of 90 when it ends',
+  'Hantaman Langit': 'Sky Slam', 'Melompat ke titik bidik dan menghantam dalam 0,6 detik: 1×5400% area 70, pingsan 2 detik. Murka penuh: +30%.': 'Leap to the aim point and slam within 0.6 seconds: 1×5400% in an area of 70, 2-second stun. Full Rage: +30%.',
+  'Panah Penembus Langit': 'Sky-Piercing Arrow', 'Membidik 0,5 detik lalu sinar lurus panjang selebar 40: 5400% ke semua di garis. Bidik penuh: pasti kritikal.': 'Aim for 0.5 seconds, then a long straight beam 40 wide: 5400% to everything on the line. Full Focus: a sure crit.',
+  'Matahari Runtuh': 'Falling Sun', 'Bola di titik bidik menyedot musuh 0,8 detik lalu meledak 1×6500% area 60.': 'A ball at the aim point pulls enemies in for 0.8 seconds, then bursts for 1×6500% in an area of 60.',
+  'Eksekusi Bayangan': 'Shadow Execution', 'Teleport ke belakang musuh yang dibidik, 3 tebasan dalam 0,4 detik total 5600%, kebal; musuh biasa ber-HP < 30% mati seketika; +10% per poin Kombo.': 'Teleport behind the aimed enemy, 3 slashes in 0.4 seconds totalling 5600%, invulnerable; normal enemies below 30% HP die at once; +10% per Combo point.',
   'Ayunan Lebar': 'Wide Swing', 'Ayunan memutar di sekeliling: 180%, mendorong.': 'A swing all around you: 180%, knocks back.',
   'Guling Serang': 'Rolling Strike', 'Berguling 140 px ke arah bidik, 200% ke yang dilewati.': 'Roll 140 px toward your aim, 200% to everything passed.',
   'Berputar menebas sekeliling 5×220%, menarik musuh.': 'Spin and slash all around for 5×220%, pulling enemies in.',
@@ -615,7 +619,7 @@ export function localizeData() {
   for (const c of Object.values(CLASSES)) {
     swap(c, 'desc', CLASS_EN);
     if (c.id === 'novice') c.name = 'Wanderer'; // Pengembara (spec §43.1); the job names stay as they are
-    for (const s of [...c.skills, c.ult]) { swap(s, 'name', SKILL_EN); swap(s, 'desc', SKILL_EN); if (s?.up) s.up = s.up.map((u) => SKILL_EN[u] ?? u); }
+    for (const s of [...c.skills, c.ult, c.fokus]) { swap(s, 'name', SKILL_EN); swap(s, 'desc', SKILL_EN); if (s?.up) s.up = s.up.map((u) => SKILL_EN[u] ?? u); }
   }
   for (const r of RARITIES) swap(r, 'name', RARITY_EN);
   for (const s of Object.values(SLOTS)) swap(s, 'name', SLOT_EN);

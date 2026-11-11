@@ -55,7 +55,13 @@ export function stepSummons(run, dt) {
       const e = nearest(run, m.x, m.y, s.r + 40);
       if (e) skillHit(run, makeArea({ x: m.x, y: m.y, r: s.r, angle: Math.atan2(e.y - m.y, e.x - m.x), arc: s.arc, mult: s.mult, fx: 'stab' }));
     }
+    if (m.kind === 'implode' && m.t > 0) for (const e of run.enemies) { // Matahari Runtuh pulls the foes in
+      if (e.hp <= 0 || e.boss) continue;
+      const dx = m.x - e.x, dy = m.y - e.y, d = Math.hypot(dx, dy);
+      if (d > 4 && d < s.pullR) { e.x += (dx / d) * Math.min(d, s.pull * dt); e.y += (dy / d) * Math.min(d, s.pull * dt); }
+    }
     if (m.t > 0) continue;
+    if (m.kind === 'implode') { const h = skillHit(run, makeArea({ x: m.x, y: m.y, r: s.r, mult: s.mult, fx: s.look || 'boom', duration: 0.35 })); h.ult = true; h.focusHit = true; }
     if (m.kind === 'rune') { skillHit(run, makeArea({ x: m.x, y: m.y, r: m.r, mult: m.mult * (1 + m.bonus), fx: 'boom', duration: 0.35 })); run.addShake?.('medium'); }
     if (m.kind === 'clone' && s.endBlast) skillHit(run, makeArea({ x: m.x, y: m.y, r: s.endBlast.r, mult: s.endBlast.mult, fx: 'shadow', duration: 0.35 }));
     S.splice(i, 1);

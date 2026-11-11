@@ -9,6 +9,7 @@ import { castFx, focusShotFx } from './skillfx.js';
 import { traitMods, traitCast, traitCastExecute, traitFocusShot, traitRage } from './traits.js';
 import { isHeld, beginHeld, stepHeld, openParry } from './tempo.js';
 import { summon, stepSummons } from './summons.js';
+import { castFocus } from './focus.js';
 
 export const ATTACK_POSE = 0.15; // seconds the doll shows its attack pose
 const DEG = Math.PI / 180;
@@ -79,6 +80,7 @@ export function stepSkills(run, intent, dt) {
   if (run.skillBuffT > 0 && (run.skillBuffT -= dt) <= 0) run.applyBuffs();
   stepHeld(run, intent, dt); // tempo skills being held, the parry window (spec §43.4)
   stepSummons(run, dt);      // towers, clones, runes
+  if (run.focusMark && (run.focusMark.t -= dt) <= 0) run.focusMark = null; // a focused ultimate's mark
   if (run.chain && (run.chain.win -= dt) <= 0) endChain(run); // the window ran out
   const pressed = [intent.skill1, intent.skill2, intent.skill3, intent.skill4];
   const locked = traitMods(run).locked; // Kepanasan: every skill is locked (HUD reads run.trait.lock)
@@ -247,6 +249,9 @@ function castSkill(run, s) {
     }
     case 'clone':
       summon(run, s, run.px, run.py);
+      break;
+    case 'focus': // the focused ultimates (run/focus.js)
+      castFocus(run, s);
       break;
     case 'buff':
       run.buffT = s.duration;

@@ -10,6 +10,11 @@ export const SKILL_FX = {
   steelparry: { el: 'holy', n: 16, rate: 40 },
   flamethrower: { el: 'fire', n: 6, rate: 120 },
   beamshot: { el: 'lightning', n: 8, rate: 100 },
+  // focused ultimates (spec §43.5)
+  skyfall: { el: 'fire', n: 40, rate: 60 },
+  skypierce: { el: 'holy', n: 40, rate: 80 },
+  sunfall: { el: 'fire', n: 50, rate: 90 },
+  execution: { el: 'shadow', n: 40, rate: 80 },
   tower: { el: 'steel', n: 10, rate: 20 },
   timebomb: { el: 'fire', n: 16, rate: 30 },
   tripledance: { el: 'shadow', n: 14, rate: 80 },

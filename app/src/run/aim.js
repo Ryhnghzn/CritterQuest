@@ -7,7 +7,7 @@ export function needsAim(s) {
   if (!s) return false;
   switch (s.kind) {
     case 'area': return s.at === 'aim';
-    case 'turret': case 'rune': return true;
+    case 'turret': case 'rune': case 'focus': return true;
     case 'fan': return s.spread < 360;
     case 'proj': case 'line': case 'dash': case 'storm': case 'orbit': return true;
     default: return false;
@@ -30,6 +30,12 @@ export function aimShape(s, px, py, ax, ay) {
       return out;
     }
     case 'line': return [{ type: 'strip', x: px, y: py, angle, len: s.step * s.count + s.r, w: s.r * 2 }];
+    case 'focus': {
+      if (s.move === 'beam') return [{ type: 'strip', x: px, y: py, angle, len: s.len, w: s.w }];
+      const max = s.maxDist || s.range;
+      if (d > max) { dx *= max / d; dy *= max / d; }
+      return [{ type: 'circle', x: px, y: py, r: max, range: true }, { type: 'circle', x: px + dx, y: py + dy, r: s.r }];
+    }
     case 'dash': {
       const a = s.back ? angle + Math.PI : angle;
       return [{ type: 'strip', x: px, y: py, angle: a, len: s.distance, w: (s.r || 24) * 2 }];

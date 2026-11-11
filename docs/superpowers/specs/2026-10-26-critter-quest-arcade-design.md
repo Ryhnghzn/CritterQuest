@@ -1520,6 +1520,8 @@ Enam skill lama tetap (angka §31/`data/classes.js` = level 1). Dua skill **temp
 | Mage | Hujan Meteor (lama) | **Matahari Runtuh**: bola di titik bidik menyedot 0,8 dtk lalu meledak 1×6500% area 60; Panas > 80 tidak membuat terlalu panas |
 | Assassin | Tarian Seribu Bayangan (lama) | **Eksekusi Bayangan**: teleport ke belakang musuh yang dibidik, 3 tebasan dalam 0,4 dtk total 5600%, kebal selama jurus; musuh biasa HP < 30% mati seketika; +10% per poin Kombo |
 
+**Di game (bagian F, 2026-11-11):** `CLASSES[job].fokus` + `ults = [ult, fokus]`, mekanik `run/focus.js` (kind `focus`, `move`: leap / beam / implode / behind), tanda bidik `run.focusMark` di tanah, getar keras + waktu melambat saat kena (`h.focusHit`). Sinar Panah Penembus Langit = peluru sangat cepat yang menembus semua (tiap musuh kena sekali). Matahari Runtuh = benda `implode` (`run/summons.js`). "Panas > 80 tidak membuat terlalu panas" tidak perlu mekanik: ultimate memang tidak menambah Panas. Tombol Pakai ultimate hanya di kota. Gerak tubuh meminjam gerakan skill lama.
+
 ### 43.6 Dua halaman skill (A/B)
 - Halaman A buka saat memilih job; **halaman B buka level 15** (pesan sekali). 4 slot per halaman; satu skill hanya di satu slot.
 - Tukar: **Q** (PC), tombol **⇄** di atas tombol skill (HP). Langsung, tanpa cooldown. Cooldown halaman tersembunyi tetap berjalan; halaman tersembunyi tampil sebagai 4 ikon kecil redup + putaran cooldown, huruf A/B kecil menandai halaman aktif.

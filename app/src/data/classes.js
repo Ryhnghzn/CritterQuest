@@ -48,6 +48,7 @@ export const CLASSES = {
       frenzy: { duration: 6, atkSpd: 0.4, wave: { r: 60, mult: 0.5, knock: 140 } },
     },
     ult: { id: 'bladestorm', name: 'Badai Pedang', unlock: 25, icon: 'spin', look: 'spin', desc: 'Berputar liar 2,5 detik: 10×300% di area besar, menarik musuh, damage diterima −50%.', kind: 'area', follow: true, r: 150, ticks: 10, duration: 2.5, mult: 3, knock: -200, dmgTaken: 0.5 },
+    fokus: { id: 'skyfall', name: 'Hantaman Langit', unlock: 25, icon: 'pow', look: 'quake', desc: 'Melompat ke titik bidik dan menghantam dalam 0,6 detik: 1×5400% area 70, pingsan 2 detik. Murka penuh: +30%.', kind: 'focus', move: 'leap', focus: true, at: 'aim', maxDist: 320, delay: 0.6, r: 70, mult: 54, freeze: 2, rageBonus: 0.3 },
     skills: [
       { id: 'spin', name: 'Putaran Pedang', unlock: 1, desc: 'Berputar menebas sekeliling 5×220%, menarik musuh.', kind: 'area', cost: 35, cd: 3, r: 95, ticks: 5, duration: 1, mult: 2.2, follow: true, knock: -140, up: ['+2 tebasan', 'Pusaran 2 detik menarik musuh, 40% per tebasan'], lv3: { ticks: 7, duration: 1.4 }, lv5: { after: { r: 95, mult: 0.4, ticks: 8, duration: 2, knock: -140, follow: true } } },
       { id: 'shout', name: 'Teriakan Baja', unlock: 1, desc: 'Damage diterima −60% selama 5 detik + gelombang kejut 250%.', kind: 'buff', cost: 50, cd: 8, duration: 5, dmgTaken: 0.4, blast: { r: 115, mult: 2.5, knock: 320 }, up: ['Durasi +2 detik', 'Gelombang kejut membekukan 0,8 detik'], lv3: { duration: 7 }, lv5: { blast: { freeze: 0.8 } } },
@@ -68,6 +69,7 @@ export const CLASSES = {
     // Bidik (spec §31.4): fills while standing still and attacking; a full bar makes the next arrow a big piercing crit.
     trait: { id: 'focus', max: 100, color: '#7be08a', rate: 60, shot: { pierce: 3, size: 2 } },
     ult: { id: 'starfall', name: 'Hujan Bintang', unlock: 25, icon: 'rain', look: 'rain', desc: 'Hujan panah bintang 3 detik di area sangat luas: 12×250%, memperlambat.', kind: 'area', at: 'aim', maxDist: 350, r: 200, ticks: 12, duration: 3, mult: 2.5, freeze: 0.3 },
+    fokus: { id: 'skypierce', name: 'Panah Penembus Langit', unlock: 25, icon: 'pierce', look: 'pierce', desc: 'Membidik 0,5 detik lalu sinar lurus panjang selebar 40: 5400% ke semua di garis. Bidik penuh: pasti kritikal.', kind: 'focus', move: 'beam', focus: true, delay: 0.5, len: 640, w: 40, mult: 54 },
     skills: [
       { id: 'rain', name: 'Hujan Panah', unlock: 1, desc: 'Hujan panah di titik bidik, 6×160%.', kind: 'area', at: 'aim', maxDist: 320, cost: 40, cd: 3, r: 85, ticks: 6, duration: 1.5, mult: 1.6, up: ['Area +25%', 'Memperlambat 40%'], lv3: { r: 106 }, lv5: { freeze: 0.4 } },
       { id: 'pierce', name: 'Panah Naga', unlock: 1, desc: 'Tahan napas sebentar, lalu naga cahaya menembus semua musuh, 500%, dan meninggalkan jejak terbakar 2 detik.', kind: 'proj', cost: 35, cd: 2.5, delay: 0.3, speed: 560, range: 650, r: 16, mult: 5, pierce: Infinity, trail: { every: 0.1, r: 24, life: 2, ticks: 4, mult: 0.4 }, up: ['Jejak terbakar +1 detik', 'Dua naga (±10°)'], lv3: { trail: { life: 3 } }, lv5: { count: 2, spread: 20 } },
@@ -88,6 +90,7 @@ export const CLASSES = {
     // Panas (spec §31.3): skills add cost × perCost; bonus climbs to bonusAt; reaching max overheats (skills locked, slowed).
     trait: { id: 'heat', max: 100, color: '#ff8a3d', perCost: 0.6, decay: 15, bonusAt: 80, skillDmg: 0.3, overheat: { duration: 2.5, slow: 0.3 } },
     ult: { id: 'meteorstorm', name: 'Hujan Meteor', unlock: 25, icon: 'ember', look: 'boom', desc: 'Meteor berjatuhan 2,4 detik: 6×600% di area luas, mendorong.', kind: 'area', at: 'aim', maxDist: 340, r: 220, ticks: 6, duration: 2.4, mult: 6, knock: 120 },
+    fokus: { id: 'sunfall', name: 'Matahari Runtuh', unlock: 25, icon: 'ember', look: 'boom', desc: 'Bola di titik bidik menyedot musuh 0,8 detik lalu meledak 1×6500% area 60.', kind: 'focus', move: 'implode', focus: true, at: 'aim', maxDist: 340, delay: 0.8, r: 60, pullR: 190, pull: 280, mult: 65 },
     skills: [
       { id: 'nova', name: 'Nova Es', unlock: 1, desc: 'Ledakan es di sekeliling: 300%, membekukan 1,5 detik, mendorong.', kind: 'area', cost: 45, cd: 4, r: 125, mult: 3, freeze: 1.5, duration: 0.4, knock: 160, up: ['Beku +0,5 detik', 'Musuh beku yang mati pecah jadi 4 serpihan es 100%'], lv3: { freeze: 2 }, lv5: { shatter: { count: 4, mult: 1, speed: 300, range: 160, r: 7, time: 3 } } },
       { id: 'chain', name: 'Badai Petir', unlock: 1, desc: 'Awan petir menyambar 8 musuh berurutan, masing-masing 350%.', kind: 'storm', cost: 35, cd: 2.5, count: 8, gap: 0.1, r: 36, mult: 3.5, range: 450, jump: 200, up: ['+3 sambaran', 'Tiap sambaran menyetrum area 50'], lv3: { count: 11 }, lv5: { r: 50 } },
@@ -109,6 +112,7 @@ export const CLASSES = {
     // Kombo (spec §31.5): points from basic stabs; any skill spends them for +perPoint each; at max it executes weak normal enemies.
     trait: { id: 'combo', max: 5, color: '#b07cff', hitsPer: 3, idleAfter: 4, perPoint: 0.25, executeBelow: 0.3 },
     ult: { id: 'thousandshadows', name: 'Tarian Seribu Bayangan', unlock: 25, icon: 'shadow', look: 'spin', desc: 'Kebal 2 detik sambil menebas semua di sekitar: 12×260%.', kind: 'area', follow: true, r: 130, ticks: 12, duration: 2, mult: 2.6, invuln: 2 },
+    fokus: { id: 'execution', name: 'Eksekusi Bayangan', unlock: 25, icon: 'shadow', look: 'shadow', desc: 'Teleport ke belakang musuh yang dibidik, 3 tebasan dalam 0,4 detik total 5600%, kebal; musuh biasa ber-HP < 30% mati seketika; +10% per poin Kombo.', kind: 'focus', move: 'behind', focus: true, range: 320, delay: 0.4, hits: 3, r: 55, mult: 56, execute: 0.3, perCombo: 0.1 },
     skills: [
       { id: 'shadow', name: 'Langkah Bayangan', unlock: 1, desc: 'Melesat 180 px, 500% ke yang dilewati, kebal.', kind: 'dash', cost: 30, cd: 2, distance: 180, duration: 0.16, r: 26, mult: 5, up: ['Bisa 2× berturut', 'Bayangan menebas lagi 0,3 detik kemudian'], lv3: { charges: 2 }, lv5: { echo: 0.3 } },
       { id: 'fan', name: 'Lingkaran Belati', unlock: 1, desc: '11 belati melayang melingkar di sekitarmu, lalu melesat berputar ke luar, masing-masing 330%.', kind: 'fan', cost: 40, cd: 3, count: 11, spread: 360, ring: 40, delay: 0.4, curve: 2.2, speed: 400, range: 320, r: 6, mult: 3.3, up: ['+4 belati', 'Belati kembali sekali ke pemain'], lv3: { count: 15 }, lv5: { returns: true } },
@@ -137,3 +141,5 @@ export const CLASSES = {
 };
 // the real jobs (not the novice): job choice, weapon drops, shops, the class gallery
 export const JOB_IDS = ['warrior', 'archer', 'mage', 'assassin'];
+// two ultimates per job (spec §43.5): the wide one (ult, Luas) and the focused one (fokus)
+for (const id of JOB_IDS) CLASSES[id].ults = [CLASSES[id].ult, CLASSES[id].fokus];

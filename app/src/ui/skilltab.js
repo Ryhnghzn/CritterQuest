@@ -104,7 +104,7 @@ export function renderSkillTab(char, opts, redraw) {
       if (slot >= 0) act.append(el('span', 'badgeno', `${slot < 4 ? 'A' : 'B'}${(slot % 4) + 1}`));
       if (r.kind === 'ult' && learned) {
         const use = button(ult?.id === r.id ? tr('Dipakai') : tr('Pakai'), 'btn small', (e) => { e.stopPropagation(); opts.onUlt(r.id); });
-        use.disabled = ult?.id === r.id || !canEdit;
+        use.disabled = ult?.id === r.id || !canTree; // swapped for free, outside a fight (spec §43.5)
         act.append(use);
       }
       if (cost !== null) {

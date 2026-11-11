@@ -179,6 +179,8 @@ MOVES.warrior.greatslash = MOVES.warrior.quake; MOVES.warrior.steelparry = MOVES
 MOVES.mage.flamethrower = MOVES.mage.nova; MOVES.mage.timebomb = MOVES.mage.meteor;
 MOVES.archer.beamshot = MOVES.archer.pierce; MOVES.archer.tower = MOVES.archer.trap;
 MOVES.assassin.tripledance = MOVES.assassin.shadow; MOVES.assassin.shadowclone = MOVES.assassin.smoke;
+// the focused ultimates (spec §43.5) borrow a move too
+MOVES.warrior.skyfall = MOVES.warrior.quake; MOVES.archer.skypierce = MOVES.archer.pierce; MOVES.mage.sunfall = MOVES.mage.meteor; MOVES.assassin.execution = MOVES.assassin.shadow;
 
 // how long the renderer plays a skill's move (seconds)
 export function moveDuration(classId, skillId, skillDur = 0) {
