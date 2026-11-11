@@ -223,63 +223,93 @@ const MONSTERS = {
     eye(g, r, 1.05, -0.12, 0.08, '#ffe08a');
   },
 
-  // bosses
-  boss(g, r) { // Raja Maw: horned maw beast with a tarnished crown
+  // bosses (spec §41.2): each its own silhouette, drawn larger than its hit circle (ART_EXT);
+  // feet stay at about +1.05 r like every other monster, the body grows up and sideways
+  boss(g, r) { // Raja Maw: low and very wide, nearly all mouth, eyes on stalks, six stubby legs
     const hide = P('#4a2858', 'royal', { hatch: true });
-    part(g, r, [[-0.6, -0.7], [-1.35, -1.3], [-1.0, -0.62]], pal('#e8dcc8', { rim: RIM.royal }), 0.1); part(g, r, [[0.6, -0.7], [1.35, -1.3], [1.0, -0.62]], pal('#e8dcc8', { rim: RIM.royal }), 0.1);
-    part(g, r, [[-1.15, 0.9], [-1.25, 0.0], [-0.9, -0.7], [0.0, -0.95], [0.9, -0.7], [1.25, 0.0], [1.15, 0.9], [0.6, 1.05], [-0.6, 1.05]], hide, 0.5);
-    part(g, r, [[-0.85, -0.05], [0.85, -0.05], [0.7, 0.62], [0.0, 0.8], [-0.7, 0.62]], pal('#1a0610'), 0.06, 0.02);
-    fangs(g, r, -0.8, 0.8, -0.03, 8, 0.22); fangs(g, r, -0.66, 0.66, 0.72, 6, 0.18, false);
-    glow(g, 0, 0.35 * r, 0.5 * r, '#ff4a8a', 0.35);
-    eye(g, r, -0.42, -0.42, 0.14, '#ff3a5a', 0.3); eye(g, r, 0.42, -0.42, 0.14, '#ff3a5a', -0.3);
-    part(g, r, [[-0.5, -0.85], [-0.55, -1.25], [-0.3, -1.05], [0.0, -1.35], [0.3, -1.05], [0.55, -1.25], [0.5, -0.85]], pal('#a8862a', { hi: '#ffe08a', rim: RIM.royal }), 0.1);
-    glow(g, 0, -1.1 * r, 0.12 * r * 3, '#ff4a8a', 0.6);
-  },
-  crystalboss(g, r) { // golem of blue crystal, glowing core
-    const C = P('#3a6a9a', 'ice', { hi: '#e0f6ff', hatch: true });
-    for (const [x, y, h, l] of [[-0.8, -0.6, 0.8, -0.3], [-0.3, -0.85, 0.65, -0.1], [0.3, -0.85, 0.7, 0.1], [0.8, -0.55, 0.6, 0.3]]) part(g, r, [[x - 0.2, y + 0.2], [x + l, y - h], [x + 0.2, y + 0.2]], P('#6ac0f0', 'ice', { hi: '#ffffff' }), 0.12);
-    part(g, r, [[-1.4, 0.1], [-1.5, 0.8], [-1.0, 0.95], [-0.9, 0.3]], C, 0.2); part(g, r, [[1.4, 0.1], [1.5, 0.8], [1.0, 0.95], [0.9, 0.3]], C, 0.2);
-    part(g, r, [[-1.0, 1.05], [-1.1, -0.3], [-0.5, -0.85], [0.5, -0.85], [1.1, -0.3], [1.0, 1.05]], C, 0.5);
-    glow(g, 0, 0.1 * r, 0.7 * r, '#7fd8ff', 0.8);
-    part(g, r, [[0, -0.2], [0.25, 0.1], [0, 0.42], [-0.25, 0.1]], pal('#e8fbff', { hi: '#ffffff' }), 0.05);
-    eye(g, r, -0.3, -0.5, 0.11, '#bff4ff', 0); eye(g, r, 0.3, -0.5, 0.11, '#bff4ff', 0);
-  },
-  sporeboss(g, r) { // rotting mushroom queen
-    part(g, r, [[-0.55, 1.05], [-0.65, 0.0], [0.65, 0.0], [0.55, 1.05]], P('#c8b8a0', 'toxic', { hatch: true }), 0.35);
-    eye(g, r, -0.22, 0.4, 0.13, '#d98aff', 0); eye(g, r, 0.22, 0.4, 0.13, '#d98aff', 0);
-    part(g, r, [[-0.3, 0.7], [0.3, 0.7], [0.2, 0.85], [-0.2, 0.85]], pal('#1a0a14'), 0.04);
-    part(g, r, [[-1.5, 0.2], [-1.35, -0.45], [-0.8, -1.05], [0.0, -1.3], [0.8, -1.05], [1.35, -0.45], [1.5, 0.2], [0.9, 0.05], [0.0, 0.15], [-0.9, 0.05]], P('#6a2a6a', 'toxic', { hatch: true }), 0.5);
-    for (let i = -4; i <= 4; i++) { g.beginPath(); g.moveTo(i * 0.32 * r, 0.12 * r); g.lineTo(i * 0.22 * r, 0.02 * r); g.lineWidth = r * 0.03; g.strokeStyle = 'rgba(0,0,0,.5)'; g.stroke(); }
-    for (const [x, y, s] of [[-0.8, -0.5, 0.18], [-0.2, -0.85, 0.15], [0.45, -0.7, 0.2], [0.95, -0.35, 0.14], [0.0, -0.35, 0.12]]) { glow(g, x * r, y * r, s * r * 2, '#b7ff6a', 0.7); part(g, r, [[x - s, y], [x, y - s * 0.7], [x + s, y], [x, y + s * 0.7]], P('#b7ff6a', 'toxic', { hi: '#f0ffd0' }), 0.03, 0.02); }
-    part(g, r, [[-0.5, -1.2], [-0.4, -1.55], [-0.15, -1.3], [0.0, -1.58], [0.15, -1.3], [0.4, -1.55], [0.5, -1.2]], pal('#7a6a4a', { hi: '#d8c8a0' }), 0.1);
-  },
-  lavaboss(g, r) { // molten rock king with cracks of fire and a crown of flame
-    const rock = P('#2e2224', 'fire', { hatch: true });
-    part(g, r, [[-1.45, 0.0], [-1.5, 0.75], [-1.0, 0.95], [-0.9, 0.2]], rock, 0.2); part(g, r, [[1.45, 0.0], [1.5, 0.75], [1.0, 0.95], [0.9, 0.2]], rock, 0.2);
-    part(g, r, [[-1.05, 1.05], [-1.15, -0.4], [-0.6, -0.95], [0.6, -0.95], [1.15, -0.4], [1.05, 1.05]], rock, 0.5);
-    cracks(g, r, [[[-0.8, -0.6], [-0.4, -0.2], [-0.7, 0.3], [-0.3, 0.8]], [[0.7, -0.5], [0.3, 0.0], [0.6, 0.5]], [[-0.1, 0.2], [0.2, 0.6]], [[-1.3, 0.3], [-1.1, 0.6]], [[1.3, 0.3], [1.15, 0.65]]], '#ff7a2a', 0.06);
-    glow(g, 0, 0.1 * r, 0.8 * r, '#ff5a1a', 0.45);
-    eye(g, r, -0.32, -0.55, 0.13, '#ffd27a', 0.2); eye(g, r, 0.32, -0.55, 0.13, '#ffd27a', -0.2);
-    for (const [x, h] of [[-0.55, 0.45], [-0.2, 0.6], [0.2, 0.6], [0.55, 0.45]]) {
-      glow(g, x * r, (-0.95 - h * 0.5) * r, 0.3 * r, '#ff9a3a', 0.8);
-      part(g, r, [[x - 0.14, -0.9], [x, -0.95 - h], [x + 0.14, -0.9]], P('#ffb347', 'fire', { hi: '#fff0c0' }), 0.04, 0.03);
+    for (const x of [-1.6, -1.0, -0.4, 0.2, 0.8, 1.4]) part(g, r, [[x - 0.18, 0.75], [x - 0.26, 1.08], [x + 0.2, 1.08], [x + 0.16, 0.75]], P('#2e1838', 'royal'), 0.06);
+    for (const [x0, y0, x1, y1] of [[-0.8, -0.95, -1.15, -1.85], [-0.2, -1.05, -0.05, -2.05], [0.45, -1.0, 0.9, -1.75]]) {
+      g.beginPath(); g.moveTo(x0 * r, y0 * r); g.quadraticCurveTo(x0 * r, ((y0 + y1) / 2) * r, x1 * r, y1 * r);
+      g.lineWidth = r * 0.12; g.strokeStyle = INK; g.stroke(); g.lineWidth = r * 0.07; g.strokeStyle = '#5e3470'; g.stroke();
     }
+    part(g, r, [[-2.0, 0.75], [-2.25, 0.0], [-1.85, -0.7], [-0.9, -1.1], [0.4, -1.15], [1.5, -0.9], [2.15, -0.3], [2.25, 0.4], [1.85, 0.9], [-1.6, 1.0]], hide, 0.5);
+    part(g, r, [[0.1, -0.62], [2.08, -0.42], [2.12, 0.46], [0.25, 0.62], [-0.15, 0.0]], pal('#1a0610'), 0.06, 0.02);
+    glow(g, 1.1 * r, 0.05 * r, 0.8 * r, '#ff4a8a', 0.45);
+    fangs(g, r, 0.2, 2.02, -0.5, 9, 0.3); fangs(g, r, 0.3, 2.05, 0.52, 8, 0.24, false);
+    part(g, r, [[0.5, 0.3], [1.6, 0.36], [2.3, 0.86], [1.95, 1.04], [1.2, 0.62]], pal('#d8507a', { hi: '#ff9ab8' }), 0.08);
+    eye(g, r, -1.15, -1.9, 0.2, '#ff3a5a', 0); eye(g, r, -0.05, -2.1, 0.22, '#ff3a5a', 0); eye(g, r, 0.9, -1.8, 0.18, '#ff3a5a', 0);
+    part(g, r, [[-1.7, -0.68], [-1.75, -1.15], [-1.5, -0.95], [-1.3, -1.32], [-1.08, -0.98], [-0.85, -1.2], [-0.85, -0.82]], pal('#a8862a', { hi: '#ffe08a', rim: RIM.royal }), 0.1);
   },
-  tombboss(g, r) { // Raja Mumi: towering mummy in dusty wraps, gold-and-blue headdress, teal eyes
-    const wrap = P('#b8a880', 'sand', { hatch: true });
-    part(g, r, [[-1.25, -0.2], [-1.45, 0.6], [-1.05, 0.7], [-0.85, 0.0]], wrap, 0.2); part(g, r, [[1.1, -0.3], [1.5, 0.3], [1.2, 0.55], [0.85, 0.0]], wrap, 0.2);
-    part(g, r, [[-0.9, 1.1], [-1.0, -0.2], [-0.6, -0.65], [0.6, -0.65], [1.0, -0.2], [0.9, 1.1]], wrap, 0.5);
-    g.beginPath();
-    for (const y of [-0.3, 0.05, 0.4, 0.75]) { g.moveTo(-0.95 * r, y * r); g.lineTo(0.95 * r, (y - 0.12) * r); }
+  crystalboss(g, r) { // Golem Kristal: tall and jagged, one giant crystal arm, a split torso
+    const C = P('#3a6a9a', 'ice', { hi: '#e0f6ff', hatch: true }), shard = P('#6ac0f0', 'ice', { hi: '#ffffff' });
+    part(g, r, [[-0.85, 0.3], [-0.95, 1.08], [-0.25, 1.08], [-0.3, 0.3]], C, 0.2); part(g, r, [[0.3, 0.3], [0.25, 1.08], [0.9, 1.08], [0.8, 0.3]], C, 0.2);
+    part(g, r, [[-1.1, -0.9], [-1.55, -0.2], [-1.4, 0.35], [-1.0, 0.0]], C, 0.2);
+    spikes(g, r, [[-0.95, -1.05, 0.8, -0.35], [-0.55, -1.35, 0.7, -0.2], [0.55, -1.35, 0.55, 0.15]], shard);
+    part(g, r, [[-1.05, 0.45], [-1.25, -0.6], [-0.85, -1.4], [-0.2, -1.62], [0.5, -1.48], [0.98, -0.8], [0.92, 0.45]], C, 0.5);
+    part(g, r, [[-0.4, -1.5], [-0.12, -2.35], [0.38, -1.55]], shard, 0.12);
+    cracks(g, r, [[[-0.6, -1.2], [-0.2, -0.6], [-0.5, -0.1], [-0.1, 0.35]], [[0.4, -1.1], [0.15, -0.5]]], '#bff4ff', 0.05);
+    glow(g, -0.1 * r, -0.5 * r, 0.75 * r, '#7fd8ff', 0.85);
+    part(g, r, [[0.65, -1.3], [1.6, -1.7], [2.35, -0.65], [2.15, 0.7], [1.5, 1.02], [1.15, 0.2], [0.85, -0.4]], shard, 0.35);
+    g.beginPath(); g.moveTo(1.6 * r, -1.7 * r); g.lineTo(1.55 * r, 0.1 * r); g.lineTo(2.15 * r, 0.7 * r); g.moveTo(1.55 * r, 0.1 * r); g.lineTo(0.85 * r, -0.4 * r);
+    g.lineWidth = r * 0.04; g.strokeStyle = 'rgba(255,255,255,.55)'; g.stroke();
+    eye(g, r, -0.25, -1.22, 0.1, '#bff4ff', 0); eye(g, r, 0.12, -1.25, 0.1, '#bff4ff', 0);
+  },
+  sporeboss(g, r) { // Ratu Spora: an umbrella cap wider than anything, a thin stalk, spores hanging down
+    part(g, r, [[-0.32, 0.85], [-0.95, 1.08], [-0.5, 1.08], [-0.1, 0.95]], P('#a89880', 'toxic'), 0.06); part(g, r, [[0.32, 0.85], [0.95, 1.08], [0.5, 1.08], [0.1, 0.95]], P('#a89880', 'toxic'), 0.06);
+    part(g, r, [[-0.3, 1.0], [-0.36, -0.95], [0.36, -0.95], [0.3, 1.0]], P('#c8b8a0', 'toxic', { hatch: true }), 0.3);
+    part(g, r, [[-0.75, -0.28], [-0.36, -0.52], [0.36, -0.52], [0.75, -0.28], [0.42, -0.18], [-0.42, -0.18]], P('#e0d0b0', 'toxic'), 0.1);
+    eye(g, r, -0.13, 0.12, 0.11, '#d98aff', 0); eye(g, r, 0.16, 0.12, 0.11, '#d98aff', 0);
+    part(g, r, [[-0.15, 0.38], [0.18, 0.38], [0.1, 0.5], [-0.08, 0.5]], pal('#1a0a14'), 0.03);
+    for (const [x, len] of [[-2.0, 0.75], [-1.35, 1.0], [-0.75, 0.6], [0.8, 0.65], [1.4, 0.95], [2.05, 0.7]]) {
+      g.beginPath(); g.moveTo(x * r, -0.95 * r); g.quadraticCurveTo((x + 0.1) * r, (-0.95 + len / 2) * r, x * r, (-0.95 + len) * r);
+      g.lineWidth = r * 0.04; g.strokeStyle = '#8a6a8a'; g.stroke();
+      glow(g, x * r, (-0.95 + len) * r, 0.22 * r, '#b7ff6a', 0.9);
+    }
+    part(g, r, [[-2.35, -0.85], [-2.15, -1.5], [-1.45, -2.05], [-0.4, -2.32], [0.6, -2.26], [1.6, -1.92], [2.22, -1.36], [2.35, -0.85], [1.2, -1.05], [0.0, -0.95], [-1.2, -1.05]], P('#6a2a6a', 'toxic', { hatch: true }), 0.55);
+    for (let i = -7; i <= 7; i++) { g.beginPath(); g.moveTo(i * 0.31 * r, -0.98 * r); g.lineTo(i * 0.24 * r, -1.12 * r); g.lineWidth = r * 0.03; g.strokeStyle = 'rgba(0,0,0,.5)'; g.stroke(); }
+    for (const [x, y, s] of [[-1.5, -1.5, 0.22], [-0.6, -1.95, 0.2], [0.35, -1.75, 0.26], [1.3, -1.55, 0.2], [-0.2, -1.35, 0.14], [1.85, -1.15, 0.13]]) { glow(g, x * r, y * r, s * r * 2, '#b7ff6a', 0.7); part(g, r, [[x - s, y], [x, y - s * 0.7], [x + s, y], [x, y + s * 0.7]], P('#b7ff6a', 'toxic', { hi: '#f0ffd0' }), 0.03, 0.02); }
+  },
+  lavaboss(g, r) { // Raja Lava: huge, broad shoulders, four arms (two raised), curled horns, lava dripping
+    const rock = P('#2e2224', 'fire', { hatch: true }), lava = '#ff7a2a';
+    part(g, r, [[-0.95, 0.5], [-1.05, 1.08], [-0.3, 1.08], [-0.35, 0.5]], rock, 0.2); part(g, r, [[0.35, 0.5], [0.3, 1.08], [1.05, 1.08], [0.95, 0.5]], rock, 0.2);
+    for (const s of [-1, 1]) {
+      part(g, r, [[-1.3, -0.5], [-2.0, 0.0], [-2.2, 0.62], [-1.8, 0.78], [-1.6, 0.22], [-1.15, 0.1]].map(([x, y]) => [x * s, y]), rock, 0.25);
+      part(g, r, [[-1.6, -1.05], [-2.2, -1.7], [-2.05, -2.15], [-1.6, -2.0], [-1.3, -1.35]].map(([x, y]) => [x * s, y]), rock, 0.25);
+      glow(g, -2.05 * s * r, -2.05 * r, 0.35 * r, '#ff9a3a', 0.8);
+      for (const [x, y, d] of [[-2.0, 0.85, 0.12], [-1.85, 1.0, 0.08]]) { glow(g, x * s * r, y * r, d * r * 2.4, lava, 0.9); }
+    }
+    part(g, r, [[-1.2, 0.62], [-1.42, -0.4], [-1.95, -1.0], [-1.3, -1.48], [-0.4, -1.32], [0.4, -1.32], [1.3, -1.48], [1.95, -1.0], [1.42, -0.4], [1.2, 0.62]], rock, 0.55);
+    part(g, r, [[-0.42, -1.3], [-0.48, -1.82], [0, -1.98], [0.48, -1.82], [0.42, -1.3]], rock, 0.2);
+    for (const s of [-1, 1]) part(g, r, [[-0.4, -1.75], [-1.0, -2.0], [-1.35, -2.38], [-0.9, -2.12], [-0.3, -1.9]].map(([x, y]) => [x * s, y]), pal('#5a4a40', { hi: '#c8b8a0', rim: RIM.fire }), 0.12);
+    cracks(g, r, [[[-0.9, -1.1], [-0.5, -0.5], [-0.8, 0.0], [-0.4, 0.5]], [[0.8, -1.0], [0.4, -0.4], [0.7, 0.2]], [[-0.1, -0.2], [0.2, 0.4]], [[-1.7, -0.2], [-1.9, 0.4]], [[1.7, -0.2], [1.9, 0.4]], [[-1.8, -1.3], [-2.0, -1.8]], [[1.8, -1.3], [2.0, -1.8]]], lava, 0.06);
+    glow(g, 0, -0.5 * r, 0.9 * r, '#ff5a1a', 0.45);
+    eye(g, r, -0.17, -1.62, 0.12, '#ffd27a', 0.2); eye(g, r, 0.17, -1.62, 0.12, '#ffd27a', -0.2);
+  },
+  tombboss(g, r) { // Raja Mumi: tall and slender, floating over its sarcophagus, wraps streaming behind
+    const wrap = P('#b8a880', 'sand', { hatch: true }), gold = pal('#c89a2a', { hi: '#ffe08a', rim: RIM.sand });
+    part(g, r, [[-1.65, 0.55], [-1.75, 0.85], [-1.55, 1.08], [1.55, 1.08], [1.75, 0.85], [1.65, 0.55]], gold, 0.2);
+    for (const x of [-1.1, -0.4, 0.3, 1.0]) { g.beginPath(); g.moveTo(x * r, 0.58 * r); g.lineTo((x + 0.05) * r, 1.05 * r); g.lineWidth = r * 0.08; g.strokeStyle = '#2a5a9a'; g.stroke(); }
+    glow(g, 0, 0.35 * r, 0.9 * r, '#5affe0', 0.55);
+    for (const [pts, w] of [[[[-0.35, -0.7], [-1.2, -1.0], [-2.25, -1.25]], 0.16], [[[-0.35, -0.2], [-1.3, -0.05], [-2.15, 0.15]], 0.14], [[[0.3, -0.95], [1.1, -1.45], [1.75, -1.75]], 0.12]]) {
+      g.beginPath(); g.moveTo(pts[0][0] * r, pts[0][1] * r); g.quadraticCurveTo(pts[1][0] * r, pts[1][1] * r, pts[2][0] * r, pts[2][1] * r);
+      g.lineWidth = w * r + 2; g.strokeStyle = INK; g.stroke(); g.lineWidth = w * r; g.strokeStyle = '#d8c8a0'; g.stroke();
+    }
+    part(g, r, [[-0.45, 0.25], [-0.58, -0.9], [-0.42, -1.3], [0.42, -1.3], [0.58, -0.9], [0.45, 0.25], [0, 0.42]], wrap, 0.45);
+    g.beginPath(); for (const y of [-0.95, -0.6, -0.25, 0.05]) { g.moveTo(-0.55 * r, y * r); g.lineTo(0.55 * r, (y - 0.1) * r); }
     g.lineWidth = r * 0.03; g.strokeStyle = 'rgba(60,40,20,.55)'; g.stroke();
-    part(g, r, [[-0.75, -0.55], [-0.95, 0.35], [-0.5, 0.1], [-0.45, -0.6]], pal('#2a5a9a', { rim: RIM.sand }), 0.1);
-    part(g, r, [[0.75, -0.55], [0.95, 0.35], [0.5, 0.1], [0.45, -0.6]], pal('#2a5a9a', { rim: RIM.sand }), 0.1);
-    part(g, r, [[-0.5, -0.6], [-0.45, -1.2], [0.0, -1.5], [0.45, -1.2], [0.5, -0.6]], pal('#c89a2a', { hi: '#ffe08a', rim: RIM.sand }), 0.2);
-    for (const y of [-1.25, -1.0, -0.75]) { g.beginPath(); g.moveTo(-0.48 * r, y * r); g.lineTo(0.48 * r, y * r); g.lineWidth = r * 0.06; g.strokeStyle = '#2a5a9a'; g.stroke(); }
-    part(g, r, [[-0.3, -0.62], [0.3, -0.62], [0.25, -0.15], [-0.25, -0.15]], pal('#1a140c'), 0.04);
-    eye(g, r, -0.14, -0.42, 0.09, '#5affe0', 0); eye(g, r, 0.14, -0.42, 0.09, '#5affe0', 0);
-    glow(g, 0, -1.48 * r, 0.25 * r, '#5affe0', 0.8);
+    g.beginPath(); g.moveTo(0.25 * r, -0.9 * r); g.lineTo(0.75 * r, -0.2 * r); g.moveTo(0.75 * r, -0.2 * r); g.quadraticCurveTo(0.95 * r, -0.05 * r, 0.8 * r, 0.1 * r);
+    g.lineWidth = r * 0.08; g.strokeStyle = '#c89a2a'; g.stroke();
+    part(g, r, [[-0.58, -1.2], [-0.62, -1.72], [-0.32, -2.1], [0, -2.32], [0.32, -2.1], [0.62, -1.72], [0.58, -1.2], [0.3, -1.36], [-0.3, -1.36]], gold, 0.25);
+    for (const y of [-1.95, -1.75, -1.55, -1.35]) { g.beginPath(); g.moveTo(-0.55 * r, y * r); g.lineTo(0.55 * r, y * r); g.lineWidth = r * 0.06; g.strokeStyle = '#2a5a9a'; g.stroke(); }
+    part(g, r, [[-0.26, -1.78], [0.26, -1.78], [0.21, -1.36], [-0.21, -1.36]], pal('#1a140c'), 0.04);
+    eye(g, r, -0.12, -1.6, 0.09, '#5affe0', 0); eye(g, r, 0.13, -1.6, 0.09, '#5affe0', 0);
+    glow(g, 0, -2.3 * r, 0.25 * r, '#5affe0', 0.8);
   },
 };
+
+// How far a monster's drawing reaches from its centre, in r: bosses are drawn bigger than their
+// hit circle (spec §41.2), everything else fits ±1.6 r. Used for the baked sprite box and portraits.
+const ART_EXT = { boss: 2.4, crystalboss: 2.4, sporeboss: 2.4, lavaboss: 2.4, tombboss: 2.4 };
+export const artExt = (type) => ART_EXT[type] || 1.6;
 
 export const MONSTER_ART = MONSTERS;

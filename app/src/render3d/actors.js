@@ -9,6 +9,7 @@ import { Renderer, MAJESTIC_BY_ID, mountDust, eliteTags } from '../render/world.
 import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
+import { artExt } from '../art/monsters.js';
 import { drawDoll } from '../art/doll.js';
 import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
 import { setFxSink, drawFx } from '../art/anime/elemfx.js';
@@ -315,7 +316,7 @@ export class Actors {
     if (playing) {
       for (const e of game.enemies) {
         if (e.hidden || !(e.boss || e.elite || e.hp < e.maxHp)) continue;
-        const k = e.r / (ENEMIES[e.type]?.r || e.r), p = this.stage.project(e.x, e.y + e.r * 0.75, e.r * 2.4 * k);
+        const k = e.r / (ENEMIES[e.type]?.r || e.r), p = this.stage.project(e.x, e.y + e.r * 0.75, e.r * artExt(e.type) * 1.5 * k);
         if (!p) continue;
         const w = Math.max(26, e.r * 2 * p.k) * dpr, h = (e.boss ? 6 : 4) * dpr, x = p.x * dpr - w / 2, y = p.y * dpr;
         g.fillStyle = 'rgba(8,5,12,.85)'; g.fillRect(x - dpr, y - dpr, w + 2 * dpr, h + 2 * dpr);

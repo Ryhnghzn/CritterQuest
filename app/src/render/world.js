@@ -8,6 +8,7 @@ import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
 import { ENEMIES, AFFIXES } from '../data/enemies.js';
 import { SPRITES, bakeAll, drawBaked, OUT } from '../art/sprites.js';
+import { artExt } from '../art/monsters.js';
 import { drawItemIcon } from '../art/gear.js';
 import { DROP_BEAM } from '../data/itemfx.js';
 import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
@@ -193,7 +194,7 @@ export class Renderer {
       drawBaked(g, look, e.x, e.y, k / squash, k * squash, flip);
       if (e.ai === 'shield') guard(g, e);
       if (e.mini) crown(g, e.x, e.y - e.r * 1.25 - 14, e.r * 0.5, e.lord);
-      if (e.boss || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.boss ? 1.6 : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
+      if (e.boss || e.elite || e.hp < e.maxHp) hpPill(g, e.x, e.y - e.r * (e.boss ? artExt(e.type) : 1.25), e.r * 2, e.hp / e.maxHp, e.elite);
       if (e.affixes?.length) eliteTags(g, e, e.x - e.r, e.y - e.r * 1.25, e.r * 2, 0.7);
     }
 

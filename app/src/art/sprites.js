@@ -3,7 +3,7 @@
 // origin; bakeAll(scale) renders them to offscreen canvases at the current
 // device scale and is re-run when the screen size changes.
 import { POTIONS } from '../data/potions.js';
-import { MONSTER_ART } from './monsters.js';
+import { MONSTER_ART, artExt } from './monsters.js';
 import { ECLIPSE_ART } from './eclipse.js';
 
 export const OUT = '#16121c'; // shared outline colour (thin, dark — langkah 8)
@@ -822,7 +822,8 @@ export function enemyCanvas(type, r, cssSize) {
   c.style.width = c.style.height = `${cssSize}px`;
   const g = c.getContext('2d');
   g.translate(c.width / 2, c.height / 2);
-  g.scale(c.width / (r * 3.4), c.width / (r * 3.4));
+  const fit = c.width / (r * artExt(type) * 2.125);
+  g.scale(fit, fit);
   g.lineJoin = 'round';
   ENEMY_ART[type](g, r);
   return c;
@@ -852,7 +853,7 @@ function bake(draw, ext, scale, tint = null) {
 export function bakeAll(scale, enemyRadius) {
   for (const [type, r] of Object.entries(enemyRadius)) {
     const draw = (g) => ENEMY_ART[type](g, r);
-    const ext = r * 1.6;
+    const ext = r * artExt(type); // bosses are drawn bigger than their hit circle (spec §41.2)
     SPRITES[type] = bake(draw, ext, scale);
     SPRITES[`${type}Flash`] = bake(draw, ext, scale, 'rgba(255,255,255,.75)');
     SPRITES[`${type}Frozen`] = bake(draw, ext, scale, 'rgba(120,205,255,.55)');
