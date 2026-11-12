@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Contoh Dialog NPC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./dialog/style.css">
+</head>
+<body>
+<div class="bar">
+  <h1>Contoh Dialog</h1>
+  <span class="grp" id="pick"></span>
+  <span class="grp" id="who"></span>
+  <span class="grp">
+    <button class="btn" id="phone">Ukuran HP</button>
+    <button class="btn" id="again">Ulangi</button>
+  </span>
+  <span class="grp" id="moods"><b class="lbl">Emosi:</b></span>
+</div>
+<p class="note" id="note"></p>
+<div class="wrap" id="wrap">
+  <div class="stage" id="stage">
+    <div class="cam" id="cam"><canvas id="scene"></canvas></div>
+    <div class="bubbles" id="bubbles"></div>
+    <div class="dlg" id="dlg"></div>
+  </div>
+</div>
+<script type="module" src="./dialog/main.js"></script>
+</body>
+</html>

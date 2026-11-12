@@ -1585,3 +1585,38 @@ Masalah: cerita hanya tersampaikan lewat teks di kotak dialog dan satu panel epi
 - **Panel ilustrasi:** `public/img/story_past_eclipse.webp`, `story_past_seal.webp` bila ada (prompt di `docs/2026-10-29-prompt-gambar.md` bagian D); bila belum ada, digambar kode bergaya sepia.
 - **Kenangan:** panel di Jurnal, memutar ulang adegan yang sudah dialami (diturunkan dari progres, tanpa data save baru). Panel CHEAT punya tombol semua adegan untuk uji.
 - Teks dua bahasa di `i18n/en-story.js`.
+
+## 45. HUD Bola & Bingkai, Dialog Potret Beremosi, Toko Baru (permintaan pemilik 2026-11-12)
+
+Masalah: HUD dan dialog NPC "kurang menarik" — kotak DOM biasa, belum menyatu dengan dark fantasy anime + pixel. Keputusan diambil lewat contoh di `app/hud.html` (A dipilih) dan `app/dialog.html` (A + C, emosi 1 + 2, toko Brom); keduanya tetap sebagai pembanding, tidak masuk build. `?lama` (data/look.js) menampilkan HUD & dialog lama untuk membandingkan.
+
+### 45.1 HUD "Bola & Bingkai" (contoh `hud.html?v=A`)
+- **PC:** dock di tengah bawah: bola HP (kiri, merah pekat) dan bola Energi (kanan, biru tua) mengapit bingkai ukir gelap berisi garis EXP + lencana LV, baris skill 1–4 + ultimate + menghindar, dan sabuk ramuan. Angka HP/Energi di tengah bola. Cincin di sekeliling bola Energi = mekanik kelas (§31; Kombo = titik-titik di cincin). Nama wilayah/lantai + uang + kill di kiri atas, peta mini bulat di kanan atas, jam & pelacak quest di bawah info wilayah.
+- **HP (sentuh, mendatar):** dock lebih kecil (bola 78 px) hanya berisi bola, EXP dan sabuk; skill pindah ke **kipas** di sekitar tombol serang di kanan bawah (lingkar dalam: skill 1–4; lingkar luar: ultimate di atas, menghindar di kiri atas; ⇄ halaman skill & mount di ujung lingkar luar); joystick di kiri. Jarak tepi 30 px dari sudut membulat/poni.
+- **Tombol bulat** untuk skill, ultimate, menghindar, ramuan; cooldown = sapuan melingkar + detik.
+- **Hiasan beranimasi** (terus bergerak): cincin rune berputar pelan di bola (kiri-kanan berlawanan), gelembung naik di cairan bola, riak permukaan cairan, kilau emas menyapu bingkai tiap ±5 dtk, bara api naik dari bingkai, titik cahaya di ujung EXP, sapuan radar di peta mini, nama wilayah berpendar obor; skill siap = lingkar putus-putus berputar, cooldown selesai = cincin meletup; ultimate penuh = kilatan emas berputar; tombol serang = rune berputar + napas merah.
+- **Kena pukul:** bola HP terguncang + tepi layar berkedip merah tipis. **HP < 30%:** bola berdenyut merah + tepi layar berdenyut merah terus.
+- **Warna lebih gelap:** emas redup `#8f7134`/`#3f2f16`/`#c8aa68`, isi hampir hitam, cairan pekat.
+- Kota memakai dock yang sama tanpa baris skill (tombol Bicara di tempat tombol serang di HP). Semua ukuran/sudut/waktu di `data/hud.js`. Hormati `prefers-reduced-motion` (hiasan berhenti, tanda penting tetap).
+
+### 45.2 Dialog Potret Besar (contoh `dialog.html?v=A`)
+- Potret NPC setengah badan besar berdiri **di belakang** kotak teks (kepala & dada di atas kotak), dibidik dari posisi kepala yang dilaporkan gambar anime (bukan potongan tetap), bernapas pelan, lingkar rune di belakang kepala; latar diredupkan.
+- Kotak teks gelap lebar (maks 1150 px) dengan plakat nama emas + gelar, teks mengetik (±45 huruf/dtk; ketuk = utuh), ▼ berdenyut saat ada lanjutan, bara api & kilau di kotak.
+- Pilihan (jawaban quest §42, aksi NPC) baru muncul **setelah teks selesai**, berupa tombol bulat panjang bernomor 1–4 yang meluncur masuk satu per satu di kanan atas kotak.
+- Quest baru = pengumuman "Quest baru: …" di tengah atas.
+
+### 45.3 Emosi (simbol ala anime + gerak tubuh)
+- Mood baris: `angry`, `ask`, `shock`, `worry`, `happy`, `think` (atau kosong). Baris di data boleh `{ t, mood }`; bila string biasa, mood ditebak dari isi (`meta/mood.js`: `?` → ask, `?!`/`!` → shock, `…` di akhir → think, "haha" → happy) — murni + tes.
+- Gerak potret: marah gemetar + rona merah; tanya miring; kaget lompat kecil; khawatir menunduk + redup kebiruan; senang memantul; berpikir bergoyang.
+- Simbol dekat kepala: urat merah berdenyut, **?** mengangguk, **!** meletup + garis kejut, tetes keringat + garis suram, not musik + kilau, gelembung **…**. Kotak: khawatir = teks miring kebiruan, marah = kotak terguncang & bingkai merah.
+
+### 45.4 Gelembung warga (contoh `dialog.html?v=C`)
+- Warga biasa (role `talk` tanpa quest) bicara lewat gelembung di atas kepala tanpa menghentikan permainan: muncul saat pemain dekat (radius di `data/hud.js`), bergantian baris tiap ±6 dtk, mengetik, dengan lencana kecil (?, !, ♪, …) dari mood. Ketuk/E tetap membuka dialog besar.
+- NPC penting (punya quest / toko / layanan) bertanda **!** memantul + tombol "Bicara (E)" saat dekat.
+
+### 45.5 Toko baru — percontohan Pandai Brom (contoh toko di `dialog.html`, NPC Pandai Brom)
+- Saat berbelanja potret tetap di kiri, kotak dialog mengecil ke kiri bawah (NPC menanggapi tiap aksi dengan mood), panel toko mengisi kanan: kepala (nama toko, tas dengan lencana, uang dengan koin berputar & angka bergulir, ✕), tab, **kisi barang** berbingkai rarity (Epik+ bercahaya, Legendaris/Mitos berkilau; harga merah bila uang kurang), **kartu detail** (ikon besar berdenyut, nama berwarna rarity, stat dengan ▲/▼ dibanding gear terpakai, peluang rarity untuk peti, jumlah −/+, tombol Beli emas berkilau; uang kurang = tombol terguncang + NPC marah).
+- Brom: tab **Peti** dan **Jual** memakai panel ini (Jual: tandai beberapa ✓ lalu "Jual n barang · harga"); **Tempa** dan **Urai** tetap panel lama di dalam bingkai baru.
+- **Tanda sudah dibeli:** koin terbang ke uang; barang terbang ke ikon tas (tas memantul, lencana +n hijau); catatan "Masuk tas" (ikon + nama berwarna rarity) di kiri bawah panel; untuk gear: stempel DIBELI + ledakan sinar warna rarity (Legendaris+ panel berkilat), sel kelabu bercap DIBELI, tombol jadi "✓ Sudah masuk tas". Peti: dibuka di tempat memakai animasi `ui/reveal.js` yang ada, lalu catatan "Masuk tas".
+- Toko lain (Ramuan, Permata, Pasar, Kandang, Pandai Senjata, Penjahit Zirah, Perhiasan) menyusul setelah Brom dicek di game.
+- Tanpa perubahan data save (tas/cap DIBELI hanya tampilan). Teks baru `tr()`/`t()` + kamus EN.

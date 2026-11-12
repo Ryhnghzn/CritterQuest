@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Contoh HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./hud/style.css">
+</head>
+<body>
+<div class="bar">
+  <h1>Contoh HUD</h1>
+  <span class="grp" id="pick"></span>
+  <span class="grp" id="cls"></span>
+  <span class="grp">
+    <button class="btn" id="phone">Ukuran HP</button>
+    <button class="btn" id="fight">Bertarung</button>
+    <button class="btn" id="hit">Kena pukul</button>
+  </span>
+</div>
+<p class="note" id="note"></p>
+<div class="wrap" id="wrap">
+  <div class="stage" id="stage">
+    <canvas id="scene"></canvas>
+    <div class="vig" id="vig"></div>
+    <div class="hud" id="hud"></div>
+  </div>
+</div>
+<script type="module" src="./hud/main.js"></script>
+</body>
+</html>
