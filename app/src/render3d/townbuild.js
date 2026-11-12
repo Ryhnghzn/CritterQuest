@@ -281,9 +281,60 @@ function house(root, b, key, out) {
   const B = new Batch(), grp = new THREE.Group(); root.add(grp);
   const { x, y, w, h: d } = b, cx = x + w / 2, cz = y + d / 2, front = y + d, roof = toon(b.roof || '#5a3a2a', 0x4a2a3a, ROOF_KIND[key] || 'roof');
   const dark = toon(0x1e140e, 0, 'wood'), beam = toon(0x3a2418, 0, 'wood');
-  let H = 95, signY = 70, chimney = null;
+  let H = 95, signY = 70, chimney = null, doorW = 32, doorH = null;
   const windows = []; // [x, height, w, h]
-  if (key === 'home') {
+  if (key === 'home' && b.style) { // Kota Awal's homes (2026-11-12): cottages, tall houses, thatched huts, a house with a wing, the barn
+    const base = toon(0x3e3640, 0, 'stone');
+    if (b.style === 'cottage') {
+      H = 70;
+      P(B, GEO.box, toon(0xd8c8a8, 0x6a4a2a, 'plaster'), cx, cz, 0, w, H, d);
+      P(B, GEO.box, base, cx, cz, 0, w + 4, 9, d + 4);
+      for (const fx of [-w / 2 + 4, w / 2 - 4]) P(B, GEO.box, beam, cx + fx, front + 1.4, 0, 6, H, 3);
+      P(B, GEO.box, beam, cx, front + 1.4, H - 6, w, 6, 3);
+      PB(B, GEO.gable, roof, cx, cz, H, w + 20, 52, d + 20);
+      windows.push([-w / 3.4, 42, 18, 18], [w / 3.4, 42, 18, 18]);
+      chimney = [cx + w / 3, cz - d / 6, H + 14, 16, 50];
+    } else if (b.style === 'tall') {
+      H = 150;
+      P(B, GEO.box, toon(0xc8c4b8, 0x4a4a6a, 'plaster'), cx, cz, 0, w, H, d);
+      P(B, GEO.box, base, cx, cz, 0, w + 4, 11, d + 4);
+      for (const fx of [-w / 2 + 4, 0, w / 2 - 4]) P(B, GEO.box, beam, cx + fx, front + 1.4, 0, 6, H, 3);
+      for (const hy of [H * 0.48, H - 6]) P(B, GEO.box, beam, cx, front + 1.4, hy, w, 6, 3);
+      P(B, GEO.box, beam, cx, front + 8, H * 0.48 - 2, w * 0.7, 4, 14); // a little balcony
+      PB(B, GEO.gable, roof, cx, cz, H, w + 22, 66, d + 22);
+      windows.push([-w / 3.4, 52, 18, 22], [w / 3.4, 52, 18, 22], [-w / 3.4, 118, 18, 22], [w / 3.4, 118, 18, 22]);
+      chimney = [cx - w / 3, cz - d / 6, H + 20, 18, 60];
+    } else if (b.style === 'thatch') {
+      H = 64;
+      P(B, GEO.box, toon(0xb89a72, 0x5a4a2a, 'plaster'), cx, cz, 0, w - 6, H, d - 6);
+      P(B, GEO.box, base, cx, cz, 0, w, 7, d);
+      PB(B, GEO.gable, toon(b.roof || '#b89a52', 0x5a4a2a, 'roof'), cx, cz, H - 6, w + 40, 72, d + 40);
+      P(B, GEO.box, toon(new THREE.Color(b.roof || '#b89a52').multiplyScalar(0.75).getHex()), cx, front + 18, H - 8, w + 40, 6, 6); // the thatch's ragged eave
+      windows.push([-w / 3.2, 40, 18, 18, 'round'], [w / 3.2, 40, 18, 18, 'round']);
+      doorH = 46;
+    } else if (b.style === 'wing') {
+      H = 96;
+      const mw = w * 0.62, mx = x + mw / 2, ww = w - mw, wx = x + mw + ww / 2, plaster = toon(0xd0b89a, 0x6a3a2a, 'plaster');
+      P(B, GEO.box, plaster, mx, cz, 0, mw, H, d);
+      PB(B, GEO.gable, roof, mx, cz, H, mw + 18, 58, d + 18);
+      P(B, GEO.box, plaster, wx, cz + 8, 0, ww, 66, d - 16); // the lower wing, its ridge running front to back
+      PB(B, GEO.gable, roof, wx, cz + 8, 66, ww + 14, 40, d, Math.PI / 2);
+      P(B, GEO.box, base, cx, cz, 0, w + 4, 9, d + 4);
+      for (const fx of [x + 4, x + mw - 4]) P(B, GEO.box, beam, fx, front + 1.4, 0, 6, H, 3);
+      windows.push([mx - cx - mw / 3.2, 56, 20, 20], [wx - cx, 42, 20, 20]);
+      chimney = [mx - mw / 4, cz - d / 6, H + 20, 18, 60];
+      doorW = 30;
+    } else { // barn: tall red plank walls, X-braced front, a big double door, a hay loft window
+      H = 104;
+      P(B, GEO.box, toon(0x7a2e22, 0x3a1410, 'wood'), cx, cz, 0, w, H, d);
+      P(B, GEO.box, base, cx, cz, 0, w + 4, 8, d + 4);
+      for (const s of [-1, 1]) P(B, GEO.box, toon(0xe8dcc0, 0, 'wood'), cx + s * (w / 2 - 3), front + 1.4, 0, 6, H, 3);
+      PB(B, GEO.gable, roof, cx, cz, H, w + 18, 86, d + 18);
+      windows.push([0, 88, 26, 18]);
+      doorW = 70; doorH = 76;
+      for (const s of [-1, 1]) P(B, GEO.box, toon(0xe8dcc0, 0, 'wood'), cx + s * 17, front + 3.4, 38, 4, 80, 2, 0, 0, s * 0.72);
+    }
+  } else if (key === 'home') {
     P(B, GEO.box, toon(PLASTER[b.theme] || 0xa09080, 0x5a3a2a, 'plaster'), cx, cz, 0, w, H, d);
     P(B, GEO.box, toon(0x3e3640, 0, 'stone'), cx, cz, 0, w + 4, 11, d + 4);
     for (const fx of [-w / 2 + 4, -w / 6, w / 6, w / 2 - 4]) P(B, GEO.box, beam, cx + fx, front + 1.4, 0, 6, H, 3);
@@ -358,7 +409,7 @@ function house(root, b, key, out) {
     light(out.lights, x + 32, cz - d / 4, H + 90, 0xff6a2a, 5, 6);
   }
   // door with a lintel, windows with frames
-  const dw = 32, dh = key === 'ice' ? 54 : 50, fz = key === 'forest' ? front - 8 : key === 'desert' ? front - 4 : key === 'ice' ? front - 3 : front;
+  const dw = doorW, dh = doorH ?? (key === 'ice' ? 54 : 50), fz = key === 'forest' ? front - 8 : key === 'desert' ? front - 4 : key === 'ice' ? front - 3 : front;
   P(B, GEO.box, dark, cx, fz + 1.6, 0, dw, dh, 3);
   P(B, GEO.box, beam, cx, fz + 2.4, dh, dw + 8, 5, 5);
   for (const [wx, wy, ww, wh, shape] of windows) {
@@ -438,10 +489,12 @@ function gateOf(root, b, key, st, out) {
   out.occluders.push(occluder(grp, meshes, b.x, gz - D / 2, b.x + b.w, gz + D / 2, H + 60));
 }
 
+// a fence along its long side: posts every ~40 units, two rails (the paddock's are long)
 function fenceOf(B, b) {
-  const wood = toon(0x5a3e28, 0, 'wood'), cx = b.x + b.w / 2;
-  for (let k = 0; k < 4; k++) P(B, GEO.box, wood, cx, b.y + 4 + (k / 3) * (b.h - 8), 0, 7, 26, 7);
-  for (const hy of [9, 19]) P(B, GEO.box, wood, cx, b.y + b.h / 2, hy, 3, 3.5, b.h);
+  const wood = toon(0x5a3e28, 0, 'wood'), along = b.w > b.h, len = along ? b.w : b.h;
+  const cx = b.x + b.w / 2, cz = b.y + b.h / 2, n = Math.max(4, Math.round(len / 40) + 1);
+  for (let k = 0; k < n; k++) { const p = 4 + (k / (n - 1)) * (len - 8); P(B, GEO.box, wood, along ? b.x + p : cx, along ? cz : b.y + p, 0, 7, 26, 7); }
+  for (const hy of [9, 19]) P(B, GEO.box, wood, cx, cz, hy, along ? len : 3, 3.5, along ? 3 : len);
 }
 
 function bonfire(B, root, b, out) {

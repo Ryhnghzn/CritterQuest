@@ -3,69 +3,145 @@
 // plaza, the dungeon gate in the south wall; buildings and fences are solid
 // boxes. Each house has a door; walking into it enters its interior, where the
 // shopkeepers live. Townsfolk (role 'talk') stand or stroll around and chat.
-const HOUSE_Y = 30, HOUSE_W = 190, HOUSE_H = 190;
+const HOUSE_Y = 40, HOUSE_W = 190, HOUSE_H = 190;
 const house = (id, x, extra) => ({ id, kind: 'house', x, y: HOUSE_Y, w: HOUSE_W, h: HOUSE_H, ...extra });
 
 // look/outfit follow art/doll.js. wander: { rx, ry, speed } strolls around (x, y).
 const npc = (id, role, name, x, y, look, outfit, extra) => ({ id, role, name, x, y, look, outfit, ...extra });
 
+// Kota Awal (2026-11-12, owner: "the village you were born in — busy, varied houses, a stable"): a big
+// walled village. North: the shops (inn, potion shop, smithy, the Adventurers' Hall) either side of the
+// great tree; the plaza with the bonfire in the middle, the rune stone east and the Rift's gate west;
+// west: your own home and the neighbours' houses, the well, the fields and the barn; east: the stable
+// with its paddock, more houses and the pond; south: the market on the road to the gate.
+// style (houses): cottage | tall | thatch | wing | barn (render3d/townbuild.js), else a shop.
 export const TOWN = {
-  w: 960, h: 780, wall: 30,
+  w: 2000, h: 1600, wall: 30,
   talkRadius: 48,
-  spawn: { x: 480, y: 500 },      // plaza, when a slot is loaded
-  gateSpawn: { x: 480, y: 610 },  // in front of the gate, after a dungeon trip
+  spawn: { x: 1000, y: 820 },     // plaza, when a slot is loaded
+  gateSpawn: { x: 1000, y: 1420 }, // in front of the gate, after a trip
   buildings: [
-    house('inn', 58, { theme: 'inn', sign: 'inn', roof: '#7a2e55', name: 'Penginapan' }),
-    house('potion', 276, { theme: 'potion', sign: 'potion', roof: '#3b3480', name: 'Toko Ramuan' }),
-    house('gear', 494, { theme: 'smith', sign: 'pow', roof: '#4a3a33', name: 'Pandai Besi' }),
-    house('guild', 712, { theme: 'guild', sign: 'arm', roof: '#2f5a43', name: 'Balai Petualang' }),
-    { id: 'fence0', kind: 'fence', x: 30, y: 150, w: 28, h: 70 },
-    { id: 'fence1', kind: 'fence', x: 248, y: 150, w: 28, h: 70 },
-    { id: 'fence2', kind: 'fence', x: 466, y: 150, w: 28, h: 70 },
-    { id: 'fence3', kind: 'fence', x: 684, y: 150, w: 28, h: 70 },
-    { id: 'fence4', kind: 'fence', x: 902, y: 150, w: 28, h: 70 },
-    { id: 'fire', kind: 'fire', x: 458, y: 405, w: 44, h: 30 },
-    { id: 'gate', kind: 'gate', x: 390, y: 650, w: 180, h: 100 },
-    { id: 'barber', kind: 'stall', x: 80, y: 548, w: 116, h: 56, name: 'Tukang Cukur' },
-    { id: 'stable', kind: 'stall', x: 764, y: 548, w: 116, h: 56, name: 'Kandang' },
+    house('inn', 120, { theme: 'inn', sign: 'inn', roof: '#7a2e55', name: 'Penginapan' }),
+    house('potion', 380, { theme: 'potion', sign: 'potion', roof: '#3b3480', name: 'Toko Ramuan' }),
+    house('gear', 1180, { theme: 'smith', sign: 'pow', roof: '#4a3a33', name: 'Pandai Besi' }),
+    house('guild', 1440, { theme: 'guild', sign: 'arm', roof: '#2f5a43', name: 'Balai Petualang' }),
+    // your home and the neighbours (west)
+    { id: 'myhome', kind: 'house', x: 110, y: 400, w: 180, h: 160, style: 'cottage', roof: '#8a4a2a', name: 'Rumahmu' },
+    { id: 'home1', kind: 'house', x: 360, y: 370, w: 170, h: 190, style: 'tall', roof: '#4a5a7a' },
+    { id: 'home2', kind: 'house', x: 110, y: 680, w: 170, h: 150, style: 'thatch', roof: '#b89a52' },
+    { id: 'home3', kind: 'house', x: 360, y: 680, w: 210, h: 160, style: 'wing', roof: '#6a3a3a' },
+    { id: 'barn', kind: 'house', x: 110, y: 1180, w: 240, h: 190, style: 'barn', roof: '#5a2a20' },
+    // the east side
+    { id: 'home4', kind: 'house', x: 1480, y: 380, w: 160, h: 150, style: 'cottage', roof: '#3a6a5a' },
+    { id: 'home5', kind: 'house', x: 1720, y: 360, w: 170, h: 190, style: 'tall', roof: '#7a5a2a' },
+    { id: 'home6', kind: 'house', x: 1700, y: 1180, w: 180, h: 150, style: 'thatch', roof: '#a88a4a' },
+    { id: 'fire', kind: 'fire', x: 978, y: 700, w: 44, h: 30 },
+    { id: 'bigtree', kind: 'bigtree', x: 930, y: 120, w: 140, h: 110 },
+    { id: 'well', kind: 'well', x: 640, y: 960, w: 50, h: 40 },
+    { id: 'field1', kind: 'garden', x: 110, y: 960, w: 200, h: 80 },
+    { id: 'field2', kind: 'garden', x: 360, y: 960, w: 200, h: 80 },
+    { id: 'field3', kind: 'garden', x: 410, y: 1180, w: 160, h: 80 },
+    { id: 'pond', kind: 'pond', x: 1440, y: 1200, w: 200, h: 120 },
+    { id: 'market1', kind: 'market', x: 720, y: 1150, w: 130, h: 60, goods: 'fruit' },
+    { id: 'market2', kind: 'market', x: 1150, y: 1150, w: 130, h: 60, goods: 'cloth' },
+    { id: 'statue', kind: 'statue', x: 1240, y: 900, w: 40, h: 30 },
+    { id: 'gate', kind: 'gate', x: 910, y: 1470, w: 180, h: 100 },
+    { id: 'barber', kind: 'stall', x: 620, y: 560, w: 116, h: 56, name: 'Tukang Cukur' },
+    { id: 'stable', kind: 'stall', x: 1480, y: 640, w: 116, h: 56, name: 'Kandang' },
+    // the paddock east of the stable (posts & rails; the gap on the west side is the way in)
+    { id: 'fence1', kind: 'fence', x: 1640, y: 780, w: 300, h: 14 },
+    { id: 'fence3', kind: 'fence', x: 1926, y: 794, w: 14, h: 230 },
+    { id: 'fence2', kind: 'fence', x: 1640, y: 1024, w: 300, h: 14 },
+    { id: 'fence0', kind: 'fence', x: 1640, y: 794, w: 14, h: 80 },
   ],
   npcs: [
-    npc('gate', 'gate', 'Penjaga Rolan', 480, 632, { hair: 1, hairColor: 0 }, ['#6b7280', '#4b5563']),
-    npc('barber', 'barber', 'Bang Rudi', 138, 628, { hair: 1, hairColor: 3 }, ['#e0527a', '#a8355a']),
-    npc('stable', 'stable', 'Mbah Sarju', 822, 628, { hair: 4, hairColor: 1 }, ['#6a4a2a', '#4a3018'], { title: 'Penjaga Kandang' }),
-    npc('dara', 'talk', 'Dara', 418, 396, { hair: 2, hairColor: 4 }, ['#b33a3a', '#7d2424'], { title: 'Petualang', lines: [
+    npc('gate', 'gate', 'Penjaga Rolan', 1000, 1452, { hair: 1, hairColor: 0 }, ['#6b7280', '#4b5563']),
+    npc('barber', 'barber', 'Bang Rudi', 678, 640, { hair: 1, hairColor: 3 }, ['#e0527a', '#a8355a']),
+    npc('stable', 'stable', 'Mbah Sarju', 1538, 720, { hair: 4, hairColor: 1 }, ['#6a4a2a', '#4a3018'], { title: 'Penjaga Kandang' }),
+    npc('dara', 'talk', 'Dara', 920, 790, { hair: 2, hairColor: 4 }, ['#b33a3a', '#7d2424'], { title: 'Petualang', lines: [
       'Lendir itu lambat, tapi jangan biarkan mereka mengepungmu.',
       'Kalau lantai sudah bersih, ambil dulu semua permata sebelum masuk portal.',
       'Musuh yang bersinar emas itu elite. Kuat, tapi selalu menjatuhkan barang bagus.',
       'Aku pernah sampai Lantai 4… lalu golem itu menginjakku. Hahaha.',
     ] }),
-    npc('odo', 'talk', 'Kakek Odo', 560, 478, { hair: 4, hairColor: 2 }, ['#6d6a5c', '#4a473d'], { title: 'Tetua Kota', lines: [
+    npc('odo', 'talk', 'Kakek Odo', 1070, 770, { hair: 4, hairColor: 2 }, ['#6d6a5c', '#4a473d'], { title: 'Tetua Kota', lines: [
       'Dulu Ruang Bawah Tanah itu gudang anggur. Sampai Raja Maw bangun dari tidurnya.',
       'Raja Maw menunggu di lantai paling dalam. Bawa ramuan perisai, Nak.',
       'Api unggun ini tak pernah padam sejak kota ini berdiri.',
+      'Rumahmu masih seperti dulu. Tidurlah di sana kalau lelah, gratis, tidak seperti penginapan Marta.',
     ] }),
-    npc('pip', 'talk', 'Pip', 480, 470, { hair: 0, hairColor: 5 }, ['#3fa7d6', '#2a7aa3'], { title: 'Anak Kota', scale: 0.72, wander: { rx: 110, ry: 40, speed: 0.45 }, lines: [
+    npc('pip', 'talk', 'Pip', 1000, 860, { hair: 0, hairColor: 5 }, ['#3fa7d6', '#2a7aa3'], { title: 'Anak Kota', scale: 0.72, wander: { rx: 130, ry: 30, speed: 0.45 }, lines: [
       'Kak! Kak! Kakak petualang ya? Keren!',
       'Nenek Mira bilang ramuan amuk bikin orang jadi galak. Aku mau coba!',
       'Kalau besar nanti aku mau jadi pemanah seperti Kak Ruko.',
     ] }),
-    npc('patrol', 'talk', 'Prajurit Gani', 480, 300, { hair: 1, hairColor: 3 }, ['#4b5563', '#374151'], { title: 'Penjaga Kota', wander: { rx: 320, ry: 6, speed: 0.12 }, lines: [
+    npc('patrol', 'talk', 'Prajurit Gani', 1000, 300, { hair: 1, hairColor: 3 }, ['#4b5563', '#374151'], { title: 'Penjaga Kota', wander: { rx: 280, ry: 6, speed: 0.1 }, lines: [
       'Malam ini tenang. Semoga tetap begitu.',
       'Pandai Brom menjual peti gear. Peti Agung mahal, tapi isinya bisa Mitos!',
       'Jangan berkeliaran di dekat gerbang kalau HP-mu tipis.',
     ] }),
-    npc('sela', 'talk', 'Sela', 846, 372, { hair: 3, hairColor: 0 }, ['#d4a017', '#9c7410'], { title: 'Penyanyi Keliling', lines: [
+    npc('sela', 'talk', 'Sela', 1110, 680, { hair: 3, hairColor: 0 }, ['#d4a017', '#9c7410'], { title: 'Penyanyi Keliling', lines: [
       '♪ Di bawah tanah gelap gulita, sang petualang mencari cahaya… ♪',
       'Lagu baruku tentang pahlawan yang mengalahkan Raja Maw. Mungkin tentangmu?',
       'Penginapan Bu Marta punya sup terbaik di seluruh negeri.',
     ] }),
+    // the villagers at their daily work
+    npc('darto', 'talk', 'Pak Darto', 210, 1080, { hair: 1, hairColor: 1 }, ['#6a7a3a', '#4a5a26'], { title: 'Petani', wander: { rx: 90, ry: 4, speed: 0.12 }, lines: [
+      'Panen labu tahun ini besar-besar. Nanti kubawakan satu untuk ibumu.',
+      'Sejak segel retak, babi hutan makin sering merusak ladang.',
+    ] }),
+    npc('sri', 'talk', 'Bu Sri', 460, 1080, { hair: 3, hairColor: 1 }, ['#a85a6a', '#7a3a4a'], { title: 'Peramu Daun', lines: [
+      'Daun-daun ini nanti kujual ke Toko Ramuan. Lumayan untuk uang jajan Tika.',
+      'Kalau kau melihat Bunga Kunang di hutan, petikkan satu untukku, ya.',
+    ] }),
+    npc('ijah', 'talk', 'Nenek Ijah', 300, 870, { hair: 4, hairColor: 5 }, ['#7a5a7a', '#5a3a5a'], { title: 'Nenek Tukang Cerita', lines: [
+      'Dulu, waktu gerhana kecil itu, seluruh desa berkumpul di rumahmu. Kau menangis keras sekali.',
+      'Kata orang tua dulu, kelima pecahan segel saling memanggil kalau didekatkan.',
+    ] }),
+    npc('tika', 'talk', 'Tika', 700, 1030, { hair: 2, hairColor: 2 }, ['#e0a03a', '#a8742a'], { title: 'Anak Desa', scale: 0.7, wander: { rx: 70, ry: 40, speed: 0.5 }, lines: [
+      'Aku sedang menghitung ember. Satu, dua… eh, lupa lagi.',
+      'Kakak tahu tidak? Di dasar sumur ini ada katak raksasa! …Mungkin.',
+    ] }),
+    npc('bimo', 'talk', 'Bimo', 1560, 900, { hair: 0, hairColor: 0 }, ['#5a8a3a', '#3a6a26'], { title: 'Anak Kandang', scale: 0.74, wander: { rx: 60, ry: 60, speed: 0.35 }, lines: [
+      'Kuda-kuda Mbah Sarju suka wortel. Jangan bilang-bilang aku memberi mereka diam-diam.',
+      'Suatu hari aku mau menunggang kuda sampai ke Bekubara!',
+    ] }),
+    npc('joko', 'talk', 'Mas Joko', 385, 1300, { hair: 0, hairColor: 3 }, ['#7a6a5a', '#5a4a3a'], { title: 'Pandai Kayu', lines: [
+      'Atap lumbung ini bocor lagi. Untung hujan jarang di musim ini.',
+      'Gagang kapak, kaki meja, pagar kandang… semua di desa ini buatanku.',
+    ] }),
+    npc('rini', 'talk', 'Mbak Rini', 785, 1230, { hair: 3, hairColor: 3 }, ['#d46a3a', '#a8482a'], { title: 'Pedagang Buah', lines: [
+      'Apel segar dari kebun bukit! Untuk petualang, gratis satu… kalau kau senyum.',
+      'Para pedagang dari Rimbawana bilang jalan ke timur makin berbahaya.',
+    ] }),
+    npc('wati', 'talk', 'Bu Wati', 1215, 1230, { hair: 2, hairColor: 0 }, ['#5a6aa8', '#3a4a7a'], { title: 'Pedagang Kain', lines: [
+      'Kain ini ditenun di Bekubara. Hangat sekali untuk perjalanan ke utara.',
+      'Mantel petualang? Datang lagi kalau koinmu sudah banyak, ya.',
+    ] }),
+    npc('lala', 'talk', 'Lala', 930, 690, { hair: 3, hairColor: 2 }, ['#c84a8a', '#8a2a5a'], { title: 'Penari Desa', lines: [
+      'Aku berlatih untuk Festival Api Unggun tahun depan. Lihat putaranku!',
+      'Sela bilang tarianku mirip nyala api. Itu pujian, kan?',
+    ] }),
+    npc('rangga', 'talk', 'Rangga', 1820, 650, { hair: 1, hairColor: 1 }, ['#4a5a3a', '#2e3a26'], { title: 'Pemburu', lines: [
+      'Jejak serigala bayang makin dekat ke tembok desa. Hati-hati kalau keluar malam.',
+      'Busur ini warisan ayahku. Belum pernah meleset… hampir.',
+    ] }),
+    npc('pengelana', 'talk', 'Sang Pengelana', 600, 900, { hair: 5, hairColor: 4 }, ['#5a4a6a', '#3a2e4a'], { title: 'Pengelana', lines: [
+      'Air sumur desa ini yang paling segar di seluruh lembah.',
+      'Aku sudah melihat Menara Gerhana dari jauh. Jangan ke sana sebelum siap.',
+    ] }),
+    npc('guard2', 'talk', 'Penjaga Sumi', 1130, 1440, { hair: 2, hairColor: 0 }, ['#5a6270', '#3e4450'], { title: 'Penjaga Gerbang', lines: [
+      'Gerbang ditutup kalau gerhana datang lagi. Pulanglah sebelum itu.',
+      'Rolan bilang aku terlalu cerewet untuk jadi penjaga. Menurutmu?',
+    ] }),
   ],
-  lamps: [{ x: 120, y: 330 }, { x: 840, y: 330 }, { x: 300, y: 560 }, { x: 660, y: 560 }],
+  lamps: [{ x: 880, y: 640 }, { x: 1120, y: 640 }, { x: 880, y: 900 }, { x: 1120, y: 900 }, { x: 600, y: 400 }, { x: 1400, y: 400 },
+    { x: 860, y: 1360 }, { x: 1140, y: 1360 }, { x: 330, y: 620 }, { x: 1680, y: 620 }],
   decor: [
-    { kind: 'barrel', x: 60, y: 250 }, { kind: 'barrel', x: 76, y: 262 }, { kind: 'crate', x: 262, y: 250 },
-    { kind: 'crate', x: 690, y: 252 }, { kind: 'barrel', x: 900, y: 255 },
-    { kind: 'bench', x: 400, y: 490 }, { kind: 'bench', x: 560, y: 490 },
-    { kind: 'crate', x: 80, y: 700 }, { kind: 'barrel', x: 880, y: 705 }, { kind: 'barrel', x: 900, y: 690 },
+    { kind: 'barrel', x: 330, y: 260 }, { kind: 'barrel', x: 346, y: 272 }, { kind: 'crate', x: 600, y: 260 }, { kind: 'crate', x: 1400, y: 262 },
+    { kind: 'bench', x: 900, y: 760 }, { kind: 'bench', x: 1100, y: 760 }, { kind: 'bench', x: 1000, y: 640 },
+    { kind: 'crate', x: 1620, y: 690 }, { kind: 'barrel', x: 1640, y: 700 }, { kind: 'crate', x: 380, y: 1160 }, { kind: 'barrel', x: 370, y: 1340 },
+    { kind: 'crate', x: 860, y: 1180 }, { kind: 'barrel', x: 1300, y: 1180 }, { kind: 'bench', x: 560, y: 920 },
   ],
 };
 
@@ -75,6 +151,25 @@ export const TOWN = {
 const room = (id, w, h, extra) => ({ id, w, h, wall: 24, back: 76, doorW: 50, talkRadius: 70, ...extra });
 
 export const INTERIORS = {
+  // your own home (2026-11-12): sleep in your bed for free, like at the inn
+  myhome: room('myhome', 400, 300, {
+    name: 'Rumahmu', floor: 'wood', wallColor: '#5a4636',
+    furniture: [
+      { kind: 'bed', x: 30, y: 84, w: 74, h: 110, solid: true },
+      { kind: 'fireplace', x: 290, y: 14, w: 80, h: 64, solid: true },
+      { kind: 'table', x: 170, y: 150, w: 80, h: 46, solid: true },
+      { kind: 'stool', x: 150, y: 208 }, { kind: 'stool', x: 250, y: 208 },
+      { kind: 'shelf', x: 120, y: 18, w: 120, h: 50, items: 'mugs' },
+      { kind: 'chest', x: 320, y: 220, w: 46, h: 30, solid: true },
+      { kind: 'rug', x: 140, y: 130, w: 140, h: 100, color: '#7a3a2a' },
+      { kind: 'plant', x: 34, y: 230, w: 26, h: 26, solid: true },
+      { kind: 'window', x: 50, y: 22, w: 46, h: 40 },
+    ],
+    lights: [{ x: 330, y: 60, r: 200, rgb: '255,150,70' }, { x: 200, y: 160, r: 120, rgb: '255,200,130' }],
+    npcs: [
+      npc('bed', 'rest', 'Tempat Tidur', 120, 150, null, ['#8a6a4a', '#5a4030'], { object: 'bed' }),
+    ],
+  }),
   inn: room('inn', 480, 340, {
     name: 'Penginapan', floor: 'wood', wallColor: '#5a3346',
     furniture: [

@@ -17,6 +17,7 @@ export const SERVICES = {
   teleport: { icon: 'zap', text: 'Pindah ke kota lain' },
   night: { icon: 'gearAmulet', text: 'Barang langka, 18:00–05:00' },
   gate: { icon: 'arm', text: 'Keluar ke wilayah' },
+  rest: { icon: 'inn', text: 'Tidur gratis, HP pulih penuh' },
   rift: { icon: 'zap', text: 'Celah tanpa batas' },
 };
 

@@ -297,9 +297,9 @@ const BIG = {
 
 const home = { id: 'home', ...TOWN, interiors: INTERIORS, theme: { biome: 'home' } };
 // home gets a teleport stone on the plaza's east side
-home.npcs = [...TOWN.npcs, npc('stone', 'teleport', 'Batu Teleport', 690, 455, null, ['#8f7bff', '#4b3aa8'], { object: 'stone' }),
+home.npcs = [...TOWN.npcs, npc('stone', 'teleport', 'Batu Teleport', 1220, 760, null, ['#8f7bff', '#4b3aa8'], { object: 'stone' }),
   // and the Rift's gate on its west side (spec §41.3): a torn arch, open once the story is over
-  npc('rift', 'rift', 'Gerbang Celah', 270, 455, null, ['#d0306a', '#5a1440'], { object: 'rift' })];
+  npc('rift', 'rift', 'Gerbang Celah', 780, 760, null, ['#d0306a', '#5a1440'], { object: 'rift' })];
 
 export const TOWN_DEFS = { home, ...BIG };
 export const townDef = (id) => TOWN_DEFS[id] || TOWN_DEFS.home;

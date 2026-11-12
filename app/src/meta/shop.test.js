@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { innPrice, innRest, buyPotion, setBelt, chestPrice, buyChest, sellItems, junkIds, buyUpgrade, respec, respecPrice, changeLook } from './shop.js';
+import { innPrice, innRest, homeRest, buyPotion, setBelt, chestPrice, buyChest, sellItems, junkIds, buyUpgrade, respec, respecPrice, changeLook } from './shop.js';
 import { finalStats, freePoints } from './character.js';
 import { equip } from './gear.js';
 import { createCharacter } from './character.js';
@@ -142,5 +142,17 @@ describe('Tukang Cukur', () => {
     const r = changeLook(make({ gold: 60 }), { hair: 5, hairColor: 0 }, NOW);
     expect(r.ok).toBe(true);
     expect(r.char.look).toEqual({ hair: 5, hairColor: 0 });
+  });
+});
+
+describe('rumah sendiri (Kota Awal)', () => {
+  it('tidur gratis: HP penuh, pagi berikutnya; menolak bila HP sudah penuh', () => {
+    const c = make({ hp: 20, gold: 7 });
+    const r = homeRest(c, NOW + 1);
+    expect(r.ok).toBe(true);
+    expect(r.char.hp).toBe(null);
+    expect(r.char.gold).toBe(7);
+    expect(r.char.clock).toBeGreaterThan(c.clock);
+    expect(homeRest(make({ hp: null }), NOW).reason).toBe('full');
   });
 });

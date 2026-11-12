@@ -86,7 +86,7 @@ function buildNpc(box, npc, ctx) {
     head.classList.add('bust');
     head.style.setProperty('--c', npc.outfit[0]);
     head.append(npcBust({ ...npc.look, outfit: npc.outfit }, 220), info);
-  } else head.append(stage(npc.object ? iconCanvas('zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
+  } else head.append(stage(npc.object ? iconCanvas(npc.object === 'bed' ? 'inn' : 'zap', 92) : portrait(null, { ...npc.look, outfit: npc.outfit }, 92), npc.outfit[0]), info);
   // a quest step said here (spec §26.3) speaks first; the shop stays below it
   const offer = ctx.quests?.[0];
   side.append(head, el('div', 'npcline', `“${offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role])}”`));
@@ -101,7 +101,11 @@ function buildNpc(box, npc, ctx) {
   }
 
   const actions = el('div', 'row');
-  if (npc.role === 'inn') {
+  if (npc.role === 'rest') { // your bed at home: free
+    const b = button(tr('Tidur (gratis)'), 'btn', ctx.onRest);
+    b.id = 'npc-rest';
+    actions.append(b);
+  } else if (npc.role === 'inn') {
     const b = button(t('Tidur ({n} koin)', { n: innPrice(char) }), 'btn', ctx.onInn);
     b.id = 'npc-inn';
     actions.append(b);

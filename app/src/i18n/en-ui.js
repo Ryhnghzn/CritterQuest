@@ -604,6 +604,7 @@ export default {
   'Tingkat kesulitan sekarang: {d} (ganti di Balai Petualang).': 'Current difficulty: {d} (change it at the Adventurers\' Hall).',
   'Gerbang Celah': 'Rift Gate',
   // export / import (spec §9.3)
+  'Tidur (gratis)': 'Sleep (free)', 'Tidur di kasur sendiri memang paling nyenyak. HP pulih penuh!': 'Nothing beats your own bed. HP fully restored!',
   Tersimpan: 'Saved', 'Tersimpan (sementara)': 'Saved (this session only)', 'Gagal menyimpan': 'Save failed',
   Ekspor: 'Export', Impor: 'Import', Timpa: 'Overwrite', 'Save diekspor.': 'Save exported.',
   'Impor gagal: {why}': 'Import failed: {why}', '{name} diimpor ke slot {n}.': '{name} imported into slot {n}.',

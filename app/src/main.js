@@ -26,7 +26,7 @@ import { ensureAudio, playMusic, stopMusic, toggleMuted, setMuted, setVolumes, s
 import { STEP, startLoop } from './core/loop.js';
 import { openStore } from './meta/save.js';
 import { createCharacter, applyTrip, finalStats, currentHp, usePotion, addExp, allocate, spentPoints } from './meta/character.js';
-import { innRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
+import { innRest, homeRest, buyPotion, setBelt, buyChest, sellItems, buyUpgrade, respec, respecPrice, changeLook } from './meta/shop.js';
 import { enhance, reroll, salvage, socketGem, unsocket, combineGems } from './meta/forge.js';
 import { codexFx } from './meta/collection.js';
 import { activeMountSetup, mountFx, grantMount, buyMount, buySkin, setActiveMount, mountGains } from './meta/stable.js';
@@ -450,6 +450,7 @@ function openNpc(npc, message = null) {
     quests: talkOffers(current, town.id, npc.id),
     onQuest: (id, pick = null) => { const before = current; serve((c, now) => questTalk(c, id, town.id, townNpc.id, now, Math.random, pick), (r) => { const m = questText(r); mountNews(before, r.char, r.mounts); return m; }); },
     onInn: () => serve(innRest, tr('Kamu tidur nyenyak. HP pulih penuh!')),
+    onRest: () => serve(homeRest, tr('Tidur di kasur sendiri memang paling nyenyak. HP pulih penuh!')),
     onBuyPotion: (id) => serve((c, now) => buyPotion(c, id, now), t('{name}, segar dari kuali. Hehehe.', { name: POTIONS[id].name })),
     onBelt: (slot) => serve((c, now) => setBelt(c, slot, nextBeltPotion(c, slot), now), null),
     onBuyChest: (kind) => serve((c, now) => buyChest(c, kind, now), (r) => (showChestOpen(r.item), {
@@ -534,7 +535,7 @@ function openNpc(npc, message = null) {
 }
 
 const REFUSE = {
-  full: { inn: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' },
+  full: { inn: 'HP-mu sudah penuh.', rest: 'HP-mu sudah penuh.', potion: 'Tasmu sudah penuh ramuan itu.' },
   gold: 'Koinmu belum cukup.', bag: 'Tasmu penuh. Jual dulu beberapa barang.',
   equipped: 'Lepas dulu gear yang sedang dipakai.', none: 'Tidak ada yang perlu diubah.', locked: 'Belum terbuka.',
   max: 'Sudah mentok.', same: 'Itu gaya rambutmu sekarang.', bad: 'Tidak bisa.',

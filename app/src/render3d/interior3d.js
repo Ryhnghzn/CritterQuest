@@ -140,6 +140,15 @@ function furniture(f, r, m, out, mats, B, WB) {
       P(B, GEO.cyl, toon(0xc8874e), x + 12, cz + 4, 19, 6, 6, 6);
       flame(out, out.root, cx, cz, 25, 0.22, x);
       break;
+    case 'bed': { // your bed at home: a wooden frame, a straw mattress, a quilt and a pillow at the head (top)
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P(B, GEO.box, toon(WOOD_D), cx + sx * (w / 2 - 3), cz + sz * (d / 2 - 3), 0, 6, 14, 6);
+      P(B, GEO.box, toon(WOOD), cx, cz, 6, w, 8, d);
+      P(B, GEO.box, toon(0xe8dcc0), cx, cz, 14, w - 6, 6, d - 6);
+      P(B, GEO.box, toon(0x7a3a5a, 0x3a1a2a), cx, cz + d * 0.12, 18, w - 4, 5, d * 0.7);
+      P(B, GEO.box, toon(0xf4ecd8), cx, y0 + 14, 18, w - 22, 7, 18);
+      P(B, GEO.box, toon(WOOD_D), cx, y0 + 2, 0, w + 4, 34, 4);
+      break;
+    }
     case 'stool':
       P(B, GEO.cyl, toon(WOOD_L), f.x, f.y, 10, 14, 3, 14);
       P(B, GEO.cyl6, toon(WOOD_D), f.x, f.y, 0, 5, 10, 5);

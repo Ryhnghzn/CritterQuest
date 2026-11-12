@@ -164,13 +164,13 @@ describe('kota besar (§25.2)', () => {
     }
   });
 
-  it('kota besar lebih besar dan lebih ramai dari kota awal', () => {
+  it('Kota Awal adalah desa besar yang ramai, dengan rumahmu sendiri', () => {
     const home = townDef('home');
-    for (const id of ['rimba', 'beku', 'pasir', 'bara']) {
-      const def = townDef(id);
-      expect(def.w * def.h).toBeGreaterThan(2 * home.w * home.h);
-      expect(def.buildings.filter((b) => b.kind === 'house').length).toBeGreaterThan(home.buildings.filter((b) => b.kind === 'house').length);
-    }
+    for (const id of ['rimba', 'beku', 'pasir', 'bara']) expect(home.w * home.h).toBeGreaterThanOrEqual(townDef(id).w * townDef(id).h * 0.9);
+    expect(home.buildings.filter((b) => b.kind === 'house').length).toBeGreaterThanOrEqual(10);
+    expect(home.npcs.filter((n) => n.role === 'talk').length).toBeGreaterThanOrEqual(15);
+    expect(new Set(home.buildings.filter((b) => b.style).map((b) => b.style)).size).toBeGreaterThanOrEqual(4); // houses of different shapes
+    expect(home.interiors.myhome.npcs.some((n) => n.role === 'rest')).toBe(true);
   });
 });
 

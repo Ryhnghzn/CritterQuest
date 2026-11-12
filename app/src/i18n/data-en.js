@@ -294,7 +294,7 @@ const HAIR_EN = { Pendek: 'Short', Jabrik: 'Spiky', Panjang: 'Long', Bob: 'Bob',
 const HAIR_COLOR_EN = { Hitam: 'Black', Cokelat: 'Brown', Pirang: 'Blond', Merah: 'Red', Biru: 'Blue', Putih: 'White' };
 
 const BUILDING_EN = {
-  Penginapan: 'Inn', Kandang: 'Stable', 'Toko Ramuan': 'Potion Shop', 'Pandai Besi': 'Smithy', 'Balai Petualang': "Adventurers' Hall", 'Tukang Cukur': 'Barber',
+  Penginapan: 'Inn', Rumahmu: 'Your Home', Kandang: 'Stable', 'Toko Ramuan': 'Potion Shop', 'Pandai Besi': 'Smithy', 'Balai Petualang': "Adventurers' Hall", 'Tukang Cukur': 'Barber',
   'Pandai Senjata': 'Weaponsmith', 'Penjahit Zirah': 'Armorer', 'Toko Perhiasan': 'Jeweller', Gudang: 'Storehouse', 'Pedagang Bahan': 'Materials Trader',
 };
 // honorifics of the big towns' people: 'Pak Rimbun' → 'Mr. Rimbun'
@@ -310,13 +310,15 @@ const nameEn = (name) => {
 const NPC_NAME_EN = {
   'Penjaga Rolan': 'Warden Rolan', 'Bang Rudi': 'Rudi', 'Mbah Sarju': 'Old Sarju', 'Kakek Odo': 'Old Odo', 'Prajurit Gani': 'Guard Gani', 'Bu Marta': 'Mrs. Marta',
   'Petualang Lelah': 'Weary Adventurer', 'Nenek Mira': 'Granny Mira', 'Pandai Brom': 'Brom the Smith', 'Guru Hadi': 'Master Hadi', 'Kapten Vera': 'Captain Vera',
-  'Batu Teleport': 'Teleport Stone', 'Gerbang Celah': 'Rift Gate', 'Sela Api': 'Sela Fire',
+  'Batu Teleport': 'Teleport Stone', 'Gerbang Celah': 'Rift Gate', 'Tempat Tidur': 'Bed', 'Mas Joko': 'Joko', 'Mbak Rini': 'Rini', 'Sang Pengelana': 'The Wanderer', 'Sela Api': 'Sela Fire',
 };
 const NPC_TITLE_EN = {
   Petualang: 'Adventurer', 'Penjaga Kandang': 'Stable Keeper', 'Tetua Kota': 'Town Elder', 'Anak Kota': 'Town Kid', 'Penjaga Kota': 'Town Guard', 'Penyanyi Keliling': 'Wandering Bard',
   Tamu: 'Guest', 'Pedagang Keliling': 'Travelling Merchant', 'Murid Penyihir': 'Mage Apprentice', 'Murid Pandai Besi': 'Smith Apprentice',
   'Ketua Balai': 'Hall Master', Pemanah: 'Archer', Penyihir: 'Mage', Ksatria: 'Knight',
   Pemburu: 'Hunter', 'Penjual Bunga': 'Flower Seller', Pengelana: 'Wanderer', 'Nelayan Es': 'Ice Fisher', 'Pemahat Es': 'Ice Carver',
+  Petani: 'Farmer', 'Peramu Daun': 'Herb Gatherer', 'Nenek Tukang Cerita': 'Storytelling Granny', 'Anak Desa': 'Village Kid', 'Anak Kandang': 'Stable Boy',
+  'Pandai Kayu': 'Woodworker', 'Pedagang Buah': 'Fruit Seller', 'Pedagang Kain': 'Cloth Seller', 'Penari Desa': 'Village Dancer', 'Penjaga Gerbang': 'Gate Guard',
   Kafilah: 'Caravaneer', Penari: 'Dancer', Penambang: 'Miner', 'Pandai Kaca': 'Glassblower',
 };
 export const NPC_LINE_EN = {
@@ -367,6 +369,32 @@ export const NPC_LINE_EN = {
   'Dulu Ruang Bawah Tanah itu gudang anggur. Sampai Raja Maw bangun dari tidurnya.': 'That crypt used to be a wine cellar. Until King Maw woke from his slumber.',
   'Raja Maw menunggu di lantai paling dalam. Bawa ramuan perisai, Nak.': 'King Maw waits on the deepest floor. Bring shield potions, child.',
   'Api unggun ini tak pernah padam sejak kota ini berdiri.': 'This bonfire has never gone out since the town was founded.',
+  // Kota Awal's villagers (2026-11-12)
+  'Rumahmu masih seperti dulu. Tidurlah di sana kalau lelah, gratis, tidak seperti penginapan Marta.': "Your home is just as it was. Sleep there when you're tired — free, unlike Marta's inn.",
+  'Panen labu tahun ini besar-besar. Nanti kubawakan satu untuk ibumu.': "The pumpkins are huge this year. I'll bring one for your mother.",
+  'Sejak segel retak, babi hutan makin sering merusak ladang.': 'Since the seal cracked, wild boars wreck the fields more and more.',
+  'Daun-daun ini nanti kujual ke Toko Ramuan. Lumayan untuk uang jajan Tika.': "I'll sell these leaves to the Potion Shop. A bit of pocket money for Tika.",
+  'Kalau kau melihat Bunga Kunang di hutan, petikkan satu untukku, ya.': 'If you see a Firefly Blossom in the forest, pick one for me, will you?',
+  'Dulu, waktu gerhana kecil itu, seluruh desa berkumpul di rumahmu. Kau menangis keras sekali.': 'Back on the night of that small eclipse, the whole village gathered at your house. You cried so loudly.',
+  'Kata orang tua dulu, kelima pecahan segel saling memanggil kalau didekatkan.': 'The old folk used to say the five seal shards call to each other when brought close.',
+  'Aku sedang menghitung ember. Satu, dua… eh, lupa lagi.': "I'm counting buckets. One, two… oh, I lost count again.",
+  'Kakak tahu tidak? Di dasar sumur ini ada katak raksasa! …Mungkin.': "Did you know? There's a giant frog at the bottom of this well! …Maybe.",
+  'Kuda-kuda Mbah Sarju suka wortel. Jangan bilang-bilang aku memberi mereka diam-diam.': "Old Sarju's horses love carrots. Don't tell anyone I sneak them some.",
+  'Suatu hari aku mau menunggang kuda sampai ke Bekubara!': "One day I'll ride a horse all the way to Frosthold!",
+  'Atap lumbung ini bocor lagi. Untung hujan jarang di musim ini.': "The barn roof is leaking again. Lucky it hardly rains this season.",
+  'Gagang kapak, kaki meja, pagar kandang… semua di desa ini buatanku.': 'Axe handles, table legs, the paddock fence… I made it all in this village.',
+  'Apel segar dari kebun bukit! Untuk petualang, gratis satu… kalau kau senyum.': 'Fresh apples from the hill orchard! One free for an adventurer… if you smile.',
+  'Para pedagang dari Rimbawana bilang jalan ke timur makin berbahaya.': 'The traders from Wildwood say the road east is getting dangerous.',
+  'Kain ini ditenun di Bekubara. Hangat sekali untuk perjalanan ke utara.': 'This cloth was woven in Frosthold. Very warm for a trip north.',
+  'Mantel petualang? Datang lagi kalau koinmu sudah banyak, ya.': 'An adventurer\'s cloak? Come back when you have more coins.',
+  'Aku berlatih untuk Festival Api Unggun tahun depan. Lihat putaranku!': "I'm practising for next year's Bonfire Festival. Watch me spin!",
+  'Sela bilang tarianku mirip nyala api. Itu pujian, kan?': "Sela says my dancing looks like a flame. That's a compliment, right?",
+  'Jejak serigala bayang makin dekat ke tembok desa. Hati-hati kalau keluar malam.': 'Shadow wolf tracks are getting close to the village wall. Careful out at night.',
+  'Busur ini warisan ayahku. Belum pernah meleset… hampir.': "This bow was my father's. It's never missed… almost.",
+  'Air sumur desa ini yang paling segar di seluruh lembah.': "This village's well water is the freshest in the whole valley.",
+  'Aku sudah melihat Menara Gerhana dari jauh. Jangan ke sana sebelum siap.': "I've seen the Eclipse Tower from afar. Don't go there before you're ready.",
+  'Gerbang ditutup kalau gerhana datang lagi. Pulanglah sebelum itu.': 'The gate closes if the eclipse comes again. Be home before then.',
+  'Rolan bilang aku terlalu cerewet untuk jadi penjaga. Menurutmu?': 'Rolan says I talk too much to be a guard. What do you think?',
   'Kak! Kak! Kakak petualang ya? Keren!': "Hey! Hey! You're an adventurer, right? So cool!",
   'Nenek Mira bilang ramuan amuk bikin orang jadi galak. Aku mau coba!': 'Granny Mira says rage potions make people mean. I wanna try one!',
   'Kalau besar nanti aku mau jadi pemanah seperti Kak Ruko.': "When I grow up I'm gonna be an archer like Ruko.",

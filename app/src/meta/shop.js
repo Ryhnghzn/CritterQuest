@@ -26,6 +26,16 @@ export function innRest(char, now) {
   return { ok: true, char: c };
 }
 
+// Your own bed in Kota Awal (2026-11-12): the same night's sleep as the inn, free.
+export function homeRest(char, now) {
+  if (currentHp(char) >= finalStats(char).maxHp) return { ok: false, reason: 'full' };
+  const c = structuredClone(char);
+  c.hp = null;
+  c.clock = nextMorning(c.clock);
+  c.updatedAt = now;
+  return { ok: true, char: c };
+}
+
 export function buyPotion(char, id, now) {
   const p = POTIONS[id];
   if (char.potions[id] >= POTION_MAX) return { ok: false, reason: 'full' };
