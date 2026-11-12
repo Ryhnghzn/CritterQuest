@@ -310,7 +310,7 @@ const nameEn = (name) => {
 const NPC_NAME_EN = {
   'Penjaga Rolan': 'Warden Rolan', 'Bang Rudi': 'Rudi', 'Mbah Sarju': 'Old Sarju', 'Kakek Odo': 'Old Odo', 'Prajurit Gani': 'Guard Gani', 'Bu Marta': 'Mrs. Marta',
   'Petualang Lelah': 'Weary Adventurer', 'Nenek Mira': 'Granny Mira', 'Pandai Brom': 'Brom the Smith', 'Guru Hadi': 'Master Hadi', 'Kapten Vera': 'Captain Vera',
-  'Batu Teleport': 'Teleport Stone', 'Sela Api': 'Sela Fire',
+  'Batu Teleport': 'Teleport Stone', 'Gerbang Celah': 'Rift Gate', 'Sela Api': 'Sela Fire',
 };
 const NPC_TITLE_EN = {
   Petualang: 'Adventurer', 'Penjaga Kandang': 'Stable Keeper', 'Tetua Kota': 'Town Elder', 'Anak Kota': 'Town Kid', 'Penjaga Kota': 'Town Guard', 'Penyanyi Keliling': 'Wandering Bard',

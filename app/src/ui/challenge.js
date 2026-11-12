@@ -13,11 +13,12 @@ function diffLine(d) {
     + (d.tempo !== 1 ? ` ${tr('Musuh beraksi lebih sering.')}` : '') + (d.mythic > 1 ? ` ${t('Mitos ×{n}.', { n: d.mythic })}` : '');
 }
 
-// ctx: onDifficulty(id), onRift(fromCheckpoint), inHome (the Rift's gate is in Kota Awal)
+// ctx: onDifficulty(id), onRift(fromCheckpoint), gate (true at the Rift's gate in Kota Awal: only the Rift,
+// with its buttons; at the Adventurers' Hall the difficulty and the Rift's record)
 export function challengePanel(char, ctx) {
   const list = el('div', 'shoplist challenge');
-  list.append(el('div', 'label', tr('Tingkat kesulitan — berlaku di dunia & dungeon. Ganti hanya di kota.')));
-  for (const id of DIFFICULTY_IDS) {
+  if (!ctx.gate) list.append(el('div', 'label', tr('Tingkat kesulitan — berlaku di dunia & dungeon. Ganti hanya di kota.')));
+  if (!ctx.gate) for (const id of DIFFICULTY_IDS) {
     const d = DIFFICULTY[id], open = levelOpen(char, id), now = char.difficulty === id;
     const row = el('div', `shoprow${now ? ' worn' : ''}${open ? '' : ' locked'}`);
     const name = el('b', null, tr(d.name)); name.style.color = d.color;
@@ -31,11 +32,12 @@ export function challengePanel(char, ctx) {
   list.append(el('div', 'label', tr('Celah tanpa batas')));
   if (!char.unlocked.rift) { list.append(el('div', 'note', tr('Terbuka setelah kisah tamat (Sang Gerhana tumbang).'))); return list; }
   list.append(el('div', 'note', t('Rekor terdalam: lantai {b} · titik simpan: lantai {c}. Tiap 5 lantai bos lalu titik simpan; hadiah sampai titik simpan aman saat tumbang. Lantai biasa: pilih 1 dari 3 berkah.', { b: char.rift.best, c: char.rift.checkpoint })));
+  if (!ctx.gate) { list.append(el('div', 'note', tr('Masuk lewat Gerbang Celah di alun-alun Kota Awal.'))); return list; }
+  if (ctx.gate) list.append(el('div', 'note', t('Tingkat kesulitan sekarang: {d} (ganti di Balai Petualang).', { d: tr(DIFFICULTY[char.difficulty].name) })));
   const row = el('div', 'row');
   const go = button(tr('Masuk Celah (lantai 1)'), 'btn', () => ctx.onRift(false)); go.dataset.rift = '1';
   row.append(go);
   if (char.rift.checkpoint > 0) { const cp = button(t('Mulai dari lantai {n}', { n: char.rift.checkpoint + 1 }), 'btn', () => ctx.onRift(true)); cp.dataset.rift = 'cp'; row.append(cp); }
-  if (!ctx.inHome) { for (const b of row.children) b.disabled = true; list.append(el('div', 'note', tr('Gerbang Celah ada di Kota Awal.'))); }
   list.append(row);
   return list;
 }

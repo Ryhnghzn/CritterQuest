@@ -126,7 +126,7 @@ function buildNpc(box, npc, ctx) {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
     body.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana'], ['tantangan', 'Tantangan']], boardTab, (tab) => { boardTab = tab; redraw(); }));
     body.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx)
-      : boardTab === 'tantangan' ? challengePanel(char, { ...ctx, inHome: char.location === 'home' }) : markShop(char, ctx.onMarkBuy)); // spec §41.3
+      : boardTab === 'tantangan' ? challengePanel(char, ctx) : markShop(char, ctx.onMarkBuy)); // spec §41.3
   } else if (npc.role === 'stable') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
     body.append(tabBar([['beli', 'Beli'], ['kandang', 'Kandang']], stableTab, (tab) => { stableTab = tab; redraw(); }));
@@ -160,6 +160,8 @@ function buildNpc(box, npc, ctx) {
     body.append(matsPanel(char, char.location, ctx));
   } else if (npc.role === 'teleport') {
     body.append(teleportList(char, ctx.onTeleport));
+  } else if (npc.role === 'rift') { // the Rift's gate in Kota Awal (spec §41.3)
+    body.append(challengePanel(char, { ...ctx, gate: true }));
   }
   if (actions.childElementCount && !actions.parentNode) (body.childElementCount ? body : side).append(actions);
 

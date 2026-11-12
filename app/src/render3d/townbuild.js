@@ -173,6 +173,7 @@ export function buildTown(def, mats) {
   decor(root, def.decor);
   for (const n of def.npcs) {
     if (n.object === 'stone') runeStone(B, root, n, out);
+    if (n.object === 'rift') riftGate(B, root, n, out);
     if (n.night) nightCart(root, n, out);
   }
   B.build(root);
@@ -503,6 +504,22 @@ function runeStone(B, root, n, out) {
   const runes = new THREE.Mesh(GEO.plane, out.runeMat);
   runes.scale.set(10 * S, 40 * S, 1); runes.position.set(n.x * S, 34 * S, (n.y + 7) * S); runes.rotation.y = 0.12; root.add(runes);
   light(out.lights, n.x, n.y + 10, 40, '150,110,255', 6, 5);
+}
+
+// the Rift's gate (spec §41.3): two broken black pillars, a cracked lintel, a red-violet tear between them
+function riftGate(B, root, n, out) {
+  const rock = toon(0x2a2030, 0x4a2a5a), dark = toon(0x18121e);
+  P(B, GEO.cyl, dark, n.x, n.y, 0, 70, 5, 26);
+  for (const s of [-1, 1]) {
+    P(B, GEO.box, rock, n.x + s * 26, n.y, 0, 14, s < 0 ? 84 : 76, 14, s * 0.08);
+    PB(B, GEO.gable, rock, n.x + s * 26, n.y, s < 0 ? 84 : 76, 14, 10, 14, Math.PI / 2);
+  }
+  P(B, GEO.box, rock, n.x, n.y, 78, 66, 10, 12, 0, 0, 0.06);
+  const tear = new THREE.Mesh(GEO.plane, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff3a8a).multiplyScalar(1.4), transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+  tear.scale.set(30 * S, 70 * S, 1); tear.position.set(n.x * S, 40 * S, n.y * S); root.add(tear);
+  const core = new THREE.Mesh(GEO.plane, new THREE.MeshBasicMaterial({ color: 0x14051e, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+  core.scale.set(16 * S, 54 * S, 1); core.position.set(n.x * S, 38 * S, (n.y + 0.5) * S); root.add(core);
+  light(out.lights, n.x, n.y + 10, 40, '255,60,140', 7, 6);
 }
 
 function nightCart(root, n, out) {

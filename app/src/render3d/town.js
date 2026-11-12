@@ -310,7 +310,7 @@ export class Town25 {
     let i = 0;
     for (const n of npcs) {
       i++;
-      if (n.object === 'stone' || (n.night && !town?.night)) continue;
+      if (n.object || (n.night && !town?.night)) continue; // the rune stone & the Rift's gate are built with the town
       const p = n.wander ? npcAt(n, nt) : null;
       const x = p ? p.x : n.x, y = p ? p.y : n.y, moving = p ? p.moving : 0;
       if (Math.abs(x - this.camX) > 900 || Math.abs(y - this.camY) > 800) continue;
@@ -410,7 +410,7 @@ export class Town25 {
       if (n.night && !town?.night) continue;
       const p = n.wander ? npcAt(n, nt) : null, x = p ? p.x : n.x, y = p ? p.y : n.y, sc = n.scale || 1;
       if (Math.abs(x - this.camX) > 700 || Math.abs(y - this.camY) > 600) continue;
-      const stone = n.object === 'stone';
+      const stone = !!n.object;
       if (!this.proj(x, y + 10 * sc, stone ? 92 : 64 * sc)) continue;
       at(scaleOf());
       tag(g, n, 0, 40 * sc, t, town?.near === n, town?.marks?.[n.id]);

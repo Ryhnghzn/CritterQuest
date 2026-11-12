@@ -44,7 +44,7 @@ function layoutOf(def) {
     feats,
     // one continuous lava band under the bridges
     lavaBand: lava.length ? { x: Math.min(...lava.map((f) => f.x)), y: lava[0].y, w: Math.max(...lava.map((f) => f.x + f.w)) - Math.min(...lava.map((f) => f.x)), h: lava[0].h } : null,
-    stones: def.npcs.filter((n) => n.object === 'stone'),
+    stones: def.npcs.filter((n) => n.object),
     night: def.npcs.filter((n) => n.night),
     trees: treesOf(def),
     wall: theme.wall || WALL_HOME,
@@ -228,10 +228,10 @@ export class TownRenderer {
     portal(g, t, L);
     for (const f of L.feats) if (seen(f.x - 200, f.y - 260, f.w + 400, f.h + 280)) featureGlow(g, f, t, L);
     if (L.style) for (const b of L.houses) if (seen(b.x - 20, b.y - 80, b.w + 40, b.h + 110)) houseGlow(g, b, t, L);
-    for (const p of npcs) if (p.n.object === 'stone') stoneGlow(g, p.x, p.y, t);
+    for (const p of npcs) if (p.n.object === 'stone') stoneGlow(g, p.x, p.y, t); else if (p.n.object === 'rift') riftGlow(g, p.x, p.y, t);
     for (const n of L.trees) if (L.theme.tree === 'charred' && n.v < 0.3 && seen(n.x - 40, n.y - 40, 80, 60)) emberRock(g, n, t);
     motes(g, t, L.theme.motes, cx, cy, v.viewW, v.viewH);
-    for (const p of npcs) tag(g, p.n, p.x, p.y - (p.n.object === 'stone' ? 30 : 0), t, town?.near === p.n, town?.marks?.[p.n.id]);
+    for (const p of npcs) tag(g, p.n, p.x, p.y - (p.n.object ? 30 : 0), t, town?.near === p.n, town?.marks?.[p.n.id]);
     // a quest NPC inside a building: its mark floats over the door (spec §26.3)
     if (town?.marks) for (const b of L.houses) {
       const inside = L.def.interiors?.[b.id]?.npcs || [];
@@ -248,6 +248,7 @@ export class TownRenderer {
 export function drawNpc(g, p, t, town) {
   const n = p.n;
   if (n.object === 'stone') { runeStone(g, p.x, p.y, t); return; }
+  if (n.object === 'rift') { riftArch(g, p.x, p.y); return; }
   const facing = p.moving ? p.facing : town && town.x < p.x ? -1 : 1;
   actor(g, p.x, p.y, null, { ...n.look, outfit: n.outfit, npc: n }, { t: t + n.x, moving: p.moving, walk: t * 5 * p.moving }, facing, n.scale || 1);
 }
@@ -274,7 +275,7 @@ function lightList(t, town, f, L) {
   const out = L.fire ? [{ x: L.fireX, y: L.fireY, r: 200 * f, rgb: WARM, tint: 0.16, always: true }] : [];
   for (const ft of L.feats) featureLights(ft, f, out);
   if (town?.night) for (const n of L.night) out.push({ x: n.x + 46, y: n.y - 44, r: 110 * f, rgb: '255,190,110', tint: 0.14, always: true });
-  for (const n of L.stones) out.push({ x: n.x, y: n.y - 30, r: 130 * f, rgb: '150,110,255', tint: 0.18, always: true });
+  for (const n of L.stones) out.push({ x: n.x, y: n.y - 30, r: 130 * f, rgb: n.object === 'rift' ? '255,60,140' : '150,110,255', tint: 0.18, always: true });
   if (L.theme.tree === 'charred') for (const n of L.trees) if (n.v < 0.3) out.push({ x: n.x, y: n.y, r: 70, rgb: '255,110,40', tint: 0.1, always: true });
   for (const l of L.def.lamps) out.push({ x: l.x, y: l.y - 40, r: 130, rgb: WARM, tint: 0.1 });
   for (const b of houses) for (const w of windowsOf(b)) out.push({ x: w.x, y: w.y + 20, r: 70, rgb: WARM, tint: 0.08 });
@@ -388,6 +389,22 @@ function runeStone(g, x, y, t) {
   g.beginPath(); g.moveTo(x - 15, y); g.lineTo(x - 18, y - 46); g.lineTo(x - 8, y - 66); g.lineTo(x + 9, y - 64); g.lineTo(x + 17, y - 44); g.lineTo(x + 14, y); g.closePath();
   ink(g, lin(g, y - 66, y, '#4a4666', '#24213a'), 2);
   g.beginPath(); g.moveTo(x - 8, y - 66); g.lineTo(x - 4, y - 40); g.lineTo(x - 15, y); g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.08)'; g.stroke();
+}
+// the Rift's gate (spec §41.3): two dark pillars and a lintel; riftGlow draws the tear between them
+function riftArch(g, x, y) {
+  shadow(g, x, y + 2, 34, 7);
+  for (const s of [-1, 1]) { g.beginPath(); g.rect(x + s * 26 - 7, y - (s < 0 ? 84 : 76), 14, s < 0 ? 84 : 76); ink(g, lin(g, y - 84, y, '#3a2a48', '#1a1222'), 2); }
+  g.beginPath(); g.moveTo(x - 34, y - 86); g.lineTo(x + 34, y - 80); g.lineTo(x + 34, y - 72); g.lineTo(x - 34, y - 76); g.closePath(); ink(g, '#2a2034', 2);
+}
+function riftGlow(g, x, y, t) {
+  g.save(); g.globalCompositeOperation = 'lighter';
+  const pulse = 0.55 + 0.45 * Math.sin(t * 3.1);
+  const gr = g.createRadialGradient(x, y - 40, 0, x, y - 40, 50);
+  gr.addColorStop(0, `rgba(255,70,150,${(0.5 * pulse).toFixed(3)})`); gr.addColorStop(1, 'rgba(160,20,90,0)');
+  g.fillStyle = gr; g.fillRect(x - 50, y - 90, 100, 100);
+  g.beginPath(); g.moveTo(x, y - 74); g.lineTo(x + 9, y - 52); g.lineTo(x + 4, y - 30); g.lineTo(x + 10, y - 8); g.lineTo(x, y - 2); g.lineTo(x - 8, y - 20); g.lineTo(x - 4, y - 44); g.lineTo(x - 10, y - 60); g.closePath();
+  g.fillStyle = `rgba(255,90,170,${(0.55 + 0.35 * pulse).toFixed(3)})`; g.fill();
+  g.restore();
 }
 function stoneGlow(g, x, y, t) {
   g.save(); g.globalCompositeOperation = 'lighter';
