@@ -174,19 +174,89 @@ const MOVES = {
     thousandshadows: S_SPIN,
   },
 };
-// tempo skills (spec §43.4) borrow a move until they get their own
-MOVES.warrior.greatslash = MOVES.warrior.quake; MOVES.warrior.steelparry = MOVES.warrior.shout;
-MOVES.mage.flamethrower = MOVES.mage.nova; MOVES.mage.timebomb = MOVES.mage.meteor;
-MOVES.archer.beamshot = MOVES.archer.pierce; MOVES.archer.tower = MOVES.archer.trap;
-MOVES.assassin.tripledance = MOVES.assassin.shadow; MOVES.assassin.shadowclone = MOVES.assassin.smoke;
-// the focused ultimates (spec §43.5) borrow a move too
-MOVES.warrior.skyfall = MOVES.warrior.quake; MOVES.archer.skypierce = MOVES.archer.pierce; MOVES.mage.sunfall = MOVES.mage.meteor; MOVES.assassin.execution = MOVES.assassin.shadow;
-
-// Job Lanjutan (spec §43.10): the branch skills borrow their job's moves
-Object.assign(MOVES.warrior, { bloodrage: MOVES.warrior.warcry, rageleap: MOVES.warrior.charge, ragnarok: MOVES.warrior.bladestorm, holyguard: MOVES.warrior.shout, judgment: MOVES.warrior.quake, sanctuary: MOVES.warrior.shout });
-Object.assign(MOVES.archer, { headshot: MOVES.archer.pierce, steadyaim: MOVES.archer.hawk, deatheye: MOVES.archer.pierce, wolf: MOVES.archer.trap, runvolley: MOVES.archer.volley, huntwave: MOVES.archer.trap });
-Object.assign(MOVES.mage, { firestorm: MOVES.mage.meteor, burnout: MOVES.mage.nova, supernova: MOVES.mage.nova, rewind: MOVES.mage.blink, timefield: MOVES.mage.chain, timestop: MOVES.mage.nova });
-Object.assign(MOVES.assassin, { vanish: MOVES.assassin.smoke, shadowstrike: MOVES.assassin.shadow, shadoweclipse: MOVES.assassin.shadow, bladevortex: MOVES.assassin.shuriken, slashrain: MOVES.assassin.fan, thousandcuts: MOVES.assassin.thousandshadows });
+// The skills of §43 (tempo skills, the focused ultimates) and the Job Lanjutan branches (§43.10), each
+// with its own move (2026-11-12; until then they borrowed one).
+const PIv = Math.PI;
+Object.assign(MOVES.warrior, {
+  // Tebasan Raksasa: the blade drawn far back low, then one huge sweep through
+  greatslash: { dur: 0.7, keys: [[0, 'idle'], [0.45, -0.6, 0.4, -0.25, 3, -2, -0.3], [0.6, 2.2, 0.2, 0.35, 4, 7, 0.6], [0.8, 2, 0.2, 0.3, 3.6, 7, 0.8], [1, 'idle']], ease: ['inOut', 'in', 'lin', 'inOut'] },
+  // Tangkis Baja: the blade up across the body, braced
+  steelparry: { dur: 0.5, keys: [[0, 'idle'], [0.2, 2.2, 1.3, -0.12, 2.5, -1, 2], [0.8, 2.2, 1.3, -0.12, 2.5, -1, 2], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Hantaman Langit: a high leap, the blade overhead, crashing down
+  skyfall: { dur: 0.9, keys: [[0, 'idle'], [0.3, 3.7, -0.4, -0.2, 0, 0, 3.4, 0, 0, 22], [0.55, 3.8, -0.5, -0.1, 0, 2, 3.5, 0, 0, 30], [0.7, 0.8, 0.5, 0.5, 6, 8, 0.4, 0, 0, 0], [0.85, 0.8, 0.5, 0.45, 5.5, 8, 0.4], [1, 'idle']], ease: ['out', 'lin', 'in', 'lin', 'inOut'] },
+  // Amuk Darah: a roar, both arms flung wide, leaning back
+  bloodrage: { dur: 0.8, keys: [[0, 'idle'], [0.25, 1.9, 0.3, -0.35, 1.5, -2, 2.4], [0.75, 1.9, 0.3, -0.35, 1.5, -2, 2.4], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Lompatan Amuk: a low flying lunge, the blade thrust ahead
+  rageleap: { dur: 0.5, keys: [[0, 1.6, 0.1, 0.55, 4, 7, -0.4, 0, 0, 8], [0.6, 1.6, 0.1, 0.55, 4, 9, -0.4, 0, 0, 4], [1, 'idle']], ease: ['lin', 'inOut'] },
+  // Ragnarok: a deeper, faster whirl than Badai Pedang
+  ragnarok: { dur: 'skill', spin: 4.2, keys: [[0, 'idle'], [0.08, 1.7, -0.2, 0.2, 5, 3, 1.7], [0.92, 1.7, -0.2, 0.2, 5, 3, 1.7], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Perlindungan Suci: kneeling, the blade planted point-down
+  holyguard: { dur: 0.7, keys: [[0, 'idle'], [0.3, 0.2, 3, 0.1, 7, 2, 1.2], [0.8, 0.2, 3, 0.1, 7, 2, 1.2], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Palu Penghakiman: up on the toes, blade high, then a hammering blow
+  judgment: { dur: 0.7, keys: [[0, 'idle'], [0.3, 3.9, -0.6, -0.25, 1, 0, 3.2, 0, 0, 10], [0.5, 0.9, 0.5, 0.5, 5, 6, 0.6], [0.7, 0.9, 0.5, 0.45, 4.5, 6, 0.6], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+  // Tanah Suci: the blade raised to the sky, lifted a little off the ground
+  sanctuary: { dur: 0.9, keys: [[0, 'idle'], [0.3, 3.1, 0, -0.2, 0, 0, 3, 0, 0, 4], [0.8, 3.1, 0, -0.2, 0, 0, 3, 0, 0, 4], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+});
+Object.assign(MOVES.archer, {
+  // Sinar Panah: the bow held at full draw while the beam pours out
+  beamshot: { dur: 0.6, keys: [[0, 'idle'], [0.3, 1.57, 1.57, -0.05, 2.5, 1, 1.6, 1, 1], [1, 1.57, 1.57, -0.05, 2.5, 1, 1.6, 1, 1]], ease: ['out', 'lin'] },
+  // Menara Panah: crouched, setting the tower down
+  tower: { dur: 0.55, keys: [[0, 'idle'], [0.35, 0.2, 0.6, 0.5, 7, 3, 0.3], [0.6, 0.2, 0.6, 0.45, 7, 3, 0.3], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Panah Penembus Langit: a low wide stance, a long aim, a hard release
+  skypierce: { dur: 0.9, keys: [[0, 'idle'], [0.4, 1.45, 1.6, -0.15, 4, -3, 1.5, 1, 1], [0.65, 1.45, 1.6, -0.15, 4, -3, 1.5, 1, 1], [0.7, 1.5, 1.6, -0.3, 3, -6, -0.6], [1, 'idle']], ease: ['out', 'lin', 'out', 'inOut'] },
+  // Tembakan Kepala: upright and still, a slow aim, a sharp loose
+  headshot: { dur: 0.7, keys: [[0, 'idle'], [0.4, 1.57, 1.57, 0, 0.5, 0, 1.6, 1, 1], [0.6, 1.57, 1.57, 0, 0.5, 0, 1.6, 1, 1], [0.65, 1.6, 1.6, -0.2, 0.5, -4, -0.3], [1, 'idle']], ease: ['out', 'lin', 'out', 'inOut'] },
+  // Fokus Mantap: the bow lowered, the free hand up at the eye
+  steadyaim: { dur: 0.8, keys: [[0, 'idle'], [0.3, 0.8, 1.3, -0.05, 1, 0, 2.6], [0.8, 0.8, 1.3, -0.05, 1, 0, 2.6], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Mata Maut: kneeling, aimed slightly upward, the whole body thrown back by the shot
+  deatheye: { dur: 1, keys: [[0, 'idle'], [0.45, 1.8, 1.57, -0.2, 8, 2, 1.8, 1, 1], [0.7, 1.8, 1.57, -0.2, 8, 2, 1.8, 1, 1], [0.75, 1.85, 1.6, -0.4, 7, -6, -0.5], [1, 'idle']], ease: ['out', 'lin', 'out', 'inOut'] },
+  // Panggil Serigala: pointing the way with the free hand
+  wolf: { dur: 0.6, keys: [[0, 'idle'], [0.3, 0.9, 1.4, 0.1, 1, 2, 2], [0.7, 0.9, 1.4, 0.1, 1, 2, 2], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Hujan Lari: loosing on the run, leaning into it
+  runvolley: { dur: 0.45, keys: [[0, 1.55, 1.57, 0.25, 1.2, 3, 1.6, 1, 1], [0.1, 1.55, 1.57, 0.3, 1.2, 3, -0.5], [0.3, 1.45, 1.6, 0.2, 0.8, 2, -0.35], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Gelombang Buru: a hop, then an arrow driven into the ground
+  huntwave: { dur: 0.6, keys: [[0, 'idle'], [0.3, 2.6, 1.2, -0.2, 0, 0, 2.4, 0, 0, 8], [0.5, 0.4, 1, 0.4, 6, 4, 0.2], [0.75, 0.4, 1, 0.35, 5.5, 4, 0.2], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+});
+Object.assign(MOVES.mage, {
+  // Semburan Api: the staff thrust forward, held while the fire pours
+  flamethrower: { dur: 0.6, keys: [[0, 'idle'], [0.25, 1.5, 1.7, 0.15, 1.5, 2, 1.4, 1], [1, 1.5, 1.7, 0.15, 1.5, 2, 1.4, 1]], ease: ['out', 'lin'] },
+  // Bom Waktu: the staff's tip touched to the ground
+  timebomb: { dur: 0.6, keys: [[0, 'idle'], [0.3, 0.4, 2.4, 0.4, 5, 3, 0.8, 1], [0.6, 0.4, 2.4, 0.35, 5, 3, 0.8, 0.6], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Matahari Runtuh: rising off the ground, both arms raised to the falling sun
+  sunfall: { dur: 1, keys: [[0, 'idle'], [0.35, 3.2, 3.1, -0.25, 0, 0, 3, 1, 0, 6], [0.8, 3.2, 3.1, -0.25, 0, 0, 3, 1, 0, 8], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Badai Api: the staff swung round overhead, then thrown forward
+  firestorm: { dur: 0.7, keys: [[0, 'idle'], [0.3, 2.6, 2, -0.1, 0, 0, 2.2, 0.8], [0.5, 3.4, 3.6, -0.1, 0, 0, 1, 1], [0.7, 1.2, 2.4, 0.2, 2, 3, 1.2, 0.6], [1, 'idle']], ease: ['out', 'lin', 'in', 'inOut'] },
+  // Bakar Habis: curled down, then bursting open
+  burnout: { dur: 0.65, keys: [[0, 'idle'], [0.3, 0.3, 2.6, 0.4, 6, 0, -0.3, 0.4], [0.45, 2.4, 3, -0.25, 0, 0, 2.4, 1, 0, 4], [0.7, 2.4, 3, -0.2, 0, 0, 2.4, 0.6], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+  // Supernova: the same, bigger, ending high in the air
+  supernova: { dur: 0.9, keys: [[0, 'idle'], [0.35, 0.2, 2.6, 0.5, 7, 0, -0.4, 0.5], [0.5, 2.9, 3.1, -0.3, 0, 0, 2.9, 1, 0, 10], [0.85, 2.9, 3.1, -0.3, 0, 0, 2.9, 1, 0, 8], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+  // Putar Balik: a whirl backwards, the staff held high
+  rewind: { dur: 0.5, spin: 2, keys: [[0, 'idle'], [0.2, 2.2, 3, -0.3, 0, -3, 1.8, 1], [0.8, 2.2, 3, -0.3, 0, -3, 1.8, 1], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Medan Waktu: the staff pointed ahead, the other hand raised
+  timefield: { dur: 0.7, keys: [[0, 'idle'], [0.3, 1.3, 2, 0.05, 1, 2, 2.7, 1], [0.75, 1.3, 2, 0.05, 1, 2, 2.7, 0.7], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Hentikan Waktu: the staff raised straight up, hovering
+  timestop: { dur: 0.9, keys: [[0, 'idle'], [0.3, 2.9, PIv, -0.1, 0, 0, 2.9, 1, 0, 3], [0.85, 2.9, PIv, -0.1, 0, 0, 2.9, 1, 0, 3], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+});
+Object.assign(MOVES.assassin, {
+  // Tarian Tiga Tebasan: a deep lunging stab
+  tripledance: { dur: 0.45, keys: [[0, 'idle'], [0.2, 1.7, 2.6, 0.6, 5, 10, -0.6, 2.84], [0.6, 1.7, 2.6, 0.55, 4.5, 10, -0.6, 2.84], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Klon Bayangan: daggers crossed before the chest, a hand seal
+  shadowclone: { dur: 0.6, keys: [[0, 'idle'], [0.3, 1.2, 2.84, -0.05, 1, 0, 1.9, 2.84], [0.8, 1.2, 2.84, -0.05, 1, 0, 1.9, 2.84], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Eksekusi Bayangan: up high, then dropping on the foe blade-first
+  execution: { dur: 0.6, keys: [[0, 'idle'], [0.3, 3, 2.84, 0.2, 0, 0, 2.6, 2.84, 0, 16], [0.55, 0.6, 2.84, 0.7, 6, 6, 0.4, 2.84], [0.85, 0.6, 2.84, 0.6, 5.5, 6, 0.4, 2.84], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+  // Menghilang: crouched low into the shadow
+  vanish: { dur: 0.6, keys: [[0, 'idle'], [0.3, -0.5, 2.84, 0.5, 8, -2, -0.6, 2.84], [0.8, -0.5, 2.84, 0.5, 8, -2, -0.6, 2.84], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Serangan Bayangan: a dash flat to the ground
+  shadowstrike: { dur: 0.4, keys: [[0, 1.4, 2.6, 0.8, 7, 9, -1, 2.84], [0.5, 1.4, 2.6, 0.8, 7, 11, -1, 2.84], [1, 'idle']], ease: ['lin', 'inOut'] },
+  // Gerhana Bayangan: the drop of Eksekusi with a twist in the air
+  shadoweclipse: { dur: 0.7, spin: 1.5, keys: [[0, 'idle'], [0.3, 3, 2.84, 0.2, 0, 0, 2.6, 2.84, 0, 18], [0.55, 0.6, 2.84, 0.7, 6, 6, 0.4, 2.84], [0.85, 0.6, 2.84, 0.6, 5.5, 6, 0.4, 2.84], [1, 'idle']], ease: ['out', 'in', 'lin', 'inOut'] },
+  // Pusaran Pedang: arms held straight out while the blades circle
+  bladevortex: { dur: 'skill', spin: 3, keys: [[0, 'idle'], [0.06, 1.57, 1.4, 0.1, 3, 0, 1.57, 1.4], [0.94, 1.57, 1.4, 0.1, 3, 0, 1.57, 1.4], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+  // Hujan Tebasan: both arms swept up, then flung forward together
+  slashrain: { dur: 0.5, keys: [[0, 'idle'], [0.25, 3, 2.84, -0.2, 2, -2, 3, 2.84], [0.45, 1.4, 2.84, 0.35, 4, 5, 1.2, 2.84], [1, 'idle']], ease: ['out', 'in', 'inOut'] },
+  // Seribu Sayatan: the fastest whirl of all, very low
+  thousandcuts: { dur: 'skill', spin: 6, keys: [[0, 'idle'], [0.05, 1.8, 2.4, 0.4, 6, 4, 1.8, 2.4], [0.95, 1.8, 2.4, 0.4, 6, 4, 1.8, 2.4], [1, 'idle']], ease: ['out', 'lin', 'inOut'] },
+});
 
 // how long the renderer plays a skill's move (seconds)
 export function moveDuration(classId, skillId, skillDur = 0) {
