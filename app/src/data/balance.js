@@ -64,4 +64,4 @@ export const PAGE_B_LEVEL = 15;
 // Enemy power (spec §43.8), tuned by run/bench.test.js: hp × every enemy, bossHp × bosses on top,
 // dmg × touch damage AND the shots / danger zones an enemy makes (those are scaled like its touch:
 // world level × dungeon difficulty × elite × dmg, run/run.js foePower).
-export const ENEMY_POWER = { hp: 2.2, bossHp: 7.5, dmg: 4.5, bossDmg: 0.6 }; // bossDmg replaces dmg for a boss's own attacks
+export const ENEMY_POWER = { hp: 2.2, bossHp: 7.5, dmg: 5.4, bossDmg: 0.6 }; // bossDmg replaces dmg for a boss's own attacks

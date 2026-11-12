@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { defenseCut } from '../meta/power.js';
 import { BRANCHES, BRANCH, skillPool } from '../data/branches.js';
 import { CLASSES, JOB_IDS } from '../data/classes.js';
 import { pickBranch, changeBranch, branchChangePrice, treeRows, raise, equip, setUlt, passiveFx, wornIds, jobOf, equippedUlt, canTrial, spFree } from '../meta/jobs.js';
@@ -122,7 +123,7 @@ describe('cabang dalam pertarungan', () => {
     g.trait.v = 100;
     const hp = g.stats.hp = g.stats.maxHp; g.invuln = 0; g.dodgeInv = 0;
     g.hurtPlayer(100);
-    expect(hp - g.stats.hp).toBeCloseTo(Math.max(1, 100 - g.stats.def) * (1 - (g.fx.rageArmor || 0))); // only Kulit Baja is left
+    expect(hp - g.stats.hp).toBeCloseTo(100 * (1 - defenseCut(g.stats.def, g.level)) * (1 - (g.fx.rageArmor || 0))); // only Kulit Baja is left
   });
 
   it('Paladin: tebasan biasa menambah perisai suci sampai batas', () => {

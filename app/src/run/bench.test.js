@@ -5,6 +5,8 @@
 // Averages over the four jobs and levels must sit in those bands; each level must stay in a looser band.
 import { describe, it, expect } from 'vitest';
 import { benchChar, benchGame, benchPack, benchFight } from './benchkit.js';
+import { makeItem } from '../meta/itemgen.js';
+import { powerOf, recPower } from '../meta/power.js';
 
 const PACK = { 10: ['slink', 'wolf', 'spitter', 'slink', 'charger', 'dart', 'slink'], 20: ['frostslink', 'yeti', 'frostspitter', 'icewisp', 'frostslink', 'frosttank', 'frostslink'], 30: ['scorpion', 'sandslink', 'vulture', 'sandworm', 'scorpion', 'sandslink', 'spitter'], 40: ['imp', 'salamander', 'magmaslink', 'emberbomber', 'imp', 'tank', 'magmaslink'] };
 const BOSS = { 10: ['shadow', 'boss'], 20: ['fungus', 'sporeboss'], 30: ['tomb', 'tombboss'], 40: ['lava', 'lavaboss'] };
@@ -34,4 +36,30 @@ describe('bench (spec §43.8)', () => {
       expect(mean(per[L], 'boss'), report).toBeGreaterThanOrEqual(55); expect(mean(per[L], 'boss'), report).toBeLessThanOrEqual(120);
     }
   }, 300000);
+
+  // spec §47: the Power gap. Far stronger than a place → it barely hurts; far weaker → it is a wall.
+  it('level 50 bergear Mitos di wilayah level 35: kehilangan HP < 10% (tanpa menghindar)', () => {
+    let seed = 3; const rng = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const lost = [];
+    for (const job of JOBS) {
+      const c = benchChar(job, 50);
+      c.inventory = [];
+      for (const slot of ['weapon', 'helm', 'armor', 'boots', 'amulet', 'ring']) { const it = makeItem({ slot, classId: job, rarity: 5, itemLevel: 50 }, rng); c.inventory.push(it); c.equipped[slot] = it.id; }
+      let g = benchGame(c); lost.push(benchFight(g, benchPack(g, 35, PACK[30])).hpLost);
+      g = benchGame(c); lost.push(benchFight(g, benchPack(g, 35, PACK[30].slice(0, 4), true)).hpLost);
+    }
+    const mean = lost.reduce((a, b) => a + b, 0) / lost.length;
+    expect(mean, lost.map((x) => (x * 100).toFixed(0)).join(' ')).toBeLessThan(0.1);
+  }, 120000);
+
+  it('Power setengah dari saran: kelompok + elite terasa berat (HP hilang > 70% atau mati)', () => {
+    const lost = [];
+    for (const job of JOBS) {
+      const c = benchChar(job, 20); // fighting level 30–31 foes: about half the recommended Power
+      expect(powerOf(c) / recPower(31)).toBeLessThan(0.65);
+      const g = benchGame(c); const r = benchFight(g, benchPack(g, 31, PACK[30].slice(0, 4), true));
+      lost.push(r.died ? 1 : r.hpLost);
+    }
+    expect(lost.reduce((a, b) => a + b, 0) / lost.length, lost.join(' ')).toBeGreaterThan(0.7);
+  }, 120000);
 });

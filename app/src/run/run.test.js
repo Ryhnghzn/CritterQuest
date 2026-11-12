@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { defenseCut } from '../meta/power.js';
 import { Game, ST } from './run.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
 import { expToNext } from '../meta/character.js';
@@ -80,14 +81,14 @@ describe('stat kelas', () => {
     expect(g.stats.def).toBe(2);
   });
 
-  it('def mengurangi damage sentuh (minimal 1)', () => {
+  it('def memotong damage sentuh dalam persen (spec §47.4)', () => {
     const g = new Game();
     g.start({ ...setup('warrior'), stats: { ...setup('warrior').stats, def: 5 } });
     g.spawnT = 1e9;
     const e = g.spawnEnemy('slink'); // dmg 8 × ENEMY_POWER.dmg
     e.x = 0; e.y = 0;
     g.step(1 / 60);
-    expect(g.stats.hp).toBeCloseTo(140 - (8 * ENEMY_POWER.dmg - 5));
+    expect(g.stats.hp).toBeCloseTo(140 - 8 * ENEMY_POWER.dmg * (1 - defenseCut(5, 1)));
   });
 });
 
@@ -158,10 +159,10 @@ describe('HP awal & ramuan di dungeon', () => {
     const g = start({ potions: pots({ shield: 1 }) });
     step(g, 2);
     expect(g.shield).toBeCloseTo(140 * 0.3);
-    const e = g.spawnEnemy('slink'); e.x = 0; e.y = 0; // dmg 8 − def 2
+    const e = g.spawnEnemy('slink'); e.x = 0; e.y = 0; // dmg 8, DEF 2 cuts a share
     step(g);
     expect(g.stats.hp).toBe(140);
-    expect(g.shield).toBeCloseTo(Math.max(0, 42 - (8 * ENEMY_POWER.dmg - 2)));
+    expect(g.shield).toBeCloseTo(Math.max(0, 42 - 8 * ENEMY_POWER.dmg * (1 - defenseCut(2, 1))));
     e.hp = 0;
     wait(g, 8.1);
     expect(g.shield).toBe(0);

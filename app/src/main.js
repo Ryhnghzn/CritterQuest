@@ -842,7 +842,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, difficulty: trial ? 'normal' : current.difficulty, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, difficulty: trial ? 'normal' : current.difficulty, power: true, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
   });
   tripAttrs = {};
   setupRunUI();
@@ -870,7 +870,7 @@ async function explore(at = current.location) {
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, difficulty: trial ? 'normal' : current.difficulty, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, difficulty: trial ? 'normal' : current.difficulty, power: true, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
     at, gate: typeof at === 'string' ? lastGate[at] ?? null : null, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
     eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });

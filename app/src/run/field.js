@@ -17,6 +17,7 @@ import { revealFog, treasureSpots } from '../meta/world.js';
 import { GEM_IDS, GEMS } from '../data/forge.js';
 import { HIDDEN_R, REACH_R, DROP_ITEMS } from '../data/quests.js';
 import { HORDE } from '../data/balance.js';
+import { setFoeLevel } from './foelevel.js';
 import { REGIONS } from '../data/world.js';
 
 // enemy level at a point of the world
@@ -136,6 +137,7 @@ export function spawnGroup(run, x, y, n, zone, type = null) {
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // §33.3: the horde, weaker one by one
     e.xp = Math.round(ENEMIES[kind].xp * sc.reward * (run.diff?.reward || 1)); // difficulty (spec §41.3)
     e.level = level; e.zone = zone;
+    setFoeLevel(run, e, level); // the Power gap (spec §47.3)
     const a = rand() * Math.PI * 2;
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
     pushOut(map, e, e.r);
@@ -233,12 +235,14 @@ export function spawnGuardian(run, tr) {
   g.hp *= sc.hp * rule.hp; g.maxHp = g.hp; g.dmg *= sc.dmg * rule.dmg; g.r *= rule.size;
   g.xp = Math.round(ENEMIES[type].xp * sc.reward * rule.hp * 0.5);
   g.level = level; g.elite = true; g.mini = true; g.lord = tr.lord;
+  setFoeLevel(run, g, level);
   initMiniMove(g, tr.zone || run.region.id); // one move of the zone's dungeon boss (spec §41.2)
   pushOut(run.fmap, g, g.r);
   for (let i = 0; i < rule.escort; i++) {
     const e = run.spawnEnemy(type);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // escorts are horde (§33.3)
     e.xp = Math.round(ENEMIES[type].xp * sc.reward); e.level = level;
+    setFoeLevel(run, e, level);
     const a = (i / rule.escort) * Math.PI * 2;
     e.x = tr.x + Math.cos(a) * 90; e.y = tr.y + Math.sin(a) * 90;
     pushOut(run.fmap, e, e.r);

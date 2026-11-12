@@ -7,6 +7,9 @@ import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL, ENEMY_POWER } from '../data/balance.js';
 import { expToNext, levelCap } from '../meta/character.js';
+import { powerFrom, defenseCut } from '../meta/power.js';
+import { setFoeLevel } from './foelevel.js';
+import { DUNGEON_LEVEL } from '../data/power.js';
 import { SP_PER_LEVEL } from '../data/skilltree.js';
 import { leveled, levelDeath, VULN_TIME } from './skilllevel.js';
 import { passiveCrit, poisonFoe, dotFoe } from './passives.js';
@@ -34,7 +37,7 @@ import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedU
 import { freshMount, startSummon, stepMount, dismount, wantsAction, isRiding } from './mount.js';
 import { MOUNT } from '../data/mounts.js';
 import { landAt } from './worldmap.js';
-import { startField, stepField, confineFieldEnemy, questDrop, fieldScale } from './field.js';
+import { startField, stepField, confineFieldEnemy, questDrop, fieldScale, fieldLevel } from './field.js';
 import { stepEvents } from './questev.js';
 import { FIELD } from '../data/world.js';
 import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
@@ -62,7 +65,16 @@ const BUFFED = ['moveSpd', 'atk', 'atkSpd', 'crit', 'critDmg']; // stats potions
 // How hard an enemy's shots and danger zones hit (spec §43.8): like its touch damage — the dungeon's
 // difficulty, the world level, an elite's bonus, ENEMY_POWER.dmg. Applied once, to what it just made.
 export function foePower(run, e) {
-  return (run.dungeon?.dmgMul || 1) * (run.diff?.dmg || 1) * (run.dungeon?.rift ? riftMul(run.floor) : 1) * (e.level ? fieldScale(e.level).dmg : 1) * (e.elite && !e.boss ? ELITE.dmgMul : 1) * (e.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg);
+  return (run.dungeon?.dmgMul || 1) * (run.diff?.dmg || 1) * (run.dungeon?.rift ? riftMul(run.floor) : 1) * (e.level ? fieldScale(e.level).dmg : 1) * (e.elite && !e.boss ? ELITE.dmgMul : 1) * (e.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg) * (e.gap?.taken || 1);
+}
+
+// the level of the enemies here (spec §47.3): the world's level at the player, a dungeon's own level
+// and floor; the Rift and the branch trial are set to the character
+export function foeLevel(run) {
+  if (run.field) return fieldLevel(run, run.px, run.py);
+  const id = run.dungeon?.id;
+  if (run.dungeon?.rift || !(id in DUNGEON_LEVEL)) return run.level;
+  return DUNGEON_LEVEL[id] + DUNGEON_LEVEL.perFloor * (Math.max(1, run.floor) - 1);
 }
 function scaleMade(run, e, s0, h0) {
   if (run.shots.length <= s0 && run.hazards.length <= h0) return;
@@ -131,7 +143,7 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null, difficulty = 'normal' }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null, difficulty = 'normal', power = null }) {
     resetRng();
     this.classId = classId;
     this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
@@ -154,6 +166,8 @@ export class Game {
     const pool = skillPool(CLASSES[classId], branch);
     this.ambushT = 0; this.rewindLog = []; this.rewindT = 0; this.moving = false;
     this.hasRewind = pool.some((s) => s.kind === 'rewind'); // Putar Balik notes the path only when it can be worn
+    this.usePower = !!power; // spec §47: Power against each enemy level's recommended Power (null: no gap, as in unit tests)
+    this.power = power ? powerFrom(stats, level, levels) : 0;
     this.levels = levels; // skill id → level (spec §43): each worn skill is built at its level (run/skilllevel.js)
     // two pages of four (spec §43.6): skillDefs / skillCd / skillCdMax are the page in use; both pages' cooldowns run
     const build = (ids) => { const d = (ids || []).map((id) => (id ? leveled(pool.find((s) => s.id === id), levels[id] || 1) : null)); while (d.length < 4) d.push(null); return d.slice(0, 4); };
@@ -245,6 +259,7 @@ export class Game {
     this.baseStats = { ...stats };
     this.stats = { ...stats, hp };
     this.applyBuffs();
+    if (this.usePower) this.power = powerFrom(stats, this.level, this.levels); // new gear / points: a new Power (spec §47)
     this.pageCdMax.forEach((m, p) => this.pageDefs[p].forEach((sk, i) => { m[i] = sk ? skillCooldown(stats, sk) : 0; }));
   }
 
@@ -397,6 +412,7 @@ export class Game {
       lane: null, entering: false, elite: false, boss: !!base.boss,
     };
     if (this.diff.tempo !== 1) e.tempo = this.diff.tempo; // Neraka: shorter waits between actions
+    setFoeLevel(this, e, foeLevel(this)); // the Power gap (spec §47.3); a region's pack sets its own level
     initAi(e);
     this.enemies.push(e);
     if (e.boss) sfx.boss();
@@ -452,7 +468,7 @@ export class Game {
     const crit = ambush || h.crit || rand() * 100 < s.crit + passiveCrit(this, e); // h.crit: Bidik's focus shot never rolls
     const fx = this.fx;
     let dmg = s.atk * h.mult * (crit ? s.critDmg : 1) * guardFactor(this, e, h) * (h.skill ? 1 + (this.fx.skillDmg || 0) + traitMods(this).skillDmg : 1);
-    dmg *= branchDmg(this, e, h, ambush) * (this.rift?.dealt || 1); // + Rift blessings
+    dmg *= branchDmg(this, e, h, ambush) * (this.rift?.dealt || 1) * (e.gap?.dealt || 1); // + Rift blessings, the Power gap (spec §47.3)
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     if (h.breakShield) { e.armor = 0; if (e.ward) e.ward = 0; } // Tebasan Raksasa at full
@@ -572,7 +588,7 @@ export class Game {
     if (timeReflect(this, src)) return false; // Penyihir Waktu: a shot turned back // Tangkis Baja (run/tempo.js); src: the shot / hazard, if any
     if (this.invuln > 0 || this.dodgeInv > 0) return false;
     if (by) this.lastFoe = by;
-    let dmg = Math.max(1, raw - this.stats.def) * this.dmgTakenMul * traitMods(this).dmgTaken * (this.rift?.taken || 1);
+    let dmg = Math.max(1, raw * (1 - defenseCut(this.stats.def, this.level))) * this.dmgTakenMul * traitMods(this).dmgTaken * (this.rift?.taken || 1);
     if (onHit?.slow && !traitMods(this).slowImmune) { this.slowK = onHit.slow[0]; this.slowT = Math.max(this.slowT, onHit.slow[1]); }
     const dot = onHit?.poison ? 'poison' : onHit?.burn ? 'burn' : null;
     if (dot) { this.dotKind = dot; this.dotFoe = by; this.dotDps = dmg * onHit[dot][0]; this.dotT = Math.max(this.dotT, onHit[dot][1]); }

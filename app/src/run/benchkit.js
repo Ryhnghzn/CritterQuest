@@ -8,6 +8,7 @@ import { raise, setUlt, equip, wornIds, equippedUlt, umumFx, passiveFx, mergeFx,
 import { makeItem } from '../meta/itemgen.js';
 import { gearEffects } from '../meta/gear.js';
 import { fieldScale } from './field.js';
+import { setFoeLevel } from './foelevel.js';
 import { makeElite } from './dungeon.js';
 import { leveled } from './skilllevel.js';
 import { ULT } from '../data/balance.js';
@@ -39,7 +40,7 @@ export function benchChar(job, level) {
 export function benchGame(c, dungeon = 'shadow', floor = 1) {
   resetRng();
   const g = new Game();
-  g.start({ classId: c.classId, stats: finalStats(c), level: c.level, dungeon, floor,
+  g.start({ classId: c.classId, stats: finalStats(c), level: c.level, dungeon, floor, power: true,
     effects: mergeFx(mergeFx(gearEffects(c), umumFx(c)), passiveFx(c)), skills: wornIds(c, 0), levels: jobOf(c).sp, branch: jobOf(c).branch,
     ult: leveled(equippedUlt(c), levelOf(c, equippedUlt(c)?.id), true) });
   g.spawnT = 1e9; g.queueI = g.queue.length; g.wave = 99; g.god = false;
@@ -52,6 +53,7 @@ export function benchPack(g, level, types, elite = false) {
   types.forEach((type, i) => {
     const e = g.spawnEnemy(type);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; e.level = level;
+    setFoeLevel(g, e, level);
     const a = (i / types.length) * Math.PI * 2;
     e.x = g.px + Math.cos(a) * 170; e.y = g.py + Math.sin(a) * 170;
     if (elite && i === 0) makeElite(e, level >= 25 ? 2 : 1);

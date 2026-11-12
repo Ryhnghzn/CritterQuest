@@ -246,7 +246,7 @@ export function splitDeath(run, e, b) {
     const c = run.spawnEnemy(b.split.type), base = ENEMIES[c.type];
     c.maxHp = c.hp = base.hp * Math.max(1, k * 0.8);
     c.dmg = base.dmg * kd;
-    c.level = e.level; c.zone = e.zone;
+    c.level = e.level; c.zone = e.zone; c.gap = e.gap; c.gapLv = e.gapLv; // kd already holds the parent's Power gap
     const a = (i / b.split.count) * Math.PI * 2 + 0.6;
     c.x = e.x + Math.cos(a) * (e.r + 4); c.y = e.y + Math.sin(a) * (e.r + 4);
     c.kx = Math.cos(a) * 160; c.ky = Math.sin(a) * 160;
