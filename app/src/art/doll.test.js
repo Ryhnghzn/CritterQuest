@@ -41,6 +41,14 @@ describe('paper doll vektor', () => {
     }
   });
 
+  it('Pengembara anime: baju penduduk tanpa senjata, tetap bergerak (serang, skill, menghindar, tiga arah)', () => {
+    const poses = [{}, { moving: 1, walk: 1.2, t: 3 }, { attackPhase: 0.4 }, { move: { id: 'sweep', ph: 0.5, dur: 1 } }, { dodge: 0.5 }, { view: 'front' }, { view: 'back' }];
+    for (const pose of poses) {
+      const a = drawDoll(fakeCtx(), 'novice', { hair: 2, hairColor: 1 }, { ...pose, anime: true });
+      expect(Number.isFinite(a.head.x) && Number.isFinite(a.hand.y)).toBe(true);
+    }
+  });
+
   it('gaya D dengan rambut ke-6 (Poni Samping) tidak error (spec §39)', () => {
     expect(() => drawDoll(fakeCtx(), 'warrior', { hair: 5, hairColor: 0 }, {})).not.toThrow();
   });

@@ -224,4 +224,27 @@ export function drawAnimeNpc(g, arch, o, pose = {}) {
   }
   g.restore();
 }
+// The Pengembara (spec §43.1): a village lad or lass before any job — plain tunic and trousers, no armour,
+// empty hands — drawn like the townsfolk but on the hero's skeleton, so attacks, skills, dodges and the
+// run still animate. o: { look: { hair, hairColor } }. Returns anchors like drawAnime.
+const WANDERER = { build: 'normal', clothes: 'tunic', headwear: 'none', beard: false, prop: 'none', idle: 'gesture' };
+const WANDERER_OUTFIT = ['#7a6446', '#4a3a26'];
+export function drawAnimeWanderer(g, o, pose = {}) {
+  const C = colours({ outfit: WANDERER_OUTFIT }, WANDERER), ob = { look: o.look || o, t: pose.t || 0 };
+  g.save(); g.lineJoin = 'round'; g.lineCap = 'round';
+  let at;
+  if (pose.view === 'front' || pose.view === 'back') {
+    const B = body(pose, 'warrior');
+    frontBack(g, B, ob, WANDERER, C, 1, pose.view);
+    at = { head: [0, -146 + B.b], body: [0, -100 + B.b], hand: pose.view === 'front' ? B.aL.h : B.aR.h };
+  } else {
+    const R = rig('warrior', { gait: true, t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, hurt: !!pose.hurt, attack: pose.attackPhase ?? -1, snappy: pose.attackPhase != null && !pose.slow, move: pose.move, dodge: pose.dodge, sit: pose.sit });
+    g.scale(R.flip, 1);
+    side(g, R, ob, WANDERER, C, 1);
+    const h = P(R.hF), hp = P(R.hip); // the chest is drawn at hip + 80 up (side()), the skull 144 above that origin
+    at = { head: [(hp[0] + 6.5) * R.flip, hp[1] - 64], body: [hp[0] * R.flip, hp[1] - 20], hand: [h[0] * R.flip, h[1]] };
+  }
+  g.restore();
+  return at;
+}
 export { lerp2, trace };

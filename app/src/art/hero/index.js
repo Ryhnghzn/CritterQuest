@@ -9,8 +9,7 @@ import { drawAssassin, RIM as ASSASSIN_RIM } from './assassin.js';
 import { drawNpc, archetypeOf, idleOf, RIM as NPC_RIM } from './npc.js';
 import { HAIR_PALETTE } from '../doll.js';
 import { drawAnime, animeLook } from '../anime/index.js';
-import { ELEMENTS } from '../anime/common.js';
-import { drawAnimeNpc } from '../anime/npc.js';
+import { drawAnimeNpc, drawAnimeWanderer } from '../anime/npc.js';
 import { Z } from '../anime/kit.js';
 
 export const HERO_SCALE = 44 / 80; // keep the old doll height in the world
@@ -33,7 +32,7 @@ function npcOf(look) {
 // pose: as drawDoll ({ t, moving, walk, attack, hurt }) plus optional attackPhase (0..1, keyframed swing),
 // move ({ id: skill id, ph: 0..1, dur: s }) and dodge (0..1)
 export function drawHero(g, classId, look, pose = {}) {
-  const novice = classId === 'novice'; // the Pengembara (spec §43.1) moves and is drawn as a plain warrior
+  const novice = classId === 'novice'; // the Pengembara (spec §43.1) moves as a warrior, dressed as a villager
   if (novice) classId = 'warrior';
   const isNpc = !classId;
   const draw = isNpc ? null : DRAW[classId];
@@ -46,9 +45,9 @@ export function drawHero(g, classId, look, pose = {}) {
     const S = HERO_SCALE * (SIZE[classId] || 1) / Z;
     g.save(); g.scale(S, S);
     const al = animeLook(classId, look);
-    if (novice) { al.outfit = 'novice'; al.gear.weapon = 0; al.element = { ...ELEMENTS.ice, fx: 'none' }; }
     if (pose.wings) al.wings = pose.wings; // Mitos gear / Phoenix (replaces the thin wings of art/aura.js)
-    const a = drawAnime(g, classId, al, pose);
+    // a Pengembara wears plain village clothes and carries nothing (art/anime/npc.js), whatever gear it has
+    const a = novice ? drawAnimeWanderer(g, { look }, pose) : drawAnime(g, classId, al, pose);
     g.restore();
     if (a) return { head: { x: a.head[0] * S, y: a.head[1] * S, r: 13 * S }, body: { x: a.body[0] * S, y: a.body[1] * S }, hand: { x: a.hand[0] * S, y: a.hand[1] * S } };
   }
