@@ -254,7 +254,16 @@ function toast(text, color = '') {
 async function saveCurrent() {
   if (trial) return null; // the training arena is never saved (spec §43.1)
   current = { ...current, clock: Math.floor(worldClock) };
-  try { await store.saveSlot(current); return null; } catch (e) { toast(t('Gagal menyimpan: {err}', { err: e.message })); return e.message; }
+  try { await store.saveSlot(current); savedMark(true); return null; } catch (e) { savedMark(false); toast(t('Gagal menyimpan: {err}', { err: e.message })); return e.message; }
+}
+// a small disk in the corner each time the game is saved (red when it failed)
+let savedT = 0;
+function savedMark(ok) {
+  const b = $('saved');
+  b.querySelector('span').textContent = ok ? (store.persistent === false ? tr('Tersimpan (sementara)') : tr('Tersimpan')) : tr('Gagal menyimpan');
+  b.classList.toggle('bad', !ok);
+  b.classList.remove('on'); void b.offsetWidth; b.classList.add('on'); // restart the pop
+  clearTimeout(savedT); savedT = setTimeout(() => b.classList.remove('on'), ok ? 1400 : 3500);
 }
 
 // scene + HUD visibility

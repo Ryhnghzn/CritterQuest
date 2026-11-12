@@ -604,6 +604,7 @@ export default {
   'Tingkat kesulitan sekarang: {d} (ganti di Balai Petualang).': 'Current difficulty: {d} (change it at the Adventurers\' Hall).',
   'Gerbang Celah': 'Rift Gate',
   // export / import (spec §9.3)
+  Tersimpan: 'Saved', 'Tersimpan (sementara)': 'Saved (this session only)', 'Gagal menyimpan': 'Save failed',
   Ekspor: 'Export', Impor: 'Import', Timpa: 'Overwrite', 'Save diekspor.': 'Save exported.',
   'Impor gagal: {why}': 'Import failed: {why}', '{name} diimpor ke slot {n}.': '{name} imported into slot {n}.',
   'Timpa {what} dengan {name} (LV {lv})? Tidak bisa dibatalkan.': 'Overwrite {what} with {name} (LV {lv})? This cannot be undone.',
