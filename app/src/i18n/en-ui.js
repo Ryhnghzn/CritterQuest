@@ -197,6 +197,14 @@ export default {
 
   // reveal.js (chest opening, Mitos card)
   'Ketuk untuk lanjut': 'Tap to continue',
+  'Ketuk untuk mulai': 'Tap to start',
+  'Kota': 'Town',
+  'Wilayah': 'Region',
+  'Dungeon': 'Dungeon',
+  'Musuh di sini': 'Enemies here',
+  'Penguasa': 'Ruler',
+  '{n} lantai': '{n} floors',
+  'Tekan tombol apa saja': 'Press any key',
   'ITEM MITOS!': 'MYTHIC ITEM!',
   Efek: 'Effects',
   'Ledakan uji': 'Test blast',

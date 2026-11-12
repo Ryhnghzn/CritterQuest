@@ -34,7 +34,7 @@ const SEATS = [
   { x: 0.885, y: 0.83, size: 0.3, face: -1 },   // front right
 ];
 const ORDER = ['warrior', 'archer', 'mage', 'assassin'];
-const FPS = 12;      // redrawn like a sprite animation
+const FPS = 24;      // redrawn often enough that breathing reads as motion, not as twitches
 const CHUNK = 3;     // CSS pixels per art pixel
 
 // a figure's look on the title: plain gear, its own hair; the last hero keeps their hair
@@ -94,12 +94,84 @@ function runCamp(c, last) {
   requestAnimationFrame(loop);
 }
 
+// Title samples (owner 2026-11-12, `?judul=a|b|c`; ui/judul.css): A = the real 3D Kota Awal at
+// night drifting behind (main.js), B = the painting as key art (slow zoom, parallax, fog, embers,
+// logo centred, menu along the bottom), C = the campfire re-framed (closer, darker, text menu).
+// D (tap to start) is the title now (owner 2026-11-12); `?judul=lama` = the old title, a / b / c = the other samples
+const JUDUL = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('judul') || 'd').toLowerCase() : 'd';
+export const TITLE_SAMPLE = JUDUL === 'lama' ? '' : JUDUL;
+
+// where the fire is on screen: the zoom of B / C turns round it; C moves it to 62% / 66%
+function aimAtFire() {
+  const f = artPoint(innerWidth, innerHeight, ART.fire.x, ART.fire.y), b = document.body.style;
+  b.setProperty('--fx', `${f.x}px`); b.setProperty('--fy', `${f.y}px`);
+  // C zooms ZOOM_C× round the fire, then slides it toward 62% / 66% — but never so far that an
+  // edge of the painting comes into view (left/top: tx ≤ fx(s−1), right/bottom: tx ≥ (w−fx)(1−s))
+  const s = ZOOM_C, w = innerWidth, h = innerHeight, clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  b.setProperty('--zc', s);
+  b.setProperty('--tx', `${clamp(w * 0.62 - f.x, (w - f.x) * (1 - s), f.x * (s - 1))}px`);
+  b.setProperty('--ty', `${clamp(h * 0.66 - f.y, (h - f.y) * (1 - s), f.y * (s - 1))}px`);
+}
+const ZOOM_C = 1.38;
+let sampleReady = false;
+// D (tap to start): the splash shows once per page load; a key or tap that ends it must not
+// also press Lanjutkan (main.js asks titleBusy())
+let entered = false, enteredAt = 0;
+export const titleBusy = () => TITLE_SAMPLE === 'd' && (!entered || performance.now() - enteredAt < 350);
+function setupSample() {
+  document.body.dataset.judul = TITLE_SAMPLE;
+  if (sampleReady) return;
+  sampleReady = true;
+  aimAtFire();
+  addEventListener('resize', aimAtFire);
+  // B: the painting leans away from the pointer a little
+  addEventListener('pointermove', (e) => {
+    const b = document.body.style;
+    b.setProperty('--px', `${((e.clientX / innerWidth) - 0.5) * -18}px`);
+    b.setProperty('--py', `${((e.clientY / innerHeight) - 0.5) * -10}px`);
+  });
+}
+
+// D: stage 1 = wide dark campfire, the logo letter by letter, "tap to start"; any key / tap =
+// the fire flares, the view dives toward it, the logo moves to the corner and the menu comes in
+function splash(box, logo) {
+  const h1 = logo.querySelector('.logo'), text = h1.textContent;
+  h1.replaceChildren(...[...text].map((ch, i) => { const s = el('span', 'lt', ch === ' ' ? '\u00a0' : ch); s.style.setProperty('--i', i); return s; }));
+  // gold sparks drifting round the logo
+  const sparks = el('div', 'tsparks');
+  for (let i = 0; i < 16; i++) {
+    const p = el('i');
+    p.style.cssText = `left:${(i * 41) % 100}%;top:${20 + (i * 23) % 70}%;--d:${((i * 0.37) % 4).toFixed(2)}s;--s:${(2.4 + (i % 4) * 0.7).toFixed(1)}s;--x:${(i % 2 ? 1 : -1) * (8 + (i % 5) * 5)}px`;
+    sparks.append(p);
+  }
+  logo.prepend(sparks);
+  if (entered) { box.classList.add('in'); document.body.dataset.jstage = 'menu'; return; }
+  document.body.dataset.jstage = 'splash';
+  box.classList.add('splash');
+  const touch = matchMedia('(pointer:coarse)').matches;
+  box.append(el('div', 'tflare'), el('div', 'ttap', touch ? tr('Ketuk untuk mulai') : tr('Tekan tombol apa saja')));
+  const go = (e) => {
+    if (entered) return;
+    if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(e.key)) return;
+    entered = true; enteredAt = performance.now();
+    removeEventListener('keydown', go, true); removeEventListener('pointerdown', go, true);
+    e.preventDefault?.();
+    box.classList.remove('splash'); box.classList.add('entering');
+    document.body.dataset.jstage = 'menu';
+    setTimeout(() => { box.classList.remove('entering'); box.classList.add('in'); }, 1400);
+  };
+  addEventListener('keydown', go, true);
+  addEventListener('pointerdown', go, true);
+}
+
 // last: the save of the hero played last (null: none yet); lang: 'en' | 'id'
 export function renderTitle(box, { last, lang, onContinue, onSlots, onSettings, onLang }) {
   box.replaceChildren();
+  if (TITLE_SAMPLE) setupSample();
+  box.dataset.v = TITLE_SAMPLE;
   const seats = el('div', 'tseats'), camp = el('canvas', 'tcamp');
   seats.append(camp);
-  runCamp(camp, last);
+  if (TITLE_SAMPLE !== 'a') runCamp(camp, last); // A: the 3D town has its own people
   const logo = el('div', 'tlogo');
   logo.append(el('h1', 'logo', 'Critter Quest'), el('span', 'tag', tr('Gerhana di Ujung Dunia')));
   const menu = el('div', 'tmenu');
@@ -125,4 +197,18 @@ export function renderTitle(box, { last, lang, onContinue, onSlots, onSettings, 
   menu.append(play, settings, langs);
   const foot = el('div', 'tfoot', last ? t('Enter: lanjutkan sebagai {name}', { name: last.name }) : tr('Enter: pilih petualang'));
   box.append(seats, logo, menu, foot);
+  if (TITLE_SAMPLE === 'd') splash(box, logo);
+  if (TITLE_SAMPLE) {
+    box.prepend(el('div', 'tveil'));
+    if (TITLE_SAMPLE === 'b') {
+      box.prepend(el('div', 'tfog f1'), el('div', 'tfog f2'));
+      const em = el('div', 'tembers');
+      for (let i = 0; i < 26; i++) {
+        const e = el('i');
+        e.style.cssText = `left:${(i * 37) % 100}%;--d:${((i * 0.53) % 7).toFixed(2)}s;--s:${(5 + (i % 5) * 1.3).toFixed(1)}s;--x:${(i % 2 ? 1 : -1) * (20 + (i % 7) * 9)}px;--z:${(0.6 + (i % 3) * 0.35).toFixed(2)}`;
+        em.append(e);
+      }
+      box.append(em);
+    }
+  }
 }

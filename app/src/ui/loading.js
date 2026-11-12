@@ -6,7 +6,12 @@
 // them so this screen keeps moving.
 import { el } from './screens.js';
 import { drawDoll } from '../art/doll.js';
-import { tr } from '../i18n.js';
+import { LOOK } from '../data/look.js';
+import { pixelateCanvas } from '../render3d/pixelate.js';
+import { tr, t as tf } from '../i18n.js';
+import { enemyCanvas } from '../art/sprites.js';
+import { ENEMIES } from '../data/enemies.js';
+import { stepText } from './journal.js';
 
 const TAU = Math.PI * 2;
 const STEPS = {
@@ -48,11 +53,13 @@ const CALM = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-mot
 let box = null, raf = 0, target = 0, shown = 0, stepKey = 'torch', hero = null, bg = null, t0 = 0, tipAt = 0, fetched = false;
 
 // avatar: { classId, look } of the hero who runs across (null: none); place: which painting
-// (one of PLACES; anything else: the general one)
-export function showLoading(avatar = null, place = null) {
+// (one of PLACES; anything else: the general one); info: meta/destination.js destinationInfo()
+// for the destination card (null: none)
+export function showLoading(avatar = null, place = null, info = null) {
   hero = avatar; bg = art(place);
   target = shown = 0; stepKey = 'torch';
   if (!box) build();
+  card(info);
   box.classList.remove('out', 'hidden');
   t0 = performance.now(); tipAt = Math.floor(Math.random() * TIPS.length);
   cancelAnimationFrame(raf);
@@ -87,8 +94,42 @@ function build() {
   const bar = el('div', 'lbar'); bar.append(el('i'));
   const row = el('div', 'lrow'); row.append(el('span', 'lstep'), el('span', 'lpct'));
   const lbox = el('div', 'lbox'); lbox.append(row, bar);
-  box.append(c, el('div', 'ltitle', 'Critter Quest'), lbox, el('div', 'ltip'));
+  box.append(c, el('div', 'ltitle', 'Critter Quest'), el('div', 'lcard'), lbox, el('div', 'ltip'));
   document.body.append(box);
+}
+
+// Destination card (spec §46): what the place is, its name letter by letter, the enemy levels,
+// the quest followed, the enemies met there (unseen ones as ??? silhouettes) and a dungeon's boss.
+const KIND = { town: 'Kota', region: 'Wilayah', dungeon: 'Dungeon' };
+function card(info) {
+  const c = box.querySelector('.lcard');
+  c.replaceChildren();
+  c.classList.toggle('hidden', !info);
+  if (!info) return;
+  const sub = info.levels ? `LV ${info.levels[0]}–${info.levels[1]}` : info.floors ? tf('{n} lantai', { n: info.floors }) : '';
+  c.append(el('div', 'lkind', `${tr(KIND[info.kind])}${sub ? ` · ${sub}` : ''}`));
+  const name = el('div', 'lname');
+  [...info.name].forEach((ch, i) => { const s = el('span', null, ch === ' ' ? '\u00a0' : ch); s.style.setProperty('--i', i); name.append(s); });
+  c.append(name, el('div', 'lrule'));
+  if (info.quest) {
+    const q = el('div', 'lquest');
+    q.append(el('b', 'qm', '!'), el('span', null, `${info.quest.main ? `${tf('Bab {n}', { n: info.quest.ch + 1 })} · ` : ''}${info.quest.title} — ${stepText(info.quest.step)}`));
+    c.append(q);
+  }
+  const foes = [...info.foes, ...(info.boss ? [{ ...info.boss, boss: true }] : [])];
+  if (foes.length) {
+    c.append(el('div', 'lfhead', tr('Musuh di sini')));
+    const row = el('div', 'lfoes');
+    foes.forEach((f, i) => {
+      const b = el('div', `lfoe${f.seen ? '' : ' unseen'}${f.boss ? ' boss' : ''}`);
+      b.style.setProperty('--i', i);
+      const pic = el('span', 'lpic');
+      try { pic.append(enemyCanvas(f.id, ENEMIES[f.id].r, f.boss ? 52 : 40)); } catch { /* no portrait: the name alone */ }
+      b.append(pic, el('small', null, f.boss ? `${tr('Penguasa')} · ${f.seen ? f.name : '???'}` : f.seen ? f.name : '???'));
+      row.append(b);
+    });
+    c.append(row);
+  }
 }
 
 function paint(now) {
@@ -140,6 +181,20 @@ function lowShade(g, w, h) {
   g.fillStyle = low; g.fillRect(0, h * 0.6, w, h * 0.4);
 }
 
+// the running hero, drawn small (one art pixel = ch CSS px) and pixelated like the world's billboards
+const FIG = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+function heroSprite(hero, t, k) {
+  const ch = LOOK.pixel ? 3 : 1, H = Math.ceil((64 * k) / ch) + 4, W = Math.ceil(H * 1.5);
+  if (FIG.width !== W || FIG.height !== H) { FIG.width = W; FIG.height = H; }
+  const fg = FIG.getContext('2d', { willReadFrequently: true });
+  fg.setTransform(1, 0, 0, 1, 0, 0); fg.clearRect(0, 0, W, H);
+  fg.translate(W / 2, H - 2); fg.scale(k / ch, k / ch); fg.lineJoin = 'round';
+  drawDoll(fg, hero.classId, hero.look, { t, moving: 1, walk: t * 9, anime: LOOK.anime, view: 'side' });
+  fg.setTransform(1, 0, 0, 1, 0, 0);
+  if (LOOK.pixel) pixelateCanvas(FIG, LOOK.pixel);
+  return { W, H, ch };
+}
+
 function drawScene(g, w, h, t, p) {
   g.fillStyle = '#07050a'; g.fillRect(0, 0, w, h);
   const cx = w / 2, cy = h * 0.4, R = Math.min(w, h) * 0.13;
@@ -164,8 +219,11 @@ function drawScene(g, w, h, t, p) {
   for (let i = 0; i < 12; i++) g.fillRect(x0 + (((i * 50 - t * 140) % span) + span) % span, gy + 4, 14, 2);
   if (hero) {
     const k = Math.min(2, h / 260);
-    g.save(); g.translate(cx, gy); g.scale(k, k);
-    try { drawDoll(g, hero.classId, hero.look, { t, moving: 1, walk: t * 9 }); } catch { /* a look the doll can't draw: just the bar */ }
-    g.restore();
+    try { // the hero as in the game: anime, running side-on, pixel-filtered (spec §39)
+      const sp = heroSprite(hero, t, k);
+      g.save(); g.imageSmoothingEnabled = !LOOK.pixel;
+      g.drawImage(FIG, cx - (sp.W * sp.ch) / 2, gy - (sp.H - 2) * sp.ch, sp.W * sp.ch, sp.H * sp.ch);
+      g.restore();
+    } catch { /* a look the doll can't draw: just the bar */ }
   }
 }

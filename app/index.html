@@ -714,18 +714,45 @@ button.skill:disabled{cursor:default;color:inherit}
 .cdx.unseen{border-color:var(--line);color:var(--dim)}
 .rbounties{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dim);margin:6px 0}
 .rbounties .rb.done{color:#e6c27a}
-/* page loader (spec §29): pure CSS, shown while the game's script downloads; main.js removes it */
-#boot{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-  background:radial-gradient(circle at 50% 42%,#1d1226,#060408 70%);transition:opacity .45s}
+/* page loader (spec §29, §46): an eclipse over a night of embers; the bar follows what really loads —
+   the game's code byte by byte (vite.config.js bootLoader, build only), then main.js reports running,
+   the saves, the title painting & fonts (window.__boot). Inline: works before any script has loaded. */
+#boot{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 38%,#24142c,#0a060d 55%,#030204);transition:opacity .6s;font-family:'Barlow',system-ui,sans-serif}
 #boot.gone{opacity:0;pointer-events:none}
-#boot .ring{position:relative;width:92px;height:92px;border-radius:50%;box-shadow:0 0 40px rgba(201,162,74,.25);
-  background:conic-gradient(#e8cf8e 0 25%,rgba(201,162,74,.18) 25% 100%);animation:bootspin 1.4s linear infinite}
-#boot .ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:#0b080e}
-#boot .ring::before{content:'';position:absolute;z-index:1;left:18px;top:8px;width:70px;height:70px;border-radius:50%;background:#060408;animation:bootmoon 2.8s ease-in-out infinite alternate}
-#boot b{font:800 22px 'Cinzel',Georgia,serif;letter-spacing:6px;color:#e8cf8e}
-#boot span{font:500 13px 'Barlow',system-ui,sans-serif;letter-spacing:3px;color:#9a8f80}
+#boot .fog{position:absolute;inset:-20% -40%;opacity:.18;mix-blend-mode:screen;pointer-events:none;
+  background:radial-gradient(35% 14% at 30% 75%,rgba(170,140,200,.7),transparent),radial-gradient(30% 12% at 72% 82%,rgba(150,120,180,.6),transparent);animation:bootfog 30s linear infinite alternate}
+@keyframes bootfog{to{transform:translateX(20%)}}
+#boot .emb{position:absolute;left:0;right:0;bottom:-10px;height:0}
+#boot .emb i{position:absolute;bottom:0;width:3px;height:3px;border-radius:50%;background:#ffa850;box-shadow:0 0 8px #ff7a20;opacity:0;animation:bootember var(--s) ease-out var(--d) infinite}
+@keyframes bootember{0%{transform:translate(0,0);opacity:0}10%{opacity:.9}100%{transform:translate(var(--x),-85vh);opacity:0}}
+/* the eclipse: a gold corona with slow rays behind a dark moon */
+#boot .ecl{position:relative;width:min(150px,24vh);aspect-ratio:1}
+#boot .ecl .rays{position:absolute;inset:-45%;border-radius:50%;opacity:.55;
+  background:repeating-conic-gradient(rgba(232,190,110,.35) 0 3deg,transparent 3deg 14deg);
+  -webkit-mask:radial-gradient(circle,#000 22%,transparent 62%);mask:radial-gradient(circle,#000 22%,transparent 62%);animation:bootspin 40s linear infinite}
+#boot .ecl .cor{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#fff3c8 0 46%,#e8b860 50%,rgba(220,140,60,.35) 58%,transparent 70%);
+  box-shadow:0 0 50px rgba(255,180,90,.45);animation:bootcor 3s ease-in-out infinite alternate}
+#boot .ecl .moon{position:absolute;inset:6%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1a1220,#050307 70%);box-shadow:inset -6px -6px 18px rgba(0,0,0,.8);animation:bootmoon 6s ease-in-out infinite alternate}
 @keyframes bootspin{to{transform:rotate(360deg)}}
-@keyframes bootmoon{to{transform:translateX(-14px)}}
+@keyframes bootcor{to{box-shadow:0 0 80px rgba(255,180,90,.65);filter:brightness(1.12)}}
+@keyframes bootmoon{from{transform:translate(4%,2%)}to{transform:translate(-3%,-1%)}}
+#boot b{font:800 clamp(22px,4.4vh,34px) 'Cinzel',Georgia,serif;letter-spacing:.3em;color:#e8cf8e;text-shadow:0 2px 0 #000,0 0 24px rgba(255,160,70,.35);margin-top:6px}
+#boot .tag{margin-top:-10px;font:600 clamp(10px,1.6vh,13px) 'Cinzel',Georgia,serif;letter-spacing:.32em;text-transform:uppercase;color:#9a8466}
+/* the bar: a gold frame, an ember-red fill with a bright head, the stage on the left and % on the right */
+#boot .bar{width:min(440px,72vw);margin-top:10px}
+#boot .track{position:relative;height:10px;background:#050306;border:1px solid #6e5426;box-shadow:0 0 0 1px #000,0 0 18px rgba(0,0,0,.6);
+  clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 50%,calc(100% - 6px) 100%,6px 100%,0 50%)}
+#boot .bfill{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#6a1a10,#c8501c 60%,#ffc870)}
+#boot .bfill::after{content:'';position:absolute;right:0;top:-3px;bottom:-3px;width:14px;background:radial-gradient(circle,#fff6d0,rgba(255,200,110,.6) 40%,transparent 70%);animation:bootglow .8s ease-in-out infinite alternate}
+@keyframes bootglow{to{opacity:.55}}
+#boot .bfill::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%) 0 0/250% 100%;animation:bootshine 2s linear infinite}
+@keyframes bootshine{from{background-position:150% 0}to{background-position:-100% 0}}
+#boot .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:8px;font-size:12px;letter-spacing:.12em;color:#b8a888}
+#boot .bpct{font:700 13px 'Cinzel',Georgia,serif;color:#e8cf8e;min-width:3.5ch;text-align:right}
+#boot .btip{max-width:min(520px,84vw);min-height:2.8em;text-align:center;font-size:13px;line-height:1.4;color:#8a7e6c;font-style:italic;transition:opacity .4s}
+@media (max-height:500px){#boot{gap:10px}#boot .ecl{width:18vh}#boot .btip{display:none}}
+@media (prefers-reduced-motion:reduce){#boot *{animation:none!important}}
 /* §44 cutscenes: the pixel stage, the line box with a portrait, the title card */
 .cutscene{position:fixed;inset:0;z-index:90;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;animation:csin .25s ease-out}
 .cutscene.out{opacity:0;transition:opacity .25s}
@@ -750,7 +777,51 @@ button.skill:disabled{cursor:default;color:inherit}
 </style>
 </head>
 <body>
-<div id="boot"><div class="ring"></div><b>CRITTER QUEST</b><span>Loading…</span></div>
+<div id="boot"><div class="fog"></div><div class="emb"><i style="left:0%;--d:0.00s;--s:5.0s;--x:-15px"></i><i style="left:37%;--d:0.61s;--s:6.2s;--x:23px"></i><i style="left:74%;--d:1.22s;--s:7.4s;--x:-31px"></i><i style="left:11%;--d:1.83s;--s:8.6s;--x:39px"></i><i style="left:48%;--d:2.44s;--s:9.8s;--x:-47px"></i><i style="left:85%;--d:3.05s;--s:5.0s;--x:55px"></i><i style="left:22%;--d:3.66s;--s:6.2s;--x:-63px"></i><i style="left:59%;--d:4.27s;--s:7.4s;--x:15px"></i><i style="left:96%;--d:4.88s;--s:8.6s;--x:-23px"></i><i style="left:33%;--d:5.49s;--s:9.8s;--x:31px"></i><i style="left:70%;--d:0.10s;--s:5.0s;--x:-39px"></i><i style="left:7%;--d:0.71s;--s:6.2s;--x:47px"></i><i style="left:44%;--d:1.32s;--s:7.4s;--x:-55px"></i><i style="left:81%;--d:1.93s;--s:8.6s;--x:63px"></i><i style="left:18%;--d:2.54s;--s:9.8s;--x:-15px"></i><i style="left:55%;--d:3.15s;--s:5.0s;--x:23px"></i><i style="left:92%;--d:3.76s;--s:6.2s;--x:-31px"></i><i style="left:29%;--d:4.37s;--s:7.4s;--x:39px"></i></div>
+  <div class="ecl"><div class="rays"></div><div class="cor"></div><div class="moon"></div></div>
+  <b>CRITTER QUEST</b><span class="tag"></span>
+  <div class="bar"><div class="track"><i class="bfill"></i></div><div class="row"><span class="blab"></span><span class="bpct">0%</span></div></div>
+  <p class="btip"></p></div>
+<script>
+/* the page loader's bar (spec §46): window.__boot(share 0..1, stage, detail) only moves forward and
+   eases toward it; __bootEnd() fills it and fades out. The language comes from the last game
+   (main.js keeps it in localStorage), else from the browser. */
+(function () {
+  var B = document.getElementById('boot'); if (!B) return;
+  var lang = null; try { lang = localStorage.getItem('cq.lang'); } catch (e) {}
+  if (!lang) lang = (navigator.language || '').slice(0, 2) === 'id' ? 'id' : 'en';
+  var T = lang === 'id' ? {
+    tag: 'Gerhana di Ujung Dunia', dl: 'Mengunduh dunia', run: 'Membangunkan kota', save: 'Membuka buku petualang', art: 'Menyalakan api unggun', done: 'Siap',
+    tips: ['Musuh bersinar emas adalah elite: kuat, tapi menjatuhkan barang bagus.', 'Tidur di rumahmu sendiri di Kota Awal itu gratis.', 'Tekan Spasi untuk menghindar menembus serangan.', 'Simpan ramuan perisai untuk bos.', 'Api unggun Kota Awal tak pernah padam sejak kota berdiri.', 'Mekanik kelasmu terisi saat bertarung. Lihat cincin di bola Energi.']
+  } : {
+    tag: 'Eclipse at the Edge of the World', dl: 'Downloading the world', run: 'Waking the town', save: 'Opening the adventure book', art: 'Lighting the campfire', done: 'Ready',
+    tips: ['Enemies glowing gold are elites: tough, but they drop good loot.', 'Sleeping in your own home in Kota Awal is free.', 'Press Space to dodge through attacks.', 'Save shield potions for bosses.', 'The campfire of Kota Awal has burned since the town was founded.', 'Your class mechanic fills while fighting. Watch the ring on the Energy orb.']
+  };
+  B.querySelector('.tag').textContent = T.tag;
+  var fill = B.querySelector('.bfill'), pct = B.querySelector('.bpct'), lab = B.querySelector('.blab'), tip = B.querySelector('.btip');
+  var shown = 0, goal = 0, end = null, live = true, ti = Math.floor(Math.random() * T.tips.length);
+  function frame() {
+    shown += (goal - shown) * 0.14; if (goal - shown < 0.002) shown = goal;
+    fill.style.transform = 'scaleX(' + shown + ')'; pct.textContent = Math.floor(shown * 100) + '%';
+    if (end && shown >= 0.999) { var f = end; end = null; f(); }
+    if (live) requestAnimationFrame(frame);
+  }
+  window.__boot = function (p, key, extra) {
+    if (p > goal) goal = Math.min(1, p);
+    if (key && T[key]) lab.textContent = T[key] + (extra ? ' · ' + extra : '') + (key === 'done' ? '' : '…');
+  };
+  window.__bootEnd = function () {
+    window.__boot(1, 'done');
+    end = function () { setTimeout(function () { B.classList.add('gone'); setTimeout(function () { live = false; B.remove(); }, 650); }, 180); };
+    return true;
+  };
+  function nextTip() { tip.style.opacity = 0; setTimeout(function () { tip.textContent = T.tips[ti++ % T.tips.length]; tip.style.opacity = 1; }, 400); }
+  tip.textContent = T.tips[ti++ % T.tips.length];
+  var tipT = setInterval(function () { if (!B.isConnected) clearInterval(tipT); else nextTip(); }, 4000);
+  window.__boot(0.03, 'dl');
+  requestAnimationFrame(frame);
+})();
+</script>
 <svg width="0" height="0" style="position:absolute">
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></symbol>
   <symbol id="i-skull" viewBox="0 0 24 24"><path d="M12 3a8 8 0 0 0-5 14.2V20h10v-2.8A8 8 0 0 0 12 3z"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/></symbol>

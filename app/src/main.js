@@ -11,6 +11,8 @@ import { Lighting } from './render/light.js';
 import { Renderer } from './render/world.js';
 import { TownRenderer } from './render/town.js';
 import './ui/theme-dark.css'; // dark UI theme (plan "Tampilan 2.5D" §5)
+import './ui/hud-orb.css'; // HUD "Bola & Bingkai" (spec §45.1), active under body.hud-orb
+import './ui/judul.css'; // title samples ?judul=a|b|c (ui/title.js)
 import { Dungeon25 } from './render3d/dungeon.js';
 import { Field25 } from './render3d/field.js';
 import { Town25 } from './render3d/town.js';
@@ -49,7 +51,9 @@ import { itemName, makeItem, statText, gemName } from './meta/itemgen.js';
 import { renderCheat, CHEAT_ON } from './ui/cheat.js';
 import { showChestOpen, showMythicCard, showRewardPop } from './ui/reveal.js';
 import { showLoading, loadingStep, hideLoading } from './ui/loading.js';
-import { renderTitle } from './ui/title.js';
+import { renderTitle, TITLE_SAMPLE, titleBusy } from './ui/title.js';
+import { artReady as titleArtReady } from './art/titlebg.js';
+import { destinationInfo } from './meta/destination.js';
 import { drawCampfire } from './art/titlebg.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
@@ -89,6 +93,7 @@ import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests,
 import { SHARDS, DROP_ITEMS } from './data/quests.js';
 import { updateHUD, updateActions, updateTownHUD, updateClock, updateQuestTracker, updatePointsBadge } from './ui/hud.js';
 import { setupTouch, updateJoystick } from './ui/touch.js';
+import { setupHudOrb } from './ui/hudorb.js';
 import { FpsWatch, activeQuality } from './run/vfx.js';
 import { registerOffline } from './core/pwa.js';
 import { setRarity } from './art/auratier.js';
@@ -96,6 +101,8 @@ import { QUALITY, PALETTES } from './data/fx.js';
 import { pinPage } from './core/pinpage.js';
 import { setTouchDots } from './core/touchdot.js';
 
+// the page loader's bar (index.html #boot, spec §46): every module has loaded and run up to here
+window.__boot?.(0.74, 'run');
 const $ = (id) => document.getElementById(id);
 const view = new View($('game'));
 const lighting = new Lighting(view);
@@ -138,6 +145,7 @@ function drawAimMarker(r, t) {
 }
 const game = new Game();
 setupTouch();
+setupHudOrb();
 
 let simT = 0;
 let scene = 'menu';
@@ -168,6 +176,8 @@ setLang(settings.lang);
 localizeData();
 applyDom();
 document.documentElement.lang = settings.lang;
+try { localStorage.setItem('cq.lang', settings.lang); } catch { /* the page loader then guesses from the browser */ }
+window.__boot?.(0.8, 'save');
 // switching language saves the setting and reloads, so every screen is rebuilt in it
 function switchLang(lang = getLang() === 'en' ? 'id' : 'en') {
   settings.lang = lang;
@@ -417,15 +427,16 @@ function enterTown(char, at) {
   showTownOverlay(null);
   updateTownHUD(current, town);
   const place = char.location === 'home' ? 'town' : REGIONS.find((r) => r.to === char.location)?.biome;
-  loadWorld(T3.needsWarm(town), (step) => T3.warm(town, avatarOf(current), current.location, step), 'people', place);
+  loadWorld(T3.needsWarm(town), (step) => T3.warm(town, avatarOf(current), current.location, step), 'people', place, ['town', char.location]);
 }
 
 // Builds a 3D place behind the loading screen (spec §29) when it is not built yet.
 // place: the loading painting (ui/loading.js PLACES)
-async function loadWorld(needed, warm, last = 'people', place = null) {
+// dest: [kind, id] of the place for the loading screen's destination card (spec §46)
+async function loadWorld(needed, warm, last = 'people', place = null, dest = null) {
   if (FLAT || !needed || worldLoading) return;
   worldLoading = true;
-  showLoading(current && avatarOf(current), place);
+  showLoading(current && avatarOf(current), place, dest && current ? destinationInfo(current, ...dest) : null);
   try { await warm(loadingStep); } catch (e) { console.error(e); } // the first frame builds whatever is left
   await loadingStep(0.92, last);
   worldLoading = false; // the first (heaviest) frames draw under the loading screen
@@ -835,7 +846,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   });
   tripAttrs = {};
   setupRunUI();
-  await loadWorld(R3.needsWarm(game), (step) => R3.warm(game, step), 'foes', dungeon);
+  await loadWorld(R3.needsWarm(game), (step) => R3.warm(game, step), 'foes', dungeon, ['dungeon', dungeon]);
 }
 
 // The avatar and the pause menu for a dungeon trip or a region.
@@ -873,7 +884,7 @@ async function explore(at = current.location) {
   tripAttrs = {};
   fieldSaveT = 0;
   setupRunUI();
-  await loadWorld(R4.needsWarm(game), (step) => R4.warm(game, step), 'foes', region.biome);
+  await loadWorld(R4.needsWarm(game), (step) => R4.warm(game, step), 'foes', region.biome, ['region', region.id]);
 }
 
 // first steps in a zone count at once (a quest may wait for it)
@@ -1346,7 +1357,7 @@ input.onAction.push((code) => {
   }
   // Enter/Space on a focused control is that control's own press, not the screen's shortcut
   const go = (code === 'Space' || code === 'Enter') && !document.activeElement?.closest?.('button,[role=button],input,select');
-  if (screen === 'title' && go) { ($('continue') || $('play')).click(); return; }
+  if (screen === 'title' && go) { if (!titleBusy()) ($('continue') || $('play')).click(); return; }
   if (screen === 'results' && go) { $('tocamp').click(); return; }
   if (scene === 'town') {
     if (code === 'Escape') { if (screen === null) townPause(); else closeTownOverlay(); return; }
@@ -1475,8 +1486,11 @@ function frame(dt) {
     if (gate) $('prompttext').textContent = t('Masuk {name}', { name: dungeonById(gate.dungeon).name });
     else if (who) $('prompttext').textContent = t('Bicara dengan {name}', { name: who.name });
   } else if (scene === 'menu') {
-    R3.hide(); R4.hide(); T3.hide();
-    drawMenuBackdrop();
+    R3.hide(); R4.hide();
+    if (TITLE_SAMPLE === 'a' && T3.scene) { // title sample A: the real Kota Awal at night drifting behind the menus
+      const g = view.ctx; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, view.c.width, view.c.height);
+      T3.draw(null, simT, null, 21 * 60, 'home');
+    } else { T3.hide(); drawMenuBackdrop(); }
   } else {
     R3.hide(); R4.hide();
     (FLAT ? TR : T3).draw(scene === 'town' ? town : null, simT, current && avatarOf(current), current ? worldClock : 20 * 60, current?.location || 'home');
@@ -1518,10 +1532,14 @@ addEventListener('pointerup', ensureAudio, { once: true });
 addEventListener('keydown', ensureAudio, { once: true });
 
 slots = await store.loadSlots();
+window.__boot?.(0.88, 'art');
+// the title's painting and the fonts, so the title appears whole (at most 4 s: never stuck here)
+await Promise.race([Promise.all([titleArtReady, document.fonts?.ready]), new Promise((r) => setTimeout(r, 4000))]);
+if (TITLE_SAMPLE === 'a') { try { await T3.warm(null, null, 'home', async () => {}); } catch (e) { console.warn('title sample A: town not built', e); } }
 showTitle();
 const loop = startLoop(tick, frame);
-$('boot')?.classList.add('gone'); // the page loader (index.html) gives way to the title
-setTimeout(() => $('boot')?.remove(), 500);
+// the page loader (index.html) fills its bar and gives way to the title
+if (!window.__bootEnd?.()) { $('boot')?.classList.add('gone'); setTimeout(() => $('boot')?.remove(), 500); }
 
 // screenshot / debug hooks
 window.__seek = (t) => {

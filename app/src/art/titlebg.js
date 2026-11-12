@@ -16,10 +16,13 @@ export const ART = {
 
 const art = typeof Image === 'function' ? new Image() : null;
 let artAt = 0; // when the painting finished loading (0: not yet / failed)
-if (art) {
-  art.onload = () => { artAt = performance.now(); };
+// settles when the painting has loaded or failed (the page loader waits for it, main.js)
+export const artReady = new Promise((done) => {
+  if (!art) { done(); return; }
+  art.onload = () => { artAt = performance.now(); done(); };
+  art.onerror = () => done();
   art.src = 'img/title_bg.webp';
-}
+});
 
 // The painting covers a w × h screen: its size and offset in CSS pixels. Wide screens crop
 // top and bottom; narrow ones crop the sides, keeping the fire near FOCUS.x.

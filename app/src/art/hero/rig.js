@@ -92,17 +92,25 @@ const NPC_IDLE = {
 };
 // Sitting by a fire (the title screen, spec §29): what the arms do, per class →
 // [phi, k, lean, crouch, step, phiB, x1, x2]; the hips sit on a log, the feet rest in front.
+// Seated at the campfire (title): mostly at rest, breathing and swaying a little; now and then each
+// one does its thing for a moment and settles again (owner 2026-11-12: the constant arm motion on a
+// still body looked robotic). ep(t, period, dur, at) = 0 → 1 → 0 during a short window each period.
+const ep = (t, period, dur, at = 0) => { const x = ((t - at) % period + period) % period; return x < dur ? Math.sin((x / dur) * Math.PI) ** 2 : 0; };
+const sway = (t, k) => Math.sin(t * 0.55 + k) * 0.035;
 const SIT_ACT = {
-  // sword across the knees, the front hand drawing a whetstone along it
-  warrior: (t) => { const u = Math.sin(t * 2.6); return [1.25 + u * 0.22, 0.32, 0.22, 0, 0, 1.05 - u * 0.12, 0, 0]; },
-  // the bow held up before the eyes, turned a little now and then, checking the string
-  archer: (t) => [1.75 + Math.sin(t * 0.7) * 0.08, 1.57, 0.12, 0, 0, 1.45 + Math.max(0, Math.sin(t * 1.3)) ** 4 * 0.5, 0, 0.5 + Math.sin(t * 1.3) * 0.2],
-  // the staff leaning on the shoulder, the free hand held out to the warmth
-  mage: (t) => [0.95, Math.PI - 0.5, 0.18, 0, 0, 1.45 + Math.sin(t * 1.1) * 0.08, 0.15 + Math.sin(t * 2) * 0.1, 0],
-  // leaning back, a dagger flipped over and over in the front hand
-  assassin: (t) => { const f = (t * 1.6) % 1; return [1.35 + Math.sin(f * Math.PI * 2) * 0.35, 2.84 + f * Math.PI * 2, -0.08, 0, 0, 0.55, 2.84, 0]; },
+  // sword across the knees; a few strokes of the whetstone every ~7 s
+  warrior: (t) => { const a = ep(t, 7, 2.6, 1), u = Math.sin(t * 2.6) * a; return [1.25 + u * 0.22, 0.32, 0.22 + sway(t, 0), 0, 0, 1.05 - u * 0.12, 0, 0]; },
+  // the bow resting before the eyes; now and then turned and the string drawn a little
+  archer: (t) => { const a = ep(t, 8, 2.2, 3); return [1.75 + Math.sin(t * 0.7) * 0.05 * a, 1.57, 0.12 + sway(t, 1), 0, 0, 1.45 + a * 0.4, 0, 0.5 + a * 0.15]; },
+  // the staff leaning on the shoulder, the free hand held out to the warmth, rubbed now and then
+  mage: (t) => { const a = ep(t, 6, 1.8, 2); return [0.95, Math.PI - 0.5, 0.18 + sway(t, 2), 0, 0, 1.45 + Math.sin(t * 3) * 0.1 * a, 0.15 + a * 0.12, 0]; },
+  // leaning back, the dagger resting in the hand; every ~5 s one flip in the air
+  assassin: (t) => {
+    const x = ((t - 0.5) % 5 + 5) % 5, f = x < 0.7 ? x / 0.7 : 0, up = Math.sin(f * Math.PI);
+    return [1.35 + up * 0.35, 2.84 + f * Math.PI * 2, -0.08 + sway(t, 3), 0, 0, 0.55, 2.84, 0];
+  },
 };
-export const SIT = { hip: -19.5, feet: [13, 9.5], breathe: 0.35 }; // hip height on a log, feet forward
+export const SIT = { hip: -19.5, feet: [13, 9.5], breathe: 0.7 }; // hip height on a log, feet forward
 
 // Running, one gait per class (spec §39; used when pose.gait is set — the anime heroes).
 // stride / lift (foot height) / bob (hip bounce) in skeleton units, rate = how fast the legs turn
