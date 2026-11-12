@@ -6,6 +6,10 @@ import { DUNGEONS } from './dungeons.js';
 import { ENEMIES } from './enemies.js';
 
 const LAST = DUNGEONS[DUNGEONS.length - 1]; // the Rift starts as hard as Menara Gerhana
+// What a run's blessings change (spec §41.3, §47.5): coins & EXP ×, elite chance ×, a chance a dropped
+// piece comes one rarity higher. Neutral outside the Rift.
+export const RUN_MODS = { reward: 1, elite: 1, rarityUp: 0 };
+
 export const RIFT = {
   step: 0.08,          // +8% HP & damage per floor above the first
   bossEvery: 5,
@@ -24,7 +28,7 @@ export const RIFT_POOL = [...new Set(DUNGEONS.flatMap((d) => d.floors.flatMap((f
   .filter((id) => !ENEMIES[id].boss);
 
 // Blessings. stat: fraction of a stat; add: flat stat; fx: run effects (same keys as gear); diff: changes to the
-// run's difficulty numbers (reward / elite multiply, rarityUp adds); more: extra enemies per floor (fraction);
+// run's mods (data RUN_MODS: reward / elite multiply, rarityUp adds); more: extra enemies per floor (fraction);
 // dealt / taken: damage dealt / taken ×; heal: full HP when picked.
 export const BLESSINGS = [
   { id: 'fury', name: 'Amarah', desc: 'ATK +30%, HP maks −20%', color: '#ff5a4a', stat: { atk: 0.3, maxHp: -0.2 } },

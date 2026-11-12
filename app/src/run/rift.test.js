@@ -67,8 +67,8 @@ describe('lantai Celah', () => {
     const cdr = g.stats.cdr; pickBlessing(g, 'flow');
     expect(g.stats.cdr).toBeCloseTo(cdr + 0.2);
     g.rift.offer = ['glass', 'greed', 'luck'];
-    const rw = g.diff.reward; pickBlessing(g, 'greed');
-    expect(g.diff.reward).toBeCloseTo(rw * 2);
+    const rw = g.mods.reward; pickBlessing(g, 'greed');
+    expect(g.mods.reward).toBeCloseTo(rw * 2);
     expect(g.rift.more).toBeCloseTo(0.4);
     expect(BLESSINGS.length).toBeGreaterThanOrEqual(10);
   });

@@ -478,3 +478,15 @@ describe('save v27 (Prolog)', () => {
     expect(readSlot(at('novice', { ch: 0, step: 1, prog: 0 })).data.quests.main.ch).toBe(1);
   });
 });
+
+describe('save v28 (Power, spec §47.5)', () => {
+  it('tingkat kesulitan & kunci Neraka dibuang; Celah yang sudah terbuka tetap terbuka', () => {
+    const old = { ...fresh(), version: 27, difficulty: 'hard', unlocked: { hell: true, rift: true } };
+    const r = readSlot(old);
+    expect(r.status).toBe('ok');
+    expect(r.data.version).toBe(28);
+    expect('difficulty' in r.data).toBe(false);
+    expect(r.data.unlocked).toEqual({ rift: true });
+    expect(readSlot({ ...old, unlocked: { hell: false, rift: false } }).data.unlocked).toEqual({ rift: false });
+  });
+});

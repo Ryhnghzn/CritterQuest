@@ -1,4 +1,4 @@
-// Bench (spec §43.8): an average build per job at levels 10/20/30/40, Normal difficulty, fixed RNG, never
+// Bench (spec §43.8): an average build per job at levels 10/20/30/40, fixed RNG, never
 // dodging. Fails when the numbers make the game too easy (or far too hard):
 //   a level-matched pack dies in 4–8 s with skills; a pack with an elite costs 40–60% HP without dodging;
 //   a level-matched boss lasts 60–90 s (its time only: the bot cannot dodge, so it fights invulnerable).

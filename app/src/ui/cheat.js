@@ -46,7 +46,7 @@ export function renderCheat(box, ctx, actions, redraw) {
       row(b('Ramuan penuh', actions.potions), b('HP penuh', actions.heal), b('Reset poin', actions.resetPoints)),
       row(b('+Material', actions.mats), b('+Permata', actions.gems), b('+10 Lencana', actions.marks), b('Selesaikan tugas', actions.bounties)),
       row(b('Buka semua dungeon', actions.unlockFloors), b('+3 jam', () => actions.hours(3)), b('+12 jam', () => actions.hours(12))),
-      row(b('Lulus Ujian Cabang', actions.branchWin), b('Buka Neraka & Celah', actions.unlock9e)), // Job Lanjutan (spec §43.10): level 30+ with a job, in town
+      row(b('Lulus Ujian Cabang', actions.branchWin), b('Buka Celah', actions.unlock9e)), // Job Lanjutan (spec §43.10): level 30+ with a job, in town
       row(b('Kunjungi semua kota', actions.allTowns)));
   }
 

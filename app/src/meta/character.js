@@ -1,6 +1,5 @@
 // Permanent character: creation, level/EXP and final stats (spec §4.1, §4.3).
 // Every function returns new objects; save data is never mutated in place.
-import { diffOf } from '../data/difficulty.js';
 import { tr, t } from '../i18n.js';
 import { CLASSES, CLASS_BASE, JOB_IDS } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX, NOVICE_LEVEL_CAP } from '../data/balance.js';
@@ -35,7 +34,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     clock: START_TIME,
     mats: freshMats(), gems: freshGems(),
     jobs: JOB_IDS.includes(classId) ? { [classId]: newJob(classId, false) } : {}, jobChanges: 0, spNotice: false, // skill points (spec §43)
-    difficulty: 'normal', unlocked: { hell: false, rift: false }, rift: { best: 0, checkpoint: 0 }, // spec §41.3
+    unlocked: { rift: false }, rift: { best: 0, checkpoint: 0 }, // spec §41.3
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot), fog: '' }, found: [], expedition: null,
@@ -186,7 +185,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   const c = (trip.attrs && allocate(leveled.char, trip.attrs, now)) || leveled.char;
   // the Rift (spec §41.3): main.js already cut the haul back to the last checkpoint, nothing more is lost
   const lose = trip.died && !trip.rift;
-  const gold = lose ? Math.floor(trip.gold * diffOf(char.difficulty).goldKeep) : trip.gold; // harder = more lost (spec §41.3)
+  const gold = lose ? Math.floor(trip.gold * DEATH.goldKeep) : trip.gold;
   c.gold += gold;
   c.potions = { ...trip.potions };
   withHp(c, trip.died ? Math.max(1, finalStats(c).maxHp * DEATH.wakeHp) : trip.hp);
@@ -199,8 +198,8 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   }
   const ending = trip.dungeon === 'spire' && trip.cleared && !trip.died && r.ending === null; // the story's end (spec §26.7)
   if (ending) r.ending = now;
-  if (trip.dungeon === 'spire' && trip.cleared && !trip.died) { // the story's end opens the Rift; on Sulit / Neraka also Neraka (spec §41.3)
-    c.unlocked = { ...c.unlocked, rift: true, hell: c.unlocked.hell || c.difficulty !== 'normal' };
+  if (trip.dungeon === 'spire' && trip.cleared && !trip.died) { // the story's end opens the Rift (spec §41.3)
+    c.unlocked = { ...c.unlocked, rift: true };
   }
   r.trips += 1;
   r.kills += trip.kills;

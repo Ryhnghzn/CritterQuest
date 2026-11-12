@@ -65,10 +65,9 @@ export function pickBlessing(run, id) {
   s.hp = Math.min(s.hp, s.maxHp);
   for (const [k, v] of Object.entries(b.fx || {})) run.fx[k] = (run.fx[k] || 0) + v;
   if (b.diff) {
-    run.diff = { ...run.diff };
-    if (b.diff.reward) run.diff.reward *= b.diff.reward;
-    if (b.diff.elite) run.diff.elite *= b.diff.elite;
-    if (b.diff.rarityUp) run.diff.rarityUp += b.diff.rarityUp;
+    if (b.diff.reward) run.mods.reward *= b.diff.reward;
+    if (b.diff.elite) run.mods.elite *= b.diff.elite;
+    if (b.diff.rarityUp) run.mods.rarityUp += b.diff.rarityUp;
   }
   if (b.more) R.more += b.more;
   if (b.dealt) R.dealt *= b.dealt;

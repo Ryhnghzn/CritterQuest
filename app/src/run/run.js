@@ -1,8 +1,7 @@
 // Core simulation. Fixed-timestep only; zero allocation in the hot loop
 // (entities live in reused objects and are swap-removed when they die).
-import { RIFT_DUNGEON } from '../data/rift.js';
+import { RIFT_DUNGEON, RUN_MODS } from '../data/rift.js';
 import { riftBegin, riftMul } from './rift.js';
-import { diffOf } from '../data/difficulty.js';
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
 import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL, ENEMY_POWER } from '../data/balance.js';
@@ -63,9 +62,9 @@ const BUFF_STATS = { wind: ['moveSpd'], rage: ['atk', 'atkSpd'] };
 const BUFFED = ['moveSpd', 'atk', 'atkSpd', 'crit', 'critDmg']; // stats potions & skill buffs can change
 
 // How hard an enemy's shots and danger zones hit (spec §43.8): like its touch damage — the dungeon's
-// difficulty, the world level, an elite's bonus, ENEMY_POWER.dmg. Applied once, to what it just made.
+// the world level, an elite's bonus, ENEMY_POWER.dmg. Applied once, to what it just made.
 export function foePower(run, e) {
-  return (run.dungeon?.dmgMul || 1) * (run.diff?.dmg || 1) * (run.dungeon?.rift ? riftMul(run.floor) : 1) * (e.level ? fieldScale(e.level).dmg : 1) * (e.elite && !e.boss ? ELITE.dmgMul : 1) * (e.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg) * (e.gap?.taken || 1);
+  return (run.dungeon?.dmgMul || 1) * (run.dungeon?.rift ? riftMul(run.floor) : 1) * (e.level ? fieldScale(e.level).dmg : 1) * (e.elite && !e.boss ? ELITE.dmgMul : 1) * (e.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg) * (e.gap?.taken || 1);
 }
 
 // the level of the enemies here (spec §47.3): the world's level at the player, a dungeon's own level
@@ -143,7 +142,7 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null, difficulty = 'normal', power = null }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null, power = null }) {
     resetRng();
     this.classId = classId;
     this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
@@ -161,7 +160,7 @@ export class Game {
     this.aimPX = 0; this.aimPY = 0;
     this.energy = ENERGY.start; this.noEnergyT = 0;
     this.summons = []; this.chain = null; this.held = null; this.parryT = 0; this.focusMark = null; // tempo skills (spec §43.4), focus ultimates (§43.5)
-    this.diff = diffOf(difficulty); // spec §41.3: enemies, elites, rewards
+    this.mods = { ...RUN_MODS }; // Rift blessings: rewards, elites, rarity (spec §41.3, §47.5)
     this.branch = branch; // Job Lanjutan (spec §43.10): its skills join the pool
     const pool = skillPool(CLASSES[classId], branch);
     this.ambushT = 0; this.rewindLog = []; this.rewindT = 0; this.moving = false;
@@ -305,7 +304,7 @@ export class Game {
   }
 
   // coins are worth more in harder dungeons (and with Liontin Keserakahan)
-  addGold(n) { this.gold += Math.round(n * this.dungeon.rewardMul * (this.diff?.reward || 1) * (1 + (this.fx.goldfind || 0))); }
+  addGold(n) { this.gold += Math.round(n * this.dungeon.rewardMul * this.mods.reward * (1 + (this.fx.goldfind || 0))); }
 
   // Unique gear that works over time: regeneration, periodic shield, frenzy at low HP.
   stepEffects(dt) {
@@ -405,13 +404,12 @@ export class Game {
     const power = ENEMY_POWER.hp * (base.boss ? ENEMY_POWER.bossHp : 1); // spec §43.8
     const e = {
       type: typeId, x: this.px, y: this.py,
-      hp: hp * power * this.diff.hp, maxHp: hp * power * this.diff.hp,
-      speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg * this.dungeon.dmgMul * this.diff.dmg * rk * (base.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg),
-      r: base.r, xp: Math.round(base.xp * this.dungeon.rewardMul * this.diff.reward), sprite: base.sprite, score: base.score,
+      hp: hp * power, maxHp: hp * power,
+      speed: base.speed * rrange(0.9, 1.1), dmg: base.dmg * this.dungeon.dmgMul * rk * (base.boss ? ENEMY_POWER.bossDmg : ENEMY_POWER.dmg),
+      r: base.r, xp: Math.round(base.xp * this.dungeon.rewardMul * this.mods.reward), sprite: base.sprite, score: base.score,
       wob: rand() * 6.28, flash: 0, frozen: 0, kx: 0, ky: 0,
       lane: null, entering: false, elite: false, boss: !!base.boss,
     };
-    if (this.diff.tempo !== 1) e.tempo = this.diff.tempo; // Neraka: shorter waits between actions
     setFoeLevel(this, e, foeLevel(this)); // the Power gap (spec §47.3); a region's pack sets its own level
     initAi(e);
     this.enemies.push(e);

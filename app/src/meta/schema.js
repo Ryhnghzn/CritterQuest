@@ -14,7 +14,6 @@ import { SETTING_CHOICES, SETTING_DEFAULTS } from '../data/settings.js';
 import { UMUM_IDS } from '../data/skilltree.js';
 import { newJob, nodeOf, spSpent, spTotal } from './jobs.js';
 import { branchById } from '../data/branches.js';
-import { DIFFICULTY_IDS } from '../data/difficulty.js';
 import { BOUNTY_COUNT, BOUNTY_KINDS, STARTER_BOUNTIES } from '../data/bounties.js';
 import { BESTIARY_IDS } from '../data/collection.js';
 import { TOWN_IDS, REGION_IDS, regionById, EXPEDITIONS, TREASURE } from '../data/world.js';
@@ -24,7 +23,7 @@ import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts, storyMounts } from './stable.js';
 
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -163,6 +162,11 @@ export const MIGRATIONS = {
     if (!isObj(q) || !isObj(q.main) || !isInt(q.main.ch, 0) || fresh) return { ...d, version: 27 };
     return { ...d, version: 27, quests: { ...q, main: { ...q.main, ch: q.main.ch + 1 } } };
   },
+  // v28 (spec §47.5): no more Normal / Sulit / Neraka — enemies follow the character's Power; Neraka's lock goes too
+  27: (d) => {
+    const { difficulty, ...rest } = d;
+    return { ...rest, version: 28, unlocked: { rift: !!d.unlocked?.rift } };
+  },
   21: (d) => ({
     ...d, version: 22,
     world: isObj(d.world) ? { ...d.world, fog: '' } : d.world,
@@ -262,8 +266,7 @@ export function validateSlot(d) {
   need(isObj(d.jobs) && Object.keys(d.jobs).every((id) => JOB_IDS.includes(id) && validJob(id, d.jobs[id], d.level))
     && (d.classId === 'novice' || Object.hasOwn(d.jobs, d.classId)), 'jobs'); // a Pengembara has no build yet (spec §43.1)
   need(isInt(d.jobChanges, 0), 'jobChanges');
-  need(DIFFICULTY_IDS.includes(d.difficulty), 'difficulty');
-  need(isObj(d.unlocked) && typeof d.unlocked.hell === 'boolean' && typeof d.unlocked.rift === 'boolean', 'unlocked');
+  need(isObj(d.unlocked) && typeof d.unlocked.rift === 'boolean', 'unlocked');
   need(isObj(d.rift) && isInt(d.rift.best, 0) && isInt(d.rift.checkpoint, 0) && d.rift.checkpoint % 5 === 0 && d.rift.checkpoint <= d.rift.best, 'rift');
   need(typeof d.spNotice === 'boolean', 'spNotice');
   need(isObj(d.gems) && GEM_IDS.every((k) => Array.isArray(d.gems[k]) && d.gems[k].length === GEM_TIERS && d.gems[k].every((n) => isInt(n, 0))), 'gems');

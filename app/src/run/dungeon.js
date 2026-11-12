@@ -77,7 +77,7 @@ export function spawnFromLane(run, type, lane = null) {
   const e = run.spawnEnemy(type);
   if (!e.boss) { // the horde: weaker one by one, elites a bit rarer (spec §33.2)
     e.hp *= HORDE.hp; e.maxHp *= HORDE.hp;
-    if (rand() < ELITE.chance[Math.min(run.floor, ELITE.chance.length) - 1] * HORDE.eliteMul * (run.diff?.elite || 1)) makeElite(e, affixCount({ floor: run.floor }) + (run.diff?.affixes || 0)); // difficulty (spec §41.3)
+    if (rand() < ELITE.chance[Math.min(run.floor, ELITE.chance.length) - 1] * HORDE.eliteMul * run.mods.elite) makeElite(e, affixCount({ floor: run.floor })); // Rift blessings (spec §41.3)
   }
   e.x = lane.x + lane.dx * along - lane.dy * side;
   e.y = lane.y + lane.dy * along + lane.dx * side;
@@ -199,7 +199,7 @@ export function dropGear(run, source, x, y) {
   const level = run.field // regions: around the level of the enemy that fell (spec §25.1)
     ? Math.max(1, Math.min(CHAR_LEVEL_MAX, (run.lootLevel || run.level) + Math.floor(rand() * 3) - 1))
     : Math.min(CHAR_LEVEL_MAX, itemLevelFor(run.level, run.dungeon.rift ? 5 : run.floor, rand) + run.dungeon.itemLevel + (run.dungeon.rift ? Math.floor(run.floor * RIFT.itemPerFloor) : 0));
-  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level, diff: run.diff }, rand);
+  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level, mods: run.mods }, rand);
   const a = rand() * Math.PI * 2;
   run.gems.push({ x: x + Math.cos(a) * 18, y: y + Math.sin(a) * 18, v: 0, mag: false, big: false, gear: item, t: rand() * 6 });
   return item;
