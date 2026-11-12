@@ -11,12 +11,27 @@ import { stepText } from './journal.js';
 import { tr, t } from '../i18n.js';
 import { CLASSES } from '../data/classes.js';
 import { traitLevel, comboMax } from '../run/traits.js';
+import { HUD } from '../data/hud.js';
 
 const $ = (id) => document.getElementById(id);
+
+// orb HUD (spec §45.1): --f = how full the orb is; a drop in HP shakes it, a low HP makes it
+// and the screen edge (#dmg) pulse red. Harmless for the old bars (`?lama`).
+let lastHp = null;
+function orbHp(fill, hp, maxHp) {
+  const f = Math.max(0, Math.min(1, hp / maxHp)), bar = fill.parentElement;
+  bar.style.setProperty('--f', f.toFixed(3));
+  if (lastHp !== null && hp < lastHp - 0.5) { bar.classList.remove('hit'); void bar.offsetWidth; bar.classList.add('hit'); }
+  lastHp = hp;
+  const low = hp > 0 && f < HUD.lowHp;
+  bar.classList.toggle('low', low);
+  $('dmg').classList.toggle('low', low);
+}
 
 export function updateHUD(game) {
   const s = game.stats;
   $('hpfill').style.transform = `scaleX(${Math.max(0, s.hp / s.maxHp)})`;
+  orbHp($('hpfill'), s.hp, s.maxHp);
   $('hptext').textContent = `${Math.ceil(Math.max(0, s.hp))} / ${Math.round(s.maxHp)}`;
   $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
   $('lvltext').textContent = `LV ${game.level}`;
@@ -31,6 +46,7 @@ export function updateHUD(game) {
   $('gold').textContent = game.gold;
   $('dmg').style.opacity = game.flash > 0 ? 0.9 : 0;
   $('enfill').style.transform = `scaleX(${game.energy / ENERGY.max})`;
+  $('enfill').parentElement.style.setProperty('--f', (game.energy / ENERGY.max).toFixed(3));
   $('entext').textContent = t('Energi {n}', { n: Math.floor(game.energy) });
   $('enbar').classList.toggle('empty', game.noEnergyT > 0);
   const tc = CLASSES[game.classId].trait, tb = $('trbar'), tp = $('trpips');
@@ -52,6 +68,7 @@ export function updateHUD(game) {
         : tr_.on > 0 ? t('MENGAMUK {s}s', { s: Math.ceil(tr_.on) }) : t('Murka {n}', { n: v });
       tb.style.setProperty('--c', tc.color);
       $('trfill').style.transform = `scaleX(${traitLevel(game)})`;
+      tb.style.setProperty('--t', traitLevel(game).toFixed(3)); // the ring round the Energy orb
       $('trtext').textContent = text;
       tb.classList.toggle('hot', hot);
       tb.classList.toggle('ready', tc.id === 'focus' && tr_.focus);
@@ -130,6 +147,8 @@ function ring(btn, cd, max) {
   const left = Math.max(0, cd);
   btn.style.setProperty('--cd', (max > 0 ? left / max : 0).toFixed(3));
   btn.classList.toggle('ready', left <= 0);
+  if (left <= 0 && btn._cdWas > 0) { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); } // ready again: a ring bursts
+  btn._cdWas = left;
   return left;
 }
 
@@ -155,6 +174,7 @@ export function updateTownHUD(char, town) {
   $('tname').textContent = char.name;
   $('tlv').textContent = `LV ${char.level}`;
   $('thpfill').style.transform = `scaleX(${Math.max(0, town.hp / town.maxHp)})`;
+  orbHp($('thpfill'), town.hp, town.maxHp);
   $('thptext').textContent = `${Math.ceil(town.hp)} / ${Math.round(town.maxHp)}`;
   $('tgold').textContent = char.gold;
   $('tpot').textContent = POTION_IDS.reduce((n, id) => n + char.potions[id], 0);
@@ -192,7 +212,8 @@ export function updateQuestTracker(char, show = true) {
   if (!show || !a?.step) { box.classList.add('hidden'); return; }
   const hud = [$('hud'), $('townhud')].find((h) => !h.classList.contains('hidden'));
   if (!hud) { box.classList.add('hidden'); return; }
-  const top = Math.round((hud.getBoundingClientRect().bottom + 8) / (parseFloat(getComputedStyle(box).zoom) || 1)); // landscape phones zoom it
+  const anchor = hud.querySelector('.hinfo') || hud; // orb HUD: under the info corner, not the whole-screen HUD
+  const top = Math.round((anchor.getBoundingClientRect().bottom + 8) / (parseFloat(getComputedStyle(box).zoom) || 1)); // landscape phones zoom it
   const key = `${a.id}:${a.state.step}:${a.state.prog}:${top}`;
   if (key === lastKey && !box.classList.contains('hidden')) return; // ~8×/s: only touch the DOM on change
   lastKey = key;
