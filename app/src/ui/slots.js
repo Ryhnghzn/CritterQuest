@@ -6,8 +6,12 @@ import { portrait, OUTFIT } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { tr, t } from '../i18n.js';
 
+const row = (...kids) => { const r = el('div', 'slotio'); r.append(...kids); return r; };
+
 // entries: from store.loadSlots(); handlers receive the slot number.
-export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
+// onExport / onImport (spec §9.3): a slot to a .json file and back
+export function renderSlots(box, entries, { onOpen, onCreate, onDelete, onExport, onImport }) {
+  const io = (label, fn, slot) => button(tr(label), 'btn ghost small', (ev) => { ev.stopPropagation(); fn(slot); });
   box.replaceChildren();
   entries.forEach((e, i) => {
     const card = el('div', 'card slotcard');
@@ -27,6 +31,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
       rec.append(svgIcon('trophy'), far ? ` ${t('{d} · Lantai {n}', { d: far.short, n: c.records.dungeons[far.id].bestFloor })}` : ` ${tr('Belum ke dungeon')}`);
       card.append(
         st, el('div', 'nm', c.name), cls, rec,
+        row(io('Ekspor', onExport, e.slot), io('Impor', onImport, e.slot)),
         button(tr('Hapus'), 'btn ghost small danger', (ev) => { ev.stopPropagation(); onDelete(e.slot); }),
       );
       pressable(card, () => onOpen(e.slot));
@@ -37,10 +42,11 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
         el('div', 'nm', t('Slot {n}', { n: e.slot + 1 })),
         el('div', 'ds', tr('Kosong. Buat petualang baru')),
         button(tr('Buat'), 'btn small', (ev) => { ev.stopPropagation(); onCreate(e.slot); }),
+        io('Impor', onImport, e.slot),
       );
       pressable(card, () => onCreate(e.slot));
     } else {
-      // corrupt: never overwritten; the player decides (export arrives in langkah 6)
+      // corrupt: never overwritten; the player decides — export it to rescue it, or delete
       card.classList.add('bad');
       card.style.cursor = 'default';
       const w = el('div', 'warn');
@@ -49,6 +55,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete }) {
         w,
         el('div', 'nm', tr('Data rusak')),
         el('div', 'ds', t('Slot {n} tidak bisa dibaca.', { n: e.slot + 1 })),
+        io('Ekspor', onExport, e.slot),
         button(tr('Hapus'), 'btn ghost small danger', () => onDelete(e.slot)),
       );
     }

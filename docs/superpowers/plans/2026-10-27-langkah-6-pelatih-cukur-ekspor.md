@@ -11,7 +11,7 @@ Tiga bagian; tiap bagian dicek manual oleh pemilik sebelum commit.
 - [x] Verifikasi: tes, build, screenshot PC & HP
 
 ## 6B — Ekspor / impor save
-- [ ] Ekspor slot ke file JSON, impor dengan validasi + konfirmasi timpa — tes
+- [x] Ekspor slot ke file JSON, impor dengan validasi + konfirmasi timpa — tes (2026-11-12: `meta/transfer.js`, tombol Ekspor/Impor di Pilih Slot)
 
 ## 6C — Polesan & penyeimbangan
 - [ ] Uji main tiap kelas, setel angka, perbaikan kecil

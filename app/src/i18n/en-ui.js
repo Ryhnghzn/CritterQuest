@@ -602,6 +602,11 @@ export default {
   'Masuk lewat Gerbang Celah di alun-alun Kota Awal.': 'Enter through the Rift Gate on Hometown\'s plaza.',
   'Tingkat kesulitan sekarang: {d} (ganti di Balai Petualang).': 'Current difficulty: {d} (change it at the Adventurers\' Hall).',
   'Gerbang Celah': 'Rift Gate',
+  // export / import (spec §9.3)
+  Ekspor: 'Export', Impor: 'Import', Timpa: 'Overwrite', 'Save diekspor.': 'Save exported.',
+  'Impor gagal: {why}': 'Import failed: {why}', '{name} diimpor ke slot {n}.': '{name} imported into slot {n}.',
+  'Timpa {what} dengan {name} (LV {lv})? Tidak bisa dibatalkan.': 'Overwrite {what} with {name} (LV {lv})? This cannot be undone.',
+  'bukan file JSON': 'not a JSON file', 'bukan save Critter Quest': 'not a Critter Quest save',
   'Pilih satu berkah': 'Choose a blessing',
   'Tingkat kesulitan: {d}.': 'Difficulty: {d}.',
   'Titik simpan — lantai {n}': 'Checkpoint — floor {n}',

@@ -37,6 +37,7 @@ import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from 
 import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf, newJob, pickJob, changeJob, jobChangePrice, levelOf, pickBranch, changeBranch, branchChangePrice, branchesOf, canTrial } from './meta/jobs.js';
 import { setShadowLook } from './art/bosses/index.js';
 import { setDifficulty } from './meta/difficulty.js';
+import { exportName, exportText, importText } from './meta/transfer.js';
 import { DIFFICULTY } from './data/difficulty.js';
 import { riftHaul, pickBlessing } from './run/rift.js';
 import { showBlessings } from './ui/challenge.js';
@@ -298,7 +299,7 @@ async function toSlots() {
   if (scene === 'town') { syncHp(); await saveCurrent(); }
   if (scene === 'run' && game.field) await commitField();
   slots = await store.loadSlots();
-  renderSlots($('slotlist'), slots, { onOpen: openSlot, onCreate: toCreate, onDelete: deleteSlot });
+  renderSlots($('slotlist'), slots, { onOpen: openSlot, onCreate: toCreate, onDelete: deleteSlot, onExport: exportSlot, onImport: importSlot });
   showMenu('slots');
 }
 
@@ -344,6 +345,37 @@ async function createChar(slot, form) {
   ensureAudio(); sfx.pickCard();
   await playCutscene('opening', heroOf(char)); // the story begins (spec §44)
   enterTown(char, 'spawn');
+}
+
+// Export / import (spec §9.3): one slot as critter-quest-<name>.json, and back into any slot
+function exportSlot(slot) {
+  const e = slots[slot], raw = e.status === 'ok' ? e.data : e.raw;
+  const blob = new Blob([exportText(raw, Date.now())], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = exportName(e.status === 'ok' ? e.data.name : `slot-${slot + 1}`);
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(tr('Save diekspor.'));
+}
+function importSlot(slot) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json,application/json';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const r = importText(await file.text(), slot, Date.now());
+    if (!r.ok) { toast(t('Impor gagal: {why}', { why: r.reason }), '#e0526a'); return; }
+    const e = slots[slot];
+    if (e.status !== 'empty') {
+      const what = e.status === 'ok' ? `${e.data.name} (LV ${e.data.level})` : t('data rusak di slot {n}', { n: slot + 1 });
+      if (!(await confirmDialog(t('Timpa {what} dengan {name} (LV {lv})? Tidak bisa dibatalkan.', { what, name: r.data.name, lv: r.data.level }), tr('Timpa')))) return;
+      await store.deleteSlot(slot); // a corrupt slot must go first (store.saveSlot never overwrites one)
+    }
+    try { await store.saveSlot(r.data); } catch (err) { toast(t('Impor gagal: {why}', { why: err.message }), '#e0526a'); return; }
+    toast(t('{name} diimpor ke slot {n}.', { name: r.data.name, n: slot + 1 }), '#8ff5c8');
+    await toSlots();
+  };
+  input.click();
 }
 
 async function deleteSlot(slot) {
