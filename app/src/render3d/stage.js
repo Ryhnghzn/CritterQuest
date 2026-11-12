@@ -171,6 +171,7 @@ export class Stage {
     this.shake = { x: 0, y: 0 };
     this.target = new THREE.Vector3();
     this.ready = false;
+    this.cap = null;                  // load guard (run/loadguard.js): a lower pixel ratio for a while, nothing rebuilt
   }
 
   init() { // lazy: only when the 2.5D view is first used
@@ -211,6 +212,8 @@ export class Stage {
     CAMERA.behind = mode !== 'top'; CAMERA.follow = mode === 'follow'; this.prev = null;
     if (this.ready) { this.camera.fov = CAMERA.behind ? CAMERA.fov : CAM.fov; this.camera.updateProjectionMatrix(); }
   }
+  // a pixel-ratio ceiling (null: none) — cheaper on memory in a busy fight, without the rebuild a quality change costs
+  setCap(c) { if (c === this.cap) return; this.cap = c; this.resize(); }
   setZoom(z) { this.zoom = Math.max(ZOOM.min, Math.min(ZOOM.max, z)); }
 
   // Compiles a scene's shaders ahead of its first frame (in parallel where the browser
@@ -257,7 +260,7 @@ export class Stage {
     if (!this.ready) return;
     const dpr = devicePixelRatio || 1;
     // Ringan: one pixel per CSS pixel; Penuh up to 2× (crisp on phones and HiDPI screens)
-    this.renderer.setPixelRatio(Math.min(dpr, sharp('ratio', this.lite)));
+    this.renderer.setPixelRatio(Math.min(dpr, sharp('ratio', this.lite), this.cap ?? Infinity));
     this.renderer.setSize(innerWidth, innerHeight, false);
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(innerWidth, innerHeight);

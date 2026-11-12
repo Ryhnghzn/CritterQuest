@@ -12,22 +12,22 @@
 - [ ] A5 Cek manual pemilik (PC + iPhone) → commit.
 
 ## Bagian B — Dialog Potret Besar + Emosi
-- [ ] B1 Potret dibidik dari kepala (anchor `head` dari gambar anime) — perbaiki `art/bust.js` (di contoh potongan tetap membuat NPC kecil & terlalu bawah).
-- [ ] B2 `meta/mood.js` `moodOf(line)` (objek `{ t, mood }` atau tebakan dari tanda baca) + tes; dukung baris objek di `data/town.js` & quest.
-- [ ] B3 `ui/npc.js`: potret berdiri di belakang kotak teks, latar redup, plakat nama, teks mengetik + ▼, pilihan bernomor muncul setelah teks selesai (jawaban quest §42, aksi NPC), pengumuman quest baru; 1–4 & Spasi/E di `core/input.js` bila belum ada.
-- [ ] B4 Emosi: gerak potret + simbol dekat kepala + gaya kotak (§45.3); beri mood pada baris penting (Kakek Odo, Brom, quest utama).
-- [ ] B5 Versi HP; `?lama`; kamus EN. Cek manual → commit.
+- [x] B1 Potret dibidik dari kepala (anchor `head` dari gambar anime) — perbaiki `art/bust.js` (di contoh potongan tetap membuat NPC kecil & terlalu bawah).
+- [x] B2 `meta/mood.js` `moodOf(line)` (objek `{ t, mood }` atau tebakan dari tanda baca) + tes; dukung baris objek di `data/town.js` & quest.
+- [x] B3 `ui/npc.js`: potret berdiri di belakang kotak teks, latar redup, plakat nama, teks mengetik + ▼, pilihan bernomor muncul setelah teks selesai (jawaban quest §42, aksi NPC), pengumuman quest baru; 1–4 & Spasi/E di `core/input.js` bila belum ada.
+- [x] B4 Emosi: gerak potret + simbol dekat kepala + gaya kotak (§45.3); beri mood pada baris penting (Kakek Odo, Brom, quest utama).
+- [x] B5 Versi HP; `?lama`; kamus EN. Cek manual → commit.
 
 ## Bagian C — Gelembung Warga
-- [ ] C1 Lapisan gelembung di atas kanvas kota/interior: posisi kepala lewat proyeksi yang ada; muncul saat dekat (`data/hud.js`), baris bergantian, mengetik, lencana mood; tidak menghentikan permainan.
-- [ ] C2 NPC penting: tanda ! memantul + tombol "Bicara (E)" saat dekat; ketuk gelembung/E = dialog besar.
-- [ ] C3 Batasi jumlah gelembung sekaligus (3 terdekat) supaya HP tetap ringan. Cek manual → commit.
+- [x] C1 Lapisan gelembung di atas kanvas kota/interior: posisi kepala lewat proyeksi yang ada; muncul saat dekat (`data/hud.js`), baris bergantian, mengetik, lencana mood; tidak menghentikan permainan.
+- [x] C2 NPC penting: tanda ! memantul + tombol "Bicara (E)" saat dekat; ketuk gelembung/E = dialog besar.
+- [x] C3 Batasi jumlah gelembung sekaligus (3 terdekat) supaya HP tetap ringan. Cek manual → commit.
 
 ## Bagian D — Toko Baru (percontohan Pandai Brom)
-- [ ] D1 `ui/shopui.js`: kepala (toko, tas + lencana, uang bergulir, ✕), tab, kisi berbingkai rarity, kartu detail (stat ▲/▼ vs gear terpakai, peluang peti, jumlah, Beli), mode dialog mengecil ke kiri bawah dengan tanggapan NPC ber-mood.
-- [ ] D2 Brom: Peti & Jual memakai `shopui` (memanggil `ctx.onBuyChest` / `ctx.onSell` yang ada); Tempa & Urai tetap panel lama dalam bingkai baru.
-- [ ] D3 Tanda sudah dibeli (§45.5): koin terbang, barang terbang ke tas, catatan "Masuk tas", cap DIBELI + ledakan sinar; peti lewat `ui/reveal.js` lalu catatan. Uang kurang = tombol terguncang + Brom marah.
-- [ ] D4 Versi HP; kamus EN. Cek manual → commit.
+- [x] D1 `ui/shopui.js`: kepala (toko, tas + lencana, uang bergulir, ✕), tab, kisi berbingkai rarity, kartu detail (stat ▲/▼ vs gear terpakai, peluang peti, jumlah, Beli), mode dialog mengecil ke kiri bawah dengan tanggapan NPC ber-mood.
+- [x] D2 Brom: Peti & Jual memakai `shopui` (memanggil `ctx.onBuyChest` / `ctx.onSell` yang ada); Tempa & Urai tetap panel lama dalam bingkai baru.
+- [x] D3 Tanda sudah dibeli (§45.5): koin terbang, barang terbang ke tas, catatan "Masuk tas", cap DIBELI + ledakan sinar; peti lewat `ui/reveal.js` lalu catatan. Uang kurang = tombol terguncang + Brom marah.
+- [x] D4 Versi HP; kamus EN. Cek manual → commit.
 
 ## Bagian E — Toko lain (setelah D disetujui)
 - [ ] E1 Ramuan, Permata, Pasar, Kandang, Pandai Senjata, Penjahit Zirah, Perhiasan memakai `shopui`.

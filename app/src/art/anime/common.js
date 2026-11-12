@@ -2,6 +2,7 @@
 // arms placed on the skeleton, the front/back walk, the weapon trail.
 import { part, stroke, glow, pal, far, limb, lerp2, mix, P, dir } from './kit.js';
 import { GAIT } from '../hero/rig.js';
+import { applyStrike } from './strike.js';
 
 export const SKIN = pal('#f1c4a4', { shade: '#c4826c', hi: '#ffe6d4' });
 export const STEEL = pal('#a4b0c6', { shade: '#4a526a', hi: '#f4f8ff' });
@@ -84,7 +85,10 @@ export function body(pose, classId = 'warrior', { sw = 17 } = {}) {
     const S = [sx * sw, hipY - 40], h = [sx * (sw + 4.6 + Math.abs(k) * 1.4 * amp - back * 3), hipY - 2 - Math.max(0, k) * 7 * amp - back * 6];
     return { S, e: [sx * (sw + 4 - back * 1.4), (S[1] + h[1]) / 2], h };
   };
-  return { t, moving: m, b, hipY, L: leg(-1, s * m), R: leg(1, -s * m), aL: armAt(-1, s * m, aS), aR: armAt(1, -s * m, aF), head: [0, hipY - 67] };
+  const B = { t, moving: m, b, hipY, L: leg(-1, s * m), R: leg(1, -s * m), aL: armAt(-1, s * m, aS), aR: armAt(1, -s * m, aF), head: [0, hipY - 67] };
+  // the basic attack toward / away from the camera (spec §49, strike.js)
+  if (pose.attackPhase != null && (pose.view === 'front' || pose.view === 'back')) applyStrike(B, classId, pose.view, pose.attackPhase);
+  return B;
 }
 
 // the weapon trail along the real tip path: re-pose the skeleton a few moments back.

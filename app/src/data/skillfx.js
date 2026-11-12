@@ -83,6 +83,9 @@ export const ULT_TINT = {
   starfall: ['10,8,40', 0.35],
   meteorstorm: ['255,50,20', 0.16],
   thousandshadows: ['60,10,90', 0.3],
+  // Job Lanjutan (spec §48)
+  ragnarok: ['90,0,12', 0.3],
+  sanctuary: ['255,226,150', 0.12],
 };
 
 // Class signature peaks (spec §31.8). Lite effects drop the scale, smoke and screen line;

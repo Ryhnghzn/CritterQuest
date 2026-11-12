@@ -13,6 +13,7 @@ import { TownRenderer } from './render/town.js';
 import './ui/theme-dark.css'; // dark UI theme (plan "Tampilan 2.5D" §5)
 import './ui/hud-orb.css'; // HUD "Bola & Bingkai" (spec §45.1), active under body.hud-orb
 import './ui/judul.css'; // title samples ?judul=a|b|c (ui/title.js)
+import './ui/dialog.css'; // NPC dialog "Potret Besar" + shop panel (spec §45.2–45.5)
 import { Dungeon25 } from './render3d/dungeon.js';
 import { Field25 } from './render3d/field.js';
 import { Town25 } from './render3d/town.js';
@@ -52,6 +53,8 @@ import { showLoading, loadingStep, hideLoading } from './ui/loading.js';
 import { renderTitle, TITLE_SAMPLE, titleBusy } from './ui/title.js';
 import { artReady as titleArtReady } from './art/titlebg.js';
 import { destinationInfo } from './meta/destination.js';
+import { LOOK } from './data/look.js';
+import { LoadGuard } from './run/loadguard.js';
 import { drawCampfire } from './art/titlebg.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
 import { POTION_MAX } from './data/potions.js';
@@ -68,7 +71,9 @@ import { deposit, withdraw } from './meta/stash.js';
 import { phaseOf } from './meta/clock.js';
 import { drawRegionMap } from './render/regionmap.js';
 import { isHeal, POTIONS, POTION_IDS } from './data/potions.js';
-import { createTown, stepTown } from './town/town.js';
+import { createTown, stepTown, mapsOf } from './town/town.js';
+import { chatter } from './town/chatter.js';
+import { updateBubbles } from './ui/bubbles.js';
 import { townMapInfo, playerSpot, townLegend } from './town/townmap.js';
 import { townDef } from './data/towns.js';
 import { drawTownMap } from './render/townmap.js';
@@ -77,7 +82,8 @@ import { showScreen, confirmDialog } from './ui/screens.js';
 import { renderSlots } from './ui/slots.js';
 import { renderCreate } from './ui/create.js';
 import { renderResults } from './ui/results.js';
-import { renderDeath } from './ui/death.js';
+import { renderDeath, causeText } from './ui/death.js';
+import { playFall, clearFall } from './ui/fall.js';
 import { DEATH } from './data/dungeon.js';
 import { renderEnding } from './ui/ending.js';
 import { renderNpc, renderDungeonGate } from './ui/npc.js';
@@ -200,8 +206,21 @@ const CALM = matchMedia('(prefers-reduced-motion: reduce)');
 const fpsWatch = new FpsWatch();
 const fpsMeter = new FpsWatch({ fps: 0, seconds: Infinity }); // FPS readout only
 let fxForcedLite = false, fpsShown = false, grayOn = false;
+// load guard (run/loadguard.js): busy fights still the HUD (1), then go lite until calm (2)
+const loadGuard = new LoadGuard(TOUCH);
+let heavy = 0;
+function setHeavy(L) {
+  if (L === heavy) return;
+  const wasLite = heavy >= 2;
+  heavy = L;
+  document.body.classList.toggle('hud-calm', L >= 1);
+  STAGE.setCap(L >= 2 ? 1 : null); // a lighter 3D picture, nothing rebuilt
+  if (wasLite !== (L >= 2)) applyEffects();
+}
 function applyEffects() {
-  const id = activeQuality(settings.effects, fxForcedLite), q = QUALITY[id];
+  const id = activeQuality(settings.effects, fxForcedLite || heavy >= 2), q = QUALITY[id];
+  game.vfx.tempLite = heavy >= 2 && activeQuality(settings.effects, fxForcedLite) !== 'lite'; // effects only: the 3D quality stays
+  document.body.classList.toggle('hud-lite', id === 'lite'); // Ringan: the HUD's decorations stand still too
   game.vfx.setQuality(q, TOUCH ? q.touchCap : q.cap);
   R.shakeOn = q.shake && settings.shake && !CALM.matches;
   game.calm = CALM.matches; // the class peaks skip their flash and black-and-white (spec §31.8)
@@ -448,13 +467,15 @@ function syncHp() {
   current = { ...current, hp: hp >= town.maxHp ? null : hp };
 }
 
+let npcVisit = 0; // a new one each time a dialog opens (the shop panel starts clean, ui/shopui.js)
 function openNpc(npc, message = null) {
   if (npc.role === 'talk' && screen !== 'npc') talkIdx[npc.id] = (talkIdx[npc.id] ?? -1) + 1; // next line each chat
+  if (screen !== 'npc') npcVisit++;
   townNpc = npc;
   syncHp();
   current = { ...current, clock: Math.floor(worldClock) }; // shops read the day / night from it
   renderNpc($('npc'), npc, {
-    char: current, hp: town.hp, maxHp: town.maxHp, message,
+    char: current, hp: town.hp, maxHp: town.maxHp, message, visit: npcVisit,
     line: npc.role === 'talk' ? npc.lines[(talkIdx[npc.id] ?? 0) % npc.lines.length] : null,
     quests: talkOffers(current, town.id, npc.id),
     onQuest: (id, pick = null) => { const before = current; serve((c, now) => questTalk(c, id, town.id, townNpc.id, now, Math.random, pick), (r) => { const m = questText(r); mountNews(before, r.char, r.mounts); return m; }); },
@@ -1092,6 +1113,10 @@ async function endRun(died) {
     if (won) setTimeout(() => chooseBranch(), 700);
     return;
   }
+  // fallen (not given up): the world goes grey, TUMBANG, black — then the dialog on black
+  const cause = died ? game.deathCause() : null, fell = died && !cause?.surrender;
+  if (fell) { screen = 'ending'; stopMusic(); await playFall(causeText(cause)); clearFall(); }
+  $('results').classList.toggle('afterfall', fell);
   if (game.field) { endField(died); return; }
   screen = 'ending';
   stopMusic();
@@ -1468,6 +1493,8 @@ function frame(dt) {
     applyEffects();
     toast(tr('FPS rendah: efek diubah ke Ringan'));
   }
+  if (scene === 'run' && game.state === ST.PLAY) setHeavy(loadGuard.push(dt, game.enemies.length));
+  else if (heavy && scene !== 'run') { loadGuard.reset(); setHeavy(0); }
   if (worldLoading) return;
   const gray = scene === 'run' && game.vfx.grayT > 0; // Kombo execute (spec §31.8): both canvases in black and white
   if (gray !== grayOn) { grayOn = gray; document.body.classList.toggle('fxgray', gray); }
@@ -1497,8 +1524,13 @@ function frame(dt) {
       $('prompt').classList.toggle('hidden', !near);
       document.body.classList.toggle('near', !!near);
       if (near) $('prompttext').textContent = t('Bicara dengan {name}', { name: near.name });
+      // townsfolk talking to themselves (spec §45.4): bubbles over the heads near the player
+      const map = mapsOf(town.id)[town.map];
+      updateBubbles(!FLAT && screen === null && LOOK.dialog === 'vn' && map ? chatter(map.npcs, town, town.t, town.marks || {}, { night: town.night }) : [],
+        (x, y) => STAGE.project(x, y, 96));
     }
   }
+  if (scene !== 'town') updateBubbles([], null);
   updateJoystick((scene === 'run' && game.state === ST.PLAY) || (scene === 'town' && screen === null));
   window.__SCENE_READY__ = true;
 }

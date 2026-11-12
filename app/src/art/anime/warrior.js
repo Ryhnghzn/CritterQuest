@@ -170,14 +170,14 @@ export function front(g, B, o) {
   const aR = B.aR, aL = B.aL;
   arm(g, aR.S, aR.e, aR.h, { upper: L.coat, fore: STEEL, cuff: GOLD });
   pauldron(g, aR.S, L, E, t, { side: -1, k: 0.7 });
-  sword(g, aL.h, SWORD_DOWN, E, t, 0.86, o.gear?.weapon ?? 4);
+  sword(g, aL.h, B.wpsi ?? SWORD_DOWN, E, t, 0.86 * (B.wlen ?? 1), o.gear?.weapon ?? 4); // wlen: shortened while pointing at the camera (spec §49)
   arm(g, aL.S, aL.e, aL.h, { upper: L.coat, fore: STEEL, cuff: GOLD, hand: false });
   fist(g, aL.h);
   pauldron(g, aL.S, L, E, t, { side: 1 });
 }
 export function back(g, B, o) {
   const t = B.t, E = o.element, L = trimmed(OUTFITS[o.outfit] || OUTFITS.night, o.gear);
-  sword(g, B.aR.h, -SWORD_DOWN, E, t, 0.86, o.gear?.weapon ?? 4);
+  sword(g, B.aR.h, B.wpsi ?? -SWORD_DOWN, E, t, 0.86 * (B.wlen ?? 1), o.gear?.weapon ?? 4);
   for (const leg of [B.L, B.R]) legFront(g, leg.hip, leg.knee, leg.ank, { back: true });
   arm(g, B.aL.S, B.aL.e, B.aL.h, { upper: L.coat, fore: STEEL, cuff: GOLD });
   arm(g, B.aR.S, B.aR.e, B.aR.h, { upper: L.coat, fore: STEEL, cuff: GOLD });

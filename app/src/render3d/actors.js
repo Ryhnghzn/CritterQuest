@@ -242,9 +242,11 @@ export class Actors {
     let move;
     if (this.move) { const mp = (t - this.move.t0) / this.move.dur; if (mp >= 0 && mp < 1) move = { id: this.move.id, ph: mp, dur: this.move.dur }; else this.move = null; }
     const dodge = game.dodgeT > 0 ? 1 - game.dodgeT / DODGE.duration : undefined;
-    // front / back while walking toward / away from the camera; side-on while attacking (spec §38)
-    const busy = !!move || (ph >= 0 && ph < 1) || game.attackT > 0 || dodge !== undefined;
-    viewTo(this.face, screenX(game.moveX, game.moveY, yaw), towardCam(game.moveX, game.moveY, yaw), t, busy);
+    // front / back while walking toward / away from the camera; side-on for skills and dodges (spec §38);
+    // the basic attack faces where it aims: down the screen the front, up the back, across the side (§49)
+    const striking = (ph >= 0 && ph < 1) || game.attackT > 0, busy = !!move || dodge !== undefined || (striking && !(LOOK.facing.strike && LOOK.anime && a.classId !== 'novice')); // the Pengembara has no front/back attack
+    if (striking && !busy) viewTo(this.face, screenX(game.aimX, game.aimY, yaw), towardCam(game.aimX, game.aimY, yaw), t);
+    else viewTo(this.face, screenX(game.moveX, game.moveY, yaw), towardCam(game.moveX, game.moveY, yaw), t, busy);
     const vw = viewNow(this.face, t), side = vw.view === 'side';
     // the gear's own effects (glow, wings, mists, sparks) are painted on the billboard, around the body
     const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn, anime: LOOK.anime };

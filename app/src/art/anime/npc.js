@@ -216,7 +216,7 @@ export function drawAnimeNpc(g, arch, o, pose = {}) {
   const parts = archParts(arch), C = colours(o, parts), W = BUILD[parts.build] || 1;
   const ob = { ...o, t: pose.t || 0 };
   g.save(); g.lineJoin = 'round'; g.lineCap = 'round';
-  if (pose.view === 'front' || pose.view === 'back') frontBack(g, body(pose, 'mage'), ob, parts, C, W, pose.view);
+  if (pose.view === 'front' || pose.view === 'back') frontBack(g, body({ ...pose, attackPhase: undefined }, 'mage'), ob, parts, C, W, pose.view);
   else {
     const R = rig('npc', { t: pose.t || 0, moving: pose.moving || 0, walk: pose.walk || 0, kind: parts.idle });
     g.scale(R.flip, 1);
@@ -234,7 +234,7 @@ export function drawAnimeWanderer(g, o, pose = {}) {
   g.save(); g.lineJoin = 'round'; g.lineCap = 'round';
   let at;
   if (pose.view === 'front' || pose.view === 'back') {
-    const B = body(pose, 'warrior');
+    const B = body({ ...pose, attackPhase: undefined }, 'warrior');
     frontBack(g, B, ob, WANDERER, C, 1, pose.view);
     at = { head: [0, -146 + B.b], body: [0, -100 + B.b], hand: pose.view === 'front' ? B.aL.h : B.aR.h };
   } else {

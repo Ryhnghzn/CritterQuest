@@ -129,12 +129,12 @@ export function front(g, B, o) {
   mantle(g, L, E, t, false);
   g.restore();
   sleeveArm(g, B.aR.S, B.aR.e, B.aR.h, L);
-  staff(g, B.aL.h, Math.PI, E, t, 0, 1.15, o.gear?.weapon ?? 4);
+  staff(g, B.aL.h, B.wpsi ?? Math.PI, E, t, B.cast ?? 0, 1.15, o.gear?.weapon ?? 4);
   sleeveArm(g, B.aL.S, B.aL.e, B.aL.h, L);
 }
 export function back(g, B, o) {
   const t = B.t, E = o.element, L = trimmed(OUTFITS[o.outfit] || OUTFITS.star, o.gear);
-  staff(g, B.aR.h, Math.PI, E, t, 0, 1.15, o.gear?.weapon ?? 4);
+  staff(g, B.aR.h, B.wpsi ?? Math.PI, E, t, B.cast ?? 0, 1.15, o.gear?.weapon ?? 4);
   for (const leg of [B.L, B.R]) legFront(g, leg.hip, [leg.knee[0] * 0.8, leg.knee[1]], [leg.ank[0] * 0.8, leg.ank[1]], { pants: PANTS, boot: LEATHER, back: true, w: 0.9 });
   sleeveArm(g, B.aL.S, B.aL.e, B.aL.h, L);
   sleeveArm(g, B.aR.S, B.aR.e, B.aR.h, L);

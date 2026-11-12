@@ -142,12 +142,12 @@ export function front(g, B, o) {
   stroke(g, [[19, -123], [23 + w, -86]], L.trim, 1.1);
   g.restore();
   arm(g, B.aL.S, B.aL.e, B.aL.h, { upper: L.cloth, fore: VEST, cuff: GOLD, w: 0.94 });
-  bow(g, B.aR.h, Math.PI / 2, E, t, 0, 0, o.gear?.weapon ?? 4);
+  bow(g, B.aR.h, B.wpsi ?? Math.PI / 2, E, t, B.draw ?? 0, B.draw ? 1 : 0, o.gear?.weapon ?? 4);
   arm(g, B.aR.S, B.aR.e, B.aR.h, { upper: L.cloth, fore: VEST, cuff: GOLD, w: 0.94 });
 }
 export function back(g, B, o) {
   const t = B.t, E = o.element, L = trimmed(OUTFITS[o.outfit] || OUTFITS.forest, o.gear);
-  bow(g, B.aL.h, -Math.PI / 2, E, t, 0, 0, o.gear?.weapon ?? 4);
+  bow(g, B.aL.h, B.wpsi ?? -Math.PI / 2, E, t, B.draw ?? 0, B.draw ? 1 : 0, o.gear?.weapon ?? 4);
   for (const leg of [B.L, B.R]) legFront(g, leg.hip, leg.knee, leg.ank, { ...legGear(L), back: true });
   arm(g, B.aL.S, B.aL.e, B.aL.h, { upper: L.cloth, fore: VEST, cuff: GOLD, w: 0.94 });
   arm(g, B.aR.S, B.aR.e, B.aR.h, { upper: L.cloth, fore: VEST, cuff: GOLD, w: 0.94 });

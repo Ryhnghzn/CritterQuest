@@ -12,6 +12,7 @@ import { ECHO_RARITY, ECHO_EVERY, RAINBOW_RARITY, RAINBOW, ULT_TINT, TRAIT_FX } 
 import { RARITIES } from '../data/items.js';
 import { CLASSES } from '../data/classes.js';
 import { glow, star4 } from './fxkit.js';
+import { BRANCH_SKILL, BRANCH_AURA } from './branchfx.js';
 
 const TAU = Math.PI * 2;
 const OUT = '#1a1226';
@@ -443,6 +444,7 @@ const SKILL = {
 
 // skill hits that only use particles or the player's dash (no shape of their own)
 for (const id of ['charge', 'shadow', 'blink', 'chain', 'warcry', 'hawk', 'manashield', 'assassinate']) SKILL[id] = () => {};
+Object.assign(SKILL, BRANCH_SKILL); // Job Lanjutan (spec §48): their own shapes, not the base look's
 
 const FALLBACK = {
   nova(g, h, k, p) { novaShape(g, h, k, p, 1); },
@@ -794,6 +796,8 @@ export function drawBuffAura(g, game, t) {
       }
       break;
     }
+    default: // Job Lanjutan (spec §48)
+      BRANCH_AURA[id]?.(g, x, y, t, age, fade, game);
   }
   g.restore();
 }

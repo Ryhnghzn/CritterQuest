@@ -1643,3 +1643,23 @@ Masalah: level 50 bergear Mitos mati di Gurun Merah (musuh lv 20–35). Sebab: D
 - **47.5 Hapus Normal/Sulit/Neraka:** dari data, logika, tab Tantangan, HUD, cheat; Celah tetap (naik sendiri per lantai). Save v28 membuang `difficulty` & `unlocked.hell`.
 - **47.6 Tampilan:** Power di kartu Pilih Karakter, panel Karakter (+/− saat ganti gear, perbandingan item), kartu tujuan loading & nama wilayah ("Disarankan 6.000") berwarna hijau (≥1,25×) / kuning (≥0,85×) / merah.
 - **47.7 Bench:** pita lama tetap; tambahan: lv 50 Mitos vs kelompok lv 35 kehilangan HP < 10%; Power ±½ saran → kelompok + elite > 70% HP.
+
+## 48. Skill Job Lanjutan Megah (permintaan pemilik 2026-11-12)
+
+Masalah: 24 skill cabang (§43.10) meminjam ikon & `look` skill job dasar, jadi tampak sama dan "tidak berubah". Pemilik: setiap skill lanjutan harus lebih wah secara animasi, termasuk durasinya.
+
+- **48.1 Ikon sendiri** (`art/branchicons.js`, digabung ke `ICONS`): satu per id skill; lambang bundar bertepi warna cabang; ultimate bermahkota duri emas. `icon` di `data/branches.js` = id skill.
+- **48.2 Gambar per id, bukan per `look`:** `look` tetap (logika: perisai musuh, elemen damage); gambar dipilih lewat `h.sid`. Empat lapis: lantai/aura `render/branchfx.js` (digabung ke `SKILL` & `drawBuffAura`), partikel `run/branchfx.js` (RNG vfx sendiri, + tes), 3D `render3d/branch3d.js` (tiang cahaya, palu jatuh, pusaran; dipanggil `spell3d.js`, menggantikan billboard `look`), angka `data/branchfx.js`.
+- **48.3 Lebih lama dari hit-nya:** retakan bertahan 2–3,6 detik, bara/cahaya naik 1,5–2,4 detik, cincin bertumpuk berjeda, tiang cahaya memudar; ultimate dengan warna layar (`ULT_TINT`) dan hit-stop. Angka keseimbangan (damage, area, durasi skill) tidak berubah.
+- **48.4 Bagian:** 1 = 24 ikon + Prajurit (Berserker, Paladin); 2 = Pemanah; 3 = Penyihir; 4 = Pembunuh. Rencana `docs/superpowers/plans/2026-11-12-skill-lanjutan-megah.md`.
+
+## 49. Pukulan Tampak Depan & Belakang (permintaan pemilik 2026-11-12)
+
+Masalah: pose depan/belakang (§38 C) hanya untuk berjalan dan diam; setiap memukul karakter berputar ke samping dulu, terasa aneh. Pemilik memilih: arah pukul ikut bidikan, pukulan biasa dulu, halaman contoh dulu.
+
+- **49.1 Arah:** bidik ke bawah layar → pukul tampak depan; ke atas → tampak belakang; ke kiri/kanan → tampak samping seperti sekarang. Skill dan menghindar tetap menyamping (bagian berikutnya bila cocok).
+- **49.2 Gerakan** (`art/anime/strike.js`, dipakai `common.js body()`): keyframe per job × depan/belakang menggerakkan tangan senjata, tangan bebas, sudut senjata ψ, dan menurunkan badan. Prajurit: pedang naik di atas bahu lalu membelah turun menyilang badan (depan) / di balik punggung (belakang). Pemanah: busur tegak di depan dada, tali dilepas, tangan terlempar, kilat lepas panah. Penyihir: tongkat didorong naik, bola bersinar, tangan bebas terbuka. Pembunuh: dua belati bersilang lalu merobek keluar membentuk X. Jejak tebasan mengikuti ujung senjata sebenarnya.
+- **49.3 Contoh:** `app/pukul.html` (4 job × depan/samping/belakang; Baru vs Lama; kecepatan game / pelan; pixel / halus). Setelah disetujui: `render3d/actors.js` memilih tampak dari arah bidik saat pukulan biasa; `?lama` = berputar ke samping.
+- **49.4 Revisi 1 (cek pemilik):** Prajurit tampak depan membelah lurus dari atas kepala ke arah kamera; bilah memendek saat ujungnya menunjuk kamera (nilai ke-8 keyframe = panjang bilah), jadi jejaknya turun di tengah badan, bukan menyamping.
+- **49.5 Aura senjata tertutup badan:** di tampak belakang senjata ada di depan badan (jauh dari kamera). Efek elemen yang dikumpulkan untuk pixel (`elemfx.js` `fxBehind`) ditandai "di belakang"; `drawFx` melukisnya di kanvas terpisah, membuang bagian yang tertutup sosok karakter, lalu menempelkan sisanya. Jejak tebasan tampak belakang digambar sebelum badan. Berlaku di game (berjalan menjauh, menunggang) dan di halaman contoh.
+- **49.6 Di game (contoh disetujui 2026-11-12):** `render3d/actors.js` — selama pukulan biasa tampak dipilih dari arah bidik (`viewTo` dengan arah bidik, sudut diagonal mempertahankan tampak sebelumnya); skill & menghindar tetap menyamping. Sakelar `LOOK.facing.strike` (mati di `?lama`). Pengembara (tanpa senjata) tetap menyamping.

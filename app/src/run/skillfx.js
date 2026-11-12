@@ -9,6 +9,7 @@
 import { PALETTES, elementOf } from '../data/fx.js';
 import { SKILL_FX, BASIC_FX, TRAIT_FX } from '../data/skillfx.js';
 import { RARITIES } from '../data/items.js';
+import { branchCastFx, branchWaitFx, branchStepFx, branchImpactFx, branchDashFx, branchBuffFx } from './branchfx.js';
 
 const TAU = Math.PI * 2;
 const DUST = ['#8a7560', '#6a5a48', '#a08a70'];
@@ -191,6 +192,8 @@ export function castFx(run, s, from) {
       v.ring(x, y, { r1: s.r, life: 0.5, color: P[2], width: 6 });
       v.burst('smoke', x, y, '#3a1a5a', { n: 14, speed: 2.5 });
       break;
+    default: // Job Lanjutan (spec §48)
+      branchCastFx(run, s, at);
   }
 }
 
@@ -211,7 +214,7 @@ function waitFx(run, h, dt) {
   } else if (id === 'fan' && h.kind === 'proj') { // a dagger floating in the ring: wisps spin off it
     const P = pal(id);
     for (let i = steps(v, SKILL_FX.fan.charge, dt); i > 0; i--) suck(v, h.x, h.y, v.range(10, 22), P, 0.18);
-  }
+  } else branchWaitFx(run, h, dt);
 }
 
 // One lightning strike lands on its victim: a bolt from the cloud above, a flash of light, a spark burst.
@@ -384,6 +387,8 @@ export function stepHitFx(run, h, dt) {
         run.addShake('heavy'); run.addHitStop('ult');
       }
       break;
+    default: // Job Lanjutan (spec §48)
+      if (id) branchStepFx(run, h, dt, { first, last, ticked });
   }
 
   if (h.falls) {
@@ -516,7 +521,7 @@ export function impactFx(run, h, e, crit) {
       v.burst('hit', e.x, e.y, PALETTES.steel, { n: 4 });
       break;
     default:
-      v.burst('hit', e.x, e.y, P, { n: (crit ? 10 : 6) });
+      if (!branchImpactFx(run, h, e, crit)) v.burst('hit', e.x, e.y, P, { n: (crit ? 10 : 6) });
   }
 }
 
@@ -528,7 +533,9 @@ export function stepPlayerFx(run, dt) {
       v.spawn('smoke', x + v.range(-9, 9), y - v.range(8, 30), v.range(-8, 8), -v.range(30, 55), v.range(0.7, 1.1), v.range(5, 9), ['#5a4a48', '#7a6660', '#3a3030'], 0.97, -14);
     }
   }
-  if (run.dashSid) {
+  if (run.dashSid && branchDashFx(run, run.dashSid, dt, !(run.dodgeT > 0))) { // Job Lanjutan (spec §48)
+    if (!(run.dodgeT > 0)) run.dashSid = null;
+  } else if (run.dashSid) {
     const id = run.dashSid, P = pal(id), S = SKILL_FX[id];
     if (run.dodgeT > 0) {
       const mv = Math.atan2(run.dodgeY, run.dodgeX);
@@ -563,6 +570,7 @@ export function stepPlayerFx(run, dt) {
   }
   if (run.buffSid && run.buffT > 0) {
     const id = run.buffSid, P = pal(id), S = SKILL_FX[id];
+    if (branchBuffFx(run, id, dt)) return; // Job Lanjutan (spec §48)
     if (!S?.rate) return;
     for (let i = steps(v, S.rate, dt); i > 0; i--) {
       switch (id) {

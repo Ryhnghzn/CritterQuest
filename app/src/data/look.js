@@ -14,6 +14,7 @@ const MATANG = {
   key: 1.3,           // … sun / moon …
   points: 1.7,        // … and torches, lanterns, windows: contrast and a sense of where light comes from
   spells: true,       // spell effects standing in the world (render3d/spell3d.js); false = the old flat glows
+  dialog: 'vn',       // NPC dialog "Potret Besar" (spec §45.2–45.5, ui/npc.js buildVn); null = the docked panel
   hud: 'orb',         // HUD "Bola & Bingkai" (spec §45.1, ui/hudorb.js + ui/hud-orb.css); null = the old bars
   // real sun shadows (plan C1; Penuh only, Ringan has none): map size, half-width of the
   // shadowed square around the camera target (metres), darkness, acne guards
@@ -33,7 +34,8 @@ const MATANG = {
   // views: front/back poses (C); viewMin = walk speed (0..1) that picks a view; viewBand = how much
   // more toward/away than across the walk must be for front/back (and across than toward for side;
   // in between the view is kept)
-  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25,
+  // strike: the basic attack picks its view from the aim (front / side / back, spec §49) instead of turning side-on
+  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25, strike: true,
     // townsfolk whose standing idle is their job (rig.js NPC_IDLE) stay side-on so the work shows;
     // the others face the camera when standing
     jobIdles: ['hammer', 'snip', 'sway', 'stance', 'read'] },
@@ -54,7 +56,7 @@ const MATANG = {
 const LAMA = {
   saturation: 1, detail: 0, exposure: 1, bloom: { strength: 0.7, radius: 0.45, threshold: 0.82 }, bloomScale: 1,
   bill: 0.42, heroBill: 0.42, groundGlow: 1, ambient: 1, key: 1, points: 1, spells: false, shadows: null, mood: null, paintGround: null, illustrated: null,
-  pixel: null, anime: false, npcFps: null, hud: null,
+  pixel: null, anime: false, npcFps: null, hud: null, dialog: null,
   facing: { turn: 0, hop: 0, lean: 0, dead: 0.05, views: false, viewMin: 0.3, viewBand: 1.25 },
 };
 const old = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lama');

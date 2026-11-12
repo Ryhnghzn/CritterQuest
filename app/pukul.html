@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contoh Pukulan Depan & Belakang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a24a;--gold-d:#6e5426;--gold-l:#e8cf8e;--ink:#e8dcc4;--dim:#9a8f80}
+*{box-sizing:border-box}
+body{margin:0;background:#08060a;color:var(--ink);font-family:'Barlow',system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 22px 'Cinzel',serif;color:var(--gold-l);margin:0 0 4px;letter-spacing:1px}
+.intro{color:var(--dim);margin:0 0 14px;max-width:900px;line-height:1.5}
+.bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.grp b{display:block;font:700 12.5px 'Cinzel',serif;color:var(--gold-l);margin-bottom:5px;letter-spacing:1px}
+.opts{display:flex;gap:5px;flex-wrap:wrap}
+.btn{font:600 13px 'Barlow',sans-serif;color:var(--gold-l);background:#100c14;border:1px solid var(--gold-d);padding:6px 10px;cursor:pointer;min-height:34px}
+.btn.on{border-color:var(--gold);color:#fff1d6;background:#2a1d14}
+.stage{border:1px solid var(--gold-d);background:#0b0810}
+.stage canvas{display:block;width:100%;aspect-ratio:3/4;max-height:150vh}
+@media (min-width:700px){.stage canvas{aspect-ratio:1/1}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Pukulan Depan &amp; Belakang</h1>
+  <p class="intro">Pukulan biasa keempat job dilihat dari depan, samping, dan belakang. <b>Baru</b>: membidik ke bawah layar memukul dengan tampak depan, ke atas dengan tampak belakang, ke kiri/kanan tetap menyamping. <b>Lama</b>: seperti di game sekarang, karakter berputar ke samping dulu setiap memukul. Ketuk gambar untuk memukul sekali.</p>
+  <div class="bar">
+    <div class="grp"><b>Versi</b><div class="opts" id="mode"></div></div>
+    <div class="grp"><b>Kecepatan</b><div class="opts" id="speed"></div></div>
+    <div class="grp"><b>Tampilan</b><div class="opts" id="render"></div></div>
+    <div class="grp"><b>Gerak</b><div class="opts"><button class="btn on" id="loop">Pukul terus</button><button class="btn" id="walk">Lari</button></div></div>
+  </div>
+  <div class="stage"><canvas id="stage"></canvas></div>
+</main>
+<script type="module" src="./pukul/main.js"></script>
+</body>
+</html>

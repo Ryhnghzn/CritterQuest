@@ -553,3 +553,42 @@ body.touch #act-swap{left:-54px;bottom:auto;top:-52px}
   #loading .lfoe.boss .lpic{width:52px;height:52px}
 }
 @media (prefers-reduced-motion:reduce){#loading .lcard *{animation:none!important;opacity:1!important;transform:none!important;filter:none!important;translate:none!important;width:auto}}
+
+/* ═══════════ falling (ui/fall.js): grey world, TUMBANG, then black, then the dialog ═══════════ */
+body.falling :is(#game,#game3d){filter:grayscale(1) brightness(.6) contrast(1.1);transition:filter 1.2s ease}
+#fall{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.15) 30%,rgba(40,0,6,.75) 80%,rgba(0,0,0,.92));animation:fall-in 1s ease both}
+@keyframes fall-in{from{opacity:0}}
+#fall::after{content:'';position:absolute;inset:0;background:#000;opacity:0;transition:opacity .45s ease;pointer-events:none}
+#fall.black::after{opacity:1}
+#fall .fword{display:flex;font:800 clamp(48px,13vh,120px) 'Cinzel',serif;letter-spacing:.12em;text-transform:uppercase;
+  color:#d8343e;text-shadow:0 4px 0 #1a0204,0 0 30px rgba(220,30,40,.6),0 0 80px rgba(120,0,10,.5)}
+#fall .fword span{display:inline-block;opacity:0;transform:scale(2.2) translateY(-10px);filter:blur(10px);animation:fall-slam .45s cubic-bezier(.2,1.4,.4,1) forwards;animation-delay:calc(.35s + var(--i) * .07s)}
+@keyframes fall-slam{60%{opacity:1;filter:none}to{opacity:1;transform:none;filter:none}}
+#fall .fcrack{display:block;height:2px;width:0;background:linear-gradient(90deg,transparent,#e8c070 20%,#ff5a3a 50%,#e8c070 80%,transparent);
+  box-shadow:0 0 12px rgba(255,120,60,.8);animation:fall-crack .7s ease-out .95s forwards}
+@keyframes fall-crack{to{width:min(560px,70vw)}}
+#fall .fcause{font:500 clamp(14px,2.2vh,18px) 'Barlow',sans-serif;color:#cfc3ab;font-style:italic;opacity:0;animation:fall-cause .8s ease 1.25s forwards;text-shadow:0 2px 6px #000;padding:0 16px;text-align:center}
+@keyframes fall-cause{to{opacity:1}}
+#results.afterfall{background:#050306}
+@media (prefers-reduced-motion:reduce){#fall *{animation:none!important;opacity:1!important;transform:none!important;filter:none!important;width:min(560px,70vw)}}
+
+/* ═══════════ skill tab: slots stay in view, a skill's slots open right under it (ui/skilltab.js) ═══════════ */
+#ui .skstick{position:sticky;top:-1px;z-index:3;display:flex;flex-direction:column;gap:6px;margin:0 -8px;padding:6px 8px 8px;
+  background:rgba(13,10,16,.97);box-shadow:0 8px 12px -8px rgba(0,0,0,.9);border-bottom:1px solid var(--cq-rowedge)}
+#ui .skpick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;margin:-2px 0 6px;border:1px solid var(--cq-gold);
+  background:linear-gradient(rgba(201,162,74,.12),rgba(201,162,74,.04));animation:rise .2s ease both}
+#ui .skpick .skpl{flex-basis:100%;text-align:left;font:700 11px 'Cinzel',serif;letter-spacing:2px;text-transform:uppercase;color:var(--cq-gold)}
+#ui .skpick .skp{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:54px;min-height:56px;padding:4px 6px;cursor:pointer;
+  font-family:inherit;color:var(--cq-gold-l);background:#0b080e;border:1px solid var(--cq-gold-d);border-radius:6px}
+#ui .skpick .skp:hover{border-color:var(--cq-gold-l);box-shadow:0 0 10px rgba(201,162,74,.35)}
+#ui .skpick .skp b{font:700 11px 'Cinzel',serif}
+#ui .skpick .skp .sic{width:26px;height:26px;display:grid;place-items:center}
+#ui .skpick .skp .plus{font-size:18px;color:var(--dim)}
+#ui .skpick .skp.here{border-color:#7be08a;box-shadow:inset 0 0 8px rgba(123,224,138,.35)}
+#ui .skpick .skpx{margin-left:auto;width:36px;height:36px;border-radius:50%;cursor:pointer;color:var(--cq-gold-l);background:#0b080e;border:1px solid var(--cq-gold-d);font-size:16px}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){
+  #ui .skstick .skslot{min-height:54px;padding:4px}
+  #ui .skstick .skslot .sname{display:none}
+  #ui .skpick .skp{min-width:58px;min-height:60px}
+}

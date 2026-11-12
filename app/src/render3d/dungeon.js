@@ -144,7 +144,7 @@ export class Dungeon25 {
   async warm(game, step) {
     await step(0.15, 'torch');
     if (!this.hemi) this.setup();
-    const lite = game.vfx?.mul < 1;
+    const lite = game.vfx?.mul < 1 && !game.vfx?.tempLite; // the load guard's lite is the effects only
     if (lite !== this.stage.lite) this.stage.setQuality(lite);
     await step(0.45, 'dungeon');
     this.buildRoom(game);
@@ -159,7 +159,7 @@ export class Dungeon25 {
     const st = this.stage, v = this.view;
     st.show(true);
     v.c.style.background = 'transparent';
-    const lite = game.vfx?.mul < 1;
+    const lite = game.vfx?.mul < 1 && !game.vfx?.tempLite;
     if (lite !== st.lite) st.setQuality(lite);
     if (game.room !== this.roomRef) this.buildRoom(game);
     if (game.portals !== this.portalRef) this.buildPortals(game);

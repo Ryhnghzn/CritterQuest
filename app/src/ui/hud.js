@@ -152,7 +152,27 @@ function ring(btn, cd, max) {
 }
 
 // Belt buttons: icon of the potion in each slot, how many are carried, shared cooldown.
+// A potion was drunk (its count went down): the belt button bursts in its colour, the HP orb
+// glows (heal) or rings blue (shield), and a label rises over the HUD with what it does.
+const lastPot = {};
+let potFx = null;
+function drank(id, slot) {
+  const P = POTIONS[id], b = $(`pot${slot}`);
+  if (b) { b.style.setProperty('--pc', P.light); b.classList.remove('used'); void b.offsetWidth; b.classList.add('used'); }
+  const orb = [$('hpfill'), $('thpfill')].map((f) => f?.parentElement).find((x) => x && x.offsetParent);
+  if (orb && (P.heal || P.shield)) { const k = P.heal ? 'healed' : 'shielded'; orb.classList.remove(k); void orb.offsetWidth; orb.classList.add(k); }
+  if (!potFx) { potFx = document.createElement('div'); potFx.id = 'potfx'; $('ui').append(potFx); }
+  potFx.replaceChildren(iconCanvas(`pot_${id}`, 24), Object.assign(document.createElement('b'), { textContent: P.name }), Object.assign(document.createElement('span'), { textContent: P.desc }));
+  potFx.style.setProperty('--pc', P.light);
+  potFx.classList.remove('on'); void potFx.offsetWidth; potFx.classList.add('on');
+}
+
 export function updateBelt(belt, potions, cd) {
+  for (const id of POTION_IDS) {
+    const n = potions[id] ?? 0;
+    if (lastPot[id] != null && n < lastPot[id]) { const slot = belt.indexOf(id); drank(id, slot); }
+    lastPot[id] = n;
+  }
   belt.forEach((id, i) => {
     const b = $(`pot${i}`);
     if (b.dataset.id !== String(id)) {

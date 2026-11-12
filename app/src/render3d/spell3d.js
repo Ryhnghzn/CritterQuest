@@ -8,6 +8,7 @@ import * as FX from '../art/pix/fx.js';
 import { RAMPS } from '../art/pix/palette.js';
 import { SPELL3D as C } from '../data/spell3d.js';
 import { S } from './stage.js';
+import { BRANCH_SIDS, branchHit3d, branchFrame3d } from './branch3d.js';
 
 const MAX_FX = 140;
 // a ground direction (vx, vy) as an angle on screen for a camera turned by yaw (far = up, foreshortened)
@@ -50,6 +51,14 @@ const MAKE = {
   aring: () => FX.novaRing(1, C.detail, 'arcane'),
   ...Object.fromEntries(Object.entries(FX.SHOT_ART).map(([look, make]) => [`s_${look}`, () => make(C.detail)])), // enemy shots (spec §41.2)
 };
+// soft white textures drawn in code, tinted per use (Job Lanjutan, spec §48)
+function proc(w, h, alpha) {
+  const a = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; a[i] = a[i + 1] = a[i + 2] = 255; a[i + 3] = Math.round(255 * Math.min(1, alpha((x + 0.5) / w, (y + 0.5) / h))); }
+  return { w, h, k: 1, rgba: () => a };
+}
+MAKE.column = () => [proc(24, 96, (u, v) => { const d = u * 2 - 1; return (Math.exp(-d * d * 7) * 0.75 + Math.exp(-d * d * 60) * 0.6) * v ** 0.7 * Math.min(1, (1 - v) * 12); })]; // bright at the foot, fading up
+MAKE.disc = () => [proc(64, 64, (u, v) => { const d = Math.hypot(u * 2 - 1, v * 2 - 1); return d > 1 ? 0 : Math.exp(-((d - 0.78) ** 2) * 60) + Math.exp(-d * d * 3) * 0.35; })];
 const frames = (id) => FRAMES[id] || (FRAMES[id] = MAKE[id]().map(tex));
 
 // plane geometry with its anchor (fraction of width from the left, of height from the top) at 0
@@ -103,6 +112,8 @@ export class Spell3D {
     const fr = frames(id);
     const mat = new THREE.MeshBasicMaterial({ map: fr[0].map, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: o.opacity ?? 1, alphaTest: o.flat ? 0 : 0.4 });
     if (o.glow) mat.color.setScalar(o.glow);
+    if (o.tint != null) mat.color.set(o.tint).multiplyScalar(o.glow || 1);
+    if (o.additive) { mat.blending = THREE.AdditiveBlending; mat.alphaTest = 0; }
     if (o.flat) { mat.polygonOffset = true; mat.polygonOffsetFactor = -2; }
     const mesh = new THREE.Mesh(o.flat ? FLAT : anchored(o.ax ?? 0.5, o.ay ?? 0.5), mat);
     mesh.renderOrder = o.flat ? 1 : 3; mesh.visible = false;
@@ -254,7 +265,9 @@ export class Spell3D {
     this.lastT = t;
     if (!playing) { this.clear(); return; }
     const live = new Set();
+    branchFrame3d(this, game, t, dt, mul);
     for (const h of game.hits) {
+      if (h.sid && BRANCH_SIDS.has(h.sid) && branchHit3d(this, h, t, mul, yaw)) continue; // Job Lanjutan (spec §48)
       if (h.kind === 'orbit' || (h.kind === 'proj' && h.fx === 'dagger' && !h.dead && (!(h.delay > 0) || h.hover))) { // Assassin's blades
         live.add(h);
         const big = h.kind === 'orbit' || h.sid === 'shuriken' || h.part === 'throw';

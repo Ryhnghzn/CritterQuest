@@ -8,6 +8,8 @@ import { itemElement } from './items.js';
 import { armourBack, bootsFx, ringGlint, cape, armourPieces } from './gearfx.js';
 import { drawWings } from './wings.js';
 import { ankle } from './common.js';
+import { strikeTrail } from './strike.js';
+import { fxBehind } from './elemfx.js';
 import { HAIR_STYLES, HAIR_COLORS } from './head.js';
 import * as warrior from './warrior.js';
 import * as archer from './archer.js';
@@ -51,7 +53,10 @@ export function drawAnime(g, classId, o, pose = {}) {
     if (o.wings && pose.view === 'front') drawWings(g, o.wings, 'front', [0, -118 + B.b], look.t, pose.moving);
     armourBack(g, G.armor, [0, -112 + B.b], [B.aL.S, B.aR.S], look.t, pose.moving);
     if (pose.view === 'front') cape(g, G.armor, 'front', [0, -124 + B.b], look.t, pose.moving);
-    C[pose.view](g, B, look);
+    // seen from behind, the weapon is in front of the body: its glow and the swing's arc hide behind it (spec §49)
+    if (pose.view === 'back') { strikeTrail(g, B, element); fxBehind(true); }
+    try { C[pose.view](g, B, look); } finally { fxBehind(false); }
+    if (pose.view === 'front') strikeTrail(g, B, element); // the blade's arc / the release flash, in front
     if (pose.view === 'back') cape(g, G.armor, 'back', [0, -124 + B.b], look.t, pose.moving);
     armourPieces(g, G.armor, pose.view, { chest: [0, -110 + B.b], shoulders: [B.aL.S, B.aR.S], hips: [B.L.hip, B.R.hip] }, look.t);
     if (o.wings && pose.view === 'back') drawWings(g, o.wings, 'back', [0, -118 + B.b], look.t, pose.moving); // over the back

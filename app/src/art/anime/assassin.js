@@ -130,13 +130,13 @@ export function front(g, B, o) {
   g.restore();
   for (const [a, s] of [[B.aL, -1], [B.aR, 1]]) {
     arm(g, a.S, a.e, a.h, { upper: L.suit, fore: LEATHER, w: 0.88 });
-    dagger(g, a.h, s * UP, E, t, false, o.gear?.weapon ?? 4);
+    dagger(g, a.h, (s < 0 ? B.wpsi : B.opsi) ?? s * UP, E, t, false, o.gear?.weapon ?? 4);
   }
   guard(g, B.aL.S, L, 0, 1);
 }
 export function back(g, B, o) {
   const t = B.t, E = o.element, L = trimmed(OUTFITS[o.outfit] || OUTFITS.shadow, o.gear);
-  for (const [a, s] of [[B.aL, -1], [B.aR, 1]]) dagger(g, a.h, s * UP, E, t, true, o.gear?.weapon ?? 4);
+  for (const [a, s] of [[B.aL, -1], [B.aR, 1]]) dagger(g, a.h, (s < 0 ? B.wpsi : B.opsi) ?? s * UP, E, t, true, o.gear?.weapon ?? 4);
   for (const leg of [B.L, B.R]) legFront(g, leg.hip, leg.knee, leg.ank, { ...legGear(L), back: true });
   for (const a of [B.aL, B.aR]) arm(g, a.S, a.e, a.h, { upper: L.suit, fore: LEATHER, w: 0.88 });
   g.save(); g.translate(0, B.b);

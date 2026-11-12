@@ -17,7 +17,8 @@ body.hud-orb.touch.intown{--fh:72px}
 
 /* ---- the HUD boxes become whole-screen layers; their parts are placed one by one ---- */
 body.hud-orb #ui :is(#hud,#townhud){position:absolute;inset:0;width:auto;padding:0;margin:0;display:block;zoom:1;
-  background:none;border:0;box-shadow:none;clip-path:none;pointer-events:none}
+  background:none;border:0;box-shadow:none;clip-path:none;pointer-events:none;
+  z-index:0;isolation:isolate} /* its own layer: the orbs (z 2–3) stay under every panel / dialog drawn after it */
 body.hud-orb #ui :is(#hud,#townhud)::after{content:none}
 body.hud-orb #ui :is(#hud,#townhud)>*{position:absolute}
 
@@ -182,3 +183,40 @@ body.hud-orb.touch #saved{right:auto;left:50%;bottom:auto;top:10px;translate:-50
   body.hud-orb #ui :is(.rune,.bub,.hframe::after,.embers i,#floor){animation:none}
   body.hud-orb #ui .hframe .embers{display:none}
 }
+
+/* the talk / enter prompt sits above the dock (it was 28px from the bottom, under the frame) and in front of the HUD */
+body.hud-orb #ui #prompt{z-index:3}
+body.hud-orb:not(.touch) #ui #prompt{bottom:calc(var(--db) + var(--fh) + 18px)}
+body.hud-orb.touch #ui #prompt{top:auto;bottom:calc(var(--db) + var(--fh) + 14px)}
+/* short phone screens draw the prompt at zoom .75 (index.html), which scales its offset too */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){
+  body.hud-orb.touch #ui #prompt{bottom:calc((var(--db) + var(--fh) + 14px) / .75)}
+}
+
+/* a potion drunk (ui/hud.js drank): the belt button bursts, the HP orb glows / rings, a label rises */
+#ui #belt .act.used::after{content:'';position:absolute;inset:-2px;border-radius:50%;pointer-events:none;border:3px solid var(--pc);animation:ho-used .6s ease-out forwards}
+@keyframes ho-used{from{transform:scale(1);opacity:1;box-shadow:0 0 16px var(--pc)}to{transform:scale(1.9);opacity:0}}
+body.hud-orb #ui .orb.healed::after{animation:ho-heal 1s ease-out}
+@keyframes ho-heal{0%{background:radial-gradient(circle,rgba(255,170,190,.85),transparent 70%)}100%{background:linear-gradient(rgba(255,255,255,.14),transparent)}}
+body.hud-orb #ui .orb.healed{animation:ho-healring 1s ease-out}
+@keyframes ho-healring{30%{box-shadow:0 0 0 3px #0c0807,0 0 0 4px #ff8aa3,0 0 0 6px #000,0 0 34px #ff6f90,inset 0 0 26px #000}}
+body.hud-orb #ui .orb.shielded{animation:ho-shieldring 1.2s ease-out}
+@keyframes ho-shieldring{30%{box-shadow:0 0 0 3px #0c0807,0 0 0 5px #9fd0ff,0 0 0 7px #000,0 0 34px #4a9aff,inset 0 0 26px #000}}
+#potfx{position:fixed;left:50%;bottom:150px;z-index:6;display:flex;align-items:center;gap:8px;padding:6px 16px 6px 8px;white-space:nowrap;pointer-events:none;
+  font:600 14px 'Barlow',sans-serif;color:#e8dcc4;background:rgba(8,5,7,.92);border:1px solid var(--pc);border-radius:999px;box-shadow:0 0 16px color-mix(in srgb,var(--pc) 45%,transparent);
+  opacity:0;transform:translate(-50%,0)}
+#potfx b{font:700 14px 'Cinzel',serif;color:var(--pc)}
+#potfx span{color:#cfc3ab}
+#potfx.on{animation:ho-potfx 2.2s ease-out forwards}
+@keyframes ho-potfx{0%{opacity:0;transform:translate(-50%,16px) scale(.9)}12%{opacity:1;transform:translate(-50%,0) scale(1.04)}20%{transform:translate(-50%,0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-26px)}}
+body.hud-orb #potfx{bottom:calc(var(--db) + var(--fh) + 64px)}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:540px){#potfx{font-size:12px;padding:4px 12px 4px 6px}#potfx b{font-size:12px}}
+
+/* load guard (run/loadguard.js) in a busy fight, or Ringan: the decorations stand still; what
+   matters stays (orb levels, numbers, cooldowns, low HP, ultimate ready, potion signs) */
+body.hud-orb:is(.hud-calm,.hud-lite) #ui :is(.rune,.bub,#floor,.act.big){animation:none}
+body.hud-orb:is(.hud-calm,.hud-lite) #ui .orb>i::before,body.hud-orb:is(.hud-calm,.hud-lite) #ui .xpbar>i::after{animation:none}
+body.hud-orb:is(.hud-calm,.hud-lite) #ui .hframe::after,body.hud-orb:is(.hud-calm,.hud-lite) #ui .hframe .embers,
+body.hud-orb:is(.hud-calm,.hud-lite) #ui .orb .bub{display:none}
+body.hud-orb:is(.hud-calm,.hud-lite) #ui :is(#act-s1,#act-s2,#act-s3,#act-s4,#act-dodge).ready:not(.none)::after{animation:none}
+body.hud-orb:is(.hud-calm,.hud-lite) #ui .trbar::before{filter:none}

@@ -5,6 +5,7 @@
 import { POTIONS } from '../data/potions.js';
 import { MONSTER_ART, BEAST_OVERRIDES, artExt } from './monsters.js';
 import { ECLIPSE_ART } from './eclipse.js';
+import { BRANCH_ICONS } from './branchicons.js';
 
 export const OUT = '#16121c'; // shared outline colour (thin, dark — langkah 8)
 
@@ -783,6 +784,7 @@ const ICONS = {
       g.restore();
     }
   },
+  ...BRANCH_ICONS, // Job Lanjutan skills (spec §48): one icon per skill id
 };
 export const ICON_IDS = Object.keys(ICONS);
 

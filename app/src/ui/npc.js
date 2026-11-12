@@ -30,6 +30,8 @@ import { renderStableList, renderStableShop } from './stable.js';
 import { npcBust } from '../art/bust.js';
 import { LOOK } from '../data/look.js';
 import { tr, t, num } from '../i18n.js';
+import { moodOf, lineText } from '../meta/mood.js';
+import { shopPanel } from './shopui.js';
 
 let toSell = new Set(); // Pandai Besi: items marked for selling
 let newLook = null;     // Tukang Cukur: style being tried on
@@ -66,9 +68,129 @@ const TITLES = { inn: 'Penginapan', potion: 'Toko Ramuan', gear: 'Pandai Besi', 
 // messages), the shop on the right (scrolls on its own). Redraws keep the scroll.
 export function renderNpc(box, npc, ctx) {
   const tab = { gear: smithTab, jeweler: gemTab, board: boardTab, stable: stableTab }[npc.role] || '';
-  box.classList.add('dock');
-  keepView(box, `npc:${npc.id}:${tab}`, () => buildNpc(box, npc, ctx));
+  const vn = LOOK.dialog === 'vn'; // spec §45.2: the big portrait over a line box; ?lama = the docked panel
+  box.classList.toggle('dock', !vn);
+  box.classList.toggle('vn', vn);
+  keepView(box, `npc:${npc.id}:${tab}`, () => (vn ? buildVn : buildNpc)(box, npc, ctx));
 }
+
+// ═══ visual-novel dialog (spec §45.2–45.3) ═══
+// The NPC stands behind the line box (chest-up, breathing, a rune halo), the line types itself
+// out (a tap shows it whole), ▼ waits; what can be done (quest answers, services, Tutup) comes in
+// once the line is read. Shops / services: the line box shrinks to the left, the panel fills the
+// right. A line's mood (meta/mood.js) moves the portrait and puts a symbol by the head.
+const EMOTE = {
+  angry: '<svg class="e-angry" viewBox="-20 -20 40 40"><path d="M-3-4C-4-10-10-12-14-9M4-3C10-4 12-10 9-14M3 4C4 10 10 12 14 9M-4 3C-10 4-12 10-9 14"/></svg>',
+  ask: '<b class="e-ask">?</b>',
+  shock: '<b class="e-shock">!</b><i class="e-lines"><i></i><i></i><i></i></i>',
+  worry: '<i class="e-sweat"></i><i class="e-gloom"><i></i><i></i><i></i><i></i></i>',
+  happy: '<b class="e-note n1">♪</b><b class="e-note n2">♫</b><i class="e-spark s1"></i><i class="e-spark s2"></i><i class="e-spark s3"></i>',
+  think: '<b class="e-dots"><i></i><i></i><i></i></b>',
+};
+const VN_RUNE = '<svg class="rune" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" class="r1" pathLength="120"/><circle cx="50" cy="50" r="44" class="r2" pathLength="100"/></svg>';
+const VN_EMBERS = Array.from({ length: 12 }, (_, i) => `<i style="left:${(i * 37) % 100}%;--d:${((i * 0.43) % 4).toFixed(2)}s;--s:${(2.6 + (i % 4) * 0.5).toFixed(1)}s;--x:${(i % 2 ? 1 : -1) * (6 + (i % 5) * 4)}px"></i>`).join('');
+let lastSaid = '';   // a redraw of the same line shows it whole at once (no typing again)
+let typing = 0;      // the running typewriter (rAF id)
+const TYPE_RATE = 45; // letters per second
+
+function buildVn(box, npc, ctx) {
+  if (npc.role !== 'barber') newLook = null;
+  const { char, hp, maxHp } = ctx;
+  cancelAnimationFrame(typing);
+  box.replaceChildren();
+  const offer = ctx.quests?.[0];
+  const msg = ctx.message;
+  // what the NPC says: a result of what was just done (shops answer in their own voice), the
+  // quest step, its talk line, or what its trade is
+  const said = msg ? msg.text : offer ? offer.say : npc.role === 'talk' ? ctx.line : tr(LINES[npc.role]);
+  const text = lineText(said), mood = msg && msg.ok === false ? 'angry' : moodOf(said);
+  const body = el('div', 'npcbody'), actions = el('div', 'vnacts');
+  fillNpc(box, npc, ctx, body, actions);
+  const shop = body.childElementCount > 0;
+
+  const root = el('div', `vn-root${shop ? ' shopping' : ''}`);
+  const veil = el('div', 'vnveil');
+  // portrait
+  const bust = el('div', 'vnbust');
+  bust.style.setProperty('--c', npc.outfit[0]);
+  const fig = el('div', 'fig'), emo = el('div', 'emo');
+  if (!npc.object && LOOK.anime) fig.append(npcBust({ ...npc.look, outfit: npc.outfit }, Math.round(Math.min(360, innerHeight * 0.56))));
+  else fig.append(stage(npc.object ? iconCanvas(npc.object === 'bed' ? 'inn' : 'zap', 120) : portrait(null, { ...npc.look, outfit: npc.outfit }, 140), npc.outfit[0]));
+  bust.append(frag(`<div class="halo">${VN_RUNE}</div>`), fig, emo);
+  // the line box
+  const lbox = el('div', 'vnbox');
+  const plate = el('div', 'vnplate');
+  plate.append(el('b', null, npc.name), el('span', null, npc.title || tr(TITLES[npc.role])));
+  const p = el('p', 'vntxt');
+  if (msg?.color) p.style.color = msg.color;
+  lbox.append(plate, p, el('i', 'vnnext'), frag(`<div class="embers">${VN_EMBERS}</div>`));
+  if (!msg && npc.role === 'gate' && hp < maxHp * 0.5) lbox.append(el('div', 'vnwarn', tr('HP-mu masih rendah. Istirahat dulu di Penginapan?')));
+  // what can be done
+  const ch = el('div', 'vnch');
+  if (offer) ch.append(questBox(offer, ctx.onQuest, char));
+  for (const b of [...actions.children]) ch.append(b);
+  const close = button(tr('Tutup'), 'btn ghost vnclose', ctx.onClose);
+  close.id = 'npc-close';
+  if (shop) {
+    // the trade fills the right: what you carry on top, the panel under it
+    const panel = el('div', 'vnpanel');
+    const head = el('div', 'vnphead');
+    const wallet = el('div', 'records');
+    const chips = [t('{n} koin', { n: char.gold }), `HP ${Math.ceil(hp)} / ${Math.round(maxHp)}`];
+    if (npc.role === 'board') chips.push(t('{n} Lencana', { n: char.marks }));
+    for (const c of chips) wallet.append(el('span', 'hchip', c));
+    head.append(wallet, close);
+    panel.append(head);
+    if (ch.childElementCount) panel.append(ch);
+    panel.append(body);
+    root.append(veil, bust, lbox, panel);
+  } else {
+    ch.append(close);
+    root.append(veil, bust, lbox, ch);
+  }
+  box.append(root);
+  // mood: the portrait's motion, the symbol by the head, the box's look
+  bust.dataset.mood = mood || ''; lbox.dataset.mood = mood || '';
+  emo.innerHTML = EMOTE[mood] || '';
+  if (mood === 'angry') lbox.classList.add('jolt');
+  // the typewriter (once per new line; reduced motion: at once)
+  const key = `${npc.id}:${text}`, whole = key === lastSaid || CALM.matches;
+  lastSaid = key;
+  const done = () => { p.textContent = text; root.classList.add('read'); lbox.classList.toggle('more', false); };
+  if (whole) { done(); return; }
+  let shown = 0, at = performance.now();
+  const step = (now) => {
+    shown += ((now - at) / 1000) * TYPE_RATE; at = now;
+    if (shown >= text.length) { done(); return; }
+    p.textContent = text.slice(0, Math.floor(shown));
+    typing = requestAnimationFrame(step);
+  };
+  typing = requestAnimationFrame(step);
+  const finish = () => { cancelAnimationFrame(typing); done(); };
+  lbox.addEventListener('pointerdown', finish);
+  veil.addEventListener('pointerdown', finish);
+  bust.addEventListener('pointerdown', finish);
+}
+const CALM = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+function frag(html) { const tp = document.createElement('template'); tp.innerHTML = html; return tp.content; }
+
+// 1–4 press the choices in order, Space / Enter shows a line that is still typing (visual-novel dialog)
+if (typeof addEventListener === 'function') addEventListener('keydown', (e) => {
+  const box = document.getElementById('npc');
+  if (!box || box.classList.contains('hidden') || !box.classList.contains('vn')) return;
+  if (e.target.closest?.('input,textarea,select')) return;
+  const root = box.querySelector('.vn-root');
+  if (!root) return;
+  if (!root.classList.contains('read') && (e.key === ' ' || e.key === 'Enter')) {
+    e.preventDefault(); e.stopPropagation();
+    root.querySelector('.vnbox')?.dispatchEvent(new Event('pointerdown'));
+    return;
+  }
+  if (/^[1-4]$/.test(e.key) && !root.classList.contains('shopping')) {
+    const list = [...root.querySelectorAll('.vnch button:not([disabled])')];
+    list[+e.key - 1]?.click();
+  }
+}, true);
 
 function buildNpc(box, npc, ctx) {
   if (npc.role !== 'barber') newLook = null;
@@ -101,6 +223,28 @@ function buildNpc(box, npc, ctx) {
   }
 
   const actions = el('div', 'row');
+  fillNpc(box, npc, ctx, body, actions);
+  if (actions.childElementCount && !actions.parentNode) (body.childElementCount ? body : side).append(actions);
+
+  const msg = el('div', 'npcmsg');
+  if (ctx.message) {
+    msg.textContent = ctx.message.text; msg.classList.toggle('ok', ctx.message.ok);
+    if (ctx.message.color) msg.style.color = ctx.message.color;
+  }
+  else if (npc.role === 'gate' && hp < maxHp * 0.5) msg.textContent = tr('HP-mu masih rendah. Istirahat dulu di Penginapan?');
+
+  const close = button(tr('Tutup'), 'btn ghost', ctx.onClose);
+  close.id = 'npc-close';
+  side.append(msg, close);
+  panel.append(side);
+  if (body.childElementCount) panel.append(body); else panel.classList.add('solo');
+  box.append(panel);
+}
+
+// What the NPC offers (shop lists, services, the gate…): body gets the panels, actions the
+// buttons that stand alone (Tidur…). Shared by the docked dialog and the visual-novel one.
+function fillNpc(box, npc, ctx, body, actions) {
+  const { char } = ctx;
   if (npc.role === 'rest') { // your bed at home: free
     const b = button(tr('Tidur (gratis)'), 'btn', ctx.onRest);
     b.id = 'npc-rest';
@@ -118,7 +262,9 @@ function buildNpc(box, npc, ctx) {
   } else if (npc.role === 'gear') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
     body.append(tabBar([['peti', 'Peti'], ['jual', 'Jual'], ['tempa', 'Tempa'], ['urai', 'Urai']], smithTab, (tab) => { smithTab = tab; redraw(); }));
-    if (smithTab === 'peti') body.append(chestCards(char, ctx.onBuyChest));
+    // spec §45.5: the new shop panel for Peti / Jual (keeps the NPC's last answer while browsing)
+    if (LOOK.dialog === 'vn' && (smithTab === 'peti' || smithTab === 'jual')) body.append(shopPanel(char, smithTab, null, ctx, () => renderNpc(box, npc, ctx), npc.name, ctx.visit));
+    else if (smithTab === 'peti') body.append(chestCards(char, ctx.onBuyChest));
     else if (smithTab === 'jual') body.append(sellPanel(char, ctx.onSell, redraw));
     else if (smithTab === 'tempa') body.append(forgePanel(char, ctx, redraw));
     else body.append(salvagePanel(char, ctx.onSalvage, redraw));
@@ -167,21 +313,6 @@ function buildNpc(box, npc, ctx) {
   } else if (npc.role === 'rift') { // the Rift's gate in Kota Awal (spec §41.3)
     body.append(challengePanel(char, { ...ctx, gate: true }));
   }
-  if (actions.childElementCount && !actions.parentNode) (body.childElementCount ? body : side).append(actions);
-
-  const msg = el('div', 'npcmsg');
-  if (ctx.message) {
-    msg.textContent = ctx.message.text; msg.classList.toggle('ok', ctx.message.ok);
-    if (ctx.message.color) msg.style.color = ctx.message.color;
-  }
-  else if (npc.role === 'gate' && hp < maxHp * 0.5) msg.textContent = tr('HP-mu masih rendah. Istirahat dulu di Penginapan?');
-
-  const close = button(tr('Tutup'), 'btn ghost', ctx.onClose);
-  close.id = 'npc-close';
-  side.append(msg, close);
-  panel.append(side);
-  if (body.childElementCount) panel.append(body); else panel.classList.add('solo');
-  box.append(panel);
 }
 
 // The quest the NPC just spoke of, with the button that moves it on.
@@ -477,7 +608,7 @@ function tabBar(tabs, current, onPick) {
 export function renderDungeonGate(box, dungeonId, ctx) {
   const d = dungeonById(dungeonId);
   const rec = ctx.char.records.dungeons[d.id];
-  box.classList.remove('dock', 'still');
+  box.classList.remove('dock', 'still', 'vn');
   delete box.dataset.view;
   box.replaceChildren();
   const panel = el('div', 'panel npcpanel gatepanel');

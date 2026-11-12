@@ -25,6 +25,28 @@ function pick(opts, redraw, key, value) {
   }
   redraw();
 }
+function slotPicker(id, worn, pageB, byId, opts, redraw) {
+  const bar = el('div', 'skpick');
+  bar.append(el('span', 'skpl', tr('Pasang ke:')));
+  for (let i = 0; i < (pageB ? 8 : 4); i++) {
+    const cur = worn[i] ? byId(worn[i]) : null;
+    const b = button('', `skp${worn[i] === id ? ' here' : ''}${cur ? '' : ' empty'}`, (e) => {
+      e.stopPropagation();
+      picked.skill = null; picked.slot = null;
+      if (worn[i] !== id) opts.onEquip(Math.floor(i / 4), i % 4, id); else redraw();
+    });
+    b.dataset.slot = String(i);
+    const ic = el('span', 'sic');
+    if (cur) ic.append(iconCanvas(cur.icon || cur.id, 22)); else ic.append(el('span', 'plus', '+'));
+    b.append(ic, el('b', null, `${i < 4 ? 'A' : 'B'}${(i % 4) + 1}`));
+    b.title = cur ? cur.name : tr('Kosong');
+    bar.append(b);
+  }
+  const x = button('×', 'skpx', (e) => { e.stopPropagation(); picked.skill = null; redraw(); });
+  x.setAttribute('aria-label', tr('Batal'));
+  bar.append(x);
+  return bar;
+}
 const dots = (level, max) => el('span', 'lvdots', '●'.repeat(level) + '○'.repeat(Math.max(0, max - level)));
 
 // opts: { editable, treeEditable, onEquip(page, slot, id), onRaise(id), onUlt(id) }
@@ -73,15 +95,18 @@ export function renderSkillTab(char, opts, redraw) {
   ucard.title = ult ? `${ult.name} · Ultimate — ${ult.desc}` : tr('Pelajari ultimate di tab Ultimate, lalu pakai.');
   slots.append(ucard);
   }
-  skills.append(slots);
-  if (pageB) skills.append(el('span', 'note', tr('Halaman B (tukar dengan Q / ⇄ saat bertarung):')), slotsB);
-  else if (!novice) skills.append(el('span', 'note', t('Halaman B terbuka di level {n}.', { n: PAGE_B_LEVEL })));
+  // the worn slots stay in view while the list scrolls (owner 2026-11-12: phones had to scroll back up)
+  const stick = el('div', 'skstick');
+  stick.append(slots);
+  if (pageB) stick.append(el('span', 'note', tr('Halaman B (tukar dengan Q / ⇄ saat bertarung):')), slotsB);
+  skills.append(stick);
+  if (!pageB && !novice) skills.append(el('span', 'note', t('Halaman B terbuka di level {n}.', { n: PAGE_B_LEVEL })));
   if (novice) {
     skills.append(el('div', 'note', tr('Pengembara memakai dua skill tetap. Pilih job di Pelatih mulai level 5; SP yang terkumpul siap dipakai saat itu.')));
     wrap.append(skills);
     return wrap;
   }
-  if (canEdit) skills.append(el('span', 'note', tr('Ketuk satu slot lalu satu skill untuk memasang.')));
+  if (canEdit) skills.append(el('span', 'note', tr('Ketuk sebuah skill, lalu pilih slotnya tepat di bawahnya.')));
 
   const tabs = el('div', 'sktabs');
   for (const [id, label] of TABS) tabs.append(button(tr(label), `chip${tab === id ? ' on' : ''}`, () => { tab = id; redraw(); }));
@@ -119,6 +144,8 @@ export function renderSkillTab(char, opts, redraw) {
     }
     row.append(ic, txt, act);
     skills.append(row);
+    // a skill tapped first: its slots right under it, no scrolling back up (each shows what it holds)
+    if (isSkill && canEdit && picked.skill === r.id && picked.slot === null) skills.append(slotPicker(r.id, worn, pageB, byId, opts, redraw));
   }
   wrap.append(skills);
   return wrap;

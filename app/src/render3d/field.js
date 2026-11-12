@@ -783,7 +783,7 @@ export class Field25 {
   async warm(game, step) {
     await step(0.1, 'torch');
     if (!this.hemi) this.setup();
-    const lite = game.vfx?.mul < 1;
+    const lite = game.vfx?.mul < 1 && !game.vfx?.tempLite; // the load guard's lite: effects only, no region rebuild
     if (lite !== this.stage.lite) this.stage.setQuality(lite);
     await step(0.25, 'land');
     this.camX = game.px; this.camY = game.py;
@@ -807,7 +807,7 @@ export class Field25 {
     const st = this.stage, v = this.view;
     st.show(true);
     v.c.style.background = 'transparent';
-    const lite = game.vfx?.mul < 1;
+    const lite = game.vfx?.mul < 1 && !game.vfx?.tempLite; // the load guard's lite: effects only, no region rebuild
     if (lite !== st.lite) { st.setQuality(lite); this.mapRef = null; }
     const playing = game.state !== 0;
     const home = game.fmap.start || { x: game.px, y: game.py };

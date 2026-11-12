@@ -5,8 +5,11 @@
 // effects smooth on top (HD-2D look): setFxSink([]) → draw → setFxSink(null) → drawFx(...).
 import { TAU } from './kit.js';
 
-let sink = null;
+let sink = null, behind = false;
 export const setFxSink = (arr) => { sink = arr; };
+// while on, collected effects belong to a weapon behind the body (the back view): drawFx hides them
+// where the figure already on the canvas covers them (spec §49)
+export const fxBehind = (on) => { behind = on; };
 
 // a world direction (screen down = +y) in the current local frame, unit length
 function local(g, vx, vy) {
@@ -20,16 +23,26 @@ const hash = (i) => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return
 
 export function weaponFx(g, E, t, len, w = 8, start = 8) {
   if (E.fx === 'none') return; // plain steel (common items)
-  if (sink) { sink.push({ m: g.getTransform(), E, t, len, w, start }); return; }
+  if (sink) { sink.push({ m: g.getTransform(), E, t, len, w, start, behind }); return; }
   (FX[E.fx] || FX.ice)(g, E, t, len, w, start);
 }
 // draw collected effects; base: a DOMMatrix from the collecting canvas to the screen
 export function drawFx(g, list, base) {
-  for (const f of list) {
-    g.save(); g.setTransform(base.multiply(f.m));
-    (FX[f.E.fx] || FX.ice)(g, f.E, f.t, f.len, f.w, f.start);
-    g.restore();
-  }
+  const one = (gg, f) => { gg.save(); gg.setTransform(base.multiply(f.m)); (FX[f.E.fx] || FX.ice)(gg, f.E, f.t, f.len, f.w, f.start); gg.restore(); };
+  const back = list.filter((f) => f.behind), c = g.canvas;
+  for (const f of list) if (!f.behind || !c?.width || typeof document === 'undefined') one(g, f);
+  if (!back.length || !c?.width || typeof document === 'undefined') return;
+  // behind the body: paint them apart, cut out the figure's shape, lay what is left on the canvas
+  const tmp = (drawFx.tmp ||= document.createElement('canvas'));
+  if (tmp.width !== c.width || tmp.height !== c.height) { tmp.width = c.width; tmp.height = c.height; }
+  const tg = tmp.getContext('2d');
+  tg.setTransform(1, 0, 0, 1, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.globalAlpha = 1; tg.clearRect(0, 0, tmp.width, tmp.height);
+  for (const f of back) one(tg, f);
+  tg.setTransform(1, 0, 0, 1, 0, 0); tg.globalAlpha = 1; tg.globalCompositeOperation = 'destination-out';
+  tg.drawImage(c, 0, 0);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'lighter';
+  g.drawImage(tmp, 0, 0);
+  g.restore();
 }
 
 function blob(g, x, y, r, inner, outer, a) {
