@@ -2,6 +2,8 @@
 // bag sorted by rarity, and a detail card with stats, special effect, the
 // change if worn, and Pasang / Lepas / Buang (only in town).
 import { el, button } from './screens.js';
+import { powerDelta } from '../meta/power.js';
+import { powerDeltaChip } from './power.js';
 import { iconCanvas } from '../art/sprites.js';
 import { gearCanvas } from '../art/gear.js';
 import { GEMS, GEM_TIER_NAMES } from '../data/forge.js';
@@ -108,6 +110,8 @@ export function detail(box, char, it, opts) {
   if (Object.keys(diff).length && canEquip(char, it)) {
     const cmp = el('div', 'gdcmp');
     cmp.append(el('span', 'note', tr(worn ? 'Sumbangan saat ini:' : 'Bila dipakai:')));
+    const dp = powerDelta(char, it.id); // spec §47.6
+    if (dp) { const p = powerDeltaChip(dp); p.prepend(`${tr('Power')} `); cmp.append(p); }
     for (const [k, d] of Object.entries(diff)) {
       if (!BONUSES[k]) continue;
       cmp.append(el('span', `delta ${d > 0 ? 'up' : 'down'}`, signed(k, d)));

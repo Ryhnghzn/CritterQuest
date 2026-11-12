@@ -7,6 +7,10 @@ import { CLASSES } from '../data/classes.js';
 import { CHAR_LEVEL_MAX, ATTRS } from '../data/balance.js';
 import { POTION_IDS } from '../data/potions.js';
 import { expToNext, finalStats, freePoints, allocate } from '../meta/character.js';
+import { powerOf } from '../meta/power.js';
+import { powerChip, powerDeltaChip } from './power.js';
+
+const lastPower = new Map(); // slot → Power last shown: a change flashes with +/− (spec §47.6)
 import { dollGear } from '../meta/gear.js';
 import { renderGearTab } from './gear.js';
 import { renderSkillTab } from './skilltab.js';
@@ -74,7 +78,14 @@ function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, 
   const info = el('div', 'info');
   const top = el('div');
   top.append(cls);
-  info.append(el('div', 'nm', char.name), top, meter, line);
+  const pw = powerOf(preview), was = lastPower.get(char.slot);
+  const chip = powerChip(pw, 'big');
+  const pline = el('div', 'powerline');
+  pline.append(chip);
+  if (was !== undefined && was !== pw && !marked) { chip.classList.add('flash'); pline.append(powerDeltaChip(pw - was)); }
+  if (!marked) lastPower.set(char.slot, pw);
+  else if (pw !== powerOf(char)) { const d = powerDeltaChip(pw - powerOf(char)); d.classList.add('still'); pline.append(d); } // points marked: what they would add
+  info.append(el('div', 'nm', char.name), top, pline, meter, line);
   const head = el('div', 'camphead');
   head.append(st, info);
 

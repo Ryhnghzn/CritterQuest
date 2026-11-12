@@ -5,6 +5,7 @@ import { TOWNS, REGIONS } from '../data/world.js';
 import { dungeonById, BOSS_TYPES } from '../data/dungeons.js';
 import { ENEMIES } from '../data/enemies.js';
 import { activeQuests } from './quests.js';
+import { powerOf, placeRec, powerTone } from './power.js';
 
 const seenOf = (char, id) => (char?.records?.bestiary?.[id] || 0) > 0;
 const foe = (char, id) => ({ id, name: ENEMIES[id].name, seen: seenOf(char, id) });
@@ -36,6 +37,9 @@ export function destinationInfo(char, kind, id, max = 4) {
     }
   }
   if (!out) return null;
+  // Power (spec §47.6): yours against the place's recommended range; the colour follows its hardest end
+  const rec = placeRec(out.kind, out.id, out.levels, out.floors);
+  out.power = char?.classId && rec ? { mine: powerOf(char), lo: rec.lo, hi: rec.hi, tone: powerTone(powerOf(char), rec.hi) } : null;
   // the quest followed (the tracked one, else the main story)
   const list = char?.quests ? activeQuests(char) : [];
   const a = list.find((q) => q.id === char.quests.track) || list[0];

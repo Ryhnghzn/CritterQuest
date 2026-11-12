@@ -596,6 +596,10 @@ export default {
   'Cabang sekarang': 'Current branch',
   'PANTUL!': 'REFLECT!',
   'Perlu job, level 30+, belum bercabang, di kota.': 'Needs a job, level 30+, no branch yet, in town.',
+  // Power (spec §47.6)
+  'Power: kekuatan karaktermu dari level, stat, gear, dan skill': 'Power: how strong your character is, from level, stats, gear and skills',
+  'Power disarankan {r} · kamu {p}': 'Recommended Power {r} · yours {p}',
+  aman: 'safe', setara: 'even', berbahaya: 'dangerous', Power: 'Power',
   // the Rift (spec §41.3)
   Tantangan: 'Challenge',
   'Celah tanpa batas': 'The Endless Rift',

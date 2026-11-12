@@ -5,6 +5,7 @@
 // tip. The building itself happens in steps (render3d warm()); step() waits for frames between
 // them so this screen keeps moving.
 import { el } from './screens.js';
+import { powerRecLine } from './power.js';
 import { drawDoll } from '../art/doll.js';
 import { LOOK } from '../data/look.js';
 import { pixelateCanvas } from '../render3d/pixelate.js';
@@ -111,6 +112,7 @@ function card(info) {
   const name = el('div', 'lname');
   [...info.name].forEach((ch, i) => { const s = el('span', null, ch === ' ' ? '\u00a0' : ch); s.style.setProperty('--i', i); name.append(s); });
   c.append(name, el('div', 'lrule'));
+  if (info.power) c.append(powerRecLine(info.power)); // spec §47.6
   if (info.quest) {
     const q = el('div', 'lquest');
     q.append(el('b', 'qm', '!'), el('span', null, `${info.quest.main ? `${tf('Bab {n}', { n: info.quest.ch + 1 })} · ` : ''}${info.quest.title} — ${stepText(info.quest.step)}`));

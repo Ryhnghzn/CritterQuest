@@ -3,6 +3,8 @@ import { branchOf } from '../meta/jobs.js';
 import { el, button, svgIcon, stage, pressable } from './screens.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { portrait, outfitOf } from '../art/doll.js';
+import { powerOf } from '../meta/power.js';
+import { powerChip } from './power.js';
 import { CLASSES } from '../data/classes.js';
 import { tr, t } from '../i18n.js';
 
@@ -30,7 +32,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete, onExport
       const far = [...DUNGEONS].reverse().find((d) => c.records.dungeons[d.id].bestFloor > 0);
       rec.append(svgIcon('trophy'), far ? ` ${t('{d} · Lantai {n}', { d: far.short, n: c.records.dungeons[far.id].bestFloor })}` : ` ${tr('Belum ke dungeon')}`);
       card.append(
-        st, el('div', 'nm', c.name), cls, rec,
+        st, el('div', 'nm', c.name), cls, powerChip(powerOf(c)), rec, // spec §47.6
         row(io('Ekspor', onExport, e.slot), io('Impor', onImport, e.slot)),
         button(tr('Hapus'), 'btn ghost small danger', (ev) => { ev.stopPropagation(); onDelete(e.slot); }),
       );

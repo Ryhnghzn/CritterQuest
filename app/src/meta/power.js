@@ -1,9 +1,10 @@
 // Power (spec §47): how strong a character is, the recommended Power of an enemy level, and what the
 // gap between them does to the fight. Pure.
-import { POWER, DEFENSE, REC_POWER, GAP, POWER_LOOK } from '../data/power.js';
+import { POWER, DEFENSE, REC_POWER, GAP, POWER_LOOK, DUNGEON_LEVEL } from '../data/power.js';
 import { CDR_MAX } from '../data/balance.js';
 import { finalStats } from './character.js';
 import { jobOf } from './jobs.js';
+import { equip, unequip, isEquipped } from './gear.js';
 
 // the share of a hit DEF takes off, for a character of `level` (spec §47.4)
 export function defenseCut(def, level) {
@@ -52,4 +53,26 @@ export function powerTone(power, rec) {
   if (!rec) return 'safe';
   const r = power / rec;
   return r >= POWER_LOOK.safe ? 'safe' : r >= POWER_LOOK.even ? 'even' : 'danger';
+}
+
+// what a piece of gear does to Power (spec §47.6): worn → what it adds now; not worn → the change if
+// put on (in place of what that slot holds). null when it cannot be worn.
+export function powerDelta(char, id) {
+  const it = char.inventory.find((x) => x.id === id);
+  if (!it) return null;
+  const now = powerOf(char);
+  if (isEquipped(char, it)) { const r = unequip(char, it.slot, 0); return r.ok ? now - powerOf(r.char) : null; }
+  const r = equip(char, id, 0);
+  return r.ok ? powerOf(r.char) - now : null;
+}
+
+// the recommended Power of a place (spec §47.6): a region by its enemy levels, a dungeon by its level and
+// floors → { lo, hi } (null for a town or the Rift, which follow the character)
+export function placeRec(kind, id, levels = null, floors = 0) {
+  if (kind === 'region' && levels) return { lo: recPower(levels[0]), hi: recPower(levels[1]) };
+  if (kind === 'dungeon' && id in DUNGEON_LEVEL && id !== 'perFloor') {
+    const a = DUNGEON_LEVEL[id];
+    return { lo: recPower(a), hi: recPower(a + DUNGEON_LEVEL.perFloor * Math.max(0, floors - 1)) };
+  }
+  return null;
 }

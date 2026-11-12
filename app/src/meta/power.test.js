@@ -56,3 +56,32 @@ describe('Power (spec §47)', () => {
     expect(powerTone(500, 1000)).toBe('danger');
   });
 });
+
+describe('Power di layar (spec §47.6)', () => {
+  it('selisih Power gear: dipakai = sumbangannya, belum dipakai = perubahan bila dipasang', async () => {
+    const { powerDelta } = await import('./power.js');
+    let seed = 4; const rng = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const c = benchChar('archer', 30);
+    const worn = c.equipped.armor;
+    expect(powerDelta(c, worn)).toBeGreaterThan(0);
+    const better = makeItem({ slot: 'armor', classId: null, rarity: 5, itemLevel: 40 }, rng); c.inventory.push(better);
+    expect(powerDelta(c, better.id)).toBeGreaterThan(0);
+    const worse = makeItem({ slot: 'armor', classId: null, rarity: 0, itemLevel: 1 }, rng); c.inventory.push(worse);
+    expect(powerDelta(c, worse.id)).toBeLessThan(0);
+    expect(powerDelta(c, 'nope')).toBe(null);
+  });
+
+  it('saran tempat: wilayah dari levelnya, dungeon dari level + lantai, kota & Celah tidak ada', async () => {
+    const { placeRec } = await import('./power.js');
+    const { destinationInfo } = await import('./destination.js');
+    expect(placeRec('region', 'desert', [20, 35])).toEqual({ lo: recPower(20), hi: recPower(35) });
+    expect(placeRec('dungeon', 'tomb', null, 5).hi).toBeGreaterThan(placeRec('dungeon', 'tomb', null, 5).lo);
+    expect(placeRec('town', 'home')).toBe(null);
+    expect(placeRec('dungeon', 'rift', null, 5)).toBe(null);
+    const c = benchChar('mage', 50);
+    const d = destinationInfo(c, 'region', 'desert');
+    expect(d.power).toEqual({ mine: powerOf(c), lo: recPower(20), hi: recPower(35), tone: 'safe' });
+    expect(destinationInfo(benchChar('mage', 10), 'region', 'volcano').power.tone).toBe('danger');
+    expect(destinationInfo(c, 'town', 'home').power).toBe(null);
+  });
+});

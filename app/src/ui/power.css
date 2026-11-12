@@ -1,0 +1,20 @@
+/* Power (spec §47.6) */
+.powerchip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 7px;font:700 13px 'Cinzel',serif;letter-spacing:.04em;color:#ffe2a0;
+  background:linear-gradient(180deg,#2a1d12,#16100b);border:1px solid #8a6a32;box-shadow:inset 0 0 8px rgba(255,190,90,.12),0 0 10px rgba(255,170,60,.12)}
+.powerchip svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;color:#e8b860}
+.powerchip.big{font-size:17px;padding:3px 12px 3px 9px}
+.powerchip.big svg{width:17px;height:17px}
+.powerchip.flash{animation:power-flash .9s ease}
+@keyframes power-flash{0%{filter:brightness(2.2);transform:scale(1.12)}100%{filter:none;transform:none}}
+.powerdelta{display:inline-block;margin-left:8px;font:800 13px 'Cinzel',serif;animation:power-rise 1.6s ease forwards}
+.powerdelta.up{color:#8ff5c8;text-shadow:0 0 8px rgba(120,255,190,.5)}
+.powerdelta.down{color:#ff6a7a;text-shadow:0 0 8px rgba(255,90,110,.5)}
+@keyframes power-rise{0%{opacity:0;transform:translateY(6px)}15%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+.gdcmp .powerdelta,.powerdelta.still{animation:none;margin-left:0}
+.slotcard .powerchip{margin:4px auto 2px}
+.powerrec{display:flex;align-items:center;gap:7px;font-size:13px;color:#e8dcc4;margin:6px 0 2px;opacity:0;animation:ld-fade .5s ease .6s forwards}
+.powerrec svg{width:14px;height:14px;fill:none;stroke:var(--tone);stroke-width:2;flex:none}
+.powerrec b{margin-left:auto;font:700 11px 'Cinzel',serif;letter-spacing:.2em;text-transform:uppercase;color:var(--tone);text-shadow:0 0 8px var(--tone)}
+@media (max-width:520px){.powerrec{font-size:12px}}
+.powerline{display:flex;align-items:center;margin:6px 0 4px}
+.powerdelta.still{margin-left:8px}
