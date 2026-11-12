@@ -42,7 +42,8 @@ export function activeQuests(char) {
   return out;
 }
 
-export const shards = (char) => Math.min(SHARDS, char.quests.main.ch);
+// Pecahan Segel held: the chapters done that gave one (the Prolog gives none)
+export const shards = (char) => Math.min(SHARDS, MAIN.slice(0, char.quests.main.ch).filter((q) => q.reward?.shard).length);
 export const mainDone = (char) => char.quests.main.ch >= MAIN.length;
 export const sideCount = (char) => Object.keys(char.quests.side).length;
 
@@ -56,6 +57,8 @@ export function stepMet(char, step) {
     case 'gate': return char.found.includes(step.dungeon);
     case 'boss': return (char.records.dungeons[step.dungeon]?.clears || 0) > 0;
     case 'region': return !!char.regions[step.region];
+    case 'level': return char.level >= step.n;
+    case 'job': return char.classId !== 'novice';
     case 'guard': { // a chest opens only after its guardian falls; the last one is the overlord's
       const opened = char.treasures[step.region] || [];
       return step.lord ? opened.includes(TREASURE.count - 1) : opened.filter((i) => i < TREASURE.count - 1).length >= (step.n || 1);

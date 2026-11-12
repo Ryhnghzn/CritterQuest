@@ -5,6 +5,8 @@
 //   gate  { dungeon }               — find the dungeon's gate in its region
 //   boss  { dungeon }               — beat the dungeon's boss (its floor 5)
 //   region { region }               — set foot in a region
+//   level { n }                     — reach character level n
+//   job   {}                        — leave the Pengembara behind: pick a job at the Trainer (spec §43.1)
 //   kill  { enemy, n, region?, show? } — kills of a type (variants count to their kin; show: the
 //         variant named in the text, e.g. the region's own kind of spitter)
 //   elite { n, region?, enemy? }    — elite kills (of a type, when given)
@@ -40,6 +42,23 @@ const odo = { town: 'home', npc: 'odo', who: 'Kakek Odo' };
 
 // The main quest, chapter by chapter (spec §26.4).
 export const MAIN = [
+  // Prolog (2026-11-12): before the shards, the Pengembara learns to fight round Kota Awal, grows to
+  // JOB_PICK_LEVEL and picks a job at the Trainer; only then does Kakek Odo send them after the shards.
+  {
+    id: 'ch0', title: 'Anak Kota Awal',
+    steps: [
+      { kind: 'talk', ...odo, say: 'Segel itu retak, Nak, dan kau merasakannya. Tapi dengan tangan kosong kau takkan bertahan di luar tembok. Temui Dara di alun-alun. Dialah petualang terbaik desa ini.' },
+      { kind: 'talk', town: 'home', npc: 'dara', who: 'Dara', say: 'Mau belajar bertarung? Bagus. Lendir-lendir merayap dari hutan ke ladang Pak Darto. Keluar lewat gerbang dan usir delapan ekor. Hindari serangan mereka: geser, jangan diam!' },
+      { kind: 'kill', enemy: 'slink', n: 8 },
+      { kind: 'talk', town: 'home', npc: 'darto', who: 'Pak Darto', say: 'Ladangku selamat! Terima kasih, Nak. Tapi ada satu makhluk besar yang bersinar keemasan, merusak pagar setiap malam. Yang begitu namanya elite: kuat, tapi selalu menjatuhkan barang bagus.' },
+      { kind: 'elite', n: 1 },
+      { kind: 'level', n: 5 },
+      { kind: 'talk', town: 'home', npc: 'trainer', who: 'Guru Hadi', say: 'Jadi kau anak yang mengusir bayangan itu. Kau sudah cukup kuat untuk memilih jalan: Warrior, Archer, Mage, atau Assassin. Coba dulu masing-masing di arena latihanku, lalu pilih satu.' },
+      { kind: 'job' },
+      { kind: 'talk', town: 'home', npc: 'gear', who: 'Pandai Brom', say: 'Nah! Sudah kubilang, senjata itu memilih tuannya. Rawat baik-baik. Kalau mau lebih tajam, bawa ke sini, aku yang menempanya. Sekarang temui Kakek Odo, dia menunggumu.' },
+    ],
+    reward: { gold: 3, exp: 3, potions: { red: 3 } },
+  },
   {
     id: 'ch1', title: 'Bayangan di Bawah Tanah',
     steps: [

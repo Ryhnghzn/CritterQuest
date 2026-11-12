@@ -24,6 +24,8 @@ export function stepText(s) {
   switch (s.kind) {
     case 'talk': return t('Bicara dengan {who} di {town}', { who: s.who, town: where(s) });
     case 'town': return t('Pergi ke {town}', { town: town(s.town) });
+    case 'level': return t('Capai level {n}', { n: s.n });
+    case 'job': return tr('Pilih job di Pelatih (Balai Petualang)');
     case 'region': return t('Masuki {r} (gerbang {town})', { r: regionById(s.region).name, town: town(regionById(s.region).from) });
     case 'gate': return t('Temukan gerbang {d} di {r}', { d: dungeonById(s.dungeon).name, r: regionOfDungeon(s.dungeon)?.name ?? '' });
     case 'boss': return t('Kalahkan bos {d} (lantai 5)', { d: dungeonById(s.dungeon).name });

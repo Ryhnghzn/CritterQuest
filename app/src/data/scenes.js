@@ -1,3 +1,4 @@
+import { MAIN } from './quests.js';
 // Cutscenes (spec §44): short scripted scenes played on a small pixel stage over the game.
 // A scene is a list of steps run in order; a step waits for its time (or, for a line, for a
 // tap / its reading time) unless it says `go: true` (start it and go on at once).
@@ -15,6 +16,9 @@
 //   fade   { fade: in | out, dur }
 //   wait   { wait: seconds }
 // Text is Indonesian and goes through the i18n dictionaries (i18n/en-story.js).
+
+// Pecahan Segel held (as meta/quests.js shards): the main chapters done that gave one
+const shardsOf = (c) => MAIN.slice(0, c.quests.main.ch).filter((q) => q.reward?.shard).length;
 
 export const CUTSCENE = {
   w: 480, h: 270,          // the stage in pixels (enlarged without smoothing)
@@ -151,9 +155,9 @@ export const SCENES = {
     { put: 'odo', ...odo, x: 40, face: -1, view: 'front' },
     { cam: [-20, -44, 2.2], dur: 0.8 },
     { say: 'odo', text: 'Kau rasakan itu? Segel gerhana mulai retak. Makhluk di dalam tanah memakan kekuatan pecahannya.' },
-    { say: 'odo', text: 'Pecahan pertama ada di Ruang Bawah Tanah Bayangan, di Hutan Kelam. Temukan gerbangnya, dan bawa pulang pecahan itu.' },
-    { say: 'pip', text: 'Kakak pasti pulang, kan? Janji?' },
-    { say: 'odo', text: 'Pergilah, Nak. Desa ini akan menunggumu pulang.' },
+    { say: 'odo', text: 'Suatu hari kau harus mencari pecahan-pecahan itu. Tapi belum sekarang. Besok pagi, belajarlah bertarung dari Dara, lalu temui Guru Hadi di Balai Petualang.' },
+    { say: 'pip', text: 'Kakak mau jadi petualang? Aku ikut latihan juga, ya? Ya? Ya?' },
+    { say: 'odo', text: 'Pulanglah dan tidur, Nak. Besok hidupmu dimulai.' },
     { look: 'hero', face: -1, view: 'side' },
     { move: 'hero', to: [-320, 0], dur: 2, go: true },
     { fade: 'out', dur: 1.6 },
@@ -259,16 +263,16 @@ export function momentScene(kind, who) {
 export const MEMORIES = [
   { id: 'opening', when: () => true },
   { id: 'boss:boss', when: (c) => c.found.includes('shadow') || (c.records.dungeons.shadow?.clears || 0) > 0 },
-  { id: 'shard1', when: (c) => c.quests.main.ch >= 1 },
+  { id: 'shard1', when: (c) => shardsOf(c) >= 1 },
   { id: 'boss:crystalboss', when: (c) => (c.records.dungeons.crystal?.clears || 0) > 0 },
-  { id: 'shard2', when: (c) => c.quests.main.ch >= 2 },
+  { id: 'shard2', when: (c) => shardsOf(c) >= 2 },
   { id: 'boss:sporeboss', when: (c) => (c.records.dungeons.fungus?.clears || 0) > 0 },
-  { id: 'shard3', when: (c) => c.quests.main.ch >= 3 },
+  { id: 'shard3', when: (c) => shardsOf(c) >= 3 },
   { id: 'boss:tombboss', when: (c) => (c.records.dungeons.tomb?.clears || 0) > 0 },
-  { id: 'shard4', when: (c) => c.quests.main.ch >= 4 },
+  { id: 'shard4', when: (c) => shardsOf(c) >= 4 },
   { id: 'boss:lavaboss', when: (c) => (c.records.dungeons.lava?.clears || 0) > 0 },
-  { id: 'shard5', when: (c) => c.quests.main.ch >= 5 },
-  { id: 'eclipse', when: (c) => c.quests.main.ch >= 5 },
+  { id: 'shard5', when: (c) => shardsOf(c) >= 5 },
+  { id: 'eclipse', when: (c) => shardsOf(c) >= 5 },
   { id: 'boss:eclipseboss', when: (c) => (c.records.dungeons.spire?.clears || 0) > 0 },
   { id: 'ending', when: (c) => !!c.records.ending },
 ];

@@ -251,7 +251,7 @@ describe('save versi 2', () => {
     delete v16.quests;
     const r = readSlot(v16);
     expect(r.status).toBe('ok');
-    expect(r.data.quests).toEqual({ main: { ch: 0, step: 0, prog: 0 }, side: {}, done: [], track: null, choices: {}, races: {} });
+    expect(r.data.quests).toEqual({ main: { ch: 1, step: 0, prog: 0 }, side: {}, done: [], track: null, choices: {}, races: {} }); // a mage already has a job: past the Prolog (v27)
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, main: { ch: 0, step: 99, prog: 0 } } })).toContain('quests');
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, done: ['mars'] } })).toContain('quests');
     expect(validateSlot({ ...fresh(), quests: { ...fresh().quests, side: { mars: { step: 0, prog: 0 } } } })).toContain('quests');
@@ -466,5 +466,15 @@ describe('save v24 (spec §41.1)', () => {
     expect(r.data.records.bestiary.hyena).toBe(0);
     expect(r.data.records.bestiary.voidtwin).toBe(0);
     expect(validateSlot(r.data)).toEqual([]);
+  });
+});
+
+describe('save v27 (Prolog)', () => {
+  const at = (classId, main) => ({ ...fresh(), classId, jobs: classId === 'novice' ? {} : fresh().jobs, version: 26, quests: { ...fresh().quests, main } });
+  it('karakter yang sudah berjalan melewati Prolog; Pengembara yang belum bicara dengan Odo mendapatkannya', () => {
+    expect(readSlot(at('mage', { ch: 0, step: 2, prog: 0 })).data.quests.main).toEqual({ ch: 1, step: 2, prog: 0 });
+    expect(readSlot(at('mage', { ch: 0, step: 0, prog: 0 })).data.quests.main.ch).toBe(1);
+    expect(readSlot(at('novice', { ch: 0, step: 0, prog: 0 })).data.quests.main.ch).toBe(0);
+    expect(readSlot(at('novice', { ch: 0, step: 1, prog: 0 })).data.quests.main.ch).toBe(1);
   });
 });

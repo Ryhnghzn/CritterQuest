@@ -24,7 +24,7 @@ import { MAIN, SIDE, QUEST_IDS } from '../data/quests.js';
 import { MOUNT_DEFS, PITY_IDS } from '../data/mounts.js';
 import { freshMounts, storyMounts } from './stable.js';
 
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 
 // MIGRATIONS[v] turns a version-v save into a version-(v+1) save. Malformed
 // parts are passed through untouched so validation still reports them.
@@ -156,6 +156,13 @@ export const MIGRATIONS = {
     unlocked: { hell: false, rift: isObj(d.records) && isInt(d.records.ending, 0) },
     rift: { best: 0, checkpoint: 0 },
   }),
+  // v27 (2026-11-12): the Prolog (chapter 'ch0') comes before the old first chapter. Characters already on
+  // their way skip it (the chapter index moves up one); a Pengembara who has not yet spoken to Kakek Odo gets it.
+  26: (d) => {
+    const q = d.quests, fresh = d.classId === 'novice' && isObj(q?.main) && q.main.ch === 0 && q.main.step === 0;
+    if (!isObj(q) || !isObj(q.main) || !isInt(q.main.ch, 0) || fresh) return { ...d, version: 27 };
+    return { ...d, version: 27, quests: { ...q, main: { ...q.main, ch: q.main.ch + 1 } } };
+  },
   21: (d) => ({
     ...d, version: 22,
     world: isObj(d.world) ? { ...d.world, fog: '' } : d.world,

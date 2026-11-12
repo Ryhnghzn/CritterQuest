@@ -443,6 +443,7 @@ export default {
   "Level": "Level",
   "Kill": "Kills",
   "Masuki {r} (gerbang {town})": "Enter {r} (the gate of {town})",
+  "Capai level {n}": "Reach level {n}", "Pilih job di Pelatih (Balai Petualang)": "Pick a job at the Trainer (Adventurers' Hall)",
   "Kisah utama tamat. Gerhana sudah dikalahkan; Menara Gerhana bisa didaki lagi kapan saja.": "The main story is complete. The eclipse is defeated; the Eclipse Spire can be climbed again any time.",
   // quest rewards spelled out (journal & NPC dialog)
   'Gear {r} acak · LV {n}': 'Random {r} gear · LV {n}',

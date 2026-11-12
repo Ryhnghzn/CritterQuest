@@ -9,7 +9,8 @@ import { INVENTORY_MAX } from '../data/balance.js';
 import { mulberry } from '../run/fieldmap.js';
 import { buildWorld, blocked as worldBlocked, zoneToWorld, zoneAt } from '../run/worldmap.js';
 
-const make = (over = {}) => ({ ...createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'archer' }, 1000), ...over });
+// an archer past the Prolog (ch0): the shard chapters start at ch 1
+const make = (over = {}) => { const c = createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'archer' }, 1000); return { ...c, quests: { ...c.quests, main: { ch: 1, step: 0, prog: 0 }, done: ['ch0'] }, ...over }; };
 const trip = (over = {}) => ({ dungeon: 'shadow', exp: 0, gold: 0, kills: 0, bossKills: 0, floor: 1, cleared: false, died: false, hp: 100, potions: { ...make().potions }, ...over });
 const talk = (c, id, town, npc) => { const r = questTalk(c, id, town, npc, 5, mulberry(3)); expect(r.ok).toBe(true); return r; };
 
@@ -25,7 +26,7 @@ describe('quest utama', () => {
 
   it('langkah gerbang & bos selesai sendiri dari hasil perjalanan; lapor membayar hadiah', () => {
     let c = talk(make(), 'ch1', 'home', 'odo').char;
-    expect(c.quests.main).toEqual({ ch: 0, step: 1, prog: 0 });
+    expect(c.quests.main).toEqual({ ch: 1, step: 1, prog: 0 });
     c = applyTrip(c, trip({ floor: 2 }), 6).char;       // entering finds the gate
     expect(c.quests.main.step).toBe(2);
     c = applyTrip(c, trip({ floor: 5, cleared: true }), 7).char;
@@ -43,10 +44,10 @@ describe('quest utama', () => {
     expect(pv.gear).toEqual({ rarity: 2 });
     expect(pv.shard).toBe(true);
     expect(r.char.inventory.at(-1)).toEqual(r.got.items[0]);
-    expect(r.char.quests.done).toEqual(['ch1']);
+    expect(r.char.quests.done).toEqual(['ch0', 'ch1']);
     expect(r.mounts).toEqual(['horse']);
     expect(r.char.mounts.active).toBe('horse');
-    expect(r.char.quests.main).toEqual({ ch: 1, step: 0, prog: 0 }); // ch2: walk into Rimbawana
+    expect(r.char.quests.main).toEqual({ ch: 2, step: 0, prog: 0 }); // ch2: walk into Rimbawana
     expect(shards(r.char)).toBe(1);
     expect(validateSlot(r.char)).toEqual([]);
   });
@@ -59,7 +60,7 @@ describe('quest utama', () => {
     c = talk(c, 'ch1', 'home', 'odo').char;
     expect(c.quests.main.step).toBe(3);                  // straight to the report
     c = talk(c, 'ch1', 'home', 'odo').char;
-    expect(c.quests.main).toEqual({ ch: 1, step: 1, prog: 0 }); // Rimbawana already visited
+    expect(c.quests.main).toEqual({ ch: 2, step: 1, prog: 0 }); // Rimbawana already visited
     expect(npcMarks(c, 'rimba').board).toBe('M?');
     c = talk(c, 'ch2', 'rimba', 'board').char;
     expect(c.quests.main.step).toBe(3);                  // crystal gate already found
@@ -67,7 +68,7 @@ describe('quest utama', () => {
 
   it('masuk kota memajukan langkah kota', () => {
     let c = make();
-    c.quests.main = { ch: 1, step: 0, prog: 0 };
+    c.quests.main = { ch: 2, step: 0, prog: 0 };
     c = visitTown(c, 'rimba', 9);
     expect(c.quests.main.step).toBe(1);
   });
@@ -98,7 +99,7 @@ describe('quest utama', () => {
 
   it('hadiah gear masuk Gudang bila tas penuh; ditolak bila keduanya penuh', () => {
     let c = make();
-    c.quests.main = { ch: 0, step: 3, prog: 0 };
+    c.quests.main = { ch: 1, step: 3, prog: 0 };
     const piece = (i) => ({ id: `f${i}`, slot: 'ring', classId: null, variant: 1, rarity: 0, itemLevel: 1, base: { crit: 1 }, bonuses: [], unique: null, plus: 0, sockets: [] });
     c.inventory = Array.from({ length: INVENTORY_MAX }, (_, i) => piece(i));
     const r = talk(c, 'ch1', 'home', 'odo');
@@ -143,7 +144,7 @@ describe('penanda tujuan', () => {
 
   it('kota tujuan di ujung wilayah', () => {
     const c = make();
-    c.quests.main = { ch: 1, step: 0, prog: 0 };
+    c.quests.main = { ch: 2, step: 0, prog: 0 };
     const { towns } = buildWorld();
     expect(questTarget(c, 'forest')).toEqual({ kind: 'town', town: 'rimba', x: towns.rimba.x, y: towns.rimba.y });
     expect(questTarget(make())).toMatchObject({ kind: 'town', town: 'home', x: towns.home.x }); // ch1 starts at home (the middle)
@@ -372,7 +373,7 @@ describe('side quest kota', () => {
 describe('bab 6 & akhir cerita (spec §26.7)', () => {
   it('masuk Tanah Gerhana, temukan menara, kalahkan Sang Gerhana: tamat dicatat sekali', () => {
     let c = make({ level: 48 });
-    c.quests.main = { ch: 5, step: 1, prog: 0 };
+    c.quests.main = { ch: 6, step: 1, prog: 0 };
     c.quests.done = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5'];
     c = field(c, { region: 'eclipse', found: ['spire'] });
     expect(c.quests.main.step).toBe(3);                      // region & gate done, now the boss
@@ -421,3 +422,27 @@ describe('langkah pilihan (§42)', () => {
     expect(validateSlot(keep.char)).toEqual([]);
   });
 });
+
+describe('Prolog (ch0)', () => {
+  const novice = () => createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'novice' }, 1000);
+  it('Odo → Dara → 8 lendir → Pak Darto → elite → level 5 → Guru Hadi → pilih job → Pandai Brom; tanpa Pecahan Segel', () => {
+    let c = novice();
+    expect(activeQuests(c)[0].id).toBe('ch0');
+    c = talk(c, 'ch0', 'home', 'odo').char;
+    c = talk(c, 'ch0', 'home', 'dara').char;
+    c = countQuests(structuredClone(c), { killsBy: { slink: 8 } });
+    c = talk(c, 'ch0', 'home', 'darto').char;
+    c = countQuests(structuredClone(c), { elites: 1, elitesBy: {} });
+    expect(activeQuests(c)[0].step.kind).toBe('level');
+    c = syncQuests({ ...structuredClone(c), level: 5 });
+    c = talk(c, 'ch0', 'home', 'trainer').char;
+    expect(activeQuests(c)[0].step.kind).toBe('job');
+    c = syncQuests({ ...structuredClone(c), classId: 'warrior' });
+    const r = talk(c, 'ch0', 'home', 'gear');
+    expect(r.char.quests.main.ch).toBe(1);
+    expect(r.got.shard).toBe(false);
+    expect(shards(r.char)).toBe(0);
+    expect(activeQuests(r.char)[0].id).toBe('ch1');
+  });
+});
+
