@@ -57,4 +57,8 @@ const LAMA = {
   facing: { turn: 0, hop: 0, lean: 0, dead: 0.05, views: false, viewMin: 0.3, viewBand: 1.25 },
 };
 const old = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lama');
+// Camera example (plan docs/superpowers/plans/2026-10-28-kamera-third-person.md, Opsi 2): `?kamera=belakang` puts
+// the camera low behind the hero; add `&ikut` and it turns itself to follow the way the hero walks.
+const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+export const CAMERA = { behind: q.get('kamera') === 'belakang', follow: q.has('ikut'), dist: 4.6, height: 2.3, ahead: 7, lookH: 1.15, fov: 52, followRate: 1.6 };
 export const LOOK = old ? LAMA : MATANG;

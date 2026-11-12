@@ -6,7 +6,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { LOOK } from '../data/look.js';
+import { LOOK, CAMERA } from '../data/look.js';
 import { detailPixels, DETAIL_SCALE, DETAIL_SIZE } from './texkit.js';
 
 export const S = 1 / 22;          // game units → metres (a hero ≈ 1.7 m)
@@ -184,7 +184,7 @@ export class Stage {
     c.id = 'game3d';
     c.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0';
     this.overlay.parentNode.insertBefore(c, this.overlay);
-    this.camera = new THREE.PerspectiveCamera(CAM.fov, 1, 0.5, 200);
+    this.camera = new THREE.PerspectiveCamera(CAMERA.behind ? CAMERA.fov : CAM.fov, 1, 0.3, 200);
     this.composer = new EffectComposer(r);
     this.pass = new RenderPass(null, this.camera); // each scene (dungeon, town, region) hands its own THREE.Scene
     this.composer.addPass(this.pass);
@@ -268,10 +268,31 @@ export class Stage {
 
   // camera looks at game point (x, y) from the south, tilted down
   look(x, y) {
+    if (CAMERA.behind) { this.lookBehind(x, y); return; }
     this.yaw += (this.yawGoal - this.yaw) * 0.18;
     const k = this.zoom, tx = x * S, tz = y * S, sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
     this.camera.position.set(tx + sx * CAM.dist * k + this.shake.x, CAM.height * k, tz + cz * CAM.dist * k + this.shake.y);
     this.camera.lookAt(tx - sx * 0.8, 0.6, tz - cz * 0.8);
+    this.target.set(tx, 0, tz);
+  }
+
+  // `?kamera=belakang` (example of Opsi 2): low behind the hero, looking ahead past it. With `&ikut` the
+  // camera slowly swings round behind the way the hero walks (not when walking back toward it).
+  lookBehind(x, y) {
+    const tx = x * S, tz = y * S;
+    if (CAMERA.follow && this.prev) {
+      const dx = tx - this.prev.x, dz = tz - this.prev.z, d = Math.hypot(dx, dz);
+      const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw); // where the camera looks
+      if (d > 0.004 && d < 1 && (dx * fx + dz * fz) / d > -0.4) {
+        const want = Math.atan2(-dx, -dz), diff = Math.atan2(Math.sin(want - this.yawGoal), Math.cos(want - this.yawGoal));
+        this.yawGoal += diff * Math.min(1, CAMERA.followRate / 60);
+      }
+    }
+    this.prev = { x: tx, z: tz };
+    this.yaw += (this.yawGoal - this.yaw) * 0.18;
+    const k = this.zoom, sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
+    this.camera.position.set(tx + sx * CAMERA.dist * k + this.shake.x, CAMERA.height * k, tz + cz * CAMERA.dist * k + this.shake.y);
+    this.camera.lookAt(tx - sx * CAMERA.ahead, CAMERA.lookH, tz - cz * CAMERA.ahead);
     this.target.set(tx, 0, tz);
   }
 
@@ -300,7 +321,11 @@ export class Stage {
     const ndc = new THREE.Vector2((px / innerWidth) * 2 - 1, -(py / innerHeight) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
     const hit = new THREE.Vector3();
-    if (!this.raycaster.ray.intersectPlane(this.ground, hit)) return { x: this.target.x / S, y: this.target.z / S };
+    const far = 26; // a low camera: a point above the horizon (or very far) aims that way, this far from the hero
+    if (!this.raycaster.ray.intersectPlane(this.ground, hit) || hit.distanceTo(this.target) > far) {
+      const d = this.raycaster.ray.direction, l = Math.hypot(d.x, d.z) || 1;
+      return { x: (this.target.x + (d.x / l) * far) / S, y: (this.target.z + (d.z / l) * far) / S };
+    }
     return { x: hit.x / S, y: hit.z / S };
   }
 }
