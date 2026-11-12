@@ -3,6 +3,10 @@
 Status: **dicatat, belum dikerjakan** (pemilik, 2026-10-28: "catat dulu, nanti saja").
 Prototipe: `app/pov.html` + `app/pov/main.js` (tidak ikut build; buka `/pov.html` saat `npm run dev`).
 
+## Contoh di game (2026-11-12)
+- Pengaturan → Bermain → **Kamera (percobaan)**: 2.5D (bawaan) / Belakang / Belakang + ikut (pengaturan v7). Juga lewat alamat `?kamera=belakang` (`&ikut`).
+- Hanya kamera: rendah di belakang hero menatap ke depan (`data/look.js` CAMERA, `render3d/stage.js` lookBehind). Kontrol HP, tampak belakang, penunjuk musuh di luar layar, dan kamera terhalang dinding belum. Menunggu pemilik mencoba.
+
 ## Keputusan sementara
 - Pemilik paling suka **Opsi 2 — kamera ikut berputar di belakang karakter** (2.5D: lantai & dinding berperspektif, karakter/monster = billboard tegak, tetap canvas 2D).
 - Pilihan kamera di pengaturan: **Atas / Opsi 1 (miring dari belakang, arah tetap) / Opsi 2**. Satu mesin kamera untuk ketiganya; mode Atas = kamera bersudut ±89°. Tidak mempertahankan renderer lama.

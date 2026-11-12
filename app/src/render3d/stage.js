@@ -205,6 +205,12 @@ export class Stage {
     if (!this.ready) return;
     this.resize();
   }
+  // Settings → Kamera: 'top' (2.5D from above) | 'behind' | 'follow' — the URL `?kamera=belakang` wins
+  setCamera(mode) {
+    if (CAMERA.url) return;
+    CAMERA.behind = mode !== 'top'; CAMERA.follow = mode === 'follow'; this.prev = null;
+    if (this.ready) { this.camera.fov = CAMERA.behind ? CAMERA.fov : CAM.fov; this.camera.updateProjectionMatrix(); }
+  }
   setZoom(z) { this.zoom = Math.max(ZOOM.min, Math.min(ZOOM.max, z)); }
 
   // Compiles a scene's shaders ahead of its first frame (in parallel where the browser

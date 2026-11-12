@@ -6,10 +6,11 @@ export const SETTING_CHOICES = {
   sharp: ['save', 'normal', 'sharp'],
   zoom: ['near', 'mid', 'far'],
   camSens: ['slow', 'normal', 'fast', 'xfast'],
+  camera: ['top', 'behind', 'follow'], // top: the 2.5D view from above (default); behind / follow: the camera example (data/look.js CAMERA)
   lang: ['en', 'id'],
 };
 export const SETTING_DEFAULTS = {
-  musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal',
+  musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal', camera: 'top',
 };
 // starting camera zoom (render3d/stage.js ZOOM: bigger = farther)
 export const ZOOM_START = { near: 1, mid: 1.18, far: 1.35 };

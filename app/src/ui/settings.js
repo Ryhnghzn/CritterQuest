@@ -18,12 +18,13 @@ const ROWS = {
     ['autoAttack', 'Serang otomatis', 'bool'], ['shake', 'Guncangan layar', 'bool'], ['dmgNumbers', 'Angka damage', 'bool'],
     ['zoom', 'Zoom kamera awal', 'pick', [['near', 'Dekat'], ['mid', 'Sedang'], ['far', 'Jauh']]],
     ['camSens', 'Sensitivitas putar kamera', 'pick', [['slow', 'Lambat'], ['normal', 'Normal'], ['fast', 'Cepat'], ['xfast', 'Sangat cepat']]],
+    ['camera', 'Kamera (percobaan)', 'pick', [['top', '2.5D'], ['behind', 'Belakang'], ['follow', 'Belakang + ikut']]],
   ],
   lang: [['lang', 'Bahasa', 'pick', [['en', 'English'], ['id', 'Indonesia']]]],
 };
 const NOTES = {
   gfx: 'Otomatis: efek penuh, turun ke Ringan bila FPS rendah. Ketajaman lebih tinggi lebih berat di HP; berlaku penuh untuk tempat yang dimuat berikutnya.',
-  play: 'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser.',
+  play: 'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser. Kamera Belakang masih percobaan: rendah di belakang hero; Belakang + ikut berputar sendiri mengikuti arah jalan.',
   lang: 'Game dimuat ulang setelah bahasa diganti.',
 };
 

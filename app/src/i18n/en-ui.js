@@ -492,7 +492,8 @@ export default {
   'Sensitivitas putar kamera': 'Camera turn sensitivity',
   'Lambat': 'Slow',
   'Sangat cepat': 'Very fast',
-  'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser.': 'Turn the camera: on a phone slide or twist two fingers, on a PC hold the right mouse button and drag.',
+  'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser. Kamera Belakang masih percobaan: rendah di belakang hero; Belakang + ikut berputar sendiri mengikuti arah jalan.': 'Turn the camera: on a phone slide or twist two fingers, on a PC hold the right mouse button and drag. The Behind camera is still a trial: low behind the hero; Behind + follow turns by itself to follow the way you walk.',
+  'Kamera (percobaan)': 'Camera (trial)', Belakang: 'Behind', 'Belakang + ikut': 'Behind + follow',
   'Cepat': 'Fast',
   'Versi baru terpasang. Muat ulang game untuk memakainya.': 'A new version is installed. Reload the game to use it.',
   // Mount (spec §35): Stable, Mount tab, shop, toasts

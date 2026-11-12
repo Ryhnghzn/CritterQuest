@@ -212,6 +212,7 @@ function applySettings() {
   $('fps').classList.toggle('hidden', !fpsShown);
   setSharpScale(SHARP_SCALE[settings.sharp]);
   STAGE.turnSens = CAM_SENS[settings.camSens];
+  STAGE.setCamera(settings.camera); // Kamera (percobaan): 2.5D by default
   STAGE.resize();
   const flat = URL_2D || settings.view === '2d';
   if (flat !== FLAT) { FLAT = flat; T3.hide(); R3.hide(); R4.hide(); }
