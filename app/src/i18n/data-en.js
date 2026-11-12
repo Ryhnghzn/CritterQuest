@@ -12,6 +12,7 @@ import { POTIONS } from '../data/potions.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { UMUM, PASSIVES } from '../data/skilltree.js';
 import { BRANCHES } from '../data/branches.js';
+import { BLESSINGS, RIFT_DUNGEON } from '../data/rift.js';
 import { UPGRADES } from '../data/shop.js';
 import { ATTRS } from '../data/balance.js';
 import { PHASES } from '../data/time.js';
@@ -655,6 +656,13 @@ const BRANCH_PASSIVE_EN = {
   Gorok: ['Cutthroat', 'Crit damage +8% per level'], 'Selubung Malam': ['Night Veil', 'Shadow strikes +15% per level'],
   Irama: ['Rhythm', 'Attack speed +1% per Combo point per level'], Tajam: ['Keen', 'Crit +2 per level'],
 };
+// the Rift's blessings (spec §41.3): id → [name, desc]
+const BLESSING_EN = {
+  fury: ['Fury', 'ATK +30%, max HP −20%'], greed: ['Greed', 'Coins & EXP ×2, enemies +40%'], gale: ['Gale', 'Move +20%, dodge cooldown −30%'],
+  blood: ['Blood', '3% of damage healed as HP'], edge: ['Edge', 'Crit +15, crit damage +30%'], flow: ['Flow', 'Skill cooldowns −20%, energy from attacks +50%'],
+  iron: ['Iron', 'Damage taken −25%, move −10%'], glass: ['Glass', 'Damage +50%, damage taken +40%'], mend: ['Mending', 'Full HP now, heal 0.5% HP per second'],
+  luck: ['Luck', 'Gear 20% more often one rarity higher'], hunt: ['The Hunt', 'Elites ×2, coins & EXP ×1.5'], rush: ['Rush', 'Attack speed +25%, max HP −10%'],
+};
 const WILD_NAME_EN = {"Resi Sunyi": "Silent Sage", "Penjaga Kawah": "Crater Keeper", "Pak Gaharu": "Old Gaharu"};
 const DROP_EN = {"Jamur Bercahaya": "Glowcap", "Sisik Cacing": "Worm Scale", "Lendir Kental": "Thick Goo", "Bunga Kunang": "Firefly Blossom", "Bara Abadi": "Everlasting Ember"};
 
@@ -689,6 +697,8 @@ export function localizeData() {
   for (const e of Object.values(ENEMIES)) { swap(e, 'name', ENEMY_EN); for (const ph of e.phases || []) swap(ph, 'name', PHASE_NAME_EN); }
   for (const d of DUNGEONS) { const en = DUNGEON_EN[d.name]; if (en) [d.name, d.short] = en; }
   [TRIAL_DUNGEON.name, TRIAL_DUNGEON.short] = ['Branch Trial', 'Trial']; // Job Lanjutan (spec §43.10)
+  [RIFT_DUNGEON.name, RIFT_DUNGEON.short] = ['The Rift', 'Rift']; // spec §41.3
+  for (const b of BLESSINGS) { const en = BLESSING_EN[b.id]; if (en) [b.name, b.desc] = en; }
   for (const p of Object.values(POTIONS)) { const en = POTION_EN[p.name]; if (en) [p.name, p.desc] = en; }
   for (const m of Object.values(MATS)) swap(m, 'name', MAT_EN);
   for (const g of Object.values(GEMS)) swap(g, 'name', GEM_EN);

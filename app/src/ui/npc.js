@@ -21,6 +21,7 @@ import { itemName } from '../meta/itemgen.js';
 import { isEquipped } from '../meta/gear.js';
 import { forgePanel, salvagePanel, socketPanel, combinePanel } from './forge.js';
 import { bountyList, markShop, expeditionPanel } from './board.js';
+import { challengePanel } from './challenge.js';
 import { displayPanel, nightPanel, matsPanel, storagePanel } from './market.js';
 import { questDef, shards } from '../meta/quests.js';
 import { rewardChips, giveLines } from './journal.js';
@@ -123,8 +124,9 @@ function buildNpc(box, npc, ctx) {
     body.append(gemTab === 'pasang' ? socketPanel(char, ctx, redraw) : combinePanel(char, ctx.onCombine));
   } else if (npc.role === 'board') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
-    body.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana']], boardTab, (tab) => { boardTab = tab; redraw(); }));
-    body.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx) : markShop(char, ctx.onMarkBuy));
+    body.append(tabBar([['tugas', 'Tugas'], ['ekspedisi', 'Ekspedisi'], ['lencana', 'Lencana'], ['tantangan', 'Tantangan']], boardTab, (tab) => { boardTab = tab; redraw(); }));
+    body.append(boardTab === 'tugas' ? bountyList(char, ctx) : boardTab === 'ekspedisi' ? expeditionPanel(char, ctx)
+      : boardTab === 'tantangan' ? challengePanel(char, { ...ctx, inHome: char.location === 'home' }) : markShop(char, ctx.onMarkBuy)); // spec §41.3
   } else if (npc.role === 'stable') {
     const redraw = () => renderNpc(box, npc, { ...ctx, message: null });
     body.append(tabBar([['beli', 'Beli'], ['kandang', 'Kandang']], stableTab, (tab) => { stableTab = tab; redraw(); }));

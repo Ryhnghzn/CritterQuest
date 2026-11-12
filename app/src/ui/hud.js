@@ -20,10 +20,12 @@ export function updateHUD(game) {
   $('hptext').textContent = `${Math.ceil(Math.max(0, s.hp))} / ${Math.round(s.maxHp)}`;
   $('xpfill').style.transform = `scaleX(${Math.min(1, game.xp / game.xpNeed)})`;
   $('lvltext').textContent = `LV ${game.level}`;
-  if (game.field) $('floor').textContent = fieldHere(game); // region & enemy level here (spec §25.1)
+  const dz = game.diff && game.diff.id !== 'normal' ? ` · ${game.diff.name}` : ''; // difficulty (spec §41.3)
+  if (game.field) $('floor').textContent = fieldHere(game) + dz; // region & enemy level here (spec §25.1)
   else {
-    const waves = game.dungeon.floors[game.floor - 1]?.waves.length ?? 0;
-    $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? tr('bersih') : `G${game.wave + 1}/${waves}`}`;
+    const waves = (game.dungeon.rift ? game.riftFloor : game.dungeon.floors[game.floor - 1])?.waves.length ?? 0;
+    const blessed = game.rift?.blessings.length ? ` · ${t('{n} berkah', { n: game.rift.blessings.length })}` : '';
+    $('floor').textContent = `${game.dungeon.short} ${game.floor} · ${game.floorClear ? tr('bersih') : `G${game.wave + 1}/${waves}`}${blessed}${dz}`;
   }
   $('kills').textContent = game.kills;
   $('gold').textContent = game.gold;

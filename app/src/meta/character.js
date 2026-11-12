@@ -1,5 +1,6 @@
 // Permanent character: creation, level/EXP and final stats (spec §4.1, §4.3).
 // Every function returns new objects; save data is never mutated in place.
+import { diffOf } from '../data/difficulty.js';
 import { tr, t } from '../i18n.js';
 import { CLASSES, CLASS_BASE, JOB_IDS } from '../data/classes.js';
 import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX, NOVICE_LEVEL_CAP } from '../data/balance.js';
@@ -34,6 +35,7 @@ export function createCharacter({ slot, name, look, classId }, now) {
     clock: START_TIME,
     mats: freshMats(), gems: freshGems(),
     jobs: JOB_IDS.includes(classId) ? { [classId]: newJob(classId, false) } : {}, jobChanges: 0, spNotice: false, // skill points (spec §43)
+    difficulty: 'normal', unlocked: { hell: false, rift: false }, rift: { best: 0, checkpoint: 0 }, // spec §41.3
     bounties: freshBounties(), marks: 0,
     location: 'home', towns: ['home'], regions: {},
     world: { seed: worldSeed(now, slot), fog: '' }, found: [], expedition: null,
@@ -182,16 +184,24 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   const leveled = addExp(char, trip.exp);
   const levelsGained = leveled.levelsGained;
   const c = (trip.attrs && allocate(leveled.char, trip.attrs, now)) || leveled.char;
-  const gold = trip.died ? Math.floor(trip.gold * DEATH.goldKeep) : trip.gold;
+  // the Rift (spec §41.3): main.js already cut the haul back to the last checkpoint, nothing more is lost
+  const lose = trip.died && !trip.rift;
+  const gold = lose ? Math.floor(trip.gold * diffOf(char.difficulty).goldKeep) : trip.gold; // harder = more lost (spec §41.3)
   c.gold += gold;
   c.potions = { ...trip.potions };
   withHp(c, trip.died ? Math.max(1, finalStats(c).maxHp * DEATH.wakeHp) : trip.hp);
   const r = c.records;
-  const dr = r.dungeons[trip.dungeon || 'shadow'];
-  dr.bestFloor = Math.max(dr.bestFloor, trip.floor);
-  dr.clears += trip.cleared ? 1 : 0;
+  if (trip.rift) c.rift = { best: Math.max(c.rift.best, trip.rift.best), checkpoint: Math.max(c.rift.checkpoint, trip.rift.checkpoint) };
+  else {
+    const dr = r.dungeons[trip.dungeon || 'shadow'];
+    dr.bestFloor = Math.max(dr.bestFloor, trip.floor);
+    dr.clears += trip.cleared ? 1 : 0;
+  }
   const ending = trip.dungeon === 'spire' && trip.cleared && !trip.died && r.ending === null; // the story's end (spec §26.7)
   if (ending) r.ending = now;
+  if (trip.dungeon === 'spire' && trip.cleared && !trip.died) { // the story's end opens the Rift; on Sulit / Neraka also Neraka (spec §41.3)
+    c.unlocked = { ...c.unlocked, rift: true, hell: c.unlocked.hell || c.difficulty !== 'normal' };
+  }
   r.trips += 1;
   r.kills += trip.kills;
   r.bossKills += trip.bossKills;
@@ -200,14 +210,14 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   const before = c.bounties.filter(isDone).length;
   c.bounties = advanceBounties(c.bounties, trip);
   const bountiesDone = c.bounties.filter(isDone).length - before;
-  if (trip.dungeon && !c.found.includes(trip.dungeon)) c.found.push(trip.dungeon);
+  if (trip.dungeon && !trip.rift && !c.found.includes(trip.dungeon)) c.found.push(trip.dungeon);
   countQuests(c, { killsBy: trip.killsBy, elites: trip.elites, elitesBy: trip.elitesBy, region: regionOfDungeon(trip.dungeon || 'shadow')?.id });
   const x = c.expedition; // expedition: floors cleared in its dungeon (spec §25.5)
   if (x && x.dungeon === trip.dungeon) x.have = Math.min(x.need, x.have + (trip.floorsCleared || 0));
   const itemsKept = [], itemsLost = [], itemsLeft = [];
   const ids = new Set(c.inventory.map((it) => it.id));
   for (const item of trip.items || []) {
-    if (trip.died && rng() >= DEATH.gearKeepChance) { itemsLost.push(item); continue; }
+    if (lose && rng() >= DEATH.gearKeepChance) { itemsLost.push(item); continue; }
     if (c.inventory.length >= INVENTORY_MAX) { itemsLeft.push(item); continue; }
     const it = structuredClone(item);
     while (ids.has(it.id)) it.id += 'x'; // ids only need to be unique within the slot
@@ -217,13 +227,13 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   }
   const matsLost = {};
   for (const [m, n] of Object.entries(trip.mats || {})) {
-    const keep = trip.died ? Math.floor(n * DEATH.goldKeep) : n;
+    const keep = lose ? Math.floor(n * DEATH.goldKeep) : n;
     c.mats[m] += keep;
     if (n - keep) matsLost[m] = n - keep;
   }
   const gemsLost = [];
   for (const gm of trip.gems || []) {
-    if (trip.died && rng() >= DEATH.gearKeepChance) { gemsLost.push(gm); continue; }
+    if (lose && rng() >= DEATH.gearKeepChance) { gemsLost.push(gm); continue; }
     c.gems[gm.gem][gm.tier - 1] += 1;
   }
   const mountsFound = [...rollMountDrops(c, trip.mountRolls || { any: 0, eclipse: 0 }, rng), ...storyMounts(c, rng)]; // storyMounts catches the dragon on the ending

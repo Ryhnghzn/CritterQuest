@@ -134,12 +134,12 @@ export function spawnGroup(run, x, y, n, zone, type = null) {
     if (def.single && i > 0 && (ENEMIES[kind].single || ENEMIES[kind].group)) kind = 'slink';
     const e = run.spawnEnemy(kind);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // §33.3: the horde, weaker one by one
-    e.xp = Math.round(ENEMIES[kind].xp * sc.reward);
+    e.xp = Math.round(ENEMIES[kind].xp * sc.reward * (run.diff?.reward || 1)); // difficulty (spec §41.3)
     e.level = level; e.zone = zone;
     const a = rand() * Math.PI * 2;
     e.x = x + Math.cos(a) * rrange(10, 60); e.y = y + Math.sin(a) * rrange(10, 60);
     pushOut(map, e, e.r);
-    if (rand() < FIELD.eliteChance * HORDE.eliteMul) makeElite(e, affixCount({ level }));
+    if (rand() < FIELD.eliteChance * HORDE.eliteMul * (run.diff?.elite || 1)) makeElite(e, affixCount({ level }) + (run.diff?.affixes || 0));
     out.push(e);
   }
   return out;

@@ -288,7 +288,7 @@ describe('save versi 2', () => {
     const { mounts, ...rest } = structuredClone(fresh());
     const r = readSlot({ ...rest, version: 20 });
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(25);
+    expect(r.data.version).toBe(SAVE_VERSION);
     expect(r.data.mounts).toEqual({ owned: {}, active: null, skin: {}, pity: { tiger: 0, pegasus: 0 } });
     expect(validateSlot(r.data)).toEqual([]);
   });
@@ -460,7 +460,7 @@ describe('save v24 (spec §41.1)', () => {
     old.records.bestiary.slink = 7;
     const r = readSlot(old);
     expect(r.status).toBe('ok');
-    expect(r.data.version).toBe(25); // v24, then v25 (§43) on top
+    expect(r.data.version).toBe(SAVE_VERSION); // v24, then v25 (§43), v26 (§41.3) on top
     expect(r.data.records.bestiary.slink).toBe(7);
     expect(r.data.records.bestiary.hyena).toBe(0);
     expect(r.data.records.bestiary.voidtwin).toBe(0);

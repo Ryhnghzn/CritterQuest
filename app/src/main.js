@@ -36,6 +36,10 @@ import { MAJESTIC_BY_ID } from './render/world.js';
 import { claimBounty, rerollBounty, buyWithMarks, takeBounty, dropBounty } from './meta/bounties.js';
 import { equip as equipSkill, raise, setUlt, wornIds, equippedUlt, umumFx, passiveFx, mergeFx, respecSp, spRespecPrice, spFree, jobOf, newJob, pickJob, changeJob, jobChangePrice, levelOf, pickBranch, changeBranch, branchChangePrice, branchesOf, canTrial } from './meta/jobs.js';
 import { setShadowLook } from './art/bosses/index.js';
+import { setDifficulty } from './meta/difficulty.js';
+import { DIFFICULTY } from './data/difficulty.js';
+import { riftHaul, pickBlessing } from './run/rift.js';
+import { showBlessings } from './ui/challenge.js';
 import { leveled } from './run/skilllevel.js';
 import { MATS, GEMS, GEM_TIER_NAMES } from './data/forge.js';
 import { UPGRADES } from './data/shop.js';
@@ -445,6 +449,9 @@ function openNpc(npc, message = null) {
       else openNpc(townNpc);
     },
     onTryJob: (id) => tryJob(id),
+    // difficulty & the Rift (spec §41.3)
+    onDifficulty: (id) => serve((c, now) => setDifficulty(c, id, now), t('Tingkat kesulitan: {d}.', { d: tr(DIFFICULTY[id].name) })),
+    onRift: (fromCheckpoint) => enterDungeon('rift', fromCheckpoint ? current.rift.checkpoint + 1 : 1),
     // Job Lanjutan (spec §43.10): the trial, then a branch; change it later for a price
     onBranchTrial: async () => {
       if (await confirmDialog(tr('Lawan Bayangan Diri — dirimu sendiri, jauh lebih kuat. Tanpa hadiah, tanpa risiko; menang = pilih cabang. Siap?'), tr('Mulai Ujian'))) branchTrial();
@@ -781,7 +788,7 @@ async function enterDungeon(dungeon = 'shadow', floor = 1) {
   game.start({
     classId: current.classId, stats, hp: currentHp(current), potions: current.potions, belt: current.belt, floor, dungeon,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, difficulty: trial ? 'normal' : current.difficulty, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true), eclipse: regionOfDungeon(dungeon)?.id === 'eclipse',
   });
   tripAttrs = {};
   setupRunUI();
@@ -809,7 +816,7 @@ async function explore(at = current.location) {
   game.explore({
     classId: current.classId, stats: finalStats(current), hp: currentHp(current), potions: current.potions, belt: current.belt,
     level: current.level, exp: current.exp, luk: current.attrs.luk,
-    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
+    effects: mergeFx(mergeFx(mergeFx(mergeFx(gearEffects(current), umumFx(current)), passiveFx(current)), codexFx(current)), mountFx(current)), skills: wornIds(current, 0), skillsB: wornIds(current, 1), page: jobOf(current).page, branch: jobOf(current).branch, difficulty: trial ? 'normal' : current.difficulty, levels: jobOf(current).sp, ult: leveled(equippedUlt(current), levelOf(current, equippedUlt(current)?.id), true),
     at, gate: typeof at === 'string' ? lastGate[at] ?? null : null, mount: activeMountSetup(current), fog: decodeFog(current.world.fog, WORLD), ...gatesAndTarget(), opened: current.treasures,
     eclipseOpen: regionOpen(regionById('eclipse'), shards(current)),
   });
@@ -1043,9 +1050,16 @@ async function endRun(died) {
     dungeon: r.dungeon, floor: r.floor, cleared: r.cleared && !died, died, hp: game.stats.hp, potions: game.potions,
     attrs: tripAttrs, items: r.items, mats: r.mats, gems: r.gems, mountRolls: r.mountRolls,
   };
-  const newRecord = trip.floor > current.records.dungeons[r.dungeon].bestFloor;
+  let cut = null; // the Rift (spec §41.3): a fall keeps what was gathered up to the last checkpoint
+  if (game.dungeon.rift) {
+    const h = riftHaul(game, died);
+    cut = { gold: r.gold - h.gold, items: r.items.slice(h.loot.length) };
+    Object.assign(trip, { gold: h.gold, items: h.loot, mats: h.mats, gems: h.gems, floor: h.best, rift: { best: h.best, checkpoint: h.checkpoint } });
+  }
+  const newRecord = trip.rift ? trip.rift.best > current.rift.best : trip.floor > current.records.dungeons[r.dungeon].bestFloor;
   const before = current;
   const applied = applyTrip(current, trip, Date.now(), Math.random);
+  if (cut) { applied.goldLost += cut.gold; applied.itemsLost = [...applied.itemsLost, ...cut.items]; }
   const gains = mountGains(before, applied.char, applied.mountsFound);
   current = applied.char; // keep progress in memory even if the write fails
   questNews(before);
@@ -1163,6 +1177,7 @@ const cheatActions = {
     toast(tr(msg)); drawCheat();
   },
   branchWin: () => { if (scene === 'town' && canTrial(current)) { toggleCheat(); chooseBranch(); } else toast(tr('Perlu job, level 30+, belum bercabang, di kota.')); },
+  unlock9e: () => cheatChar((c) => { c.unlocked = { hell: true, rift: true }; }, 'Neraka & Celah terbuka'), // spec §41.3
   gold: (n) => cheatChar((c) => { c.gold += n; }, t('+{n} koin', { n })),
   level: (n) => cheatChar((c) => { c.level = Math.min(CHAR_LEVEL_MAX, c.level + n); c.exp = 0; }, 'Level naik'),
   potions: () => cheatChar((c) => { for (const id in c.potions) c.potions[id] = POTION_MAX; }, 'Ramuan penuh'),
@@ -1244,7 +1259,7 @@ const cheatActions = {
   },
   clearFloor: () => {
     if (game.floorClear) return;
-    game.wave = game.dungeon.floors[game.floor - 1].waves.length - 1;
+    game.wave = (game.dungeon.rift ? game.riftFloor : game.dungeon.floors[game.floor - 1]).waves.length - 1;
     game.queueI = game.queue.length;
     for (const e of game.enemies) e.hp = 0;
   },
@@ -1330,6 +1345,7 @@ function potionSlot(pressed) {
   return -1;
 }
 
+let blessOpen = false; // the Rift's blessing cards are on screen
 function tickRun(pressed) {
   const auto = settings.autoAttack; // auto mode: attack + aim on their own (spec §5.1)
   const aimAt = !auto && !input.touch && input.mouse.active ? runView().screenToWorld(input.mouse.x, input.mouse.y) : null;
@@ -1347,6 +1363,14 @@ function tickRun(pressed) {
     game.clock = worldClock;
     game.night = phaseOf(worldClock).icon === 'moon';
     if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged || game.eventsDone.length)) commitField();
+  }
+  if (game.state === ST.PLAY && game.rift?.offer) { // between Rift floors: one blessing of three (spec §41.3); the fight waits
+    game.state = ST.PAUSE;
+    if (!blessOpen) {
+      blessOpen = true; sfx.chime();
+      showBlessings(game.rift.offer, (id) => { pickBlessing(game, id); blessOpen = false; game.state = ST.PLAY; sfx.heart(); });
+    }
+    return false;
   }
   if (game.state === ST.PLAY && game.bossIntro) { // a boss's entrance (spec §44)
     const type = game.bossIntro; game.bossIntro = null;

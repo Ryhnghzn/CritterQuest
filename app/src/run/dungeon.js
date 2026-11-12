@@ -2,6 +2,8 @@
 // (run/room.js) of the chosen dungeon; waves walk in through the 4 lanes, a
 // cleared floor opens portals in the centre (blue = down, gold = home). Pure
 // logic on the run state (run/run.js); the run decides what an exit means.
+import { makeRiftFloor, riftCleared } from './rift.js';
+import { RIFT } from '../data/rift.js';
 import { tr, t } from '../i18n.js';
 import { sfx } from '../core/audio.js';
 import { rand, rrange, rint } from '../core/rng.js';
@@ -22,7 +24,7 @@ const FIRST_SPAWN = 1.2;      // seconds of calm at the start of a floor
 
 // enemy HP multiplier: floor step × the dungeon's difficulty
 export const hpMul = (floor, dungeon = DUNGEONS[0]) => (1 + FLOOR_HP_STEP * (floor - 1)) * dungeon.hpMul;
-const floorsOf = (run) => run.dungeon.floors;
+const floorOf = (run) => (run.dungeon.rift ? run.riftFloor : run.dungeon.floors[run.floor - 1]); // the Rift makes each floor (run/rift.js)
 
 // Spawn order of one wave: bosses first, everything else shuffled; normal counts × HORDE.count (spec §33.2).
 export function waveQueue(wave) {
@@ -52,14 +54,15 @@ export function startFloor(run, floor) {
   run.exit = null;
   // floor 1 of the first dungeon is always the round room; after that, any shape
   run.room = makeRoom(floor === 1 && run.dungeon === DUNGEONS[0] ? 'round' : SHAPES[Math.floor(rand() * SHAPES.length)], rand);
+  if (run.dungeon.rift) run.riftFloor = makeRiftFloor(floor, rand, run.rift.more);
   beginWave(run, 0);
   run.spawnT = FIRST_SPAWN;
-  run.showBanner(t('Lantai {n}', { n: floor }));
+  run.showBanner(run.dungeon.rift ? t('Celah — lantai {n}', { n: floor }) : t('Lantai {n}', { n: floor }));
 }
 
 function beginWave(run, i) {
   run.wave = i;
-  run.queue = waveQueue(floorsOf(run)[run.floor - 1].waves[i]);
+  run.queue = waveQueue(floorOf(run).waves[i]);
   run.queueI = 0;
   run.spawnT = 0;
   run.waveGap = 0;
@@ -74,7 +77,7 @@ export function spawnFromLane(run, type, lane = null) {
   const e = run.spawnEnemy(type);
   if (!e.boss) { // the horde: weaker one by one, elites a bit rarer (spec §33.2)
     e.hp *= HORDE.hp; e.maxHp *= HORDE.hp;
-    if (rand() < ELITE.chance[run.floor - 1] * HORDE.eliteMul) makeElite(e, affixCount({ floor: run.floor }));
+    if (rand() < ELITE.chance[Math.min(run.floor, ELITE.chance.length) - 1] * HORDE.eliteMul * (run.diff?.elite || 1)) makeElite(e, affixCount({ floor: run.floor }) + (run.diff?.affixes || 0)); // difficulty (spec §41.3)
   }
   e.x = lane.x + lane.dx * along - lane.dy * side;
   e.y = lane.y + lane.dy * along + lane.dx * side;
@@ -119,7 +122,7 @@ export function confinePlayer(run) {
 export function stepDungeon(run, dt) {
   run.floorT += dt;
   if (run.floorClear) { stepPortals(run, dt); return; }
-  const waves = floorsOf(run)[run.floor - 1].waves;
+  const waves = floorOf(run).waves;
   if (run.queueI < run.queue.length) {
     run.spawnT -= dt;
     if (run.spawnT <= 0) spawnGroup(run, waves[run.wave].every);
@@ -159,7 +162,14 @@ function clearFloor(run) {
   run.addFloater(run.px, run.py - 40, t('+{n} koin', { n: bonus }), '#ffd166');
   for (let i = 0; i < DROP.chestItems; i++) dropGear(run, 'chest', 0, 0);
   for (const g of run.gems) g.mag = true; // nothing left behind on the floor
-  if (run.floor >= FLOOR_COUNT) {
+  if (run.dungeon.rift) { // the Rift never ends: on, or home (spec §41.3)
+    run.portals = [
+      { kind: 'down', x: -PORTAL.gap, y: 0, armed: false },
+      { kind: 'home', x: PORTAL.gap, y: 0, armed: false },
+    ];
+    riftCleared(run, rand);
+    if (run.rift.offer) run.showBanner(t('Lantai {n} bersih!', { n: run.floor }));
+  } else if (run.floor >= FLOOR_COUNT) {
     run.cleared = true;
     run.portals = [{ kind: 'home', x: 0, y: 0, armed: false }];
     run.showBanner(tr('Dungeon tamat!'));
@@ -188,8 +198,8 @@ export function dropGear(run, source, x, y) {
   // deeper dungeons give higher-level gear
   const level = run.field // regions: around the level of the enemy that fell (spec §25.1)
     ? Math.max(1, Math.min(CHAR_LEVEL_MAX, (run.lootLevel || run.level) + Math.floor(rand() * 3) - 1))
-    : Math.min(CHAR_LEVEL_MAX, itemLevelFor(run.level, run.floor, rand) + run.dungeon.itemLevel);
-  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level }, rand);
+    : Math.min(CHAR_LEVEL_MAX, itemLevelFor(run.level, run.dungeon.rift ? 5 : run.floor, rand) + run.dungeon.itemLevel + (run.dungeon.rift ? Math.floor(run.floor * RIFT.itemPerFloor) : 0));
+  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level, diff: run.diff }, rand);
   const a = rand() * Math.PI * 2;
   run.gems.push({ x: x + Math.cos(a) * 18, y: y + Math.sin(a) * 18, v: 0, mag: false, big: false, gear: item, t: rand() * 6 });
   return item;

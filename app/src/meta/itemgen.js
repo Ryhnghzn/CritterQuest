@@ -2,7 +2,7 @@
 // `rng` passed in (a () => [0, 1) function), so tests can seed it.
 import {
   RARITIES, LEGENDARY, SLOTS, SLOT_IDS, TIER_LEVELS, VARIANTS, LEVEL_GROWTH, BONUSES, BONUS_IDS,
-  ROLL_MIN, UNIQUES, EFFECTS, DROP_WEIGHTS, LUK_RARITY, DROP,
+  ROLL_MIN, UNIQUES, EFFECTS, DROP_WEIGHTS, LUK_RARITY, DROP, MYTHIC,
 } from '../data/items.js';
 import { SOCKETS, ENHANCE, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
@@ -27,14 +27,18 @@ export function itemLevelFor(charLevel, floor, rng) {
 }
 
 // source: 'enemy' | 'elite' | 'chest' | 'boss'; luk shifts weight toward Langka and up.
-export function rollRarity(source, luk, rng) {
-  const w = DROP_WEIGHTS[source].map((x, r) => (r >= 2 ? x * (1 + LUK_RARITY * luk) : x));
+// diff: { rarityUp, mythic } from the difficulty (spec §41.3): Mythic weighs more, and a piece may come one
+// rarity higher (only to a rarity this source can drop). Without it the rolls are as before.
+export function rollRarity(source, luk, rng, diff = null) {
+  const w = DROP_WEIGHTS[source].map((x, r) => (r >= 2 ? x * (1 + LUK_RARITY * luk) : x) * (r === MYTHIC && diff ? diff.mythic || 1 : 1));
   let roll = rng() * w.reduce((a, b) => a + b, 0);
+  let out = w.findLastIndex((x) => x > 0);
   for (let r = 0; r < w.length; r++) {
     roll -= w[r];
-    if (roll < 0 && w[r] > 0) return r;
+    if (roll < 0 && w[r] > 0) { out = r; break; }
   }
-  return w.findLastIndex((x) => x > 0);
+  if (diff?.rarityUp && out + 1 < w.length && w[out + 1] > 0 && rng() < diff.rarityUp) out += 1;
+  return out;
 }
 
 function rollId(rng) {
@@ -70,9 +74,9 @@ export function makeItem({ slot, classId, rarity, itemLevel, unique = null }, rn
 // A random drop for a character: rarity by source (+ LUK), slot at random; a
 // Legendary / Mythic roll becomes one of the uniques that fit the class.
 // level: fixed item level (shop chests), otherwise rolled from character level + floor.
-export function dropItem({ source, classId, charLevel, floor, luk = 0, level = null }, rng) {
+export function dropItem({ source, classId, charLevel, floor, luk = 0, level = null, diff = null }, rng) {
   const itemLevel = level ?? itemLevelFor(charLevel, floor, rng);
-  let rarity = rollRarity(source, luk, rng);
+  let rarity = rollRarity(source, luk, rng, diff);
   const noWeapon = classId === 'novice'; // a Pengembara finds no weapons (spec §43.1)
   if (rarity >= LEGENDARY) {
     const fits = UNIQUES.filter((u) => !u.quest && u.rarity === rarity && (u.classId === null || u.classId === classId) && !(noWeapon && u.slot === 'weapon'));

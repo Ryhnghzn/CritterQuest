@@ -25,7 +25,7 @@ export function rollAffixes(e, n, forced = null) {
   e.affixes = ids;
   for (const id of ids) {
     const a = AFFIXES[id];
-    if (id === 'fast') { e.speed *= a.speed; e.tempo = a.tempo; }
+    if (id === 'fast') { e.speed *= a.speed; e.tempo = (e.tempo || 1) * a.tempo; } // × Neraka's tempo
     if (id === 'armored') { e.armorMax = e.maxHp * a.shield; e.armor = e.armorMax; e.armorIdle = 0; }
     if (id === 'caller') e.callT = a.every;
     if (id === 'thorny') e.thornCd = 0;

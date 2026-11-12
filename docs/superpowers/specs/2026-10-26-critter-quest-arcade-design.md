@@ -1368,6 +1368,12 @@ Tiap bos dungeon mendapat **2 jurus khas** yang hanya dia punya, dan **satu perg
 
 Save: `difficulty`, `unlocked` (Neraka, Celah), `rift { best, checkpoint }`. Versi save naik satu dari versi terakhir saat dikerjakan, dengan `migrate()`.
 
+**Catatan pelaksanaan (2026-11-12, rencana `docs/superpowers/plans/2026-11-11-kesulitan-celah.md`, save v26):**
+- Angka di `data/difficulty.js` (`hp`, `dmg`, `tempo`, `elite`, `affixes`, `reward`, `rarityUp`, `mythic`, `goldKeep`); run membawa `run.diff`. Koin yang tersisa saat tumbang ternyata 50% di Normal (`DEATH.goldKeep`), bukan 90% seperti tabel di atas; jadi Normal 50%, Sulit 40%, Neraka 25%. "Rarity naik lebih sering" = peluang 25% / 40% sebuah gear naik satu rarity (hanya ke rarity yang bisa jatuh dari sumber itu); `rollRarity(..., diff)`.
+- Ganti tingkat di Balai Petualang tab **Tantangan** (`ui/challenge.js`, `meta/difficulty.js`). Tamat di Sulit/Neraka membuka Neraka; tamat di tingkat apa pun membuka Celah (`applyTrip`). Migrasi 25→26: Celah langsung terbuka bagi yang sudah tamat. Ujian Cabang selalu Normal.
+- Celah: `data/rift.js` (`RIFT`, `RIFT_POOL` = semua musuh non-bos dari keenam dungeon, 12 `BLESSINGS`, `RIFT_DUNGEON` mulai sekuat Menara Gerhana) + `run/rift.js` (lantai dibuat dari nomornya, +8% HP & damage per lantai linear, bos acak tiap 5 lantai — Sang Gerhana ikut dari lantai 20 —, berkah, titik simpan, `riftHaul`). Masuk dari tab Tantangan, hanya di Kota Awal (belum ada gerbang fisik di peta). EXP selalu tetap; tumbang hanya memotong koin, gear, bahan, permata sesudah titik simpan. Rekor & titik simpan terdalam di `char.rift`; bisa mulai lagi dari titik simpan. CHEAT → "Buka Neraka & Celah".
+- Belum: penyetelan ulang angka §33 dengan patokan bot ("Mage pas level pernah turun < 50% HP di sebagian besar lantai") — tunggu rasa pemilik di Normal setelah §43 G.
+
 ### 41.4 Proyek D: Job Lanjutan
 
 > Diperbarui oleh §43 (2026-11-11): Job Lanjutan jadi bagian H proyek §43; ujian tidak lagi menunggu tingkat Sulit (§43.8); tiap cabang menambah 2 skill + 1 ultimate + 2 pasif ke pohon skill (§43.2).
