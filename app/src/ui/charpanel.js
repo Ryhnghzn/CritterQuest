@@ -2,7 +2,7 @@
 // points (spec §14.1), stats and records.
 import { branchOf } from '../meta/jobs.js';
 import { el, button, svgIcon, stage, keepView } from './screens.js';
-import { portrait, OUTFIT } from '../art/doll.js';
+import { portrait, outfitOf } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { CHAR_LEVEL_MAX, ATTRS } from '../data/balance.js';
 import { POTION_IDS } from '../data/potions.js';
@@ -56,7 +56,7 @@ function buildPanel(box, char, hp, pending, { onClose, onAdd, onCancel, onSave, 
   const marked = Object.values(pending).reduce((a, b) => a + b, 0);
   const preview = (marked && allocate(char, pending, char.updatedAt)) || char;
   const free = freePoints(char) - marked;
-  const color = OUTFIT[char.classId][0];
+  const color = outfitOf(char.classId)[0];
   const st = stage(portrait(char.classId, { ...char.look, gear: dollGear(char) }, 100), color);
   st.append(el('span', 'lvbadge', `LV ${char.level}`));
   const maxed = char.level >= CHAR_LEVEL_MAX;

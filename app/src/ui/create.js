@@ -1,7 +1,7 @@
 // Buat Karakter: name and hair style × colour, with a live preview. Every adventurer starts as a
 // Pengembara (spec §43.1); the job is picked later at the Trainer.
 import { el, button, stage } from './screens.js';
-import { portrait, OUTFIT, HAIR_NAMES, HAIR_COLOR_NAMES, HAIR_PALETTE } from '../art/doll.js';
+import { portrait, HAIR_NAMES, HAIR_COLOR_NAMES, HAIR_PALETTE, outfitOf } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { NAME_MAX } from '../data/balance.js';
 import { validateName } from '../meta/character.js';
@@ -10,7 +10,6 @@ import { tr, t } from '../i18n.js';
 // onCreate({ name, look, classId }) may reject (e.g. save failed); the error is shown.
 export function renderCreate(box, { onCreate, onBack }) {
   const form = { hair: 0, hairColor: 0, classId: 'novice' };
-  const NOVICE_COLOR = '#9a8064';
   box.replaceChildren();
 
   const preview = el('div', 'preview');
@@ -59,7 +58,7 @@ export function renderCreate(box, { onCreate, onBack }) {
   function set(key, value) { form[key] = value; refresh(); }
 
   function refresh() {
-    const color = OUTFIT[form.classId]?.[0] || NOVICE_COLOR;
+    const color = outfitOf(form.classId)[0];
     className.textContent = CLASSES[form.classId].name;
     className.style.setProperty('--c', color);
     preview.replaceChildren(stage(portrait(form.classId, form, 172), color), className);

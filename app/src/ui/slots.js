@@ -2,7 +2,7 @@
 import { branchOf } from '../meta/jobs.js';
 import { el, button, svgIcon, stage, pressable } from './screens.js';
 import { DUNGEONS } from '../data/dungeons.js';
-import { portrait, OUTFIT } from '../art/doll.js';
+import { portrait, outfitOf } from '../art/doll.js';
 import { CLASSES } from '../data/classes.js';
 import { tr, t } from '../i18n.js';
 
@@ -19,7 +19,7 @@ export function renderSlots(box, entries, { onOpen, onCreate, onDelete, onExport
     card.style.animationDelay = `${i * 0.06}s`;
     if (e.status === 'ok') {
       const c = e.data;
-      const color = OUTFIT[c.classId][0];
+      const color = outfitOf(c.classId)[0]; // a Pengembara has no class colour of its own
       const st = stage(portrait(c.classId, c.look, 104), color);
       const lv = el('span', 'lvbadge', `LV ${c.level}`);
       st.append(lv);

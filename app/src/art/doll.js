@@ -24,6 +24,9 @@ export const OUTFIT = {
   mage: ['#3d4c86', '#252f58'],
   assassin: ['#474a5e', '#2a2c39'],
 };
+// the Pengembara (no job yet): a plain earthy colour where a class colour is shown (slot cards, panels)
+export const NOVICE_OUTFIT = ['#9a8064', '#6a5440'];
+export const outfitOf = (classId) => OUTFIT[classId] || NOVICE_OUTFIT;
 
 export const HAIR_NAMES = ['Pendek', 'Jabrik', 'Panjang', 'Bob', 'Kuncir', 'Poni Samping'];
 export const HAIR_COLOR_NAMES = ['Hitam', 'Cokelat', 'Pirang', 'Merah', 'Biru', 'Putih'];
