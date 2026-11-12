@@ -4,8 +4,15 @@ const $ = (id) => document.getElementById(id);
 const SCREENS = ['title', 'slots', 'create', 'npc', 'charpanel', 'pause', 'results', 'ending', 'fieldmap'];
 
 // Shows one screen (null = none, during play) and returns its id.
+// A screen that opens (was hidden) starts scrolled to the top: the screens are reused, so the
+// map / character / NPC panels would otherwise reopen where they were last scrolled to.
+// Redraws while a screen stays open keep their scroll (keepView).
 export function showScreen(id) {
-  for (const s of SCREENS) $(s).classList.toggle('hidden', s !== id);
+  for (const s of SCREENS) {
+    const e = $(s), opening = s === id && e.classList.contains('hidden');
+    e.classList.toggle('hidden', s !== id);
+    if (opening) for (const n of [e, ...e.querySelectorAll('*')]) if (n.scrollTop) n.scrollTop = 0;
+  }
   return id;
 }
 
