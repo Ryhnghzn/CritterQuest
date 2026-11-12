@@ -5,6 +5,10 @@ import { ENEMIES } from '../src/data/enemies.js';
 import { drawDoll } from '../src/art/doll.js';
 import { pixelData } from '../src/art/pixeldata.js';
 import { bushDisguise, mirrorMark } from '../src/render/foes.js';
+import { BEAST_ART } from '../src/art/beasts.js';
+import { OLD_MONSTER_ART } from '../src/art/monsters.js';
+import { ECLIPSE_ART } from '../src/art/eclipse.js';
+import { FOE_UNIT } from '../src/art/foes.js';
 
 const NEW = [
   ['marshfrog', 'spitter', 'Hutan — melompat ke lingkaran di bawah pemain'],
@@ -48,6 +52,29 @@ function cell(title, draw, pixel) {
 }
 
 const list = document.getElementById('list');
+
+// Proposal (owner to approve before it enters the game): the older enemies redrawn with the anime kit
+{
+  const h = document.createElement('h2'); h.textContent = 'Musuh lama digambar ulang (kit anime) — sudah di game; ?lama = gambar lama';
+  list.append(h);
+  const drawNew = (type) => (g, cx, cy, r) => {
+    g.save(); g.translate(cx, cy); g.lineJoin = 'round'; g.scale(r / FOE_UNIT, r / FOE_UNIT); BEAST_ART[type](g); g.restore();
+    g.save(); g.setLineDash([4, 4]); g.strokeStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.ellipse(cx, cy + r * 0.75, r, r * 0.4, 0, 0, Math.PI * 2); g.stroke(); g.restore();
+  };
+  const drawOld = (type) => (g, cx, cy, r) => { g.save(); g.translate(cx, cy); g.lineJoin = 'round'; (OLD_MONSTER_ART[type] || ECLIPSE_ART[type])(g, r); g.restore(); };
+  for (const type of Object.keys(BEAST_ART)) {
+    const sub = document.createElement('h2'); sub.textContent = ENEMIES[type].name; sub.style.fontSize = '14px';
+    const row = document.createElement('div'); row.className = 'row';
+    row.append(
+      cell('Lama', (g) => scene(g, type, drawOld(type)), false),
+      cell('Baru · halus', (g) => scene(g, type, drawNew(type)), false),
+      cell('Baru · pixel', (g) => scene(g, type, drawNew(type)), true),
+    );
+    list.append(sub, row);
+  }
+  const h2 = document.createElement('h2'); h2.textContent = 'Musuh baru §41.1 (sudah di game)';
+  list.append(h2);
+}
 for (const [type, old, note] of NEW) {
   const h = document.createElement('h2'); h.textContent = `${ENEMIES[type].name} — ${note}`;
   const row = document.createElement('div'); row.className = 'row';

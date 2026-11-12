@@ -182,4 +182,4 @@ export function voidtwin(g) {
 }
 
 export const FOE_ART = { marshfrog, bushling, mistwisp, mirrorguard, hyena, splitbeetle, beetlet, mite, mortar, embertotem, voidobelisk, voidtwin };
-export { TAU };
+export { TAU, part, eye, fangs, blade, sharp };

@@ -4,6 +4,8 @@
 // kept inside ±1.6 r (the baked sprite box). Baked once per size, so cost is per bake.
 import { cel, poly, glow, pal, mix, INK, TAU } from './hero/cel.js';
 import { FOE_ART, FOE_UNIT } from './foes.js';
+import { BEAST_ART } from './beasts.js';
+import { LOOK } from '../data/look.js';
 
 const RIM = {
   toxic: 'rgba(150,255,110,.85)', shadow: 'rgba(190,120,255,.85)', fire: 'rgba(255,130,60,.9)',
@@ -326,4 +328,7 @@ const MONSTERS = {
 const ART_EXT = { boss: 2.4, crystalboss: 2.4, sporeboss: 2.4, lavaboss: 2.4, tombboss: 2.4 };
 export const artExt = (type) => ART_EXT[type] || 1.6;
 
-export const MONSTER_ART = MONSTERS;
+// the older enemies redrawn with the anime kit (art/beasts.js); `?lama` keeps the old drawings
+export const BEAST_OVERRIDES = LOOK.anime ? Object.fromEntries(Object.entries(BEAST_ART).map(([id, f]) => [id, (g, r) => { g.save(); g.scale(r / FOE_UNIT, r / FOE_UNIT); f(g); g.restore(); }])) : {};
+export const MONSTER_ART = { ...MONSTERS, ...BEAST_OVERRIDES };
+export const OLD_MONSTER_ART = MONSTERS;
