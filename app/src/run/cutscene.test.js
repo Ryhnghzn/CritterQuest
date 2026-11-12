@@ -14,7 +14,7 @@ describe('cutscene (§44)', () => {
     for (const [id, scene] of Object.entries(SCENES)) {
       const { cs, t } = play(scene);
       expect(cs.done, id).toBe(true);
-      expect(t, id).toBeLessThan(CUTSCENE.maxLen + 30);
+      expect(t, id).toBeLessThan(scene.maxLen || CUTSCENE.maxLen); // ends by itself, well before the safety stop
       expect(t, id).toBeGreaterThan(4);
     }
   });

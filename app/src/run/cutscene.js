@@ -118,7 +118,7 @@ export function stepCutscene(cs, dt, input = {}) {
     const s = cs.scene.steps[cs.i++], w = start(cs, s);
     if (w && !s.go) cs.block = w;
   }
-  if (cs.t > CUTSCENE.maxLen + 30) cs.done = true; // never stuck
+  if (cs.t > (cs.scene.maxLen || CUTSCENE.maxLen) + 30) cs.done = true; // never stuck (a long scene says its own length)
   return cs;
 }
 

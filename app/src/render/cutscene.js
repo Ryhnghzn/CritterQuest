@@ -25,6 +25,9 @@ const LOOKS = {
   desert: { sky: ['#1e0e0a', '#8a4a2a'], far: '#4a2a1a', near: '#2a160e', ground: ['#8a5a34', '#5a3a20'], orb: 'sun', far2: 'dunes', near2: 'cacti' },
   volcano: { sky: ['#140604', '#5a1a0c'], far: '#2a0e08', near: '#160806', ground: ['#2a1a18', '#1a100e'], orb: 'ember', far2: 'volcano', near2: 'deadtrees' },
   eclipse: { sky: ['#06030c', '#2a1440'], far: '#1a0e2a', near: '#0e0818', ground: ['#1c1426', '#120c1a'], orb: 'eclipse', far2: 'spires', near2: 'shards' },
+  // Kota Awal on the morning of the festival, and that night round the bonfire (the opening)
+  village: { sky: ['#3a5a8a', '#f2c08a'], far: '#4a5a6a', near: '#2a2a32', ground: ['#5a4a32', '#3a3022'], orb: 'sun', far2: 'hills', near2: 'houses' },
+  festival: { sky: ['#0a0818', '#3a1e2a'], far: '#1a1424', near: '#100c18', ground: ['#3a2a1e', '#22180e'], orb: 'moon', far2: 'hills', near2: 'houses' },
   town: { sky: ['#080a18', '#2a2440'], far: '#14142a', near: '#0c0c1a', ground: ['#2a2620', '#1a1814'], orb: 'moon', far2: 'hills', near2: 'houses' },
   dawn: { sky: ['#2a3a6a', '#f0a868'], far: '#5a4a6a', near: '#2a2238', ground: ['#4a3a28', '#2a2018'], orb: 'dawn', far2: 'hills', near2: 'tower' },
   past: { sky: ['#1a1208', '#6a4a24'], far: '#2a1c0c', near: '#140e06', ground: ['#3a2a14', '#22180a'], orb: 'eclipse', far2: 'hills', near2: 'none' },
@@ -156,6 +159,16 @@ export function drawFx(g, cs, W, H, t, gy) {
     if (f.kind === 'eclipse') { g.fillStyle = `rgba(20,0,40,${(0.45 * a * life).toFixed(2)})`; g.fillRect(0, 0, W, H); blackSun(g, W * 0.5, H * 0.18, 20, t, a * life); }
     if (f.kind === 'flash') { g.fillStyle = `rgba(255,255,255,${(0.9 * (1 - life) * a).toFixed(2)})`; g.fillRect(0, 0, W, H); }
     if (f.kind === 'motes') for (let i = 0; i < 14; i++) { const k = (t * 0.5 + i / 14) % 1, mx = x + Math.sin(i * 2.3 + t) * 30, my = y - k * 60; g.fillStyle = `rgba(255,230,160,${((1 - k) * a).toFixed(2)})`; g.fillRect(mx, my, 2, 2); }
+    if (f.kind === 'fire') { // a bonfire: logs, flickering flames, a warm glow, sparks rising
+      const fl = 0.8 + 0.2 * Math.sin(t * 11) * Math.sin(t * 7.3), gr = g.createRadialGradient(x, y - 10 * z, 0, x, y - 10 * z, 90 * z);
+      gr.addColorStop(0, `rgba(255,170,80,${(0.45 * fl * a).toFixed(2)})`); gr.addColorStop(1, 'rgba(255,120,40,0)'); g.fillStyle = gr; g.fillRect(x - 90 * z, y - 100 * z, 180 * z, 190 * z);
+      g.fillStyle = '#3a2416'; g.fillRect(x - 12 * z, y - 3 * z, 24 * z, 4 * z); g.fillRect(x - 9 * z, y - 6 * z, 18 * z, 3 * z);
+      for (const [dx, hgt, c] of [[-5, 16, '#ff6a2a'], [4, 20, '#ff8a3a'], [0, 26, '#ffc04a'], [0, 14, '#fff0b0']]) {
+        const hh = hgt * z * (0.8 + 0.25 * Math.sin(t * 9 + dx)), w = (hgt > 20 ? 6 : 5) * z;
+        g.fillStyle = c; g.beginPath(); g.moveTo(x + (dx - w / z) * z, y - 3 * z); g.quadraticCurveTo(x + dx * z, y - 3 * z - hh * 1.3, x + (dx + Math.sin(t * 6 + dx) * 2) * z, y - 3 * z - hh); g.quadraticCurveTo(x + dx * z + w * 0.4, y - 3 * z - hh * 0.4, x + (dx + w / z) * z, y - 3 * z); g.fill();
+      }
+      for (let i = 0; i < 10; i++) { const k = (t * 0.6 + i / 10) % 1; g.fillStyle = `rgba(255,200,110,${((1 - k) * a).toFixed(2)})`; g.fillRect(x + Math.sin(i * 3.1 + t * 2) * 12 * z, y - (10 + k * 70) * z, 2, 2); }
+    }
     if (f.kind === 'dawn') { g.fillStyle = `rgba(255,190,120,${(0.25 * life * a).toFixed(2)})`; g.fillRect(0, 0, W, H); }
   }
 }
@@ -177,7 +190,16 @@ export function drawPanel(g, id, W, H, t) {
   const cs = { cam: { x: t * 4, y: -40, zoom: 1.4 } }, gy = H * 0.72;
   row(g, 'hills', '#2a1c0c', gy, 0.25, cs, W, t, 5);
   g.fillStyle = '#140e06'; g.fillRect(0, gy, W, H - gy);
-  if (id === 'past_eclipse') {
+  if (id === 'past_village') { // a small village at the foot of the hill, one window lit under the stars
+    for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,236,190,${(0.3 + 0.5 * h01(i * 5)).toFixed(2)})`; g.fillRect(h01(i) * W, h01(i * 9) * H * 0.5, 1, 1); }
+    for (let i = 0; i < 7; i++) {
+      const x = W * 0.18 + i * W * 0.11, s = 0.8 + h01(i + 3) * 0.5, y = gy;
+      g.fillStyle = '#0a0604'; g.fillRect(x - 14 * s, y - 18 * s, 28 * s, 18 * s);
+      g.beginPath(); g.moveTo(x - 18 * s, y - 18 * s); g.lineTo(x, y - 32 * s); g.lineTo(x + 18 * s, y - 18 * s); g.fill();
+      if (i === 3) { const fl = 0.75 + 0.25 * Math.sin(t * 3); g.fillStyle = `rgba(255,200,110,${fl.toFixed(2)})`; g.fillRect(x - 3 * s, y - 13 * s, 6 * s, 6 * s); const lg = g.createRadialGradient(x, y - 10 * s, 0, x, y - 10 * s, 40); lg.addColorStop(0, `rgba(255,190,100,${(0.35 * fl).toFixed(2)})`); lg.addColorStop(1, 'rgba(255,190,100,0)'); g.fillStyle = lg; g.fillRect(x - 40, y - 50, 80, 80); }
+    }
+    g.fillStyle = '#0a0604'; g.fillRect(W * 0.08, gy - 70, 10, 70); g.fillRect(W * 0.86, gy - 60, 10, 60); // the old watchtowers
+  } else if (id === 'past_eclipse') {
     blackSun(g, W / 2, H * 0.3, 34, t, 1);
     for (let i = 0; i < 9; i++) { const x = W * 0.1 + i * W * 0.1, s = 0.7 + h01(i) * 0.6; g.fillStyle = '#0a0604'; g.beginPath(); g.ellipse(x, gy - 8 * s, 10 * s, 12 * s, 0, 0, TAU); g.fill(); g.fillStyle = `rgba(255,${120 + i * 8},60,.8)`; g.fillRect(x - 4 * s, gy - 12 * s, 2, 2); g.fillRect(x + 2 * s, gy - 12 * s, 2, 2); }
   } else { // past_seal: five elders round the black sun, five lights flying apart

@@ -29,6 +29,12 @@ export const CUTSCENE = {
 
 // hero: the player's own character; odo: the town elder
 const odo = { kind: 'npc', look: { hair: 4, hairColor: 2 }, outfit: ['#6d6a5c', '#4a473d'], name: 'Kakek Odo', role: 'talk' };
+// the townsfolk of Kota Awal (data/town.js), for the opening
+const pip = { kind: 'npc', look: { hair: 0, hairColor: 5 }, outfit: ['#3fa7d6', '#2a7aa3'], name: 'Pip', role: 'talk', scale: 0.72 };
+const marta = { kind: 'npc', look: { hair: 3, hairColor: 1 }, outfit: ['#c2662d', '#8f4519'], name: 'Bu Marta', role: 'inn' };
+const brom = { kind: 'npc', look: { hair: 0, hairColor: 3 }, outfit: ['#7a6f66', '#57504a'], name: 'Pandai Brom', role: 'gear' };
+const dara = { kind: 'npc', look: { hair: 2, hairColor: 4 }, outfit: ['#b33a3a', '#7d2424'], name: 'Dara', role: 'talk' };
+const sela = { kind: 'npc', look: { hair: 3, hairColor: 0 }, outfit: ['#d4a017', '#9c7410'], name: 'Sela', role: 'talk' };
 
 // the bosses' entrance: the hero steps in, the camera finds the boss, its name in large letters
 function bossIntro(dungeon, type, name, sub, line) {
@@ -68,26 +74,89 @@ function shard(n, place, line) {
 }
 
 export const SCENES = {
-  // the first time a character steps into the world (about 35 s)
-  opening: { title: 'Gerhana yang Disegel', steps: [
+  // A new character's first story (about 2 minutes; skippable): the legend, the village of your birth on
+  // the morning of the bonfire festival, the townsfolk, Kakek Odo's gift, then the night the seal cracks
+  // and a shadow climbs out of the ground — and the road out of the gate.
+  opening: { title: 'Gerhana yang Disegel', maxLen: 150, steps: [
     { panel: 'past_eclipse', text: 'Dahulu kala, sebuah gerhana hendak menelan dunia. Matahari menghitam, dan makhluk-makhluk bangkit dari bayangan.' },
     { panel: 'past_seal', text: 'Para tetua menyegelnya. Lalu segel itu mereka pecah menjadi lima, dan disembunyikan di tempat-tempat yang dalam.' },
-    { bg: 'town' },
-    { put: 'odo', ...odo, x: 40, face: -1, view: 'front' },
-    { put: 'hero', kind: 'hero', x: -260, face: 1 },
-    { cam: [20, -40, 2], dur: 0 },
+    { panel: 'past_village', text: 'Di kaki bukit, mereka membangun sebuah desa untuk menjaga jalan menuju kelima tempat itu. Desa itu bernama Kota Awal. Di sanalah kau lahir.' },
+    // the morning of the festival
+    { bg: 'village' },
+    { put: 'hero', kind: 'hero', x: -60, face: 1, view: 'front' },
+    { put: 'pip', ...pip, x: 260, face: -1 },
+    { cam: [-40, -40, 2.3], dur: 0 },
+    { fade: 'in', dur: 1 },
+    { title: 'Kota Awal', sub: 'Pagi hari Festival Api Unggun', dur: 2.2 },
+    { move: 'pip', to: [10, 0], dur: 1.1, run: true },
+    { say: 'pip', text: 'Kak! Kaaak! Bangun! Hari ini Festival Api Unggun! Kakek Odo mencarimu dari tadi!' },
+    { put: 'marta', ...marta, x: -230, face: 1 },
+    { move: 'marta', to: [-130, 0], dur: 1.2, go: true },
+    { cam: [-80, -40, 2.1], dur: 1.2 },
+    { say: 'marta', text: 'Jangan teriak pagi-pagi, Pip. …Tapi dia benar, Nak. Hari ini umurmu genap tujuh belas. Kakek Odo punya sesuatu untukmu.' },
+    { look: 'hero', face: 1, view: 'side' },
+    { move: 'pip', to: [380, 0], dur: 1.4, run: true, go: true },
+    { move: 'hero', to: [140, 0], dur: 2.4, go: true },
+    { cam: [160, -40, 2.1], dur: 2.4 },
+    { put: 'brom', ...brom, x: 250, face: -1, view: 'front' },
+    { put: 'dara', ...dara, x: 330, face: -1, view: 'front' },
+    { say: 'brom', text: 'Masih bertangan kosong, ya? Sabar. Senjata itu memilih tuannya, bukan sebaliknya. Datang ke Pelatih kalau kau sudah siap.' },
+    { say: 'dara', text: 'Mulai hari ini kau boleh keluar tembok. Jangan menangis di depan lendir pertamamu, ya. Hahaha!' },
+    { fade: 'out', dur: 0.8 },
+    // Kakek Odo at the bonfire
+    { hide: 'marta' }, { hide: 'brom' }, { hide: 'dara' }, { hide: 'pip' },
+    { put: 'odo', ...odo, x: 60, face: -1, view: 'front' },
+    { put: 'hero', kind: 'hero', x: -40, face: 1, view: 'side' },
+    { cam: [10, -44, 2.4], dur: 0 },
+    { fx: 'fire', at: [10, 0], dur: 60, go: true },
     { fade: 'in', dur: 0.8 },
-    { move: 'hero', to: [-30, 0], dur: 2.2, go: true },
-    { cam: [5, -40, 2.2], dur: 2.2 },
+    { say: 'odo', text: 'Tujuh belas tahun lalu, di malam gerhana kecil, kau lahir di rumah dekat api unggun ini. Para tetua bilang anak yang lahir malam itu bisa merasakan segel.' },
+    { say: 'odo', text: 'Mulai hari ini kau seorang Pengembara. Belum punya jalan, belum punya senjata. Tapi jalan itu akan menemukanmu.' },
     { look: 'hero', view: 'front' },
-    { say: 'odo', text: 'Kau datang juga. Duduklah, Nak. Ada yang harus kau dengar.' },
-    { fx: 'eclipse', dur: 1.6, go: true },
+    { fx: 'motes', at: [60, -40], dur: 1.6, go: true },
+    { say: 'odo', text: 'Api unggun ini tak pernah padam sejak desa ini berdiri. Selama ia menyala, kau selalu punya tempat untuk pulang.' },
+    { fade: 'out', dur: 1 },
+    // that night
+    { bg: 'festival' },
+    { put: 'pip', ...pip, x: -120, face: 1 },
+    { put: 'sela', ...sela, x: 130, face: -1, view: 'front' },
+    { put: 'dara', ...dara, x: 200, face: -1 },
+    { put: 'marta', ...marta, x: -200, face: 1 },
+    { cam: [10, -44, 2], dur: 0 },
+    { fade: 'in', dur: 1 },
+    { move: 'pip', to: [-60, 0], dur: 0.8, run: true, go: true },
+    { say: 'sela', text: '♪ Di bawah bulan, api tak padam, desa kecil menjaga dunia… ♪' },
+    { move: 'pip', to: [-130, 0], dur: 0.8, run: true, go: true },
+    { say: 'marta', text: 'Sup jamur! Siapa yang mau sup jamur hangat?' },
+    // the seal cracks
+    { fx: 'eclipse', dur: 2, go: true },
+    { fx: 'shake', dur: 1.2 },
+    { say: 'pip', text: 'B-bulannya… bulannya jadi hitam!' },
+    { fx: 'crack', at: [-280, 0], dur: 1.2, go: true },
     { fx: 'shake', dur: 0.8 },
+    { put: 'shade', kind: 'boss', type: 'wraith', x: -330, face: 1, scale: 0.7 },
+    { cam: [-150, -44, 2], dur: 0.9 },
+    { move: 'shade', to: [-230, 0], dur: 1.2 },
+    { move: 'pip', to: [-20, 0], dur: 0.6, run: true, go: true },
+    { move: 'dara', to: [-120, 0], dur: 0.9, run: true },
+    { say: 'dara', text: 'Mundur semua! Itu makhluk dari bawah tanah!' },
+    { look: 'hero', face: -1, view: 'side' },
+    { move: 'hero', to: [-80, 0], dur: 0.6, run: true },
+    { fx: 'light', at: [-80, 0], dur: 0.9, go: true },
+    { fx: 'flash', dur: 0.5 },
+    { hide: 'shade' },
+    { fx: 'motes', at: [-230, -20], dur: 1.4, go: true },
+    { say: 'dara', text: 'Kau… kau mengusirnya hanya dengan tanganmu? Kakek Odo benar tentang dirimu.' },
+    // what has to be done
+    { put: 'odo', ...odo, x: 40, face: -1, view: 'front' },
+    { cam: [-20, -44, 2.2], dur: 0.8 },
     { say: 'odo', text: 'Kau rasakan itu? Segel gerhana mulai retak. Makhluk di dalam tanah memakan kekuatan pecahannya.' },
     { say: 'odo', text: 'Pecahan pertama ada di Ruang Bawah Tanah Bayangan, di Hutan Kelam. Temukan gerbangnya, dan bawa pulang pecahan itu.' },
+    { say: 'pip', text: 'Kakak pasti pulang, kan? Janji?' },
+    { say: 'odo', text: 'Pergilah, Nak. Desa ini akan menunggumu pulang.' },
     { look: 'hero', face: -1, view: 'side' },
-    { move: 'hero', to: [-280, 0], dur: 1.6, go: true },
-    { fade: 'out', dur: 1.2 },
+    { move: 'hero', to: [-320, 0], dur: 2, go: true },
+    { fade: 'out', dur: 1.6 },
   ] },
 
   'boss:boss': { title: 'Raja Maw', steps: bossIntro('shadow', 'boss', 'Raja Maw', 'Mulut Bayangan', 'Grrr… pecahan ini milikku. Akan kutelan kau bersamanya!') },
