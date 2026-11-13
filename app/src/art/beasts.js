@@ -134,6 +134,18 @@ export function shroom(g, c) {
   glow(g, 4, -66, 12, c.accent, 1); glow(g, 4, -66, 4, '#fff2b0', 1);
 }
 
+// Penjaga Sarkofagus (plan "Bos Berkesan" B): an upright gilded coffin, a pharaoh's mask, a glowing seal
+export function sarcophagus(g, c) {
+  glow(g, 0, -6, 46, c.accent, 0.4);
+  part(g, [[-26, 46], [-30, -10], [-24, -40], [-12, -54], [12, -54], [24, -40], [30, -10], [26, 46]], c.skin, { sd: 5 });            // the lid
+  for (const y of [-16, 8, 28]) part(g, [[-28, y], [28, y], [27, y + 6], [-27, y + 6]], pal('#e8c070', { rim: null }), { sd: 1, lw: 1 }); // gold bands
+  part(g, [[-14, -48], [14, -48], [16, -30], [8, -20], [-8, -20], [-16, -30]], pal('#f2d38a', { rim: 'rgba(255,230,160,.8)' }), { sd: 2, lw: 1.2 }); // the mask
+  part(g, [[-20, -50], [-14, -48], [-16, -30], [-24, -26]], pal('#2a4a8a', { rim: null }), { sd: 1, lw: 1 });
+  part(g, [[20, -50], [14, -48], [16, -30], [24, -26]], pal('#2a4a8a', { rim: null }), { sd: 1, lw: 1 });
+  eye(g, -6, -38, 3, c.eye, 0); eye(g, 6, -38, 3, c.eye, 0);
+  glow(g, 0, 0, 14, c.accent, 1); glow(g, 0, 0, 5, '#fff2b0', 1);                                                                 // the seal
+}
+
 // Kura Baja: an armoured turtle-beetle behind a riveted plate shell
 export function shellback(g, c) {
   part(g, limb([-28, 14], [-34, 40], 12, 9), c.dark, { sd: 2 }); part(g, limb([16, 14], [20, 40], 12, 9), c.dark, { sd: 2 });
@@ -237,6 +249,7 @@ const SET = {
   icewisp: [frostwisp, C('#6ab8e8', 'ice', '#7fd8ff', '#ffffff')], scorpion: [scorpion, C('#3a1a1e', 'fire', '#9dff6a', '#ff5a3a')],
   sandworm: [sandworm, C('#8a6a3a', 'sand', '#ff8a3c')], imp: [imp, C('#8a2a22', 'fire', '#ff7a2a', '#ffd25a')],
   salamander: [salamander, C('#5a1e14', 'fire', '#ff8a3c', '#ffd25a')], wraith: [wraith, C('#2a1e40', 'void', '#c79bff', '#e8d8ff')],
+  tombguard: [sarcophagus, C('#5a3a1e', 'sand', '#ffcf5a', '#ffe08a')], // Penjaga Sarkofagus (plan "Bos Berkesan")
   mawshade: [wraith, C('#1a0e26', 'shadow', '#c26bd8', '#ff5f9e')], // Bayang Maw (plan "Bos Berkesan")
 };
 export const BEAST_ART = Object.fromEntries(Object.entries(SET).map(([id, [f, c, k]]) => [id, (g) => (k ? f(g, c, k) : f(g, c))]));

@@ -27,5 +27,10 @@ Kerja per bagian; berhenti untuk cek manual pemilik tiap bagian, commit setelah 
   - Hanya jurus Maw sendiri: gema Sang Gerhana dan penjaga harta tetap seperti dulu.
   - Diubah dari usulan audit: "satu bayangan adalah Maw asli" diganti "bayangan bisa dihancurkan" (Maw asli di antara bayangan butuh gambar bayangan seukuran bos; bisa menyusul).
   - Tes: `run/bossmoves.test.js` "Raja Maw: membaca & membalas"; tes bench bos 60–90 dtk tetap lolos.
-- [ ] **B. Raja Mumi:** Kutukan yang meledak di tubuh Mumi membuatnya pingsan; fase 2 Penjaga Sarkofagus.
+- [x] **B. Raja Mumi:**
+  - Kutukan yang meledak di tubuh Mumi: 3% HP maks, lelah 2,2 detik, damage +30% ("KUTUKAN BERBALIK!").
+  - Fase 2: 2 Penjaga Sarkofagus (HP 3% Mumi, tali emas + cincin perisai di `render/foes.js`); selama ada yang berdiri Mumi menerima 50% damage; yang terakhir hancur → "PERISAI RUNTUH!" (lelah 2,5 detik). Bidik otomatis mendahulukan sarkofagus (Mumi terlindung dihitung 2× lebih jauh).
+  - Ancang-ancang & tanpa ulang beruntun.
+  - Bench: bot memukul perisai dulu; rata-rata bos 83,9 dtk (sebelum 82,4). HP sarkofagus diturunkan 5% → 3% karena Mage (yang memang paling lambat) butuh 19 detik untuk memecahkannya.
+  - Tes: `run/bossmoves.test.js` "Raja Mumi: kutukan berbalik & sarkofagus".
 - Berikutnya (setelah prototipe disetujui): Raja Lava (Kepanasan), Golem Kristal (Kulit Kristal), Ratu Spora (jamur bisa dipukul), Sang Gerhana (gema berurutan), Bayangan Diri (meniru job).

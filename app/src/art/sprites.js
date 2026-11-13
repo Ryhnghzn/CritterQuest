@@ -444,6 +444,7 @@ export const ENEMY_ART = {
 Object.assign(ENEMY_ART, MONSTER_ART);
 Object.assign(ENEMY_ART, ECLIPSE_ART);
 Object.assign(ENEMY_ART, BEAST_OVERRIDES); // the eclipse variants redrawn too (art/beasts.js)
+ENEMY_ART.tombguard ||= (g, r) => tinted(g, r, 'shielder', 'rgba(200,150,60,.55)'); // Penjaga Sarkofagus in the old look
 ENEMY_ART.mawshade ||= (g, r) => tinted(g, r, 'wraith', 'rgba(60,14,80,.5)'); // Bayang Maw in the old look (plan "Bos Berkesan")
 
 export const PICKUP_ART = {

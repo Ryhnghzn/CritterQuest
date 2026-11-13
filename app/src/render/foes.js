@@ -95,6 +95,15 @@ export function foeMarks(g, game, t, { shells = true, enemies = true } = {}) {
       g.lineWidth = 2.5; g.strokeStyle = `rgba(${e.wardBy || '255,140,60'},${0.55 + 0.3 * Math.sin(t * 8)})`;
       g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.1, e.r * 0.42, 0, 0, TAU); g.stroke();
     }
+    if (e.ai === 'sarco' && e.hp > 0 && !e.faded && e.guardOf?.hp > 0) { // Penjaga Sarkofagus (plan "Bos Berkesan" B): a gold tether to its mummy, a shield ring under it
+      const m = e.guardOf, fl = 0.7 + 0.3 * Math.sin(t * 9 + e.x);
+      g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+      g.lineWidth = 10; g.strokeStyle = `rgba(255,190,80,${0.3 * fl})`; g.beginPath(); g.moveTo(e.x, e.y); g.lineTo(m.x, m.y); g.stroke();
+      g.lineWidth = 3; g.strokeStyle = `rgba(255,236,170,${0.85 * fl})`; g.stroke();
+      g.globalCompositeOperation = 'source-over';
+      g.lineWidth = 3; g.strokeStyle = `rgba(255,207,90,${0.5 + 0.3 * fl})`; g.setLineDash([12, 8]); g.lineDashOffset = -t * 25;
+      g.beginPath(); g.ellipse(m.x, m.y + m.r * 0.7, m.r * 1.5, m.r * 0.6, 0, 0, TAU); g.stroke(); g.setLineDash([]);
+    }
     if (e.ai === 'twin') {
       const p = e.partner;
       if (e.lead && p && e.hp > 0 && p.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 <= b.link.max ** 2) {

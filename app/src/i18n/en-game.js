@@ -159,6 +159,8 @@ export default {
   'Pedagang Kelana': 'Wandering Peddler', 'Lentera di kejauhan…': 'A lantern in the distance…', 'Lentera itu padam di kejauhan…': 'The lantern goes out in the distance…',
   '“{item}, {price} koin. Diam di dekatku kalau mau.”': '“{item}, {price} coins. Stay by me if you want it.”',
   '“Koinmu kurang, kawan.”': '“Not enough coin, friend.”', '“Terima kasih, pengembara. Hati-hati di gelap.”': '“Thank you, traveller. Mind the dark.”',
+  // bosses (plan "Bos Berkesan")
+  'TERSEDAK!': 'CHOKING!', 'KUTUKAN BERBALIK!': 'THE CURSE TURNS!', 'PERISAI RUNTUH!': 'SHIELD BROKEN!', 'Hancurkan sarkofagusnya!': 'Break the sarcophagi!',
   'Kabut Sunyi': 'Silent Fog', 'Kabut turun… sunyi sekali.': 'Fog rolls in… so quiet.', 'Kabut mulai menipis.': 'The fog thins.',
   'Celah ke Tanah Gerhana tertutup segel. Kumpulkan kelima Pecahan Segel.': 'The pass to the Eclipse Lands is sealed. Gather all five Seal Shards.',
   'Lencana bertambah': 'Badges added',

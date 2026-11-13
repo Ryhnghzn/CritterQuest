@@ -224,3 +224,58 @@ describe('Sang Gerhana', () => {
     for (const id of seen) expect(sigs.has(id)).toBe(true);
   });
 });
+
+// plan "Bos Berkesan" B
+describe('Raja Mumi: kutukan berbalik & sarkofagus', () => {
+  const guardsOf = (g) => g.enemies.filter((e) => e.type === 'tombguard');
+  it('kutukan yang meledak di tubuh Mumi membuatnya pingsan & terluka', () => {
+    const { g, b } = move('tombboss', 'curse'), C = ENEMIES.tombboss.curse;
+    g.px = 170; g.py = 0; // close to the mummy at (200, 0) while the mark follows
+    step(g, secs(C.follow) + 2);
+    g.px = -400; // step out before it bursts
+    const hp = b.hp;
+    step(g, secs(C.fuse - C.follow) + 2);
+    expect(b.tired).toBeGreaterThan(0);
+    expect(hp - b.hp).toBeCloseTo(b.maxHp * C.stun.hurt, 0);
+  });
+  it('kutukan jauh dari Mumi tidak apa-apa', () => {
+    const { g, b } = move('tombboss', 'curse'), C = ENEMIES.tombboss.curse;
+    g.px = -300; g.py = 0;
+    step(g, secs(C.fuse) + 2);
+    expect(b.tired || 0).toBe(0);
+  });
+  it('fase 2: sarkofagus melindungi; hancurkan semua → perisai runtuh & pingsan; tanpa hadiah', () => {
+    const g = start(), b = g.spawnEnemy('tombboss'), G = ENEMIES.tombboss.guards;
+    b.x = 200; b.speed = 0;
+    b.hp = b.maxHp * 0.45; step(g);
+    const gs = guardsOf(g);
+    expect(gs.length).toBe(G.count);
+    expect(gs[0].maxHp).toBeCloseTo(b.maxHp * G.hp);
+    let hp = b.hp; g.damageEnemy({ mult: 1, fx: 'slash' }, b); const shielded = hp - b.hp;
+    // auto-aim goes for a sarcophagus in reach before the shielded mummy
+    g.px = b.x - 100; g.py = b.y; gs[0].x = g.px - 150; gs[0].y = b.y; // the mummy 100 away, a sarcophagus 150 away
+    expect(g.nearestEnemy(400)).toBe(gs[0]);
+    const kills = g.kills, gear = g.loot.length;
+    gs[0].hp = 0; step(g);
+    expect(b.tired || 0).toBe(0); // one still stands
+    gs[1].hp = 0; step(g);
+    expect(b.tired).toBeGreaterThan(0);
+    expect(b.guards).toBe(null);
+    expect(g.kills).toBe(kills); expect(g.loot.length).toBe(gear);
+    b.vulnT = 0; hp = b.hp; g.damageEnemy({ mult: 1, fx: 'slash' }, b);
+    expect(shielded / (hp - b.hp)).toBeCloseTo(1 - G.cut, 5);
+  });
+  it('sarkofagus hilang bersama Mumi', () => {
+    const g = start(), b = g.spawnEnemy('tombboss');
+    b.x = 200; b.speed = 0; b.hp = b.maxHp * 0.45; step(g);
+    b.hp = 0; step(g, 3);
+    expect(guardsOf(g).length).toBe(0);
+  });
+  it('gema Kutukan milik Sang Gerhana tidak membuatnya pingsan', () => {
+    const g = start(), b = g.spawnEnemy('eclipseboss');
+    b.x = 200; b.speed = 0; b.actT = 99;
+    b.pat = { id: 'curse', t: 0, n: 0, fireT: 0, a0: 0, cfg: ENEMIES.tombboss };
+    g.px = 190; step(g, secs(ENEMIES.tombboss.curse.fuse) + 2);
+    expect(b.tired || 0).toBe(0);
+  });
+});

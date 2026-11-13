@@ -154,6 +154,8 @@ export const ENEMIES = {
   // Bayang Maw (plan "Bos Berkesan" A): a shadow of Raja Maw in its Bayang Kembar; stands, breaks, or
   // fires its ring and fades. No touch damage, no loot, not in the bestiary.
   mawshade: { name: 'Bayang Maw', hp: 1, speed: 0, dmg: 0, r: 16, xp: 0, sprite: 'mawshade', score: 0, ai: 'shade' },
+  // Penjaga Sarkofagus (plan "Bos Berkesan" B): raised by Raja Mumi's phase 2; stands still and shields it
+  tombguard: { name: 'Penjaga Sarkofagus', hp: 1, speed: 0, dmg: 0, r: 20, xp: 0, sprite: 'tombguard', score: 0, ai: 'sarco' },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {
@@ -238,9 +240,14 @@ export const ENEMIES = {
     signature: ['curse', 'sandstorm'],
     phases: [
       { at: 1, patterns: ['curse', 'sandstorm', 'ring', 'slam'] },
-      { at: 0.5, name: 'KUTUKAN FIRAUN!', patterns: ['summon', 'curse', 'sandstorm', 'curse', 'spiral'] },
+      { at: 0.5, name: 'KUTUKAN FIRAUN!', patterns: ['summon', 'curse', 'sandstorm', 'curse', 'spiral'], guards: true },
     ],
-    curse: { r: 90, fuse: 3, follow: 2.3, dmg: 34 },
+    // plan "Bos Berkesan" B: a curse bursting on the mummy itself stuns it (hurt: × its max HP)
+    curse: { r: 90, fuse: 3, follow: 2.3, dmg: 34, stun: { time: 2.2, taken: 0.3, hurt: 0.03 } },
+    // phase 2: sarcophagus guards rise; while one stands the mummy takes `cut` less damage; the last one
+    // broken brings the shield down and stuns it (hp: × the mummy's max HP each)
+    guards: { count: 2, hp: 0.03, dist: 240, cut: 0.5, stun: { time: 2.5, taken: 0.3 } },
+    tell: { ring: 0.6, summon: 0.6, spiral: 0.7 }, noRepeat: true,
     sandstorm: { time: 3, push: 70, every: 0.14, spread: 260, shot: { speed: 220, dmg: 10, r: 6, color: '#e8c070' } },
   },
   // Sang Gerhana (Menara Gerhana, spec §26.7): three phases by HP —

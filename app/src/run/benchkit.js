@@ -70,7 +70,8 @@ export function benchFight(g, targets, limit = 120) {
   while (t < limit && g.state === 1 && targets.some((e) => e.hp > 0)) {
     const ready = g.skillDefs.map((s, i) => !!s && g.skillCd[i] <= 0 && g.energy >= s.cost);
     let move = { x: 0, y: 0 }; // close in on the nearest target with a melee basic attack
-    const near = targets.filter((e) => e.hp > 0).sort((a, b) => Math.hypot(a.x - g.px, a.y - g.py) - Math.hypot(b.x - g.px, b.y - g.py))[0];
+    const guards = targets.flatMap((e) => e.guards || []).filter((e) => e.hp > 0 && g.enemies.includes(e)); // break a boss's shield first, as a player would (plan "Bos Berkesan")
+    const near = (guards.length ? guards : targets.filter((e) => e.hp > 0)).sort((a, b) => Math.hypot(a.x - g.px, a.y - g.py) - Math.hypot(b.x - g.px, b.y - g.py))[0];
     const reach = CLASSES[g.classId].attack.kind === 'arc' ? 45 : 300;
     if (near && Math.hypot(near.x - g.px, near.y - g.py) > reach) { const d = Math.hypot(near.x - g.px, near.y - g.py); move = { x: (near.x - g.px) / d, y: (near.y - g.py) / d }; }
     g.intent = { move, aimAt: null, dodge: false, attack: true, auto: true, potion: -1, held: [false, false, false, false],

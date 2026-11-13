@@ -52,6 +52,7 @@ export function aiStep(run, e, dt) {
     case 'totem': return totem(run, e, b, dt);
     case 'twin': return twin(run, e, b);
     case 'shade': return shade(run, e, dt);
+    case 'sarco': return sarco(run, e);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }
@@ -228,6 +229,7 @@ function boss(run, e, b, dt) {
       run.addShake?.('big');
       run.pulses.push({ x: e.x, y: e.y, r: 260, t: 0.8, max: 0.8, color: '199,155,255' });
       phaseFx(run, e);
+      if (b.phases[ph].guards && b.guards) raiseGuards(run, e, b.guards); // Raja Mumi (plan "Bos Berkesan" B)
       return { vx: 0, vy: 0 };
     }
   }
@@ -383,7 +385,7 @@ export function stepPattern(run, e, b0, dt, enraged) {
     done();
   } else if (p.id === 'curse') { // Raja Mumi: a mark that follows the player, stops, then bursts
     const s = b.curse;
-    run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, chase: s.follow, by: e.type, look: s.look });
+    run.hazards.push({ kind: 'circle', x: run.px, y: run.py, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, chase: s.follow, by: e.type, look: s.look, self: own && s.stun ? e : null });
     done();
   } else if (p.id === 'sandstorm') { // wind pushes the player while scarabs fly along with it
     const s = b.sandstorm;
@@ -482,6 +484,42 @@ export function shadeDown(run, e) {
   sfx.shadeBreak();
 }
 
+// Penjaga Sarkofagus: raised round Raja Mumi in its phase 2; while one stands the mummy takes less
+// damage (run.js damageEnemy asks guardCut). The last one broken brings the shield down and stuns it.
+function raiseGuards(run, e, c) {
+  e.guards = [];
+  const a0 = Math.atan2(run.py - e.y, run.px - e.x) + Math.PI / 2;
+  for (let i = 0; i < c.count; i++) {
+    const a = a0 + (i / c.count) * TAU, g = run.spawnEnemy('tombguard');
+    g.x = e.x + Math.cos(a) * c.dist; g.y = e.y + Math.sin(a) * c.dist;
+    g.hp = g.maxHp = e.maxHp * c.hp; g.dmg = 0; g.guardOf = e; g.gap = e.gap;
+    e.guards.push(g);
+    run.vfx?.burst('smoke', g.x, g.y, ['#c8a060', '#8a6a3a'], { n: 8, speed: 1.4 });
+  }
+  run.addFloater?.(e.x, e.y - e.r - 60, t('Hancurkan sarkofagusnya!'), '#ffcf5a');
+}
+function sarco(run, e) {
+  if (!(e.guardOf?.hp > 0) || !run.enemies.includes(e.guardOf)) { e.hp = 0; e.faded = true; } // its mummy is gone
+  return { vx: 0, vy: 0 };
+}
+const standing = (g) => g.hp > 0 && !g.faded;
+// damage share a guarded boss still takes (1 = all)
+export function guardCut(e) {
+  return e.guards?.some(standing) ? 1 - ENEMIES[e.type].guards.cut : 1;
+}
+export function sarcoDown(run, e) {
+  run.vfx?.burst('shards', e.x, e.y, ['#ffcf5a', '#8a6a3a', '#ffffff'], { n: 12 });
+  run.vfx?.ring(e.x, e.y, { r0: 8, r1: 80, life: 0.4, color: '#ffcf5a', width: 4 });
+  if (e.faded) return;
+  sfx.shadeBreak();
+  const m = e.guardOf;
+  if (m?.hp > 0 && m.guards && !m.guards.some((g) => g !== e && standing(g))) {
+    m.guards = null;
+    tire(run, m, ENEMIES[m.type].guards.stun, t('PERISAI RUNTUH!'));
+    run.addShake?.('heavy');
+  }
+}
+
 // Enemy projectiles: fly, hit the player (unless dodging / invulnerable), leave the room.
 // bound: how far from (cx, cy) a shot may fly (the room, or around the player in a region)
 export function stepShots(run, dt, bound, cx = 0, cy = 0) {
@@ -535,6 +573,12 @@ export function stepHazards(run, dt) {
     }
     if (h.kind === 'circle' && h.dmg > 0) {
       if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r + 8) ** 2) run.hurtPlayer(h.dmg, h.onHit, h.by);
+      const me = h.self; // Raja Mumi's curse bursting on Raja Mumi (plan "Bos Berkesan" B)
+      if (me?.hp > 0 && run.state === 1 && (me.x - h.x) ** 2 + (me.y - h.y) ** 2 < (h.r + me.r * 0.5) ** 2) {
+        const c = ENEMIES[me.type].curse.stun;
+        me.hp -= me.maxHp * c.hurt; me.flash = 0.2;
+        tire(run, me, c, t('KUTUKAN BERBALIK!'));
+      }
       run.spawnBurst(h.x, h.y, '#ff7a3c', h.small ? 6 : 18);
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.3, max: 0.3, color: '255,140,60' });
       if (!h.small) { run.addShake('medium'); sfx.blast(); }
