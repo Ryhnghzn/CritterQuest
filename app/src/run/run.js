@@ -4,7 +4,7 @@ import { RIFT_DUNGEON, RUN_MODS } from '../data/rift.js';
 import { riftBegin, riftMul } from './rift.js';
 import { tr, t } from '../i18n.js';
 import { rand, rrange, resetRng } from '../core/rng.js';
-import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL, ENEMY_POWER } from '../data/balance.js';
+import { CHAR_LEVEL_MAX, POINTS_PER_LEVEL, ENERGY, ULT, HORDE, PAGE_B_LEVEL, ENEMY_POWER, EXP_BONUS } from '../data/balance.js';
 import { expToNext, levelCap } from '../meta/character.js';
 import { powerFrom, defenseCut } from '../meta/power.js';
 import { setFoeLevel } from './foelevel.js';
@@ -728,6 +728,11 @@ export class Game {
         this.addFloater(this.px, this.py - 44, t('+{n} poin', { n: POINTS_PER_LEVEL }), '#8fffc0');
         this.addFloater(this.px, this.py - 62, t('+{n} SP', { n: SP_PER_LEVEL }), '#9fd8ff'); // skill points (spec §43): spent in town
         if (this.level === PAGE_B_LEVEL && this.classId !== 'novice') this.showBanner(tr('Halaman skill B terbuka! Pasang di Karakter → Skill, tukar dengan Q / ⇄'));
+        sfx.levelup();
+      }
+      if (this.level === CHAR_LEVEL_MAX) while (this.xp >= this.xpNeed) { // Bar Bonus (plan endgame tahap 1): paid out on saving (meta/character.js addExp)
+        this.xp -= this.xpNeed;
+        this.showBanner(t('Bar Bonus penuh! +{n} Lencana & bahan', { n: EXP_BONUS.marks }));
         sfx.levelup();
       }
     }

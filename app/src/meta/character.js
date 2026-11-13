@@ -2,7 +2,7 @@
 // Every function returns new objects; save data is never mutated in place.
 import { tr, t } from '../i18n.js';
 import { CLASSES, CLASS_BASE, JOB_IDS } from '../data/classes.js';
-import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX, NOVICE_LEVEL_CAP } from '../data/balance.js';
+import { NAME_MAX, CHAR_EXP_BASE, CHAR_EXP_GROWTH, CHAR_LEVEL_MAX, ATTRS, POINTS_PER_LEVEL, INVENTORY_MAX, NOVICE_LEVEL_CAP, EXP_BONUS } from '../data/balance.js';
 import { DEATH } from '../data/dungeon.js';
 import { POTIONS, POTION_IDS, DEFAULT_BELT, isHeal } from '../data/potions.js';
 import { SAVE_VERSION, validateSlot, nameLength, EQUIP_SLOTS, freshDungeonRecords, freshMats, freshGems, freshBounties, freshBestiary, freshQuests, worldSeed } from './schema.js';
@@ -75,9 +75,17 @@ export function addExp(char, amount) {
     c.level++;
     levelsGained++;
   }
-  if (c.level >= cap) c.exp = 0;
+  let bonusBars = 0;
+  if (c.level >= cap && cap === CHAR_LEVEL_MAX) { // Bar Bonus (plan endgame tahap 1): a full bar at the cap pays out
+    while (c.exp >= expToNext(c.level)) {
+      c.exp -= expToNext(c.level);
+      bonusBars++;
+      c.marks += EXP_BONUS.marks;
+      for (const [m, n] of Object.entries(EXP_BONUS.mats)) c.mats[m] += n;
+    }
+  } else if (c.level >= cap) c.exp = 0; // a Pengembara waits at its cap for a job
   const newSkills = newlyOpen(c.classId, from, c.level);
-  return { char: c, levelsGained, newSkills };
+  return { char: c, levelsGained, newSkills, bonusBars };
 }
 
 // Every stat the equipped gear adds, summed.

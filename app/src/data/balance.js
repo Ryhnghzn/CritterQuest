@@ -17,6 +17,9 @@ export const HAIR_COLORS = 6;
 export const CHAR_EXP_BASE = 30;      // exp to next level = base + growth * level
 export const CHAR_EXP_GROWTH = 20;
 export const CHAR_LEVEL_MAX = 50;
+// Bar Bonus (plan endgame tahap 1): at the top level EXP keeps filling the bar; each full bar (the EXP of one
+// level at the cap) gives Lencana and materials instead of being lost
+export const EXP_BONUS = { marks: 1, mats: { dust: 12, crystal: 2 } };
 export const INVENTORY_MAX = 60;
 export const STASH_MAX = 120;      // Gudang in the big towns (spec §25.2)
 

@@ -161,6 +161,8 @@ export default {
   '“Koinmu kurang, kawan.”': '“Not enough coin, friend.”', '“Terima kasih, pengembara. Hati-hati di gelap.”': '“Thank you, traveller. Mind the dark.”',
   // bosses (plan "Bos Berkesan")
   'TERSEDAK!': 'CHOKING!', 'KUTUKAN BERBALIK!': 'THE CURSE TURNS!', 'PERISAI RUNTUH!': 'SHIELD BROKEN!', 'Hancurkan sarkofagusnya!': 'Break the sarcophagi!', 'KEPANASAN! Serang punggungnya!': 'OVERHEATED! Hit its back!', 'Lava membatu': 'The lava turns to stone', 'Kulit kristal tumbuh lagi': 'The crystal crust grows back', 'KULIT KRISTAL PECAH!': 'CRYSTAL CRUST SHATTERED!', 'SPORA BERBALIK!': 'THE SPORES TURN!', 'TERTELAN KEHAMPAAN!': 'SWALLOWED BY THE VOID!',
+  // endgame (plan endgame)
+  'Bar Bonus penuh! +{n} Lencana & bahan': 'Bonus bar full! +{n} Badges & materials',
   'Kabut Sunyi': 'Silent Fog', 'Kabut turun… sunyi sekali.': 'Fog rolls in… so quiet.', 'Kabut mulai menipis.': 'The fog thins.',
   'Celah ke Tanah Gerhana tertutup segel. Kumpulkan kelima Pecahan Segel.': 'The pass to the Eclipse Lands is sealed. Gather all five Seal Shards.',
   'Lencana bertambah': 'Badges added',

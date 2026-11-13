@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { EXP_BONUS } from '../data/balance.js';
 import {
   validateName, createCharacter, expToNext, addExp, finalStats, currentHp, usePotion, applyTrip,
   freePoints, allocate, unlockedDungeons,
@@ -78,10 +79,18 @@ describe('EXP & level', () => {
     expect(char.exp).toBe(10);
     expect(levelsGained).toBe(2);
   });
-  it('berhenti di level 50 tanpa menimbun EXP', () => {
-    const { char } = addExp({ ...make(), level: 49 }, 1e6);
+  it('berhenti di level 50; EXP lebih mengisi Bar Bonus: tiap bar penuh = Lencana & bahan', () => {
+    const c0 = { ...make(), level: 49, exp: 0, marks: 0 };
+    const bar = expToNext(50), need49 = expToNext(49);
+    const { char, bonusBars } = addExp(c0, need49 + bar * 2 + 7);
     expect(char.level).toBe(50);
-    expect(char.exp).toBe(0);
+    expect(bonusBars).toBe(2);
+    expect(char.exp).toBe(7); // the rest stays on the bar
+    expect(char.marks).toBe(2 * EXP_BONUS.marks);
+    expect(char.mats.dust - c0.mats.dust).toBe(2 * EXP_BONUS.mats.dust);
+    expect(char.mats.crystal - c0.mats.crystal).toBe(2 * EXP_BONUS.mats.crystal);
+    const again = addExp(char, bar - 8); // one short of a bar: nothing yet
+    expect(again.bonusBars).toBe(0); expect(again.char.exp).toBe(bar - 1);
   });
   it('tidak mengubah objek asal', () => {
     const c = make();
