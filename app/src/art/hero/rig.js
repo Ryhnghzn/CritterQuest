@@ -274,6 +274,19 @@ export function moveDuration(classId, skillId, skillDur = 0) {
 }
 export const hasMove = (classId, skillId) => !!MOVES[classId]?.[skillId];
 
+// A whirling skill (a move with `spin`) seen all the way round now that the hero has front and
+// back views (owner 2026-11-13): the body shows, in turn, its right side, the front, its left side
+// and the back — a quarter turn each. The wind-up and the finish stay side-on. Returns the view
+// for now, or null when the move is no whirl. The side quarters match rig()'s own flip.
+export function whirlView(classId, move) {
+  const M = move && MOVES[classId]?.[move.id];
+  if (!M?.spin) return null;
+  const ph = clamp(move.ph, 0, 1);
+  if (ph < 0.08 || ph > 0.92) return null;
+  const turns = ph * M.spin * (move.dur || 1);
+  return ['side', 'front', 'side', 'back'][Math.round((((turns % 1) + 1) % 1) * 4) % 4];
+}
+
 // pose: { t, moving 0..1, walk (rad), attack: phase 0..1 (or −1 / undefined), snappy, hurt,
 //         move: { id, ph 0..1 } (a skill move, wins over the attack), dodge: 0..1 }
 export function rig(classId, pose) {

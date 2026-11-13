@@ -18,9 +18,13 @@ export const SHARP = {
   ratio: [2, 1], ground: [1.0, 0.55], floor: [2, 1.2], floorMax: 3072, decal: [1, 0.55],
   hero: [3, 1.8], npc: [2.2, 1.3], card: [2.6, 1.5], aniso: 8,
 };
+// phones and tablets (a coarse pointer): a smaller memory budget so iPhone Safari does not kill the page
+// (spec §50) — the render pixel ratio, the region ground tiles, the sun's shadow map
+export const TOUCH = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+export const TOUCH_CAP = { ratio: 1.5, ground: 0.8, shadow: 1024, floorMax: 2048 };
 let sharpScale = 1; // Settings → Ketajaman (data/settings.js SHARP_SCALE)
 export const setSharpScale = (k) => { sharpScale = k; };
-export const sharp = (key, lite) => SHARP[key][lite ? 1 : 0] * sharpScale;
+export const sharp = (key, lite) => { const v = SHARP[key][lite ? 1 : 0] * sharpScale; return TOUCH && TOUCH_CAP[key] ? Math.min(v, TOUCH_CAP[key]) : v; };
 const CAM = { dist: 10.5, height: 11.5, fov: 40 }; // at zoom 1 the short screen side shows about the 2D view
 
 // Tampilan Matang (§36): world materials lose some saturation (after map + vertex colours, and
@@ -111,7 +115,8 @@ export function sunAt(light, tx, tz, offset) {
   const M = LOOK.mood, SH = LOOK.shadows;
   let [ox, oy, oz] = offset;
   if (M) { const [a, b, c] = M.sunDir, l = Math.hypot(a, b, c); [ox, oy, oz] = [a / l * M.sunDist, b / l * M.sunDist, c / l * M.sunDist]; }
-  if (SH) { const tex = (SH.box * 2) / SH.size; tx = Math.round(tx / tex) * tex; tz = Math.round(tz / tex) * tex; }
+  // one shadow texel (a smaller map on phones)
+  if (SH) { const tex = (SH.box * 2) / (TOUCH ? Math.min(SH.size, TOUCH_CAP.shadow) : SH.size); tx = Math.round(tx / tex) * tex; tz = Math.round(tz / tex) * tex; }
   light.position.set(tx + ox, oy, tz + oz); light.target.position.set(tx, 0, tz);
   light.target.updateMatrixWorld();
 }
@@ -137,7 +142,7 @@ function shade(scene, on) {
       if (o.castShadow !== on) {
         o.castShadow = on;
         const sc = o.shadow.camera;
-        o.shadow.mapSize.set(SH.size, SH.size); sc.left = sc.bottom = -SH.box; sc.right = sc.top = SH.box; sc.near = 0.5; sc.far = 90; sc.updateProjectionMatrix();
+        const sz = TOUCH ? Math.min(SH.size, TOUCH_CAP.shadow) : SH.size; o.shadow.mapSize.set(sz, sz); sc.left = sc.bottom = -SH.box; sc.right = sc.top = SH.box; sc.near = 0.5; sc.far = 90; sc.updateProjectionMatrix();
         o.shadow.bias = SH.bias; o.shadow.normalBias = SH.normalBias; o.shadow.intensity = SH.intensity;
       }
       return;

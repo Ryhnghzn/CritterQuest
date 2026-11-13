@@ -29,6 +29,7 @@ import { levelRing, auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { tag, plate, questMark } from '../render/paint.js';
 import { doorFade } from '../render/town.js';
 import { tr } from '../i18n.js';
+import { freeCanvas } from '../core/freecanvas.js';
 
 const DOLL = 0.82;
 const HX = 58, HT = 100, HB = 14;           // billboard box around the feet (game units), as in actors.js
@@ -127,7 +128,7 @@ export class Town25 {
     if (this.place) this.scene.remove(this.place.root);
     this.place = p; this.scene.add(p.root);
     // the townsfolk of the last place are not needed any more
-    for (const [n, b] of this.bills) { this.people.remove(b.grp); b.tex.dispose(); b.mesh.material.dispose(); this.bills.delete(n); }
+    for (const [n, b] of this.bills) { this.people.remove(b.grp); b.tex.dispose(); b.mesh.material.dispose(); freeCanvas(b.c); this.bills.delete(n); }
     this.shown.length = 0;
     this.snap = true;
     for (let i = 0; i < PN; i++) this.pdata[i * 8 + 6] = 0;

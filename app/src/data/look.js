@@ -35,7 +35,7 @@ const MATANG = {
   // more toward/away than across the walk must be for front/back (and across than toward for side;
   // in between the view is kept)
   // strike: the basic attack picks its view from the aim (front / side / back, spec §49) instead of turning side-on
-  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25, strike: true,
+  facing: { turn: 0.16, hop: 4, lean: 0.11, dead: 0.05, views: true, viewMin: 0.3, viewBand: 1.25, strike: true, whirl: true,
     // townsfolk whose standing idle is their job (rig.js NPC_IDLE) stay side-on so the work shows;
     // the others face the camera when standing
     jobIdles: ['hammer', 'snip', 'sway', 'stance', 'read'] },

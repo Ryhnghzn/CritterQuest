@@ -19,3 +19,18 @@ describe('gerakan skill (§43 & Job Lanjutan)', () => {
     }
   });
 });
+
+import { whirlView } from './rig.js';
+describe('whirlView (owner 2026-11-13: spins turn through all four views)', () => {
+  it('a whirl shows side, front, side and back in turn', () => {
+    const seen = new Set();
+    for (let ph = 0.1; ph < 0.9; ph += 0.01) seen.add(whirlView('warrior', { id: 'spin', ph, dur: 1 }));
+    expect([...seen].sort()).toEqual(['back', 'front', 'side']);
+  });
+  it('the wind-up and finish stay side-on; other moves are no whirl', () => {
+    expect(whirlView('warrior', { id: 'spin', ph: 0.02, dur: 1 })).toBeNull();
+    expect(whirlView('warrior', { id: 'spin', ph: 0.97, dur: 1 })).toBeNull();
+    expect(whirlView('warrior', { id: 'charge', ph: 0.5, dur: 1 })).toBeNull();
+    expect(whirlView('warrior', null)).toBeNull();
+  });
+});

@@ -34,6 +34,7 @@ import { zoneAt, inHub, chunksNear } from '../run/worldmap.js';
 import { dungeonById } from '../data/dungeons.js';
 import { skyAt } from '../meta/clock.js';
 import { SHAKE_PX } from '../data/fx.js';
+import { freeCanvas } from '../core/freecanvas.js';
 
 const TAU = Math.PI * 2;
 // a town's wall (spec §40 C3): a ring of stone with crenels and towers, open at its gates, and the
@@ -598,7 +599,7 @@ export class Field25 {
   buildHomes(game) {
     const P = this.homeGroup;
     while (P.children.length) { const o = P.children.pop(); dispose(o); }
-    for (const c of this.cards) c.tex.dispose();
+    for (const c of this.cards) { c.tex.dispose(); freeCanvas(c.c); freeCanvas(c.fig); } // iPhone: free the pixels now (spec §50)
     this.cards.length = 0;
     this.homeRef = game.hidden; this.spotRef = game.questSpots;
     for (const h of game.hidden || []) {

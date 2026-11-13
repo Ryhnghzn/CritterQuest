@@ -104,6 +104,7 @@ import { setRarity } from './art/auratier.js';
 import { QUALITY, PALETTES } from './data/fx.js';
 import { pinPage } from './core/pinpage.js';
 import { setTouchDots } from './core/touchdot.js';
+import { beat, closed, verdict, BEAT_EVERY } from './meta/lastexit.js';
 
 // the page loader's bar (index.html #boot, spec §46): every module has loaded and run up to here
 window.__boot?.(0.74, 'run');
@@ -185,7 +186,7 @@ window.__boot?.(0.8, 'save');
 // switching language saves the setting and reloads, so every screen is rebuilt in it
 function switchLang(lang = getLang() === 'en' ? 'id' : 'en') {
   settings.lang = lang;
-  store.saveSettings(settings).finally(() => location.reload());
+  store.saveSettings(settings).finally(() => { noteExit('lang'); location.reload(); });
 }
 
 function renderAuto() {
@@ -1600,7 +1601,30 @@ window.__seek = (t) => {
 };
 window.__play = () => { loop.resetClock(); };
 // a newer version was stored (spec §32): on the title screen just reload, in play only say so
-registerOffline(() => { if (screen === 'title') location.reload(); else toast(tr('Versi baru terpasang. Muat ulang game untuk memakainya.')); });
+registerOffline(() => { if (screen === 'title') { noteExit('update'); location.reload(); } else toast(tr('Versi baru terpasang. Muat ulang game untuk memakainya.')); });
+// how the game was left last time (spec §50): a heartbeat while it runs; a clean exit closes it. If the
+// last one was never closed, the phone killed the page — say so once, so a sudden restart has a reason.
+function readExit() { try { return JSON.parse(localStorage.getItem('cq.alive') || 'null'); } catch { return null; } }
+function writeExit(n) { try { localStorage.setItem('cq.alive', JSON.stringify(n)); } catch { /* private mode: no note */ } }
+function where() { return scene === 'run' ? (game.field ? 'field' : 'dungeon') : scene === 'town' ? 'town' : 'title'; }
+function noteExit(reason) { writeExit(closed(readExit(), Date.now(), reason)); }
+{
+  const last = verdict(readExit(), Date.now());
+  let note = beat(null, Date.now(), 'title');
+  writeExit(note);
+  const tick = (hidden = document.hidden) => { note = beat(note, Date.now(), where(), hidden); writeExit(note); };
+  setInterval(() => tick(), BEAT_EVERY * 1000);
+  document.addEventListener('visibilitychange', () => tick());
+  addEventListener('pagehide', () => noteExit('close'));
+  if (last) {
+    const place = { field: tr('dunia luar'), dungeon: tr('dungeon'), town: tr('kota'), title: tr('menu') }[last.scene] || last.scene;
+    const text = last.kind === 'killed'
+      ? t('Game tadi tertutup tiba-tiba saat bermain di {p} (setelah {m} menit). Biasanya karena memori HP penuh: tutup tab & aplikasi lain.', { p: place, m: last.minutes })
+      : t('Game tadi ditutup HP saat kamu pindah ke aplikasi lain ({p}). Ini wajar di iPhone.', { p: place });
+    setTimeout(() => toast(text, '#ffb4a8'), 1800);
+    console.warn('[cq] last exit', last);
+  }
+}
 const T_PARAM = new URLSearchParams(location.search).get('t');
 if (T_PARAM !== null) window.__seek(T_PARAM);
 window.__game = game;

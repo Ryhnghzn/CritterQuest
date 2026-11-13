@@ -277,7 +277,7 @@ const ROOF_KIND = { forest: 'thatch', desert: 'plaster' };
 
 // houses
 const PLASTER = { inn: 0xb89a7a, potion: 0x9a90b0, smith: 0x8a7a6a, guild: 0xa0a88a };
-function house(root, b, key, out) {
+export function house(root, b, key, out) {
   const B = new Batch(), grp = new THREE.Group(); root.add(grp);
   const { x, y, w, h: d } = b, cx = x + w / 2, cz = y + d / 2, front = y + d, roof = toon(b.roof || '#5a3a2a', 0x4a2a3a, ROOF_KIND[key] || 'roof');
   const dark = toon(0x1e140e, 0, 'wood'), beam = toon(0x3a2418, 0, 'wood');

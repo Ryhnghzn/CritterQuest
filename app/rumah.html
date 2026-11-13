@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contoh Rumahmu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a24a;--gold-d:#6e5426;--gold-l:#e8cf8e;--ink:#e8dcc4;--dim:#9a8f80;--ok:#4ee1a0;--bad:#ff6a6a}
+*{box-sizing:border-box}
+body{margin:0;background:#08060a;color:var(--ink);font-family:'Barlow',system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 22px 'Cinzel',serif;color:var(--gold-l);margin:0 0 4px;letter-spacing:1px}
+h2{font:700 14px 'Cinzel',serif;color:var(--gold-l);margin:0 0 8px;letter-spacing:1px}
+.intro{color:var(--dim);margin:0 0 14px;max-width:900px;line-height:1.5}
+.bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.grp b{display:block;font:700 12.5px 'Cinzel',serif;color:var(--gold-l);margin-bottom:5px;letter-spacing:1px}
+.opts{display:flex;gap:5px;flex-wrap:wrap}
+.btn{font:600 13px 'Barlow',sans-serif;color:var(--gold-l);background:#100c14;border:1px solid var(--gold-d);padding:6px 10px;cursor:pointer;min-height:34px}
+.btn.on{border-color:var(--gold);color:#fff1d6;background:#2a1d14}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.big{font-size:14px;padding:8px 14px;border-color:var(--gold);background:#2a1d14}
+.layout{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:980px){.layout{grid-template-columns:1fr 340px}}
+.stage{position:relative;border:1px solid var(--gold-d);background:#07050f;aspect-ratio:4/5;touch-action:none;overflow:hidden}
+@media (min-width:700px){.stage{aspect-ratio:4/3}}
+.stage canvas{display:block;width:100%;height:100%}
+.hint{position:absolute;left:10px;bottom:10px;right:10px;font-size:13px;color:var(--gold-l);background:rgba(8,6,10,.72);border:1px solid var(--gold-d);padding:6px 9px;pointer-events:none}
+.hint:empty{display:none}
+.flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 55%,rgba(255,220,140,.75),rgba(255,180,80,.15) 45%,transparent 70%);opacity:0;transition:opacity .9s}
+.flash.go{opacity:1;transition:none}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{border:1px solid var(--gold-d);background:#0d0a12;padding:12px}
+.card p{margin:4px 0;color:var(--dim);font-size:13.5px;line-height:1.45}
+.card ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.5}
+.cost{color:var(--gold-l);font-weight:600}
+.meter{height:10px;background:#1a1420;border:1px solid var(--gold-d);margin:6px 0}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,#8a5a26,#e8cf8e)}
+.lvl{font:700 15px 'Cinzel',serif;color:#fff1d6}
+.bag{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:420px;overflow:auto}
+.item{text-align:left;font:600 13px 'Barlow',sans-serif;color:var(--ink);background:#100c14;border:1px solid #3a2c1c;padding:6px 8px;cursor:pointer;min-height:44px}
+.item small{display:block;color:var(--dim);font-weight:400;font-size:11.5px;line-height:1.3}
+.item.on{border-color:var(--ok);background:#0f1f18}
+.item:disabled{opacity:.38;cursor:default}
+.sel{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sel .name{flex:1 1 100%;font-weight:700;color:#fff1d6}
+.note{font-size:12px;color:var(--dim);margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Rumahmu · Tata &amp; Tingkat</h1>
+  <p class="intro"><b>A · Tata Rumah</b>: nyalakan <b>Tata Rumah</b>, lalu seret perabot untuk memindahkannya. Pilih barang dari <b>Tas Perabot</b> lalu ketuk lantai atau dinding untuk memasangnya. Kotak hijau berarti boleh dipasang, merah berarti tidak (menabrak, keluar ruangan, atau menutup pintu). <b>B · Tingkat Rumah</b>: Pondok → Rumah → Rumah Besar. Ruangannya membesar, ada ruang baru, dan rumah di kota ikut berubah (lihat <b>Luar</b>). Semua angka dan biaya di sini hanya contoh.</p>
+  <div class="bar">
+    <div class="grp"><b>Tingkat rumah (B)</b><div class="opts" id="tier"></div></div>
+    <div class="grp"><b>Lihat</b><div class="opts" id="view"></div></div>
+    <div class="grp"><b>Tata (A)</b><div class="opts"><button class="btn" id="edit">Tata Rumah</button></div></div>
+    <div class="grp"><b>Waktu</b><div class="opts" id="time"></div></div>
+  </div>
+  <div class="layout">
+    <div class="stage" id="stage"><div class="flash" id="flash"></div><div class="hint" id="hint"></div></div>
+    <div class="side">
+      <div class="card" id="tierCard"></div>
+      <div class="card" id="comfort"></div>
+      <div class="card" id="selCard" hidden></div>
+      <div class="card"><h2>Tas Perabot</h2><div class="bag" id="bag"></div>
+        <p class="note">Perabot didapat dari bahan (kayu, batu, bijih dari musuh), pasar, atau hadiah bos/Celah. Kenyamanan dihitung sekali per jenis perabot.</p></div>
+    </div>
+  </div>
+</main>
+<script type="module" src="./rumah/main.js"></script>
+</body>
+</html>

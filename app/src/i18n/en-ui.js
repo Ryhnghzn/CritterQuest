@@ -641,4 +641,9 @@ export default {
   'Titik simpan — lantai {n}': 'Checkpoint — floor {n}',
   'Celah — lantai {n}': 'Rift — floor {n}',
   '{n} berkah': '{n} blessings',
+  // how the game was left last time (spec §50)
+  'dunia luar': 'the open world',
+  'kota': 'town', 'menu': 'the menu', 'dungeon': 'a dungeon',
+  'Game tadi tertutup tiba-tiba saat bermain di {p} (setelah {m} menit). Biasanya karena memori HP penuh: tutup tab & aplikasi lain.': 'The game closed suddenly while you were playing in {p} (after {m} min). Usually the phone ran out of memory: close other tabs & apps.',
+  'Game tadi ditutup HP saat kamu pindah ke aplikasi lain ({p}). Ini wajar di iPhone.': 'Your phone closed the game while you were in another app ({p}). This is normal on iPhone.',
 };

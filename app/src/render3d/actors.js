@@ -23,7 +23,7 @@ import { makeFacing, turnTo, pose2d, screenX, towardCam, viewTo, viewNow } from 
 import { auraBack, auraFront, bestRarity } from '../art/aura.js';
 import { branchAura } from '../art/branchaura.js';
 import { branchById } from '../data/branches.js';
-import { moveDuration } from '../art/hero/rig.js';
+import { moveDuration, whirlView } from '../art/hero/rig.js';
 import { ENEMIES } from '../data/enemies.js';
 import { DODGE } from '../data/balance.js';
 import { MOUNT } from '../data/mounts.js';
@@ -32,6 +32,7 @@ import { ATTACK_POSE } from '../run/skills.js';
 import { Spell3D } from './spell3d.js';
 import { foeSheet, frameTex, showFrame } from './foeframes.js';
 import { frameAt } from '../art/foeanim.js';
+import { freeCanvas } from '../core/freecanvas.js';
 
 const DOLL_SCALE = 0.82, ATTACK_ANIM = 0.45;
 // lifted into 3D (the rest of the effects stay on the ground decal)
@@ -321,7 +322,9 @@ export class Actors {
     const striking = (ph >= 0 && ph < 1) || game.attackT > 0, busy = !!move || dodge !== undefined || (striking && !(LOOK.facing.strike && LOOK.anime && a.classId !== 'novice')); // the Pengembara has no front/back attack
     if (striking && !busy) viewTo(this.face, screenX(game.aimX, game.aimY, yaw), towardCam(game.aimX, game.aimY, yaw), t);
     else viewTo(this.face, screenX(game.moveX, game.moveY, yaw), towardCam(game.moveX, game.moveY, yaw), t, busy);
-    const vw = viewNow(this.face, t), side = vw.view === 'side';
+    // a whirling skill turns through all four views (art/hero/rig.js whirlView; ?lama: side only)
+    const whirl = LOOK.facing.whirl && LOOK.anime ? whirlView(a.classId, move) : null;
+    const vw0 = viewNow(this.face, t), vw = whirl ? { view: whirl, squash: 1 } : vw0, side = vw.view === 'side';
     // the gear's own effects (glow, wings, mists, sparks) are painted on the billboard, around the body
     const opt = { host: this, lite, best: bestRarity(a.look.gear), set: a.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn, anime: LOOK.anime };
     const wings = LOOK.anime ? pickWing(a) : null; // anime wings (art/anime/wings.js)
@@ -347,7 +350,7 @@ export class Actors {
         g.scale(DOLL_SCALE * (side ? turn.w : 1) * vw.squash * hs, DOLL_SCALE * hs);
         if (LOOK.anime && LOOK.pixel) setFxSink(this.fxList = []); // element effects: kept out of the pixel filter
         let hero;
-        try { hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0, view: vw.view, turn: this.face.cur, anime: LOOK.anime, wings }); } finally { setFxSink(null); }
+        try { hero = drawDoll(g, a.classId, a.look, { t, moving, walk: this.walk, attack: Math.max(0, game.attackT / ATTACK_POSE), attackPhase: whirl && whirl !== 'side' ? 0.5 : ph >= 0 && ph < 1 ? ph : undefined, move, dodge, hurt: game.flash > 0, view: vw.view, turn: this.face.cur, anime: LOOK.anime, wings }); } finally { setFxSink(null); }
         drawTraitHero(g, game, t, hero);
       }
       g.restore();
@@ -425,7 +428,7 @@ export class Actors {
       this.dropFoe(m);
     }
     this.fallen(t);
-    for (const [e, b] of this.bossBill) if (!seen.has(e)) { this.enemies.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); b.tex.dispose(); this.bossBill.delete(e); }
+    for (const [e, b] of this.bossBill) if (!seen.has(e)) { this.enemies.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); b.tex.dispose(); freeCanvas(b.c); this.bossBill.delete(e); }
   }
 
   // A one-picture monster's body (plan "hybrid-visual", LOOK.foeAnim): lean into its walk, rear back away

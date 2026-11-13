@@ -3,7 +3,8 @@
 // drawRoom and becomes a texture; walls and pillars are 3D blocks; lamps light the room.
 // The hero, monsters, ground effects and numbers come from Actors (actors.js).
 import * as THREE from 'three';
-import { S, toon, glowMat, sharp, SHARP, muted, detailed, sunAt } from './stage.js';
+import { S, toon, glowMat, sharp, SHARP, TOUCH, TOUCH_CAP, muted, detailed, sunAt } from './stage.js';
+import { freeCanvas } from '../core/freecanvas.js';
 import { flameSet } from './billprops.js';
 import { LOOK } from '../data/look.js';
 import { Actors } from './actors.js';
@@ -51,12 +52,12 @@ export class Dungeon25 {
   // the room: built once per floor
   buildRoom(game) {
     const sc = this.scene, room = game.room, theme = game.dungeon.theme;
-    if (this.roomGroup) { sc.remove(this.roomGroup); dispose(this.roomGroup); }
+    if (this.roomGroup) { sc.remove(this.roomGroup); dispose(this.roomGroup); freeCanvas(this.floorCanvas); } // iPhone: free the old floor's pixels now (spec §50)
     const G = this.roomGroup = new THREE.Group(); sc.add(G);
     this.roomRef = room;
     // floor: the 2D drawRoom painted once into a texture
-    const half = room.bound + 220, side = half * 2, k = Math.min(sharp('floor', this.stage.lite), SHARP.floorMax / side);
-    const c = document.createElement('canvas'); c.width = c.height = Math.ceil(side * k);
+    const half = room.bound + 220, side = half * 2, k = Math.min(sharp('floor', this.stage.lite), (TOUCH ? TOUCH_CAP.floorMax : SHARP.floorMax) / side);
+    const c = this.floorCanvas = document.createElement('canvas'); c.width = c.height = Math.ceil(side * k);
     const g = c.getContext('2d');
     g.fillStyle = '#05040c'; g.fillRect(0, 0, c.width, c.height);
     g.setTransform(k, 0, 0, k, half * k, half * k);

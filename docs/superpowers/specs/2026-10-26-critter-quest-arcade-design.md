@@ -1663,3 +1663,12 @@ Masalah: pose depan/belakang (§38 C) hanya untuk berjalan dan diam; setiap memu
 - **49.4 Revisi 1 (cek pemilik):** Prajurit tampak depan membelah lurus dari atas kepala ke arah kamera; bilah memendek saat ujungnya menunjuk kamera (nilai ke-8 keyframe = panjang bilah), jadi jejaknya turun di tengah badan, bukan menyamping.
 - **49.5 Aura senjata tertutup badan:** di tampak belakang senjata ada di depan badan (jauh dari kamera). Efek elemen yang dikumpulkan untuk pixel (`elemfx.js` `fxBehind`) ditandai "di belakang"; `drawFx` melukisnya di kanvas terpisah, membuang bagian yang tertutup sosok karakter, lalu menempelkan sisanya. Jejak tebasan tampak belakang digambar sebelum badan. Berlaku di game (berjalan menjauh, menunggang) dan di halaman contoh.
 - **49.6 Di game (contoh disetujui 2026-11-12):** `render3d/actors.js` — selama pukulan biasa tampak dipilih dari arah bidik (`viewTo` dengan arah bidik, sudut diagonal mempertahankan tampak sebelumnya); skill & menghindar tetap menyamping. Sakelar `LOOK.facing.strike` (mati di `?lama`). Pengembara (tanpa senjata) tetap menyamping.
+
+## 50. Pencatat Tertutup Paksa (laporan pemilik 2026-11-13)
+
+Masalah: saat bermain di luar kota (iPhone, versi Cloudflare) game tiba-tiba kembali ke loading awal tanpa pesan. Kode game hanya memuat ulang sendiri di layar judul (versi baru) dan saat ganti bahasa, jadi dugaan kuat: iOS mematikan halaman karena memori penuh (di Layar Utama tanpa pesan apa pun).
+
+- `meta/lastexit.js` (+ tes): selama berjalan, tiap 3 detik dicatat di `localStorage` `cq.alive` (waktu, tempat: kota/dunia luar/dungeon/menu, sejak kapan, halaman tersembunyi atau tidak). Keluar wajar (`pagehide`, muat ulang karena versi baru / ganti bahasa) menandai catatan ditutup.
+- Saat game dibuka dan catatan terakhir belum ditutup: pesan sekali — "tertutup tiba-tiba saat bermain di {tempat} (setelah {m} menit) … memori HP penuh", atau "ditutup HP saat kamu pindah aplikasi" bila halamannya tersembunyi. Juga `console.warn('[cq] last exit')`.
+- Bila terbukti memori: langkah berikutnya mencari bagian dunia luar yang paling boros memori.
+- **50.1 Pencegahan (2026-11-13):** kanvas yang dibuang dinolkan (`core/freecanvas.js`) supaya iOS langsung melepas memorinya: kartu NPC/penjaga/titik quest dunia luar saat dibangun ulang, billboard bos anime, warga kota lama, lantai dungeon lama. HP layar sentuh (`pointer: coarse`, `render3d/stage.js` `TOUCH_CAP`): rasio render maks 1,5 (bukan 2), ubin tanah dunia luar 0,8, peta bayangan matahari 1024 (bukan 2048), lantai dungeon maks 2048 px (bukan 3072).
