@@ -188,3 +188,15 @@ describe('identitas kelas (bagian C)', () => {
     expect(g.hitStop).toBe(HITSTOP.ultHit);
   });
 });
+
+describe('rapi (bagian D)', () => {
+  it('kurangi gerakan: tidak ada kilat layar sama sekali', () => {
+    const g = start();
+    g.calm = true; step(g);
+    g.vfx.flash('#fff', 0.5, 0.2);
+    expect(g.vfx.flashes.size).toBe(0);
+    g.calm = false; step(g);
+    g.vfx.flash('#fff', 0.5, 0.2);
+    expect(g.vfx.flashes.size).toBe(1);
+  });
+});

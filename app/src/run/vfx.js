@@ -54,6 +54,7 @@ export class Vfx {
     this.cracks = new Pool(CAPS.cracks, () => ({ x: 0, y: 0, rays: [], life: 0, max: 1, color: '#fff' }));
     this.flashes = new Pool(CAPS.flashes, () => ({ color: '#fff', alpha: 1, life: 0, max: 1 }));
     this.grayT = 0; // seconds the screen stays black and white (Kombo execute, spec §31.8)
+    this.calm = false; // reduced motion (run.js copies run.calm): no whole-screen flashes at all
   }
 
   // cap: particle cap for this device (QUALITY[..].cap or .touchCap)
@@ -129,6 +130,7 @@ export class Vfx {
 
   // whole-screen flash
   flash(color = '#fff', alpha = 0.5, life = 0.15) {
+    if (this.calm) return;
     const f = this.flashes.take();
     if (!f) return;
     f.color = color; f.alpha = alpha; f.life = f.max = life;

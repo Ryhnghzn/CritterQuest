@@ -392,7 +392,9 @@ export class Actors {
         if (!p) continue;
         const s = Math.max(0.6, Math.min(1.6, p.k)) * dpr;
         g.setTransform(s, 0, 0, s, p.x * dpr, p.y * dpr);
-        drawFloaters(g, [{ ...f, x: 0, y: 0 }]);
+        const one = this.oneFloater || (this.oneFloater = [{}]); // reused: no new objects per number per frame
+        Object.assign(one[0], f); one[0].x = 0; one[0].y = 0;
+        drawFloaters(g, one);
       }
       g.setTransform(1, 0, 0, 1, 0, 0);
       drawFlashes(g, game.vfx, v.c.width, v.c.height);

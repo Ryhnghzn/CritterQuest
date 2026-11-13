@@ -378,6 +378,7 @@ export class Game {
     if (this.state !== ST.PLAY) return; // died this step: no gem pickup after death
     this.updateGems(dt);
     this.updateParticles(dt);
+    this.vfx.calm = this.calm; // every flash (skills, branches, bosses) skips with reduced motion
     this.vfx.step(dt);
     this.updateFloaters(dt);
     if (this.exit) this.takeExit();
