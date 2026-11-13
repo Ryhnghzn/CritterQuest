@@ -25,7 +25,8 @@ import { skyAt } from '../meta/clock.js';
 import { drawVfx, drawFlashes, drawFloaters } from './fxkit.js';
 import { bushDisguise, mirrorMark, puddle, leapHeight, foeMarks } from './foes.js';
 import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, playerAlpha } from './skillfx.js';
-import { SHAKE_PX } from '../data/fx.js';
+import { SHAKE_PX, RECOIL } from '../data/fx.js';
+import { recoilOf } from '../run/vfx.js';
 
 // the riding hero (spec §35.3), shared with render3d/actors.js
 export const MAJESTIC_BY_ID = Object.fromEntries(MAJESTIC_MOUNTS.map((m) => [m.id, m]));
@@ -194,7 +195,8 @@ export class Renderer {
       const warn = (e.mode === 'wind' || e.mode === 'fuse') && ((t * 14) | 0) % 2 === 0;
       const look = warn ? SPRITES[`${e.type}Flash`] : sprite;
       const flip = e.mode === 'dash' ? e.dirX < 0 : game.px < e.x;
-      drawBaked(g, look, e.x, e.y - leapHeight(e), k / squash, k * squash, flip);
+      const rc = recoilOf(e), hs = 1 + rc.k * RECOIL.squash; // struck: pushed back and squashed (plan "Rasa Pukulan")
+      drawBaked(g, look, e.x + rc.x, e.y + rc.y - leapHeight(e), k / squash * hs, k * squash / hs, flip);
       if (e.ai === 'shield') guard(g, e);
       if (e.ai === 'mirror') mirrorMark(g, e, t);
       if (e.mini) crown(g, e.x, e.y - e.r * 1.25 - 14, e.r * 0.5, e.lord);

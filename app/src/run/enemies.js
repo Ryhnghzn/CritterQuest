@@ -4,6 +4,7 @@
 import { rand, rrange } from '../core/rng.js';
 import { ENEMIES, SHIELD_PIERCING } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
+import { DEATH_FX } from '../data/fx.js';
 import { leap, ambush, trail, mirror, stepPuddle, pack, mortar, totem, twin } from './foes.js';
 
 const TAU = Math.PI * 2;
@@ -198,6 +199,20 @@ export function onDeath(run, e) {
   }
 }
 
+// A boss enters a new phase (plan "Rasa Pukulan" A): the world holds its breath, a flash
+// (not with reduced motion), rings out of the boss, sparks, and a low roar.
+function phaseFx(run, e) {
+  run.addHitStop?.('phase');
+  sfx.boss();
+  const v = run.vfx;
+  if (!v) return; // test stand-ins
+  const P = DEATH_FX.phase;
+  if (!run.calm) v.flash(...P.flash);
+  v.ring(e.x, e.y, { r0: e.r, r1: e.r * P.ring, life: 0.55, color: P.color, width: 7 });
+  v.ring(e.x, e.y, { r0: e.r, r1: e.r * P.ring * 0.65, life: 0.45, color: '#ffffff', width: 3, delay: 0.1 });
+  v.burst('blast', e.x, e.y, ['#ffffff', '#e8d4ff', P.color, '#6a2fb8'], { n: P.sparks, speed: 1.6 });
+}
+
 // Raja Maw: one pattern at a time, standing still while it fires.
 // Bosses with phases (Sang Gerhana) switch pattern lists as their HP drops.
 function boss(run, e, b, dt) {
@@ -210,6 +225,7 @@ function boss(run, e, b, dt) {
       run.showBanner?.(b.phases[ph].name);
       run.addShake?.('big');
       run.pulses.push({ x: e.x, y: e.y, r: 260, t: 0.8, max: 0.8, color: '199,155,255' });
+      phaseFx(run, e);
       return { vx: 0, vy: 0 };
     }
   }

@@ -14,6 +14,8 @@ import { BOSS_ART, BOSS_AURAS, BOSS_BOX, BOSS_K, drawBoss } from '../art/bosses/
 import { drawDoll } from '../art/doll.js';
 import { pixelateCanvas, pixelCopy, pixelTexture } from './pixelate.js';
 import { setFxSink, drawFx } from '../art/anime/elemfx.js';
+import { RECOIL } from '../data/fx.js';
+import { recoilOf } from '../run/vfx.js';
 import { bushDisguise, mirrorMark, leapHeight, foeMarks } from '../render/foes.js';
 import { pickWing } from '../art/anime/wingpick.js';
 import { gaitRate } from '../art/hero/rig.js';
@@ -313,9 +315,9 @@ export class Actors {
       let f = this.enemyFace.get(e);
       if (!f) { f = makeFacing(screenX(game.px - e.x, game.py - e.y, yaw) < 0 ? -1 : 1); this.enemyFace.set(e, f); }
       turnTo(f, e.mode === 'dash' ? screenX(e.dirX, e.dirY, yaw) : screenX(game.px - e.x, game.py - e.y, yaw), t);
-      const turn = pose2d(f, t);
-      m.scale.set(size / squash * turn.w, size * squash, 1);
-      m.position.set(e.x * S, (e.r * 0.9 * k + turn.hop + leapHeight(e)) * S, (e.y + e.r * 0.75) * S); // leapHeight: Katak Rawa mid-jump
+      const turn = pose2d(f, t), rc = recoilOf(e), hs = 1 + rc.k * RECOIL.squash; // struck: pushed back and squashed (plan "Rasa Pukulan")
+      m.scale.set(size / squash * turn.w * hs, size * squash / hs, 1);
+      m.position.set((e.x + rc.x) * S, (e.r * 0.9 * k + turn.hop + leapHeight(e)) * S, (e.y + rc.y + e.r * 0.75) * S); // leapHeight: Katak Rawa mid-jump
       m.rotation.y = yaw;
       m.visible = true;
     }
@@ -362,7 +364,8 @@ export class Actors {
     g.globalCompositeOperation = 'destination-over'; aura(g, hx * k, ht * k, s, t, phase, false); // behind the body
     g.globalCompositeOperation = 'source-over'; aura(g, hx * k, ht * k, s, t, phase, true);
     b.tex.needsUpdate = true;
-    b.mesh.position.set(e.x * S, ((ht - hb) / 2) * S, (e.y + e.r * 0.75) * S);
+    const rc = recoilOf(e);
+    b.mesh.position.set((e.x + rc.x) * S, ((ht - hb) / 2) * S, (e.y + rc.y + e.r * 0.75) * S);
     b.mesh.rotation.y = yaw;
     b.mesh.visible = true;
   }

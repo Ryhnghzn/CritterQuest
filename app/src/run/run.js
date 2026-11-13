@@ -43,7 +43,7 @@ import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
 import { Vfx } from './vfx.js';
 import { stepHitFx, impactFx, stepPlayerFx, executeFx } from './skillfx.js';
 import { bloodThread, thornsBurst, killBlast, phoenixRise, shieldFlash, goldGlint } from './auraevents.js';
-import { SHAKE, SHAKE_DECAY, HITSTOP, FLOATER, PALETTES, elementOf } from '../data/fx.js';
+import { SHAKE, SHAKE_DECAY, HITSTOP, HITSTOP_GAP, RECOIL, FLOATER, FLOATER_MAX, DEATH_FX, PALETTES, elementOf } from '../data/fx.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 
@@ -94,7 +94,7 @@ export class Game {
     this.floaters = [];
     this.state = ST.TITLE;
     this.shake = 0;
-    this.hitStop = 0;     // seconds the loop holds the simulation (main.js), set by addHitStop
+    this.hitStop = 0; this.stopAt = {};     // seconds the loop holds the simulation (main.js), set by addHitStop
     this.calm = false;    // reduced motion (main.js): the peak moments skip their flash and black-and-white
     this.weaponRarity = 0; // weapon rarity, colours attack sparks (set by main.js)
     this.reset(DEFAULT_START);
@@ -208,7 +208,7 @@ export class Game {
     this.fx = { ...effects }; this.fxShieldT = 0; this.frenzyOn = false; this.revived = false;
     initTrait(this);
     this.applyBuffs();
-    this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0;
+    this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0; this.stopAt = {}; // stopAt: when each rate-limited hit-stop last fired (HITSTOP_GAP)
     this.slowT = 0; this.slowK = 0; this.dotT = 0; this.dotDps = 0; this.dotKind = null; // biome status (spec §25.4)
     this.lastFoe = null; this.dotFoe = null; this.diedOf = null; this.surrendered = false; // what felled the player (death dialog)
     this.dashSid = null; this.buffSid = null; // skill whose dash trail / buff aura is showing (run/skillfx.js)
@@ -497,12 +497,27 @@ export class Game {
     e.flash = 0.12;
     if (h.freeze && !(e.armor > 0)) e.frozen = Math.max(e.frozen, h.freeze); // a Berlapis shield shrugs off stuns (spec §43.8)
     const el = elementOf(h.fx);
-    const kind = h.ult ? 'ult' : crit ? 'crit' : 'normal';
-    const color = kind === 'normal' ? '#ffffff' : el === 'steel' ? '#ffd166' : PALETTES[el][1];
+    // the impact ladder (plan "Rasa Pukulan"): basic < skill < crit < ult — numbers, stops, recoil
+    const kind = h.ult ? 'ult' : crit ? 'crit' : h.skill ? 'skill' : 'normal';
+    const color = kind === 'normal' ? '#ffffff' : kind === 'skill' ? (el === 'steel' ? '#e6eef8' : PALETTES[el][1]) : el === 'steel' ? '#ffd166' : PALETTES[el][1];
     this.addFloater(e.x + rrange(-4, 4), e.y - e.r, String(Math.round(dmg)), color, kind, true);
+    this.recoilFrom(h, e, kind);
     impactFx(this, h, e, crit);
+    if (h.ult && !h.stopped) { h.stopped = true; this.addHitStop('ultHit'); this.addShake('light'); }
+    else if (h.skill && !h.stopped) { h.stopped = true; this.addHitStop('skill'); } // the first enemy each skill hit reaches
     if (crit) this.addHitStop('crit');
     sfx.hit(crit ? 'hitCrit' : e.boss || e.elite ? 'hitHard' : 'hit');
+  }
+
+  // The struck enemy's picture jerks away from the blow (drawing only: render reads run/vfx.js recoilOf).
+  // Visual fields like e.flash; rrange is not used, so the simulation stays the same.
+  recoilFrom(h, e, kind) {
+    let dx, dy;
+    if (h.kind === 'proj') { dx = h.vx; dy = h.vy; } else { dx = e.x - h.x; dy = e.y - h.y; }
+    if (!dx && !dy) { dx = e.x - this.px; dy = e.y - this.py; }
+    const d = Math.hypot(dx, dy) || 1, push = RECOIL[kind] * (e.boss ? RECOIL.boss : 1);
+    if (e.recoilT > 0 && e.recoil > push) return; // a bigger jerk is still playing
+    e.recoilX = dx / d; e.recoilY = dy / d; e.recoil = push; e.recoilT = RECOIL.time;
   }
 
   // chain lightning from a struck enemy to its nearest neighbour
@@ -538,6 +553,7 @@ export class Game {
         continue;
       }
       if (e.flash > 0) e.flash -= dt;
+      if (e.recoilT > 0) e.recoilT -= dt;
       if (e.frozen > 0) { e.frozen -= dt; continue; } // frozen: no movement, no touch damage
       e.wob += dt * 5;
       const s0 = this.shots.length, h0 = this.hazards.length; // what this enemy makes now is scaled to it (spec §43.8)
@@ -620,6 +636,11 @@ export class Game {
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
     sfx.enemyDie(e.boss ? 'dieBoss' : e.elite || e.r >= BIG_ENEMY_R ? 'dieBig' : 'dieSmall');
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);
+    if (!e.boss) { // a closing ring: small for the crowd, gold with a held beat for an elite
+      const D = e.elite ? DEATH_FX.elite : DEATH_FX.normal;
+      this.vfx.ring(e.x, e.y, { r0: e.r * 0.6, r1: e.r * D.ring, life: D.life, color: D.color || '#b48ae0', width: D.width });
+      if (e.elite) { this.addHitStop('elite'); this.addShake('light'); this.vfx.burst('stars', e.x, e.y, ['#fff3c4', '#ffd166', '#c28a1a'], { n: 8 }); }
+    }
     dropLoot(this, e);
     if (this.fx.goldfind) goldGlint(this, e);
     if (this.fx.explode) {
@@ -635,8 +656,9 @@ export class Game {
         const a = (i / 8) * Math.PI * 2;
         this.gems.push({ x: e.x + Math.cos(a) * 30, y: e.y + Math.sin(a) * 30, v: 5, mag: false, big: true, t: rand() * 6 });
       }
-      this.addShake('heavy'); this.addHitStop('boss');
+      this.addShake('big'); this.addHitStop('bossKill');
       this.vfx.ring(e.x, e.y, { r1: e.r * 4, life: 0.6, color: '#c26bd8', width: 5 });
+      this.vfx.ring(e.x, e.y, { r1: e.r * 6, life: 0.9, color: '#f0d8ff', width: 3, delay: 0.12 });
       this.vfx.flash('#f0d8ff', 0.35, 0.2);
       return;
     }
@@ -732,13 +754,20 @@ export class Game {
   }
 
   // tier: 'light' | 'medium' | 'heavy' (data/fx.js SHAKE); the strongest one wins
+  // an unknown tier counts as none (an undefined once turned shake into NaN for the rest of the trip)
   addShake(tier) {
-    this.shake = Math.max(this.shake, SHAKE[tier]);
+    this.shake = Math.max(this.shake, SHAKE[tier] ?? 0);
   }
 
-  // kind: 'crit' | 'boss' | 'ult' (data/fx.js HITSTOP)
+  // kind: a key of data/fx.js HITSTOP. Kinds in HITSTOP_GAP fire at most once per their gap of
+  // game time, so a stream of crits in one area does not stutter.
   addHitStop(kind) {
-    this.hitStop = Math.min(HITSTOP.max, Math.max(this.hitStop, HITSTOP[kind]));
+    const gap = HITSTOP_GAP[kind];
+    if (gap) {
+      if (this.time - (this.stopAt[kind] ?? -9) < gap) return;
+      this.stopAt[kind] = this.time;
+    }
+    this.hitStop = Math.min(HITSTOP.max, Math.max(this.hitStop, HITSTOP[kind] ?? 0));
   }
 
   updateParticles(dt) {
@@ -749,6 +778,7 @@ export class Game {
   // kind: 'normal' | 'crit' | 'ult' (data/fx.js FLOATER); plain text uses normal with a longer life
   // dmg: a damage number (Settings can hide those, spec §29)
   addFloater(x, y, text, color, kind = null, dmg = false) {
+    if (dmg && kind === 'normal' && this.floaters.length >= FLOATER_MAX) return; // a horde: crits and ults still show
     const life = kind ? FLOATER[kind].life : 0.8;
     this.floaters.push({ x, y, text, color, kind: kind || 'normal', life, max: life, dmg });
   }

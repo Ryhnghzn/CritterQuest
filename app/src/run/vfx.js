@@ -2,7 +2,7 @@
 // ground cracks and screen flashes. Pure logic — render/fxkit.js draws it.
 // Uses its own PRNG so effects never consume the simulation's (core/rng.js):
 // adding sparkle must not change what spawns or drops.
-import { QUALITY, CAPS, BURST, AUTO_LITE } from '../data/fx.js';
+import { QUALITY, CAPS, BURST, AUTO_LITE, RECOIL } from '../data/fx.js';
 
 const TAU = Math.PI * 2;
 const VFX_SEED = 7151;
@@ -179,4 +179,15 @@ export class FpsWatch {
 // Quality level in use: the setting, unless the FPS watch forced lite this session.
 export function activeQuality(setting, forcedLite) {
   return forcedLite || setting === 'lite' ? 'lite' : 'full';
+}
+
+// An enemy jerked by a blow (plan "Rasa Pukulan" A): run.js sets e.recoilX/Y (direction),
+// e.recoil (px) and e.recoilT (seconds left); this is where its picture is drawn instead.
+// Snaps out at once, settles back. Returns one shared object (no garbage per enemy per frame).
+const REC = { x: 0, y: 0, k: 0 };
+export function recoilOf(e) {
+  const k = e.recoilT > 0 ? Math.min(1, e.recoilT / RECOIL.time) : 0;
+  const d = (e.recoil || 0) * k * k;
+  REC.x = (e.recoilX || 0) * d; REC.y = (e.recoilY || 0) * d; REC.k = k;
+  return REC;
 }

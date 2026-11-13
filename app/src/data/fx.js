@@ -36,18 +36,41 @@ export const AUTO_LITE = { fps: 40, seconds: 3 };
 export const CAPS = { rings: 32, cracks: 12, flashes: 4 };
 
 // Screen shake tiers: strength 0–1 (decays at SHAKE_DECAY / s), SHAKE_PX = max offset.
-export const SHAKE = { light: 0.35, medium: 0.6, heavy: 1 };
+// big: the rarest moments (boss phase, a focused ultimate landing, Tebasan Raksasa at full).
+export const SHAKE = { light: 0.35, medium: 0.6, heavy: 1, big: 1.3 };
 export const SHAKE_DECAY = 3;
 export const SHAKE_PX = 9;
 
-// Hit-stop: the simulation pauses this many seconds (the longest wins).
-export const HITSTOP = { crit: 0.03, frenzy: 0.06, boss: 0.06, ult: 0.08, max: 0.12 };
+// Hit-stop: the simulation pauses this many seconds (the longest wins). The impact ladder
+// (plan "Rasa Pukulan"): basic none < crit / skill < ultHit / elite < frenzy < ult < phase < bossKill.
+export const HITSTOP = {
+  crit: 0.03, skill: 0.03, ultHit: 0.05, elite: 0.05, frenzy: 0.06, boss: 0.06, ult: 0.08,
+  phase: 0.22, bossKill: 0.25, max: 0.25,
+};
+// Small stops that can come in a stream (many crits in one area): at most one per this many seconds.
+export const HITSTOP_GAP = { crit: 0.18, skill: 0.18, ultHit: 0.3 };
+
+// An enemy struck jerks away from the blow for a moment (drawing only, its real position stays):
+// px pushed back per kind of hit, seconds to settle, bosses move this share, squash at the peak.
+export const RECOIL = { time: 0.14, normal: 3, crit: 6, skill: 5, ult: 7, boss: 0.35, squash: 0.14 };
 
 // Floating damage numbers.
 export const FLOATER = {
   normal: { size: 9, life: 0.7, rise: 26 },
+  skill: { size: 12, life: 0.8, rise: 30, pop: 0.08 },
   crit: { size: 15, life: 0.9, rise: 34, skew: -0.25, wobble: 2.2, pop: 0.12 },
   ult: { size: 17, life: 1, rise: 30, skew: -0.2, wobble: 1.5, pop: 0.15, outline: '#ffd166' },
+};
+
+// At most this many numbers float at once; plain damage numbers beyond it are skipped (a horde).
+export const FLOATER_MAX = 70;
+
+// Deaths & boss moments (plan "Rasa Pukulan" A): ring sizes are × the enemy radius.
+export const DEATH_FX = {
+  normal: { ring: 1.8, life: 0.28, width: 3 },
+  elite: { ring: 3.2, life: 0.45, width: 5, color: '#ffc864' },
+  // a boss changes phase (every boss's enrage line is one of its phase lines)
+  phase: { ring: 5, color: '#c79bff', flash: ['#e8d4ff', 0.4, 0.35], sparks: 24 },
 };
 
 // Particle presets for vfx.burst(): count (before the quality multiplier),
