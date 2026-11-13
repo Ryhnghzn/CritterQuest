@@ -1010,6 +1010,21 @@ export class Field25 {
       gr.addColorStop(0, `rgba(190,232,255,${(0.32 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(140,180,255,0)');
       g.fillStyle = gr; g.beginPath(); g.ellipse(o.x, o.y, r, r * 0.55, 0, 0, TAU); g.fill();
     }
+    for (const ru of game.stonesLit || []) { // Lingkaran Batu at night (plan eksplorasi A): a pale pool, glowing runes, the hold ring
+      if (!visible(ru.x, ru.y, ru.r + 60)) continue;
+      const k = ru.spent ? 0.25 : 0.7 + 0.3 * Math.sin(t * 2.4 + ru.x), R = ru.r * 1.15;
+      const gr = g.createRadialGradient(ru.x, ru.y, 0, ru.x, ru.y, R);
+      gr.addColorStop(0, `rgba(150,200,255,${(0.3 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(120,150,255,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(ru.x, ru.y, R, R * 0.6, 0, 0, TAU); g.fill();
+      g.save(); g.translate(ru.x, ru.y); g.scale(1, 0.6); g.lineWidth = 2; g.strokeStyle = `rgba(190,220,255,${(0.75 * k).toFixed(3)})`;
+      for (let i = 0; i < 9; i++) { // a rune at each stone's foot
+        if (i === 2 || i === 6) continue;
+        const a = (i / 9) * TAU, x = Math.cos(a) * ru.r * 0.82, y = Math.sin(a) * ru.r * 0.82;
+        g.beginPath(); g.moveTo(x - 6, y + 6); g.lineTo(x, y - 8); g.lineTo(x + 6, y + 6); g.moveTo(x - 4, y); g.lineTo(x + 4, y); g.stroke();
+      }
+      if (ru.hold > 0) { g.lineWidth = 5; g.strokeStyle = 'rgba(200,230,255,.9)'; g.beginPath(); g.arc(0, 0, ru.r * 0.5, -Math.PI / 2, -Math.PI / 2 + TAU * ru.hold); g.stroke(); }
+      g.restore();
+    }
     for (const ev of game.events || []) { // Pedagang Kelana (plan "Momen Acak"): his lantern's warm pool, and a ring filling while you stand to buy
       if (ev.kind !== 'peddler' || !visible(ev.start.x, ev.start.y, 200)) continue;
       const x = ev.start.x, y = ev.start.y + 6, k = 0.85 + 0.15 * Math.sin(t * 7) * Math.sin(t * 3.1), r = 120 * k;

@@ -18,6 +18,7 @@ import { GEM_IDS, GEMS } from '../data/forge.js';
 import { HIDDEN_R, REACH_R, DROP_ITEMS } from '../data/quests.js';
 import { HORDE } from '../data/balance.js';
 import { setFoeLevel } from './foelevel.js';
+import { stepStones } from './stones.js';
 import { REGIONS } from '../data/world.js';
 
 // enemy level at a point of the world
@@ -174,6 +175,7 @@ export function stepField(run, dt) {
   }
   if (run.fog && (run.fogT -= dt) <= 0) { run.fogT = 0.25; revealFog(run.fog, WORLD, run.px, run.py); }
   stepTreasure(run);
+  stepStones(run, dt); // Lingkaran Batu at night (plan eksplorasi bagian A)
   stepQuestPlaces(run);
   // dungeon gates: seen within the fog radius, usable up close (spec §25.5)
   run.nearGate = null;

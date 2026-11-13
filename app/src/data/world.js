@@ -86,6 +86,13 @@ export const FIELD = {
 // Hidden treasure (spec §25.3): `count` chests per region at fixed spots (same for
 // every character), each guarded by a mini boss that appears when the player comes
 // near; the last (easternmost) one by the region's overlord. Opened once per character.
+// Lingkaran Batu (plan docs/superpowers/plans/2026-11-13-eksplorasi.md bagian A): about one ruin in `every` wakes
+// at night (which ones: from where they stand, the same for everyone). Seen within `seen`: a small line and a chime.
+// Standing within `inner` × its radius of its centre for `hold` seconds: a gift; once a night each. glow: motes / s.
+export const STONES = {
+  every: 6, seen: 900, inner: 0.55, hold: 3, glow: 10,
+  gift: { dust: [3, 6], crystal: [1, 2], gem: 0.25 },
+};
 export const TREASURE = {
   count: 4, band: [0.12, 0.95],       // spread west → east over this part of the width
   offPath: [420, 900],                // distance from the nearest path
