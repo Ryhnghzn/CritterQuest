@@ -184,7 +184,7 @@ export class Game {
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
     this.questItems = {}; this.reached = []; this.questSpots = []; this.questDrops = []; this.hidden = []; this.nearHidden = null; // quests (spec §26.5)
     this.events = []; this.eventsDone = []; this.raceTimes = []; // quest events in the world (spec §42, run/questev.js)
-    this.expGained = 0; this.bossKills = 0; this.gold = 0;
+    this.expGained = 0; this.bossKills = 0; this.gold = 0; this.spent = 0; // spent: coins paid out on the way (Pedagang Kelana, plan "Momen Acak")
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
     // character level & EXP, live during the trip
@@ -231,11 +231,11 @@ export class Game {
   // (regions save every so often; spec §25.1). Level & EXP stay live in the run.
   takeProgress() {
     const out = {
-      exp: Math.floor(this.expGained), gold: this.gold, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy },
+      exp: Math.floor(this.expGained), gold: this.gold, spent: this.spent, kills: this.kills, killsBy: { ...this.killsBy }, elites: this.elites, elitesBy: { ...this.elitesBy },
       questItems: { ...this.questItems }, reached: this.reached.splice(0), events: this.eventsDone.splice(0), races: this.raceTimes.splice(0),
       items: this.loot.slice(), mats: { ...this.mats }, gems: this.gemsFound.slice(), hp: this.stats.hp, potions: { ...this.potions }, mountRolls: { ...this.mountRolls },
     };
-    this.expGained -= out.exp; this.gold = 0; this.kills = 0; this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.questItems = {};
+    this.expGained -= out.exp; this.gold = 0; this.spent = 0; this.kills = 0; this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.questItems = {};
     this.loot.length = 0; this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound.length = 0;
     this.mountRolls = { any: 0, eclipse: 0 };
     return out;

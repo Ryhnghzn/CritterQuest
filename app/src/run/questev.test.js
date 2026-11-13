@@ -329,4 +329,54 @@ describe('Momen acak: peristiwa diam (rencana "Momen Acak")', async () => {
     expect(g.events.includes(ev)).toBe(false);
     expect(g.enemies.includes(foe)).toBe(false);
   });
+  it('Pedagang Kelana: hanya malam; berdiri di dekatnya = membeli, pergi = menolak; koin kurang = tidak jadi', () => {
+    const g = game(); at(g);
+    g.phase = 'sun'; expect(Object.fromEntries(kindWeights(g)).peddler).toBeUndefined();
+    const ev = force(g, 'peddler', 'moon');
+    expect(ev && ev.quiet).toBe(true);
+    const keep = () => { g.happenT = 1e9; };
+    // walk up, then away before the hold is done: nothing bought
+    g.px = ev.start.x + 50; g.py = ev.start.y; run(g, HAPPEN.peddler.hold * 0.5, keep);
+    expect(ev.deal.price).toBeGreaterThan(0);
+    g.px = ev.start.x + 600; run(g, 1, keep);
+    expect(g.spent).toBe(0); expect(ev.sold).toBeFalsy();
+    // too poor: he refuses
+    g.wallet = 0; g.gold = 0;
+    g.px = ev.start.x + 50; run(g, HAPPEN.peddler.hold + 0.2, keep);
+    expect(g.spent).toBe(0); expect(ev.sold).toBeFalsy();
+    // enough coins: stand there and it is bought, once
+    g.wallet = ev.deal.price + 5;
+    const gems0 = g.gemsFound.length, mats0 = { ...g.mats };
+    run(g, HAPPEN.peddler.hold + 3.5, keep);
+    expect(ev.sold).toBe(true); expect(g.spent).toBe(ev.deal.price);
+    expect(g.gemsFound.length > gems0 || g.mats.crystal > mats0.crystal).toBe(true);
+    expect(g.eventsDone).toContain(ev.key);
+    run(g, HAPPEN.peddler.hold * 2, keep);
+    expect(g.spent).toBe(ev.deal.price); // only one sale
+    run(g, HAPPEN.peddler.after + 1, keep);
+    expect(g.events.includes(ev)).toBe(false); // packs up and goes
+  });
+  it('koin yang dibelanjakan dipotong dari save, tugas koin tetap menghitung yang didapat', async () => {
+    const { applyField } = await import('../meta/world.js');
+    const g = game();
+    g.gold = 40; g.spent = 100;
+    const part = g.takeProgress();
+    expect(part.spent).toBe(100); expect(g.spent).toBe(0);
+    const char = { ...createCharacter({ slot: 0, name: 'Rey', look: { hair: 0, hairColor: 0 }, classId: 'warrior' }, 1), gold: 500 };
+    const r = applyField(char, { ...part, region: 'forest' }, 0, () => 0.5);
+    expect(r.char.gold).toBe(440);
+  });
+  it('Kabut Sunyi: kabut menebal lalu hilang sendiri, tanpa tanda di peta', () => {
+    const g = game(); at(g);
+    const ev = force(g, 'mist', 'dawn');
+    expect(ev).toBeTruthy();
+    const keep = () => { g.happenT = 1e9; };
+    run(g, 20, keep);
+    expect(g.mist).toBeGreaterThan(0.9);
+    expect(ev.seen).toBeFalsy();
+    run(g, HAPPEN.mist.time, keep);
+    expect(g.events.includes(ev)).toBe(false);
+    run(g, 30, keep);
+    expect(g.mist).toBe(0);
+  });
 });

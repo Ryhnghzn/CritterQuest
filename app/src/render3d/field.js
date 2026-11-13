@@ -617,6 +617,7 @@ export class Field25 {
         const m = campMesh(); m.position.set(ev.start.x * S, 0, ev.start.y * S); m.userData.camp = ev; P.add(m);
         this.cards.push(this.card({ captive: ev, x: ev.start.x, y: ev.start.y + 6, look: { ...ev.look, outfit: ev.outfit }, who: { name: ev.name, title: ev.title, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 }));
       }
+      if (ev.kind === 'peddler') this.cards.push(this.card({ peddler: ev, x: ev.start.x, y: ev.start.y, look: { ...ev.look, outfit: ev.outfit }, who: { name: ev.name, title: ev.title, role: 'talk' }, pose: { t: 0, moving: 0, walk: 0 }, w: 130, top: 130, bottom: 20 })); // Pedagang Kelana (plan "Momen Acak")
       if (ev.kind === 'race') ev.rings.forEach(([x, y], i) => { const m = ringMesh(); m.position.set(x * S, 0, y * S); m.userData.ring = { ev, i }; P.add(m); });
     }
   }
@@ -639,7 +640,7 @@ export class Field25 {
     g.setTransform(k, 0, 0, k, (cd.w / 2 - cd.x) * k, (cd.top - cd.y) * k);
     g.lineJoin = 'round';
     const figure = (fg) => { // the person on the card (guard / hidden NPC / escorted walker)
-      if (cd.walker || cd.captive) { cd.pose.t = t; actor(fg, cd.x, cd.y, null, cd.look, cd.pose, cd.face || 1); return; }
+      if (cd.walker || cd.captive || cd.peddler) { cd.pose.t = t; actor(fg, cd.x, cd.y, null, cd.look, cd.pose, cd.face || 1); return; }
       if (cd.guard) {
         if (!LOOK.anime) { drawGuard(fg, cd.guard, t); return; }
         const gd = cd.guard; // anime: the gate guard is the townsfolk 'guard' (helm, spear), not a warrior hero
@@ -666,7 +667,7 @@ export class Field25 {
       g.restore();
     } else figure(g);
     if (cd.home) tag(g, cd.who, cd.x, cd.y, t, game.nearHidden === cd.home, cd.home.mark);
-    if (cd.walker || cd.captive) tag(g, cd.who, cd.x, cd.y, t, false, null);
+    if (cd.walker || cd.captive || cd.peddler) tag(g, cd.who, cd.x, cd.y, t, false, null);
     cd.tex.needsUpdate = true;
     const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home?.scale || 1);
     cd.mesh.position.set(cd.x * S, (feet - (cd.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
@@ -871,9 +872,11 @@ export class Field25 {
       dusk(fog.color.set(FOG_DAY[this.biome] || FOG_DAY.forest), 'fog', n).lerp(_c2.set(FOG_NIGHT), n);
       for (const m of this.fogLayers || []) m.material.color.set(FOG_BANK[this.biome] || FOG_BANK.forest).lerp(_c2.set(FOG_BANK_NIGHT), n * 0.8);
     }
+    const mist = this.biome === 'eclipse' ? 0 : game?.mist || 0; // Kabut Sunyi (plan "Momen Acak"): pale and close
+    if (mist) fog.color.lerp(_c2.set(this.night > 0.5 ? 0x4a5060 : 0xb4bcc8), 0.6 * mist);
     sc.background.copy(fog.color);
     const z = this.stage.zoom;
-    fog.near = 22 * z; fog.far = (this.biome === 'eclipse' ? 48 : 58) * z;
+    fog.near = 22 * z * (1 - 0.65 * mist); fog.far = (this.biome === 'eclipse' ? 48 : 58) * z * (1 - 0.45 * mist);
     const tx = this.camX * S, tz = this.camY * S;
     sunAt(this.sun, tx, tz, [-8, 18, 10]);
   }
@@ -999,6 +1002,19 @@ export class Field25 {
       const gr = g.createRadialGradient(o.x, o.y, 0, o.x, o.y, r);
       gr.addColorStop(0, `rgba(190,232,255,${(0.32 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(140,180,255,0)');
       g.fillStyle = gr; g.beginPath(); g.ellipse(o.x, o.y, r, r * 0.55, 0, 0, TAU); g.fill();
+    }
+    for (const ev of game.events || []) { // Pedagang Kelana (plan "Momen Acak"): his lantern's warm pool, and a ring filling while you stand to buy
+      if (ev.kind !== 'peddler' || !visible(ev.start.x, ev.start.y, 200)) continue;
+      const x = ev.start.x, y = ev.start.y + 6, k = 0.85 + 0.15 * Math.sin(t * 7) * Math.sin(t * 3.1), r = 120 * k;
+      const gr = g.createRadialGradient(x + 20, y, 0, x + 20, y, r);
+      gr.addColorStop(0, `rgba(255,200,110,${(0.34 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(255,150,60,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(x + 20, y, r, r * 0.55, 0, 0, TAU); g.fill();
+      if (ev.hold > 0 && !ev.sold) {
+        const P = HAPPEN.peddler;
+        g.save(); g.translate(x, y); g.scale(1, 0.6); g.lineWidth = 5; g.strokeStyle = 'rgba(255,207,122,.85)';
+        g.beginPath(); g.arc(0, 0, 70, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, ev.hold / P.hold)); g.stroke();
+        g.restore();
+      }
     }
     for (const ev of game.events || []) { // a meteor shower (spec §42): warnings, impacts, crystals to pick up
       if (ev.kind !== 'meteor' || ev.state !== 'run') continue;

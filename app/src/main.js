@@ -1441,6 +1441,7 @@ function tickRun(pressed) {
     game.clock = worldClock;
     game.phase = phaseOf(worldClock).icon; // dawn | sun | dusk | moon: which world happenings can come (plan "Momen Acak")
     game.night = game.phase === 'moon';
+    game.wallet = current.gold; // what Pedagang Kelana may ask for (the run's own coins and spending are added there)
     if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged || game.eventsDone.length)) commitField();
   }
   if (game.state === ST.PLAY && game.rift?.offer) { // between Rift floors: one blessing of three (spec §41.3); the fight waits

@@ -14,7 +14,8 @@ import { QUEST_REWARD } from '../data/quests.js';
 import { blocked, zoneAt } from './worldmap.js';
 import { spawnGroup, spawnGiant, treasureLoot } from './field.js';
 import { ENEMIES } from '../data/enemies.js';
-import { GEM_IDS, GEMS } from '../data/forge.js';
+import { GEM_IDS, GEMS, MATS } from '../data/forge.js';
+import { gemName } from '../meta/itemgen.js';
 import { sfx } from '../core/audio.js';
 
 const hpAt = (h, level) => Math.round(h.base + h.perLevel * level);
@@ -304,16 +305,21 @@ function pickKind(run) {
 // a raid on a crossing (a short defence), a meteor shower (dodge, pick up crystals).
 export function stepHappenings(run, dt) {
   if (run.happenCool) for (const k in run.happenCool) if (run.happenCool[k] > 0) run.happenCool[k] -= dt;
-  let live = false;
+  let live = false, misty = false;
   for (const ev of run.events || []) {
     if (!ev.world) continue;
     live = true;
     if (ev.kind === 'giant') { stepGiant(run, ev, dt); continue; }
+    if (ev.kind === 'mist') { misty = stepMist(run, ev, dt); continue; }
     const d2 = (run.px - ev.start.x) ** 2 + (run.py - ev.start.y) ** 2, far = d2 > HAPPEN.far * HAPPEN.far;
     if (ev.quiet && !ev.seen && d2 < HAPPEN.seen * HAPPEN.seen) noticed(run, ev);
     if (ev.kind === 'wisp' && ev.state === 'wait') wispGlow(run, ev, dt);
+    if (ev.kind === 'peddler') stepPeddler(run, ev, dt, d2);
     if (ev.state === 'wait' && ((ev.age += dt) > (ev.expire || HAPPEN.expire) || far)) endHappening(run, ev, null);
   }
+  // Kabut Sunyi: the fog (run.mist 0..1, read by the 3D view) thickens while it lasts and clears after
+  run.mist = Math.max(0, Math.min(1, (run.mist || 0) + ((misty ? 1 : 0) - (run.mist || 0)) * Math.min(1, dt * HAPPEN.mist.ease)));
+  if (run.mist < 0.002) run.mist = 0;
   if (live) return;
   if (run.happenT == null) run.happenT = HAPPEN.first;
   if ((run.happenT -= dt) > 0) return;
@@ -330,15 +336,25 @@ export function startHappening(run, kind) {
   const key = `world:${++happenN}`;
   if (HAPPEN.kinds[kind].cool) (run.happenCool || (run.happenCool = {}))[kind] = HAPPEN.kinds[kind].cool;
   let ev = null;
-  if (kind === 'wisp' || kind === 'giant') { // quiet ones (plan "Momen Acak"): no banner, found by looking
+  if (kind === 'mist') { // Kabut Sunyi: no place, it comes round the player
+    ev = freshEvent({ key, kind, world: true, quiet: true, name: t('Kabut Sunyi'), start: { x: run.px, y: run.py }, purse: 0 });
+    ev.age = 0;
+    run.addFloater(run.px, run.py - 50, t('Kabut turun… sunyi sekali.'), '#c8d0dc');
+    run.events = [...run.events, ev];
+    return ev;
+  }
+  if (kind === 'wisp' || kind === 'giant' || kind === 'peddler') { // quiet ones (plan "Momen Acak"): no banner, found by looking
     const W = HAPPEN[kind], p = ringSpot(run, run.px, run.py, W.dist);
     if (!p || inHub(p.x, p.y) || zoneAt(run.fmap, p.x, p.y) === 'eclipse') return null; // the meadow round Kota Awal stays peaceful
     ev = freshEvent(kind === 'wisp'
       ? { key, kind, world: true, quiet: true, name: t('Cahaya Aneh'), start: p, expire: W.expire, leave: t('Cahaya itu memudar…'), purse: 0 }
-      : { key, kind, world: true, quiet: true, name: t('Raksasa Pengembara'), start: p, expire: W.life, leave: t('Langkah berat itu menjauh…'), purse: 0 });
+      : kind === 'giant'
+        ? { key, kind, world: true, quiet: true, name: t('Raksasa Pengembara'), start: p, expire: W.life, leave: t('Langkah berat itu menjauh…'), purse: 0 }
+        : { key, kind, world: true, quiet: true, name: t('Pedagang Kelana'), title: t('Pedagang'), look: { hair: 4, hairColor: 6 }, outfit: ['#4a3a5a', '#2e2438'],
+          start: p, expire: W.expire, leave: t('Lentera itu padam di kejauhan…'), purse: 0, deal: null, hold: 0 });
     ev.age = 0;
     if (kind === 'wisp') ev.orb = { x: p.x, y: p.y, t: 0 };
-    else startGiant(run, ev);
+    else if (kind === 'giant') startGiant(run, ev);
     run.events = [...run.events, ev];
     return ev;
   }
@@ -362,9 +378,11 @@ export function startHappening(run, kind) {
 // ---- quiet happenings (plan "Momen Acak") ----
 // The player sees it: now it is on the map, with a small wondering line instead of a banner.
 function noticed(run, ev) {
+  if (ev.kind === 'mist') return; // the fog is everywhere: nothing to find
   ev.seen = true;
-  run.addFloater(run.px, run.py - 50, ev.kind === 'wisp' ? t('Cahaya apa itu…?') : t('Sesuatu yang besar…'), ev.kind === 'wisp' ? '#bfe8ff' : '#d8b48a');
-  if (ev.kind === 'wisp') sfx.glint();
+  const [text, color] = ev.kind === 'wisp' ? [t('Cahaya apa itu…?'), '#bfe8ff'] : ev.kind === 'peddler' ? [t('Lentera di kejauhan…'), '#ffcf7a'] : [t('Sesuatu yang besar…'), '#d8b48a'];
+  run.addFloater(run.px, run.py - 50, text, color);
+  if (ev.kind !== 'giant') sfx.glint();
 }
 
 // Cahaya Aneh hanging in the air: a column of pale motes (pooled particles, no new objects)
@@ -378,6 +396,70 @@ function wispGlow(run, ev, dt) {
     const a = v.rand() * Math.PI * 2, r = v.range(0, 10);
     v.spawn(v.rand() < 0.3 ? 'star' : 'dot', o.x + Math.cos(a) * r, o.y + bob + Math.sin(a) * r * 0.5, v.range(-12, 12), -v.range(10, 30), v.range(0.5, 0.9), v.range(1.6, 2.8), ['#ffffff', '#bfe8ff', '#8fd8ff', '#c9a8ff'], 0.96, -10);
   }
+}
+
+const gemTier = (run) => Math.min(4, 1 + Math.floor(run.level / 15));
+
+// Pedagang Kelana: he waits by his lantern. Come near and he names one rare thing and its price; stand
+// by him (HAPPEN.peddler.hold seconds) to buy it, walk off to refuse. He packs up after a sale or in time.
+function stepPeddler(run, ev, dt, d2) {
+  const P = HAPPEN.peddler, near = d2 < P.near * P.near, v = run.vfx;
+  if (v) for (let i = Math.floor(P.glow * v.mul * dt + v.rand()); i > 0; i--) { // sparks over the lantern
+    v.spawn('ember', ev.start.x + 26 + v.range(-4, 4), ev.start.y - 58, v.range(-8, 8), -v.range(15, 35), v.range(0.4, 0.8), v.range(1.2, 2), ['#ffcf7a', '#ffa040'], 0.95, -15);
+  }
+  if (ev.sold) return;
+  if (!near) {
+    ev.hold = Math.max(0, ev.hold - dt * 2);
+    if (d2 > (P.near * 2) ** 2) ev.said = false; // he greets you again when you come back
+    return;
+  }
+  if (!ev.deal) ev.deal = rollDeal(run);
+  if (!ev.said) {
+    ev.said = true;
+    run.addFloater(ev.start.x, ev.start.y - 140, t('“{item}, {price} koin. Diam di dekatku kalau mau.”', { item: dealName(ev.deal), price: ev.deal.price }), '#ffcf7a');
+  }
+  if ((ev.hold += dt) < P.hold) return;
+  ev.hold = 0;
+  if ((run.wallet || 0) + run.gold - run.spent < ev.deal.price) { // not enough: he shrugs; try again in a moment
+    ev.hold = -3;
+    run.addFloater(ev.start.x, ev.start.y - 140, t('“Koinmu kurang, kawan.”'), '#b8b0c8');
+    return;
+  }
+  run.spent += ev.deal.price;
+  const d = ev.deal;
+  if (d.gem) run.gemsFound.push({ gem: d.gem, tier: d.tier });
+  else addMats(run, d.mats);
+  run.eventsDone.push(ev.key); // saves the trade at once (main.js)
+  ev.sold = true; ev.age = Math.max(ev.age, ev.expire - P.after);
+  run.addFloater(ev.start.x, ev.start.y - 140, t('“Terima kasih, pengembara. Hati-hati di gelap.”'), '#ffcf7a');
+  run.addFloater(run.px, run.py - 60, `+${dealName(d)}`, d.gem ? GEMS[d.gem].color : '#9fd8ff');
+  run.vfx?.burst('stars', run.px, run.py - 20, ['#ffcf7a', '#ffffff'], { n: 10 });
+  sfx.glint();
+}
+export function rollDeal(run) {
+  const P = HAPPEN.peddler;
+  if (rand() < P.gem) {
+    const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)];
+    return { gem, tier: Math.min(4, gemTier(run) + P.tierUp), price: purseOf(run, P.price.gem) };
+  }
+  const mats = {};
+  for (const [m, [a, b]] of Object.entries(P.mats)) { const n = rint(a, b); if (n > 0) mats[m] = n; }
+  return { mats, price: purseOf(run, P.price.mats) };
+}
+function dealName(d) {
+  if (d.gem) return gemName(d.gem, d.tier);
+  return Object.entries(d.mats).map(([m, n]) => `${n} ${MATS[m].name}`).join(' + ');
+}
+
+// Kabut Sunyi: only mood. A few slow wisps of fog drift past the player while it lasts.
+function stepMist(run, ev, dt) {
+  const M = HAPPEN.mist, v = run.vfx;
+  if ((ev.age += dt) > M.time) { endHappening(run, ev, null); run.addFloater(run.px, run.py - 50, t('Kabut mulai menipis.'), '#c8d0dc'); return false; }
+  if (v) for (let i = Math.floor(M.puffs * v.mul * dt + v.rand()); i > 0; i--) {
+    const a = v.rand() * Math.PI * 2, r = v.range(120, 420);
+    v.spawn('smoke', run.px + Math.cos(a) * r, run.py + Math.sin(a) * r * 0.6, v.range(10, 25), v.range(-4, 4), v.range(2.5, 4), v.range(10, 16), ['#d8dee8', '#b8c0cc'], 0.995, 0);
+  }
+  return true;
 }
 
 // Running: it drifts away from the player, weaving; catch it (or lose it)
@@ -421,7 +503,7 @@ function caughtWisp(run, ev) {
   addMats(run, mats);
   if (rand() < W.gift.gem) {
     const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)];
-    run.gemsFound.push({ gem, tier: Math.min(4, 1 + Math.floor(run.level / 15)) });
+    run.gemsFound.push({ gem, tier: gemTier(run) });
     run.addFloater(o.x, o.y - 80, `+${GEMS[gem].name}`, GEMS[gem].color);
   }
   run.eventsDone.push(ev.key); // saves the gift at once (main.js)
@@ -514,7 +596,7 @@ function stepMeteor(run, ev, dt) {
 const FAR = 2600; // an outlaw left this far behind slips away (and lurks again)
 // how close the player must come for an event to begin
 const reach = (ev) => (ev.kind === 'outlaw' ? OUTLAW.seen : ev.kind === 'nest' ? NEST.near : ev.kind === 'rescue' ? RESCUE.near : ev.kind === 'meteor' ? HAPPEN.meteor.near
-  : ev.kind === 'wisp' ? HAPPEN.wisp.near : ev.kind === 'giant' ? 0 : START_R); // the giant decides on its own (stepGiant)
+  : ev.kind === 'wisp' ? HAPPEN.wisp.near : ev.kind === 'giant' || ev.kind === 'peddler' || ev.kind === 'mist' ? 0 : START_R); // these never 'run': stepHappenings drives them
 
 export function stepEvents(run, dt) {
   for (const ev of run.events || []) {

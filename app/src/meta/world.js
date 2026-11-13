@@ -79,12 +79,12 @@ function storeHp(c, hp) {
 }
 
 // Writes what was earned in a region since the last save.
-// part: { region, fog, found (dungeon gates found), exp, gold, kills, killsBy, elites, items, mats, gems, hp, potions, attrs }
+// part: { region, fog, found (dungeon gates found), exp, gold, spent, kills, killsBy, elites, items, mats, gems, hp, potions, attrs }
 // → { char, levelsGained, itemsLeft, uniquesFound, bountiesDone, mountsFound }
 export function applyField(char, part, now, rng = Math.random) {
   const leveled = addExp(char, part.exp || 0);
   const c = (part.attrs && allocate(leveled.char, part.attrs, now)) || leveled.char;
-  c.gold += part.gold || 0;
+  c.gold = Math.max(0, c.gold + (part.gold || 0) - (part.spent || 0)); // spent: bought on the way (plan "Momen Acak"); bounties count only what was earned
   c.potions = { ...part.potions };
   storeHp(c, part.hp);
   c.records.kills += part.kills || 0;

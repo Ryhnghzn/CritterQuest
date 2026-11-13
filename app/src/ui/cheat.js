@@ -72,7 +72,7 @@ export function renderCheat(box, ctx, actions, redraw) {
         row(...['marshfrog', 'bushling', 'mistwisp', 'mirrorguard'].map((id) => button(ENEMIES[id].name, 'chb', () => actions.foe(id)))),
         row(...['hyena', 'splitbeetle', 'mortar', 'embertotem', 'voidobelisk', 'voidtwin'].map((id) => button(ENEMIES[id].name, 'chb', () => actions.foe(id)))),
         row(b('Buka seluruh peta', actions.revealMap), b('+100 EXP', () => actions.exp(100))),
-        row(...[['caravan', 'Karavan'], ['raid', 'Serbuan'], ['meteor', 'Meteor'], ['wisp', 'Cahaya Aneh'], ['giant', 'Raksasa']].map(([k, n]) => b(n, () => actions.happen(k)))), // world happenings (plan "Momen Acak")
+        row(...[['caravan', 'Karavan'], ['raid', 'Serbuan'], ['meteor', 'Meteor'], ['wisp', 'Cahaya Aneh'], ['giant', 'Raksasa'], ['peddler', 'Pedagang Kelana'], ['mist', 'Kabut Sunyi']].map(([k, n]) => b(n, () => actions.happen(k)))), // world happenings (plan "Momen Acak")
         row(b('Ke ujung timur', () => actions.warp(0.97)), b('Ke tengah', () => actions.warp(0.5)), b('Ke gerbang', actions.warpGate), b('Ke harta', actions.warpTreasure)));
     } else {
       section('Dungeon',

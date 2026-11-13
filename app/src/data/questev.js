@@ -82,6 +82,8 @@ export const HAPPEN = {
     meteor: { w: 0.8 },
     wisp: { w: 1, when: ['dusk', 'moon'] },
     giant: { w: 0.25, nightMul: 3, cool: 900 },
+    peddler: { w: 0.6, when: ['moon'], cool: 600 },
+    mist: { w: 0.5, when: ['dawn', 'dusk'] },
   },
   seen: 950,                         // a quiet happening shows on the map once the player comes this close
   // Cahaya Aneh: a light that drifts off when you come near; caught → a gift, or a trap
@@ -96,7 +98,18 @@ export const HAPPEN = {
     dist: [1400, 1900], life: 240, wander: 9, speed: 26,   // seconds before it leaves, between new wander goals
     engage: 480, rumble: [5, 8], hear: 2400,               // fights when this close (or struck); quakes felt within `hear`
     hp: 30, dmg: 1.7, size: 2.3,                           // × a zone enemy at that level
-  },  caravan: { len: 1800, gold: 1.5 }, // a short escort along the nearest road; purse × QUEST_REWARD gold
+  },
+  // Pedagang Kelana: a lantern-lit merchant at night with one rare thing; stand by him to buy, walk off to refuse
+  peddler: {
+    dist: [800, 1200], expire: 200, near: 150, hold: 2.5,  // talk / buy range, seconds standing there to buy
+    after: 6, glow: 8,                                      // seconds before he packs up once sold; lantern sparks / s
+    gem: 0.6, tierUp: 1,                                    // chance he sells a gem (else crystals), its tier above the wisp's
+    mats: { crystal: [4, 8], core: [0, 1] },
+    price: { gem: 2.2, mats: 1.6 },                         // × QUEST_REWARD gold at the player's level
+  },
+  // Kabut Sunyi: a quiet fog rolls in round the player for a while; nothing else (mood only)
+  mist: { time: 75, ease: 0.35, puffs: 3 },               // seconds, how fast it thickens / clears, drifting wisps / s
+  caravan: { len: 1800, gold: 1.5 }, // a short escort along the nearest road; purse × QUEST_REWARD gold
   raid: { time: 40, waves: [[0, 4], [13, 6], [26, 8]], gold: 2, hp: 0.7 }, // a short defence; barricade HP × DEFEND.hp
   meteor: {
     time: 22, every: 0.9, r: 380, near: 400,   // seconds, between falls, area radius, start distance

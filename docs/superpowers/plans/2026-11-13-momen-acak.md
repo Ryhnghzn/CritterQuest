@@ -21,11 +21,11 @@ Kerja per bagian; berhenti untuk cek manual pemilik tiap bagian, commit setelah 
 | Hujan Meteor | kapan saja | 0,8 | bahaya + hadiah (lama) |
 | **Cahaya Aneh** | sore, malam | 1 | misteri: kejar → hadiah 70% / jebakan 30% |
 | **Raksasa Pengembara** | kapan saja, malam ×3 | 0,25 | bos langka, boleh dilawan/dihindari; jeda 15 menit |
-| Pedagang Kelana (B) | malam | 0,6 | pedagang 1–2 barang langka |
-| Kabut Sunyi (B) | pagi, sore | 0,5 | suasana saja |
+| **Pedagang Kelana** | malam | 0,6 | satu barang langka; berdiri di dekatnya = beli; jeda 10 menit |
+| **Kabut Sunyi** | pagi, sore | 0,5 | suasana saja |
 
 ## Bagian
 
 - [x] **A. Kerangka + 2 peristiwa:** syarat waktu & bobot per jenis (`game.phase` dari `main.js`), jenis diam + "terlihat" (peta & tanda baru muncul saat dekat), waktu habis per jenis, jeda per jenis; **Cahaya Aneh** dan **Raksasa Pengembara**; bunyi sintetis `rumble`/`glint`; perbaiki guncangan `'small'` → `'light'`; perbaiki label 3D yang membaca `who.x` saat Hujan Meteor berjalan (tidak ada npc/altar); `spawnGiant` & `treasureLoot` dipisah dari penjaga harta dan dipakai bersama; tes di `run/questev.test.js`.
-- [ ] **B. Pedagang Kelana + Kabut Sunyi.**
+- [x] **B. Pedagang Kelana + Kabut Sunyi:** Pedagang Kelana (malam, jeda 10 menit): lentera + kartu NPC, satu tawaran (permata atau kristal/inti), berdiri 2,5 detik di dekatnya = membeli, pergi = menolak, tanpa layar toko; koin lewat `run.spent` (dipotong di `meta/world.js` `applyField`, tugas koin tidak berkurang), dompet `game.wallet` dari `main.js`. Kabut Sunyi (pagi/sore): `run.mist` 0..1 menebalkan kabut 3D di `render3d/field.js` `tint` + gumpalan asap pool, 75 detik. Tombol cheat; tes di `run/questev.test.js`.
 - Tidak dikerjakan: rantai peristiwa (lebih cocok sebagai side quest biasa di sistem quest yang sudah ada), menyimpan peristiwa di save.
