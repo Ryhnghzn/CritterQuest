@@ -29,7 +29,7 @@ import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods }
 import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
-import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor, shadeDown, sarcoDown, guardCut, ventMul, crustHit } from './enemies.js';
+import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor, shadeDown, sarcoDown, podDown, guardCut, ventMul, crustHit } from './enemies.js';
 import { affixStep, affixHit, affixDeath } from './affix.js';
 import { reflectShot, foeStep, twinDown, splitDeath } from './foes.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
@@ -626,6 +626,7 @@ export class Game {
   }
 
   killEnemy(e) {
+    if (e.ai === 'pod') { podDown(this, e); return; } // a Jamur Spora: no loot either
     if (e.ai === 'sarco') { sarcoDown(this, e); return; } // a Penjaga Sarkofagus: no loot either
     if (e.ai === 'shade') { shadeDown(this, e); return; } // a Bayang Maw: no loot, no kill counted (plan "Bos Berkesan")
     const s0 = this.shots.length, h0 = this.hazards.length;

@@ -239,7 +239,7 @@ const SKIN_EN = {
 };
 
 const ENEMY_EN = {
-  'Sang Gerhana': 'The Eclipse', 'Lendir Hampa': 'Void Slime', 'Kelelawar Gerhana': 'Eclipse Bat', 'Katak Hampa': 'Void Frog', 'Golem Gerhana': 'Eclipse Golem', 'Hantu Gerhana': 'Eclipse Wraith', 'Bayang Maw': 'Maw Shade', 'Penjaga Sarkofagus': 'Sarcophagus Guard',
+  'Sang Gerhana': 'The Eclipse', 'Lendir Hampa': 'Void Slime', 'Kelelawar Gerhana': 'Eclipse Bat', 'Katak Hampa': 'Void Frog', 'Golem Gerhana': 'Eclipse Golem', 'Hantu Gerhana': 'Eclipse Wraith', 'Bayang Maw': 'Maw Shade', 'Penjaga Sarkofagus': 'Sarcophagus Guard', 'Jamur Spora': 'Spore Pod',
   Lendir: 'Ooze', Kelelawar: 'Bat', Golem: 'Golem', 'Lendir Kecil': 'Oozeling', 'Katak Ludah': 'Spitting Toad', 'Babi Batu': 'Stone Boar',
   'Dukun Tengkorak': 'Skull Shaman', 'Peri Lumut': 'Moss Wisp', 'Jamur Bom': 'Bomb Shroom', 'Kura Baja': 'Iron Tortoise',
   'Bayangan Diri': 'Shadow Self', 'Raja Maw': 'King Maw', 'Golem Kristal': 'Crystal Golem', 'Ratu Spora': 'Spore Queen', 'Raja Lava': 'Lava King',

@@ -154,6 +154,8 @@ export const ENEMIES = {
   // Bayang Maw (plan "Bos Berkesan" A): a shadow of Raja Maw in its Bayang Kembar; stands, breaks, or
   // fires its ring and fades. No touch damage, no loot, not in the bestiary.
   mawshade: { name: 'Bayang Maw', hp: 1, speed: 0, dmg: 0, r: 16, xp: 0, sprite: 'mawshade', score: 0, ai: 'shade' },
+  // Jamur Spora (plan "Bos Berkesan" E): a swelling mushroom of Ratu Spora's Ladang Jamur; break it before it bursts
+  sporepod: { name: 'Jamur Spora', hp: 1, speed: 0, dmg: 0, r: 14, xp: 0, sprite: 'sporepod', score: 0, ai: 'pod' },
   // Penjaga Sarkofagus (plan "Bos Berkesan" B): raised by Raja Mumi's phase 2; stands still and shields it
   tombguard: { name: 'Penjaga Sarkofagus', hp: 1, speed: 0, dmg: 0, r: 20, xp: 0, sprite: 'tombguard', score: 0, ai: 'sarco' },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
@@ -226,7 +228,12 @@ export const ENEMIES = {
       { at: 1, patterns: ['shrooms', 'cloud', 'spiral', 'summon'] },
       { at: 0.5, name: 'MEKAR!', patterns: ['pools', 'shrooms', 'cloud', 'spiral', 'shrooms'] },
     ],
-    shrooms: { count: 5, near: [60, 200], r: 44, fuse: 2.6, dmg: 26, onHit: { poison: [0.35, 3] } },
+    tell: { ring: 0.6, spiral: 0.7, summon: 0.6 }, noRepeat: true,
+    shrooms: { count: 5, near: [60, 200], r: 44, fuse: 2.6, dmg: 26, onHit: { poison: [0.35, 3] },
+      // plan "Bos Berkesan" E: each mushroom is a pod to break (hp × the queen's max HP) before it bursts. Broken
+      // within `near` of the queen its spores turn on her (hurt × max HP, a short stun); in phase 2 it soaks up
+      // the poison pools within `clear`.
+      pod: { hp: 0.006, near: 160, hurt: 0.025, stun: { time: 1.4, taken: 0.3 }, clear: 130 } },
     cloud: { r: 70, life: 6, dmg: 6, tick: 0.5, follow: 42, onHit: { poison: [0.3, 2] } },
     pools: { count: 3, max: 6, near: [120, 260], r: 80, life: 30, dmg: 7, tick: 0.5, onHit: { poison: [0.3, 2] } },
   },

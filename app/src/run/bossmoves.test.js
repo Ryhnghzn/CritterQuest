@@ -347,3 +347,44 @@ describe('Golem Kristal: kulit kristal', () => {
     expect(b.crust).toBe(0);
   });
 });
+
+// plan "Bos Berkesan" E
+describe('Ratu Spora: jamur bisa dipecahkan', () => {
+  const S = ENEMIES.sporeboss.shrooms;
+  const pods = (g) => g.enemies.filter((e) => e.type === 'sporepod');
+  it('tiap jamur adalah makhluk; dipecahkan → tidak meledak, tanpa hadiah', () => {
+    const { g, b } = move('sporeboss', 'shrooms');
+    g.px = -600; step(g);
+    const ps = pods(g);
+    expect(ps.length).toBe(S.count);
+    expect(ps[0].maxHp).toBeCloseTo(b.maxHp * S.pod.hp);
+    const hp0 = g.stats.hp, kills = g.kills;
+    for (const p of ps) { g.px = p.x; g.py = p.y; p.hp = 0; step(g); }
+    step(g, secs(S.fuse) + 2);
+    expect(g.stats.hp).toBe(hp0); // none burst on the player standing on them
+    expect(g.kills).toBe(kills);
+    expect(b.tired || 0).toBe(0); // far from the queen
+  });
+  it('dipecahkan di dekat Ratu → sporanya melukai Ratu & membuatnya lelah', () => {
+    const { g, b } = move('sporeboss', 'shrooms');
+    g.px = 0; step(g);
+    const [p] = pods(g); p.x = b.x + 40; p.y = b.y; p.mark.x = p.x; p.mark.y = p.y;
+    const hp = b.hp; p.hp = 0; step(g);
+    expect(hp - b.hp).toBeCloseTo(b.maxHp * S.pod.hurt, 0);
+    expect(b.tired).toBeGreaterThan(0);
+  });
+  it('yang tidak dipecahkan meledak seperti dulu, lalu hilang', () => {
+    const { g } = move('sporeboss', 'shrooms');
+    g.god = true; step(g);
+    step(g, secs(S.fuse) + 30);
+    expect(pods(g).length).toBe(0);
+  });
+  it('fase 2: jamur yang pecah menyerap kolam racun di dekatnya', () => {
+    const { g, b } = move('sporeboss', 'shrooms');
+    b.phase = 1; b.hp = b.maxHp * 0.4; g.px = -600; step(g);
+    const [p] = pods(g);
+    g.hazards.push({ kind: 'zone', pool: true, x: p.x + 50, y: p.y, r: 80, t: 30, max: 30, dmg: 7, tick: 0.5, tk: 0, follow: 0, by: 'sporeboss' });
+    p.hp = 0; step(g, 2);
+    expect(g.hazards.some((h) => h.pool)).toBe(false);
+  });
+});

@@ -53,6 +53,7 @@ export function aiStep(run, e, dt) {
     case 'twin': return twin(run, e, b);
     case 'shade': return shade(run, e, dt);
     case 'sarco': return sarco(run, e);
+    case 'pod': return pod(run, e, dt);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }
@@ -369,7 +370,9 @@ export function stepPattern(run, e, b0, dt, enraged) {
     const s = b.shrooms;
     for (let i = 0; i < s.count + (enraged ? 2 : 0); i++) {
       const a = rand() * TAU, d = s.near[0] + rand() * (s.near[1] - s.near[0]);
-      run.hazards.push({ kind: 'circle', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, onHit: s.onHit, by: e.type, look: s.look });
+      const h = { kind: 'circle', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, onHit: s.onHit, by: e.type, look: s.look };
+      run.hazards.push(h);
+      if (own && s.pod) raisePod(run, e, h, s); // plan "Bos Berkesan" E
     }
     done();
   } else if (p.id === 'cloud') { // a slow poison cloud that follows the player
@@ -498,6 +501,34 @@ export function crustHit(run, e, dmg, h, heavy) {
     run.addShake?.('heavy');
   }
   return k === Infinity ? dmg : dmg * (1 - soak / into);
+}
+
+// Jamur Spora (plan "Bos Berkesan" E): a mushroom of Ladang Jamur made breakable. Broken in time, its
+// burst is cancelled; near the queen its spores turn on her; in phase 2 it soaks up poison pools nearby.
+function raisePod(run, e, h, s) {
+  const p = run.spawnEnemy('sporepod');
+  p.x = h.x; p.y = h.y; p.hp = p.maxHp = e.maxHp * s.pod.hp; p.dmg = 0;
+  p.podOf = e; p.mark = h; p.life = s.fuse + 0.1; p.gap = e.gap;
+}
+function pod(run, e, dt) {
+  if ((e.life -= dt) <= 0 || !(e.podOf?.hp > 0) || !run.enemies.includes(e.podOf)) { e.hp = 0; e.faded = true; } // burst on its own, or its queen is gone
+  return { vx: 0, vy: 0 };
+}
+export function podDown(run, e) {
+  if (e.faded) return; // the circle under it bursts as before (or its queen fell)
+  const q = e.podOf, c = ENEMIES[q.type].shrooms.pod;
+  e.mark.t = 0; e.mark.dmg = 0; // no burst
+  run.vfx?.burst('smoke', e.x, e.y, ['#b7ff6a', '#6a8a2a'], { n: 8 });
+  run.vfx?.ring(e.x, e.y, { r0: 6, r1: 50, life: 0.3, color: '#b7ff6a', width: 3 });
+  sfx.shadeBreak();
+  if ((q.phase || 0) > 0) { // MEKAR!: it soaks up the poison pools round it
+    for (const h of run.hazards) if (h.pool && h.by === q.type && (h.x - e.x) ** 2 + (h.y - e.y) ** 2 < (c.clear + h.r) ** 2) { h.t = 0; h.dmg = 0; run.vfx?.burst('smoke', h.x, h.y, ['#b7ff6a', '#3a5a1a'], { n: 6 }); }
+  }
+  if (q.hp > 0 && !(q.tired > 0) && (q.x - e.x) ** 2 + (q.y - e.y) ** 2 < (c.near + q.r) ** 2) { // once per opening, not per mushroom
+    q.hp -= q.maxHp * c.hurt; q.flash = 0.2;
+    run.vfx?.burst('smoke', q.x, q.y, ['#b7ff6a', '#d98aff'], { n: 10 });
+    tire(run, q, c.stun, t('SPORA BERBALIK!'));
+  }
 }
 
 // Raja Lava cools down after its meteors (plan "Bos Berkesan" C): it stands with its back glowing —
