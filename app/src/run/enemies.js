@@ -262,7 +262,7 @@ function boss(run, e, b, dt) {
     e.pat = { id, t: 0, n: 0, fireT: 0, a0: rand() * TAU, tell: b.tell?.[id] || 0 };
     if (e.pat.tell) { tellStart(run, e, b, id); return { vx: 0, vy: 0 }; } // its own sound instead of the shared roar
     if (id === 'echo') { // one attack of a dungeon boss, with its own numbers and colours
-      const from = b.echo[Math.floor(rand() * b.echo.length)], cfg = ENEMIES[from];
+      const from = b.echoInOrder ? b.echo[(e.echoI = (e.echoI ?? -1) + 1) % b.echo.length] : b.echo[Math.floor(rand() * b.echo.length)], cfg = ENEMIES[from];
       const sig = cfg.signature || ['ring', 'spiral', 'slam']; // its own moves (spec §41.2)
       e.pat.id = sig[Math.floor(rand() * sig.length)];
       e.pat.cfg = cfg; e.pat.echo = from;
@@ -314,7 +314,7 @@ export function stepPattern(run, e, b0, dt, enraged) {
     const s = b.hole;
     for (let i = 0; i < s.count; i++) {
       const a = rand() * TAU, d = 90 + rand() * 120;
-      run.hazards.push({ kind: 'hole', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, pull: s.pull, by: e.type });
+      run.hazards.push({ kind: 'hole', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, pull: s.pull, by: e.type, self: own && s.stun ? e : null });
     }
     done();
   } else if (p.id === 'gulp') { // Raja Maw (spec §41.2): a pull toward its open mouth, then the bite
@@ -503,6 +503,29 @@ export function crustHit(run, e, dmg, h, heavy) {
   return k === Infinity ? dmg : dmg * (1 - soak / into);
 }
 
+// Sang Gerhana's black holes (plan "Bos Berkesan" F): they drag its own kind in as well; collapsing they
+// tear the small ones apart and, if it got caught, swallow Sang Gerhana itself for a moment.
+function holeDrag(run, h, dt) {
+  const c = ENEMIES[h.self.type].hole;
+  for (const o of run.enemies) {
+    if (o.hp <= 0 || o.ai === 'shade' || o.ai === 'pod' || o.ai === 'sarco') continue;
+    const dx = h.x - o.x, dy = h.y - o.y, d = Math.hypot(dx, dy) || 1;
+    if (d > h.r * 3 || d < 4) continue;
+    const k = o === h.self ? c.self : o.boss ? 0 : 1;
+    o.x += (dx / d) * h.pull * k * dt; o.y += (dy / d) * h.pull * k * dt;
+  }
+}
+function holeTear(run, h) {
+  const me = h.self, c = ENEMIES[me.type].hole;
+  for (const o of run.enemies) {
+    if (o.hp <= 0 || (o.x - h.x) ** 2 + (o.y - h.y) ** 2 > (h.r * 0.6 + o.r) ** 2) continue;
+    if (o === me) {
+      me.hp -= me.maxHp * c.stun.hurt; me.flash = 0.2;
+      tire(run, me, c.stun, t('TERTELAN KEHAMPAAN!'));
+    } else if (!o.boss) { o.hp -= o.maxHp * c.foe; o.flash = 0.15; }
+  }
+}
+
 // Jamur Spora (plan "Bos Berkesan" E): a mushroom of Ladang Jamur made breakable. Broken in time, its
 // burst is cancelled; near the queen its spores turn on her; in phase 2 it soaks up poison pools nearby.
 function raisePod(run, e, h, s) {
@@ -647,6 +670,7 @@ export function stepHazards(run, dt) {
     if (h.kind === 'hole' && h.t > 0) { // drags the player in
       const dx = h.x - run.px, dy = h.y - run.py, d = Math.hypot(dx, dy) || 1;
       if (d < h.r * 3) { run.px += (dx / d) * h.pull * dt; run.py += (dy / d) * h.pull * dt; }
+      if (h.self) holeDrag(run, h, dt); // Sang Gerhana's own kind too (plan "Bos Berkesan" F)
     }
     if (h.t > 0) continue;
     if (h.kind === 'line' && h.dmg > 0) {
@@ -655,6 +679,7 @@ export function stepHazards(run, dt) {
       run.pulses.push({ x: h.x2, y: h.y2, r: 30, t: 0.25, max: 0.25, color: '199,155,255' });
     }
     if (h.kind === 'hole' && h.dmg > 0) {
+      if (h.self) holeTear(run, h);
       const landed = (run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r * 0.6) ** 2 && run.hurtPlayer(h.dmg, h.onHit, h.by, h);
       if (!landed && h.miss?.hp > 0 && run.state === 1) tire(run, h.miss, ENEMIES[h.miss.type].gulp.choke, t('TERSEDAK!')); // Raja Maw bit air (plan "Bos Berkesan")
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.4, max: 0.4, color: '150,90,255' });

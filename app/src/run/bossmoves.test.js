@@ -388,3 +388,38 @@ describe('Ratu Spora: jamur bisa dipecahkan', () => {
     expect(g.hazards.some((h) => h.pool)).toBe(false);
   });
 });
+
+// plan "Bos Berkesan" F
+describe('Sang Gerhana: gema berurutan & lubang hitam', () => {
+  const H = ENEMIES.eclipseboss.hole;
+  it('gema datang berurutan, satu dari tiap bos', () => {
+    const g = start(), b = g.spawnEnemy('eclipseboss');
+    b.x = 200; b.speed = 0; b.phase = 1; b.hp = b.maxHp * 0.6;
+    const seen = [];
+    for (let i = 0; i < 400 && seen.length < 6; i++) { b.pat = null; b.actT = 0; b.mode = 'walk'; step(g); if (b.pat?.echo) seen.push(b.pat.echo); }
+    expect(seen.slice(0, 5)).toEqual(ENEMIES.eclipseboss.echo);
+    expect(seen[5]).toBe(ENEMIES.eclipseboss.echo[0]);
+  });
+  it('lubang hitamnya menyeret & mencabik anak buahnya; menelan dirinya bila tertangkap', () => {
+    const { g, b } = move('eclipseboss', 'hole');
+    b.phase = 2; b.hp = b.maxHp * 0.3; g.god = true;
+    step(g);
+    const [h] = g.hazards.filter((z) => z.kind === 'hole');
+    const w = g.spawnEnemy('wraith'); w.x = h.x + h.r * 1.5; w.y = h.y; w.speed = 0;
+    const d0 = Math.hypot(w.x - h.x, w.y - h.y); step(g, 20);
+    expect(Math.hypot(w.x - h.x, w.y - h.y)).toBeLessThan(d0);
+    w.x = h.x; w.y = h.y; b.x = h.x + 10; b.y = h.y; const hp = b.hp, whp = w.hp;
+    step(g, secs(H.fuse) + 2);
+    expect(w.hp < whp || !g.enemies.includes(w)).toBe(true);
+    expect(b.tired).toBeGreaterThan(0);
+    expect(hp - b.hp).toBeGreaterThan(b.maxHp * H.stun.hurt * 0.9);
+  });
+  it('Bayangan Diri: ancang-ancang singkat sebelum cincin', () => {
+    const g = start(), b = g.spawnEnemy('shadowself');
+    b.x = 200; b.speed = 0;
+    let picked = null;
+    for (let i = 0; i < 300 && picked !== 'ring'; i++) { b.pat = null; b.actT = 0; b.mode = 'walk'; g.shots.length = 0; step(g); picked = b.pat?.id; }
+    expect(picked).toBe('ring'); expect(g.shots.length).toBe(0);
+    step(g, secs(ENEMIES.shadowself.tell.ring) + 2); expect(g.shots.length).toBeGreaterThan(0);
+  });
+});

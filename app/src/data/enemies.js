@@ -280,7 +280,13 @@ export const ENEMIES = {
     spiral: { arms: 4, time: 2.6, every: 0.1, speed: 160, dmg: 13, turn: 2.6, r: 7, color: '#ffe08a' },
     slam: { count: 5, gap: 0.35, fuse: 0.8, radius: 85, dmg: 34 },
     beam: { count: 4, sweeps: 3, gap: 0.55, fuse: 0.75, len: 520, w: 34, turn: 0.4, dmg: 32 },
-    hole: { count: 2, r: 110, fuse: 2.4, pull: 120, dmg: 36 },
+    hole: { count: 2, r: 110, fuse: 2.4, pull: 120, dmg: 36,
+      // plan "Bos Berkesan" F: its holes drag its own kind too (the boss at `self` × pull); collapsing they
+      // tear the small ones (foe × their max HP) and, if it is caught, swallow it: hurt × max HP and a stun
+      foe: 0.6, self: 0.35, stun: { time: 2.2, taken: 0.3, hurt: 0.03 } },
+    // its echoes come in this order (one of each boss in turn), not at random
+    echoInOrder: true,
+    tell: { ring: 0.55, spiral: 0.65, summon: 0.55 },
     windup: 0.75, dash: { speed: 500, time: 0.5 }, rest: 0.5,
     summon: { type: 'wraith', count: 2, max: 4 },
   },
@@ -324,6 +330,7 @@ export const ENEMIES = {
     spiral: { arms: 3, time: 2.2, every: 0.1, speed: 170, dmg: 12, turn: 2.4, r: 6, color: '#c79bff' },
     slam: { count: 4, gap: 0.35, fuse: 0.75, radius: 75, dmg: 30 },
     clones: { count: 3, dist: 170, warn: 0.7, ring: { count: 12, speed: 160, dmg: 12, r: 6, color: '#b07cff' } },
+    tell: { ring: 0.45, spiral: 0.5 }, // plan "Bos Berkesan": short wind-ups, it stays relentless
     windup: 0.5, dash: { speed: 600, time: 0.45 }, rest: 0.35,
   },
 };
