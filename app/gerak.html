@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Musuh Bergerak</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a24a;--gold-d:#6e5426;--gold-l:#e8cf8e;--ink:#e8dcc4;--dim:#9a8f80}
+*{box-sizing:border-box}
+body{margin:0;background:#08060a;color:var(--ink);font-family:'Barlow',system-ui,sans-serif}
+main{max-width:1400px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 22px 'Cinzel',serif;color:var(--gold-l);margin:0 0 4px;letter-spacing:1px}
+h2{font:700 16px 'Cinzel',serif;color:var(--gold-l);margin:18px 0 6px;letter-spacing:1px}
+.intro{color:var(--dim);margin:0 0 12px;max-width:920px;line-height:1.5}
+.bar{display:flex;gap:16px;align-items:center;margin:0 0 6px;color:var(--dim);font-size:14px}
+.scroll{overflow-x:auto}
+.row{display:grid;grid-template-columns:repeat(7,minmax(140px,1fr));gap:8px;min-width:1000px}
+figure{margin:0}
+figcaption{font-size:13px;color:var(--dim);margin-top:4px;text-align:center}
+figure.now figcaption{color:#c98a6a}
+canvas{display:block;width:100%;background:#0b0810;border:1px solid var(--gold-d);image-rendering:pixelated}
+figure.now canvas{border-color:#6a3a2a}
+</style>
+</head>
+<body>
+<main>
+  <h1>Musuh Bergerak — contoh kit anime</h1>
+  <p class="intro">Contoh (belum masuk game). Kolom pertama: musuh seperti di game sekarang — satu gambar yang dilenturkan. Kolom lain: gambar yang sama, tapi tiap bagian (kaki, kepala, rahang, lengan, ekor) digerakkan: diam, jalan, ancang-ancang, serang, kena pukul, mati. Diputar 12 gambar per detik, seperti warga kota di game, dengan filter pixel yang sama.</p>
+  <div class="bar"><label><input type="checkbox" id="pixel" checked> Filter pixel (seperti di game)</label><label><input type="checkbox" id="fast"> Halus (60 fps)</label></div>
+  <div id="list"></div>
+</main>
+<script type="module" src="./gerak/main.js"></script>
+</body>
+</html>
