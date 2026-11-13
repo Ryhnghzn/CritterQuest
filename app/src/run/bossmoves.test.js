@@ -279,3 +279,36 @@ describe('Raja Mumi: kutukan berbalik & sarkofagus', () => {
     expect(b.tired || 0).toBe(0);
   });
 });
+
+// plan "Bos Berkesan" C
+describe('Raja Lava: kepanasan', () => {
+  const M = ENEMIES.lavaboss.meteor;
+  const volley = (g) => step(g, secs((M.count + 2) * M.gap + 0.5));
+  it('setelah hujan meteor ia diam; dari belakang lebih sakit, dari depan biasa', () => {
+    const { g, b } = move('lavaboss', 'meteor');
+    g.px = 0; g.py = 0; g.god = true;
+    volley(g);
+    expect(b.vent).toBeTruthy(); expect(b.tired).toBeGreaterThan(0);
+    const front = b.hp; g.damageEnemy({ mult: 1, fx: 'slash' }, b); const f = front - b.hp;
+    g.px = b.x + 120; g.py = b.y; // round to its back (it faced the player at (0, 0))
+    const back = b.hp; g.damageEnemy({ mult: 1, fx: 'slash' }, b); const k = (back - b.hp) / f;
+    expect(k).toBeCloseTo(M.vent.back, 5);
+    step(g, secs(M.vent.time) + 2);
+    expect(b.vent).toBe(null);
+  });
+  it('fase 2: kolam lava di dekatnya membatu saat ia mendinginkan diri', () => {
+    const { g, b } = move('lavaboss', 'meteor');
+    b.phase = 1; b.hp = b.maxHp * 0.4; g.god = true;
+    g.hazards.push({ kind: 'zone', pool: true, x: b.x + 60, y: 0, r: 70, t: 30, max: 30, dmg: 8, tick: 0.5, tk: 0, follow: 0, by: 'lavaboss' });
+    g.hazards.push({ kind: 'zone', pool: true, x: b.x + 2000, y: 0, r: 70, t: 30, max: 30, dmg: 8, tick: 0.5, tk: 0, follow: 0, by: 'lavaboss' });
+    volley(g); step(g, 2);
+    expect(g.hazards.filter((h) => h.pool).length).toBe(1);
+  });
+  it('gema Meteor milik Sang Gerhana tidak membuatnya kepanasan', () => {
+    const g = start(), b = g.spawnEnemy('eclipseboss');
+    b.x = 200; b.speed = 0; b.actT = 99; g.god = true;
+    b.pat = { id: 'meteor', t: 0, n: 0, fireT: 0, a0: 0, cfg: ENEMIES.lavaboss };
+    volley(g);
+    expect(b.vent || null).toBe(null);
+  });
+});

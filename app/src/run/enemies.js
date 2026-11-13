@@ -223,7 +223,7 @@ function boss(run, e, b, dt) {
   if (b.phases) {
     const ph = b.phases.reduce((n, p, i) => (e.hp <= e.maxHp * p.at ? i : n), 0);
     if (ph !== (e.phase || 0)) {
-      e.phase = ph; e.pat = null; e.mode = 'walk'; e.actT = 1.2; e.tired = 0;
+      e.phase = ph; e.pat = null; e.mode = 'walk'; e.actT = 1.2; e.tired = 0; e.vent = null;
       run.dark = !!b.phases[ph].dark;
       run.showBanner?.(b.phases[ph].name);
       run.addShake?.('big');
@@ -416,7 +416,7 @@ export function stepPattern(run, e, b0, dt, enraged) {
       const a = rand() * TAU, d = rand() * s.spread;
       run.hazards.push({ kind: 'circle', x: run.px + Math.cos(a) * d, y: run.py + Math.sin(a) * d, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, by: e.type, look: s.look });
       p.n++; p.fireT = s.gap;
-    } else if (p.n >= n && p.fireT <= 0) done();
+    } else if (p.n >= n && p.fireT <= 0) { done(); if (own && s.vent) vent(run, e, s.vent); }
   } else done();
 }
 
@@ -456,11 +456,40 @@ export function tire(run, e, c, text) {
 function tiredStep(run, e, dt) {
   e.tired -= dt;
   const v = run.vfx;
+  if (e.vent) { // Raja Lava cooling: steam and sparks off its glowing back
+    if (v) for (let i = Math.floor(14 * v.mul * dt + v.rand()); i > 0; i--) {
+      const a = e.vent.a + v.range(-0.6, 0.6), x = e.x + Math.cos(a) * e.r * 0.8, y = e.y + Math.sin(a) * e.r * 0.5;
+      v.spawn(v.rand() < 0.5 ? 'smoke' : 'ember', x, y - e.r, Math.cos(a) * 20, -v.range(40, 80), v.range(0.5, 0.9), v.range(3, 6), ['#ffb36a', '#ff6a2a', '#c8c0b8'], 0.96, -20);
+    }
+    if (e.tired <= 0) { e.tired = 0; e.vent = null; e.actT = Math.max(e.actT, 0.6); }
+    return;
+  }
   if (v) for (let i = Math.floor(BOSS_TIRED.stars * v.mul * dt + v.rand()); i > 0; i--) { // stars round its head
     const a = v.rand() * TAU;
     v.spawn('star', e.x + Math.cos(a) * e.r * 0.7, e.y - e.r * 1.6 + Math.sin(a) * e.r * 0.25, -Math.sin(a) * 40, Math.cos(a) * 12, v.range(0.4, 0.6), v.range(2.4, 3.4), BOSS_TIRED.color, 0.97);
   }
   if (e.tired <= 0) { e.tired = 0; e.vulnT = 0; e.actT = Math.max(e.actT, 0.6); }
+}
+
+// Raja Lava cools down after its meteors (plan "Bos Berkesan" C): it stands with its back glowing —
+// the side away from where the player stood. Hits from behind hurt more (run.js damageEnemy asks ventMul).
+function vent(run, e, c) {
+  e.pat = null; e.mode = 'walk'; e.tired = c.time;
+  e.vent = { a: Math.atan2(e.y - run.py, e.x - run.px), back: c.back, half: (c.arc * Math.PI) / 360 };
+  e.actT = Math.max(e.actT, 0.4);
+  run.addFloater?.(e.x, e.y - e.r - 40, t('KEPANASAN! Serang punggungnya!'), '#ffb36a');
+  sfx.sizzle();
+  if ((e.phase || 0) > 0) { // phase 2: its lava pools nearby turn to stone
+    let n = 0;
+    for (const h of run.hazards) if (h.pool && h.by === e.type && (h.x - e.x) ** 2 + (h.y - e.y) ** 2 < c.cool * c.cool) { h.t = 0; h.dmg = 0; n++; run.vfx?.burst('smoke', h.x, h.y, ['#8a8078', '#5a524c'], { n: 8 }); }
+    if (n) run.addFloater?.(e.x, e.y - e.r - 70, t('Lava membatu'), '#c8c0b8');
+  }
+}
+// × damage a cooling Raja Lava takes from where the player stands (1 = not from behind)
+export function ventMul(run, e) {
+  if (!e.vent) return 1;
+  const a = Math.atan2(run.py - e.y, run.px - e.x), d = Math.abs(Math.atan2(Math.sin(a - e.vent.a), Math.cos(a - e.vent.a)));
+  return d <= e.vent.half ? e.vent.back : 1;
 }
 
 // Bayang Maw: a shadow raised by Bayang Kembar. Its HP is a share of its maker's; it never moves.

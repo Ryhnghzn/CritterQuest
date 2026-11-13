@@ -29,7 +29,7 @@ import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods }
 import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
-import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor, shadeDown, sarcoDown, guardCut } from './enemies.js';
+import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor, shadeDown, sarcoDown, guardCut, ventMul } from './enemies.js';
 import { affixStep, affixHit, affixDeath } from './affix.js';
 import { reflectShot, foeStep, twinDown, splitDeath } from './foes.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
@@ -477,6 +477,7 @@ export class Game {
     runeFeed(this, e, h);                                     // Bom Waktu grows
     if (h.vuln) { e.vulnT = VULN_TIME; e.vulnK = h.vuln; }          // Kabut Racun L5 marks the foes inside
     if (e.vulnT > 0) dmg *= 1 + e.vulnK;
+    if (e.vent) dmg *= ventMul(this, e); // Raja Lava cooling: its back (plan "Bos Berkesan" C)
     if (e.guards) dmg *= guardCut(e); // Raja Mumi behind its sarcophagi (plan "Bos Berkesan" B)
     e.hp -= affixHit(this, e, dmg); // an elite's Berlapis shield soaks first (run/affix.js)
     if (h.execute && e.hp > 0 && !e.boss && !e.elite && e.hp < e.maxHp * h.execute) { e.hp = 0; executeFx(this, e); } // Kombo at max (spec §31.5, §31.8)

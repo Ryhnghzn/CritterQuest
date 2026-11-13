@@ -290,8 +290,13 @@ export const ENEMIES = {
       { at: 0.5, name: 'LANTAI MENDIDIH!', patterns: ['pools', 'eruption', 'meteor', 'meteor', 'spiral'] },
     ],
     eruption: { lines: 3, spread: 0.5, steps: 9, step: 34, r: 24, fuse: 0.7, gap: 0.12, dmg: 26, onHit: { burn: [0.3, 2.5] } },
-    meteor: { count: 3, r: 100, fuse: 1.4, gap: 0.5, spread: 40, dmg: 40 },
+    meteor: { count: 3, r: 100, fuse: 1.4, gap: 0.5, spread: 40, dmg: 40,
+      // plan "Bos Berkesan" C: after the volley it cools down: stands, its back (away from where the player
+      // stood) glows; hits while standing in that `arc` (degrees) deal × back. In phase 2 its lava pools
+      // within `cool` turn to stone.
+      vent: { time: 2.6, back: 1.6, arc: 140, cool: 280 } },
     pools: { count: 4, max: 6, near: [100, 240], r: 70, life: 40, dmg: 8, tick: 0.5, onHit: { burn: [0.3, 2] } },
+    tell: { ring: 0.6, summon: 0.6, spiral: 0.7 }, noRepeat: true,
   },
   // Bayangan Diri (spec §43.10): the Job Lanjutan trial — your own shadow, fast and relentless. Only in
   // the trial arena (data/dungeons.js TRIAL_DUNGEON); drawn as your hero in art/bosses/shadow.js.

@@ -95,6 +95,15 @@ export function foeMarks(g, game, t, { shells = true, enemies = true } = {}) {
       g.lineWidth = 2.5; g.strokeStyle = `rgba(${e.wardBy || '255,140,60'},${0.55 + 0.3 * Math.sin(t * 8)})`;
       g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.1, e.r * 0.42, 0, 0, TAU); g.stroke();
     }
+    if (e.vent && e.hp > 0) { // Raja Lava cooling (plan "Bos Berkesan" C): a glowing wedge on the ground behind it — stand here
+      const v = e.vent, k = 0.6 + 0.4 * Math.sin(t * 10), R = e.r * 4;
+      g.save(); g.translate(e.x, e.y + e.r * 0.6); g.scale(1, 0.62);
+      g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R, v.a - v.half, v.a + v.half); g.closePath();
+      const gr = g.createRadialGradient(0, 0, e.r * 0.5, 0, 0, R); gr.addColorStop(0, `rgba(255,170,80,${0.45 * k})`); gr.addColorStop(1, 'rgba(255,110,40,0)');
+      g.fillStyle = gr; g.fill();
+      g.lineWidth = 3; g.strokeStyle = `rgba(255,200,120,${0.7 * k})`; g.setLineDash([10, 8]); g.lineDashOffset = -t * 30; g.stroke(); g.setLineDash([]);
+      g.restore();
+    }
     if (e.ai === 'sarco' && e.hp > 0 && !e.faded && e.guardOf?.hp > 0) { // Penjaga Sarkofagus (plan "Bos Berkesan" B): a gold tether to its mummy, a shield ring under it
       const m = e.guardOf, fl = 0.7 + 0.3 * Math.sin(t * 9 + e.x);
       g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';

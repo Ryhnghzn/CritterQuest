@@ -33,4 +33,5 @@ Kerja per bagian; berhenti untuk cek manual pemilik tiap bagian, commit setelah 
   - Ancang-ancang & tanpa ulang beruntun.
   - Bench: bot memukul perisai dulu; rata-rata bos 83,9 dtk (sebelum 82,4). HP sarkofagus diturunkan 5% → 3% karena Mage (yang memang paling lambat) butuh 19 detik untuk memecahkannya.
   - Tes: `run/bossmoves.test.js` "Raja Mumi: kutukan berbalik & sarkofagus".
+- [x] **C. Raja Lava:** setelah Meteor mendinginkan diri 2,6 detik (`e.vent`): diam, punggung (sisi jauh dari pemain) ×1,6 damage dalam irisan 140° yang digambar di tanah (`render/foes.js`); fase 2: kolam lava dalam 280 membatu. Bench rata-rata 84,0 dtk.
 - Berikutnya (setelah prototipe disetujui): Raja Lava (Kepanasan), Golem Kristal (Kulit Kristal), Ratu Spora (jamur bisa dipukul), Sang Gerhana (gema berurutan), Bayangan Diri (meniru job).
