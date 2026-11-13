@@ -134,3 +134,24 @@ export function slimeAnim(g, c, p) {
 }
 
 export const FOE_ANIM = { wolf: wolfAnim, tank: golemAnim, slink: slimeAnim };
+
+// Baked frames (plan "hybrid-visual" bagian 6): what is painted once per monster kind into one sheet —
+// [state, frames] — and the pose of frame i of n. The game only shows one of them at a time.
+export const FRAME_PLAN = [['idle', 4], ['walk', 6], ['wind', 3], ['strike', 3], ['hurt', 2], ['die', 5]];
+export function framePose(state, i, n) {
+  switch (state) {
+    case 'idle': return { t: i * 0.4 };                                           // one breath over the 4 frames
+    case 'walk': return { t: i * 0.1, walk: (i / n) * Math.PI * 2, move: 1 };     // one full stride
+    case 'wind': return { wind: (i + 1) / n };
+    case 'strike': return { strike: (i + 1) / n };
+    case 'hurt': return { hurt: 1 - i / n };
+    default: return { die: (i + 1) / n };
+  }
+}
+// which of a state's n frames shows `elapsed` seconds into it: idle, walk and a bite in contact loop; a
+// wind-up, a flinch, a lunge and a death play once and hold their last frame
+export const LOOPED = new Set(['idle', 'walk', 'bite']);
+export function frameAt(state, elapsed, fps, n) {
+  const i = Math.max(0, Math.floor(elapsed * fps));
+  return LOOPED.has(state) ? i % n : Math.min(i, n - 1);
+}

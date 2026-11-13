@@ -30,6 +30,8 @@ import { MOUNT } from '../data/mounts.js';
 import { drawMajesticRidden, drawSummonRing, drawSummonBar } from '../art/mounts.js';
 import { ATTACK_POSE } from '../run/skills.js';
 import { Spell3D } from './spell3d.js';
+import { foeSheet, frameTex, showFrame } from './foeframes.js';
+import { frameAt } from '../art/foeanim.js';
 
 const DOLL_SCALE = 0.82, ATTACK_ANIM = 0.45;
 // lifted into 3D (the rest of the effects stay on the ground decal)
@@ -63,7 +65,9 @@ const HX = 58, HT = 100, HB = 14;
 export function billMat(map, self = LOOK.bill) {
   const m = new THREE.MeshLambertMaterial({ map, transparent: true, alphaTest: 0.04, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: self, side: THREE.DoubleSide });
   m.userData.bend = { value: 0 }; // a monster's lean (foeAnim): the top of the picture moves this share of its width
-  if (LOOK.rim || LOOK.foeAnim) lit(m);
+  m.userData.rimW = { value: new THREE.Vector2(LOOK.rim?.w || 0, LOOK.rim?.w || 0) }; // the rim's reach in the map's uv (a frame sheet: smaller)
+  m.userData.tint = { value: 0 }; m.userData.tintC = { value: new THREE.Color(1, 1, 1) }; // a struck flash / frozen blue (frame sheets)
+  if (LOOK.rim || LOOK.foeAnim || LOOK.foeFrames) lit(m);
   return m;
 }
 
@@ -74,11 +78,11 @@ export function billMat(map, self = LOOK.bill) {
 const RIM_FRAG = `#ifdef USE_MAP
 if ( uRimOn > 0.5 ) { // Ringan: skipped (stage.js setQuality)
   float aC = diffuseColor.a;
-  float aR = texture2D( map, vMapUv + vec2( uRimW * vFlip, 0.0 ) ).a;
-  float aL = texture2D( map, vMapUv - vec2( uRimW * vFlip, 0.0 ) ).a;
-  float aU = texture2D( map, vMapUv + vec2( 0.0, uRimW ) ).a;
+  float aR = texture2D( map, vMapUv + vec2( uRimW.x * vFlip, 0.0 ) ).a;
+  float aL = texture2D( map, vMapUv - vec2( uRimW.x * vFlip, 0.0 ) ).a;
+  float aU = texture2D( map, vMapUv + vec2( 0.0, uRimW.y ) ).a;
   float eR = aC * ( 1.0 - aR ), eL = aC * ( 1.0 - aL ), eU = aC * ( 1.0 - aU );
-  float side = ( vMapUv.x - 0.5 ) * 2.0 * vFlip;
+  float side = ( vU - 0.5 ) * 2.0 * vFlip; // vU: across the picture, whatever part of a sheet it shows
   vec3 rim = vec3( 0.0 ); float shade = 0.0;
   #if NUM_DIR_LIGHTS > 0
   for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
@@ -100,20 +104,22 @@ if ( uRimOn > 0.5 ) { // Ringan: skipped (stage.js setQuality)
   outgoingLight = outgoingLight * ( 1.0 + shade ) + rim * ( 0.4 + 0.6 * diffuseColor.rgb );
 }
 #endif
-#include <opaque_fragment>`;
+`;
+const TINT_FRAG = 'outgoingLight = mix( outgoingLight, uTintC, uTint );\n#include <opaque_fragment>';
 function lit(m) {
   const R = LOOK.rim, u = m.userData;
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uBend = u.bend;
-    sh.uniforms.uRimW = { value: R?.w || 0 }; sh.uniforms.uRimSun = { value: R?.sun || 0 };
+    sh.uniforms.uBend = u.bend; sh.uniforms.uTint = u.tint; sh.uniforms.uTintC = u.tintC;
+    sh.uniforms.uRimW = u.rimW; sh.uniforms.uRimSun = { value: R?.sun || 0 };
     sh.uniforms.uRimPoint = { value: R?.point || 0 }; sh.uniforms.uShade = { value: R?.shade || 0 }; sh.uniforms.uRimOn = BILL_U.uRimOn;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uBend;\nvarying float vFlip;')
+      .replace('#include <common>', '#include <common>\nuniform float uBend;\nvarying float vFlip;\nvarying float vU;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvU = uv.x;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed.x += uBend * ( position.y + 0.5 );')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvFlip = ( modelViewMatrix * vec4( 1.0, 0.0, 0.0, 0.0 ) ).x >= 0.0 ? 1.0 : -1.0;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uRimW;\nuniform float uRimSun;\nuniform float uRimPoint;\nuniform float uShade;\nuniform float uRimOn;\nvarying float vFlip;');
-    if (R) sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', RIM_FRAG);
+      .replace('#include <common>', '#include <common>\nuniform vec2 uRimW;\nuniform float uRimSun;\nuniform float uRimPoint;\nuniform float uShade;\nuniform float uRimOn;\nuniform float uTint;\nuniform vec3 uTintC;\nvarying float vFlip;\nvarying float vU;')
+      .replace('#include <opaque_fragment>', (R ? RIM_FRAG : '') + TINT_FRAG);
   };
   m.customProgramCacheKey = () => `bill|${R ? 1 : 0}`;
 }
@@ -371,33 +377,51 @@ export class Actors {
       let m = this.enemyMesh.get(e);
       if (!m) { m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), billMat(null)); m.renderOrder = 2; this.enemies.add(m); this.enemyMesh.set(e, m); }
       const warn = (e.mode === 'wind' || e.mode === 'fuse') && ((t * 14) | 0) % 2 === 0;
-      const key = warn || e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type;
-      const s = SPRITES[key] || SPRITES[e.type];
-      if (!s) { m.visible = false; continue; }
-      const tex = this.spriteTex(s);
-      if (m.material.map !== tex) { m.material.map = tex; m.material.emissiveMap = tex; m.material.needsUpdate = true; }
-      const k = e.r / (ENEMIES[e.type]?.r || e.r), squash = 1 + Math.sin(e.wob || 0) * 0.06;
+      const sheet = foeSheet(e.type); // a kind that really moves (bagian 6): one frame of its sheet
+      let ext;
+      if (sheet) {
+        if (m.userData.sheet !== sheet) {
+          const tx = frameTex(sheet);
+          m.material.map = tx; m.material.emissiveMap = tx; m.material.needsUpdate = true;
+          m.material.userData.rimW.value.set((LOOK.rim?.w || 0) * sheet.size / sheet.W, (LOOK.rim?.w || 0) * sheet.size / sheet.H);
+          m.userData.sheet = sheet; m.userData.tex = tx;
+        }
+        showFrame(m.userData.tex, sheet, this.foeFrame(e, t, sheet));
+        const u = m.material.userData; // the struck flash and the frozen tint, as the old Flash / Frozen pictures
+        if (warn || e.flash > 0) { u.tint.value = 0.75; u.tintC.value.setRGB(1, 1, 1); }
+        else if (e.frozen > 0) { u.tint.value = 0.55; u.tintC.value.setRGB(0.47, 0.8, 1); }
+        else u.tint.value = 0;
+        ext = sheet.ext;
+      } else {
+        const key = warn || e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type;
+        const s = SPRITES[key] || SPRITES[e.type];
+        if (!s) { m.visible = false; continue; }
+        const tex = this.spriteTex(s);
+        if (m.material.map !== tex) { m.material.map = tex; m.material.emissiveMap = tex; m.material.needsUpdate = true; }
+        ext = s.ext;
+      }
+      const k = e.r / (ENEMIES[e.type]?.r || e.r), squash = sheet ? 1 : 1 + Math.sin(e.wob || 0) * 0.06; // a sheet breathes in its own frames
       // faces the hero (or its dash), on screen, with the same paper turn as the hero (spec §38)
-      const yaw = this.stage.yaw, size = s.ext * 2 * k * S;
+      const yaw = this.stage.yaw, size = ext * 2 * k * S;
       let f = this.enemyFace.get(e);
       if (!f) { f = makeFacing(screenX(game.px - e.x, game.py - e.y, yaw) < 0 ? -1 : 1); this.enemyFace.set(e, f); }
       turnTo(f, e.mode === 'dash' ? screenX(e.dirX, e.dirY, yaw) : screenX(game.px - e.x, game.py - e.y, yaw), t);
       const turn = pose2d(f, t), rc = recoilOf(e), hs = 1 + rc.k * RECOIL.squash; // struck: pushed back and squashed (plan "Rasa Pukulan")
-      const body = LOOK.foeAnim ? this.foeBody(e, t, yaw, rc) : null, sq = body ? body.squash : 1;
+      const body = LOOK.foeAnim && !sheet ? this.foeBody(e, t, yaw, rc) : null, sq = body ? body.squash : 1; // a sheet moves its own body
       m.scale.set(size / squash * turn.w * hs * (2 - sq), size * squash / hs * sq, 1);
       m.position.set((e.x + rc.x) * S, (e.r * 0.9 * k + turn.hop + leapHeight(e)) * S, (e.y + rc.y + e.r * 0.75) * S); // leapHeight: Katak Rawa mid-jump
       stand(m, yaw);
       m.material.userData.bend.value = body ? body.lean * Math.sign(turn.w || 1) : 0; // the bend is in the picture's own frame: mirrored with it
       m.visible = true;
     }
-    for (const [e, b] of this.bossBill) if (!seen.has(e)) { this.enemies.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); b.tex.dispose(); this.bossBill.delete(e); }
     for (const [e, m] of this.enemyMesh) {
       if (seen.has(e)) continue;
       this.enemyMesh.delete(e);
-      if (LOOK.foeAnim && playing && e.hp <= 0) { (this.dying ||= []).push({ m, t0: t, dir: Math.sign(m.material.userData.bend.value || 1) }); continue; } // slain: falls and fades
-      this.enemies.remove(m); m.geometry.dispose(); m.material.dispose();
+      if ((LOOK.foeAnim || m.userData.sheet) && playing && e.hp <= 0) { (this.dying ||= []).push({ m, t0: t, dir: Math.sign(m.material.userData.bend.value || 1) }); continue; } // slain: falls and fades
+      this.dropFoe(m);
     }
     this.fallen(t);
+    for (const [e, b] of this.bossBill) if (!seen.has(e)) { this.enemies.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); b.tex.dispose(); this.bossBill.delete(e); }
   }
 
   // A one-picture monster's body (plan "hybrid-visual", LOOK.foeAnim): lean into its walk, rear back away
@@ -424,13 +448,45 @@ export class Actors {
     b.lean += (lean - b.lean) * k; b.sq += (sq - b.sq) * k;
     return { lean: b.lean, squash: b.sq };
   }
-  // the slain ones topple and fade, then are freed
+  // which frame of its sheet a monster shows now (bagian 6): its state from what it is doing, the frame from
+  // how long it has been in that state (art/foeanim.js frameAt)
+  foeFrame(e, t, sheet) {
+    const F = LOOK.foeFrames, map = (this.frames ||= new WeakMap());
+    let b = map.get(e);
+    if (!b) { b = { x: e.x, y: e.y, t, state: 'idle', t0: t, j: 0 }; map.set(e, b); }
+    const dt = Math.max(1e-3, t - b.t), sp = Math.hypot(e.x - b.x, e.y - b.y) / dt;
+    b.x = e.x; b.y = e.y; b.t = t;
+    if (e.frozen > 0) return b.j; // frozen: held mid-move
+    const near = e.dmg > 0 && (e.x - this.lastPx) ** 2 + (e.y - this.lastPy) ** 2 < (e.r + F.reach) ** 2;
+    const state = e.flash > 0 ? 'hurt'
+      : e.mode === 'wind' || e.mode === 'fuse' || e.pat?.tell > 0 ? 'wind'
+        : e.mode === 'dash' ? 'strike'
+          : near ? 'bite'
+            : sp > 6 ? 'walk' : 'idle';
+    if (state !== b.state) { b.state = state; b.t0 = t; }
+    const frames = sheet.index[state === 'bite' ? 'strike' : state];
+    b.j = frames[frameAt(state, t - b.t0, F.fps, frames.length)];
+    return b.j;
+  }
+  dropFoe(m) {
+    this.enemies.remove(m); m.geometry.dispose(); m.material.dispose();
+    m.userData.tex?.dispose(); // its window on a frame sheet (the sheet itself stays)
+  }
+
+  // the slain ones topple and fade, then are freed (a frame sheet plays its fall instead of bending)
   fallen(t) {
     const D = this.dying;
     if (!D?.length) return;
     for (let i = D.length - 1; i >= 0; i--) {
-      const d = D[i], k = (t - d.t0) / LOOK.foeAnim.die;
-      if (k >= 1 || k < 0) { this.enemies.remove(d.m); d.m.geometry.dispose(); d.m.material.dispose(); D.splice(i, 1); continue; }
+      const d = D[i], sheet = d.m.userData.sheet, k = (t - d.t0) / (sheet ? LOOK.foeFrames.die : LOOK.foeAnim.die);
+      if (k >= 1 || k < 0) { this.dropFoe(d.m); D.splice(i, 1); continue; }
+      if (sheet) {
+        const fr = sheet.index.die;
+        showFrame(d.m.userData.tex, sheet, fr[Math.min(fr.length - 1, Math.floor(k * 1.4 * fr.length))]); // down by 70% of the time, then it fades
+        d.m.material.userData.tint.value = 0;
+        d.m.material.opacity = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
+        continue;
+      }
       d.m.material.userData.bend.value = d.dir * (0.15 + 0.5 * k * k);
       d.m.material.opacity = 1 - k * k;
       d.m.scale.y *= 1 - 0.04; d.m.position.y *= 1 - 0.06;

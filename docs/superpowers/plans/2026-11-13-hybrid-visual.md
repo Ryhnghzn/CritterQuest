@@ -13,6 +13,8 @@ Audit (ringkas): dunia 3D dari kode + tanah & props lukisan (props **sudah** ber
 - [x] **Ringan:** cahaya tepi mati (`BILL_U.uRimOn`, diisi `Stage.setQuality`; juga saat Auto turun ke Ringan karena FPS rendah). Bayangan kontak (kini satu gambar yang dicap, bukan gradien per figur), kemiringan dan gerak musuh tetap: biaya GPU-nya hampir nol. Perbaikan: bayangan lembut sempat ikut dipakai untuk setiap permata/koin di tanah (ratusan gradien per frame) — kini hanya untuk hero, musuh, bos, NPC.
 - [x] **5. Cek manual pemilik:** "oke" (PC pemilik sedang berat, FPS rendah di semua tampilan — bukan karena prototipe).
 
+- [x] **6. Musuh benar-benar bergerak (`LOOK.foeFrames`, `?tanpa=animasi`):** contoh di `app/gerak.html`; di game untuk Serigala Bayang, Golem, Lendir. `art/foeanim.js` (bagian tubuh kit anime yang digerakkan, `FRAME_PLAN` 23 gambar: diam 4, jalan 6, ancang-ancang 3, serang 3, kena pukul 2, mati 5; `frameAt`; tes) + `render3d/foeframes.js` (lembar gambar per jenis, dibuat **sekali** saat pertama terlihat dengan ukuran & filter pixel yang sama dengan sprite lama; waktu & ukuran dicatat di console `[cq] foe frames`). Tiap musuh punya salinan tekstur yang berbagi satu gambar di GPU dan hanya menggeser jendelanya (12 fps): tanpa menggambar saat bermain. Keadaan: kena pukul (kilat), ancang-ancang, seruduk, gigit/hantam saat menempel (berulang), jalan, diam; mati memutar gambar jatuh lalu memudar. Kilat putih & beku biru lewat shader (`uTint`). Perkiraan memori ±0,5–1,2 MB per jenis.
+
 ## Kriteria berhasil
 
 - Di screenshot iPhone landscape karakter tidak terlihat ditempel: sisi terangnya searah bayangan pohon, kaki menapak, ada kilau obor di tepi tubuh di malam hari/dungeon.
