@@ -93,6 +93,10 @@ export const STONES = {
   every: 6, seen: 900, inner: 0.55, hold: 3, glow: 10,
   gift: { dust: [3, 6], crystal: [1, 2], gem: 0.25 },
 };
+// Peta Usang (plan eksplorasi bagian B): a slain elite in the world may drop an old map (chance; one at a time).
+// It marks a hint circle (`hint` across) on the map round a dig spot `dist` away; the mound shows within `seen`;
+// standing on it (`dig`) for `hold` seconds digs up a treasure chest's haul — sometimes (`trap`) a pack (`pack`) first.
+export const OLD_MAP = { chance: 0.12, dist: [1400, 2600], hint: 450, seen: 260, dig: 70, hold: 2, trap: 0.25, pack: 5 };
 export const TREASURE = {
   count: 4, band: [0.12, 0.95],       // spread west → east over this part of the width
   offPath: [420, 900],                // distance from the nearest path

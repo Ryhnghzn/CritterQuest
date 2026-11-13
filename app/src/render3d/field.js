@@ -25,7 +25,7 @@ import { groundTile, drawField, fieldDecorLights, targetArrow, gateGlow, gateGua
 import { drawQuestSpot } from '../render/hideout.js';
 import { actor, tag } from '../render/paint.js';
 import { t as tf } from '../i18n.js';
-import { FIELD, TOWNS, regionById } from '../data/world.js';
+import { FIELD, TOWNS, regionById, OLD_MAP } from '../data/world.js';
 import { chunkProps } from './fieldprops.js';
 import { START_R, DEFEND, RESCUE, HAPPEN } from '../data/questev.js';
 import { WORLD, ECLIPSE, CROSS_BLEND } from '../data/worldmap.js';
@@ -1009,6 +1009,17 @@ export class Field25 {
       const gr = g.createRadialGradient(o.x, o.y, 0, o.x, o.y, r);
       gr.addColorStop(0, `rgba(190,232,255,${(0.32 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(140,180,255,0)');
       g.fillStyle = gr; g.beginPath(); g.ellipse(o.x, o.y, r, r * 0.55, 0, 0, TAU); g.fill();
+    }
+    { // Peta Usang (plan eksplorasi bagian B): a mound of turned earth with a cross; it glints when you are close
+      const m = game.oldMap;
+      if (m && visible(m.x, m.y, 80)) {
+        const near = (game.px - m.x) ** 2 + (game.py - m.y) ** 2 < 400 * 400;
+        g.beginPath(); g.ellipse(m.x, m.y, 34, 16, 0, 0, TAU); g.fillStyle = 'rgba(92,68,44,.75)'; g.fill();
+        g.beginPath(); g.ellipse(m.x - 4, m.y - 3, 24, 10, 0, 0, TAU); g.fillStyle = 'rgba(130,98,64,.8)'; g.fill();
+        g.lineWidth = 3; g.strokeStyle = 'rgba(60,40,24,.85)'; g.beginPath(); g.moveTo(m.x - 10, m.y - 6); g.lineTo(m.x + 10, m.y + 4); g.moveTo(m.x + 10, m.y - 6); g.lineTo(m.x - 10, m.y + 4); g.stroke();
+        if (near) { const k = 0.5 + 0.5 * Math.sin(t * 6); g.fillStyle = `rgba(255,240,190,${(0.6 * k).toFixed(3)})`; g.beginPath(); g.arc(m.x + 8, m.y - 8, 3 + 2 * k, 0, TAU); g.fill(); }
+        if (m.hold > 0) { g.save(); g.translate(m.x, m.y); g.scale(1, 0.6); g.lineWidth = 5; g.strokeStyle = 'rgba(232,196,138,.9)'; g.beginPath(); g.arc(0, 0, 56, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, m.hold / OLD_MAP.hold)); g.stroke(); g.restore(); }
+      }
     }
     for (const ru of game.stonesLit || []) { // Lingkaran Batu at night (plan eksplorasi A): a pale pool, glowing runes, the hold ring
       if (!visible(ru.x, ru.y, ru.r + 60)) continue;

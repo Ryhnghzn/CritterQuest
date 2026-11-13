@@ -259,6 +259,16 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
       g.fillStyle = '#2a1606'; g.fillText('!', x, y + 0.5); g.textBaseline = 'alphabetic';
     } else if (!inside && !(q.kind === 'hint' && Math.hypot(x - (ox + w / 2), y - (oy + h / 2)) < q.r * k)) edgeArrow(g, ox, oy, w, h, x, y, '#ffd24a');
   }
+  // Peta Usang (plan eksplorasi bagian B): a parchment-brown circle somewhere in which the mound waits
+  if (opts.dig) {
+    const d = opts.dig, x = sx(d.x), y = sy(d.y), inside = x >= ox + 8 && x <= ox + w - 8 && y >= oy + 8 && y <= oy + h - 8;
+    g.save();
+    g.beginPath(); g.arc(x, y, d.r * k, 0, TAU);
+    g.fillStyle = 'rgba(232,196,138,.1)'; g.fill();
+    g.setLineDash([3, 5]); g.lineWidth = 1.5; g.strokeStyle = `rgba(232,196,138,${(0.55 + pulse * 0.3).toFixed(2)})`; g.stroke();
+    g.restore();
+    if (!inside && Math.hypot(x - (ox + w / 2), y - (oy + h / 2)) > d.r * k) edgeArrow(g, ox, oy, w, h, x, y, '#e8c48a');
+  }
   // expedition target: always shown, even under the fog
   if (opts.target) {
     let x = sx(opts.target.x), y = sy(opts.target.y);

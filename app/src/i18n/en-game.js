@@ -165,6 +165,8 @@ export default {
   'Bar Bonus penuh! +{n} Lencana & bahan': 'Bonus bar full! +{n} Badges & materials',
   // exploration (plan eksplorasi)
   'Batu-batu itu bercahaya…': 'The stones are glowing…', 'Lingkaran batu memberimu hadiah': 'The stone circle gives you a gift',
+  'Peta Usang! Ada lingkaran di petamu (M).': 'An Old Map! A circle is marked on your map (M).', 'Tanah di sini pernah digali…': 'Someone dug here once…',
+  'Jebakan! Sesuatu menjaga harta ini.': 'A trap! Something guards this treasure.', 'Harta terkubur ditemukan!': 'Buried treasure found!',
   'Tonggak Celah lantai {n}! Lencana & gear hadiah masuk tas.': 'Rift milestone, floor {n}! Reward Badges & gear are in your bag.',
   'Kabut Sunyi': 'Silent Fog', 'Kabut turun… sunyi sekali.': 'Fog rolls in… so quiet.', 'Kabut mulai menipis.': 'The fog thins.',
   'Celah ke Tanah Gerhana tertutup segel. Kumpulkan kelima Pecahan Segel.': 'The pass to the Eclipse Lands is sealed. Gather all five Seal Shards.',

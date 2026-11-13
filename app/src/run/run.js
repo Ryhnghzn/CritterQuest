@@ -38,6 +38,7 @@ import { MOUNT } from '../data/mounts.js';
 import { landAt } from './worldmap.js';
 import { startField, stepField, confineFieldEnemy, questDrop, fieldScale, fieldLevel } from './field.js';
 import { stepEvents } from './questev.js';
+import { mapDrop, stepOldMap } from './oldmap.js';
 import { FIELD } from '../data/world.js';
 import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
 import { Vfx } from './vfx.js';
@@ -184,6 +185,7 @@ export class Game {
     this.killsBy = {}; this.elites = 0; this.elitesBy = {}; this.floorsCleared = 0; // bounties & bestiary (spec §24)
     this.questItems = {}; this.reached = []; this.questSpots = []; this.questDrops = []; this.hidden = []; this.nearHidden = null; // quests (spec §26.5)
     this.events = []; this.eventsDone = []; this.raceTimes = []; // quest events in the world (spec §42, run/questev.js)
+    this.oldMap = null; // Peta Usang being followed (plan eksplorasi bagian B): only for this trip
     this.expGained = 0; this.bossKills = 0; this.gold = 0; this.spent = 0; // spent: coins paid out on the way (Pedagang Kelana, plan "Momen Acak")
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
     this.codex = codex || []; // uniques already found: a Legendary / Mythic roll favours new ones (plan endgame tahap 1)
@@ -370,7 +372,7 @@ export class Game {
     for (const h of this.hits) stepHitFx(this, h, dt);
     stepPlayerFx(this, dt);
     stepHits(this.hits, this.enemies, dt, this.hitCtx);
-    if (this.field) { stepField(this, dt); stepEvents(this, dt); } else stepDungeon(this, dt);
+    if (this.field) { stepField(this, dt); stepEvents(this, dt); stepOldMap(this, dt); } else stepDungeon(this, dt);
     this.updateEnemies(dt);
     if (this.state === ST.PLAY) {
       if (this.field) stepShots(this, dt, FIELD.despawn, this.px, this.py); else stepShots(this, dt, this.room.bound);
@@ -642,6 +644,7 @@ export class Game {
     if (e.boss || e.mini) this.mountRolls[this.inEclipse ? 'eclipse' : 'any'] += 1;
     if (e.elite) { this.elites += 1; this.elitesBy[kin] = (this.elitesBy[kin] || 0) + 1; }
     if (this.field && this.questDrops.length) questDrop(this, e, kin);
+    if (this.field && e.elite) mapDrop(this, e); // Peta Usang (plan eksplorasi bagian B)
     chargeUlt(this, e.boss ? ULT.boss : e.elite ? ULT.elite : ULT.kill);
     sfx.enemyDie(e.boss ? 'dieBoss' : e.elite || e.r >= BIG_ENEMY_R ? 'dieBig' : 'dieSmall');
     this.spawnBurst(e.x, e.y, e.boss ? '#c26bd8' : '#7a45c2', e.boss ? 26 : 8);

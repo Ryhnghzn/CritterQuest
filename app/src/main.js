@@ -1003,7 +1003,7 @@ function openMap() {
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden, events: game.events });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: true, title: false, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden, events: game.events, dig: game.oldMap && { x: game.oldMap.hx, y: game.oldMap.hy, r: game.oldMap.r } });
   $('maptitle').textContent = `${game.region.name} · LV ${game.region.levels[0]}–${game.region.levels[1]}`;
   $('mapnote').textContent = t('Terjelajah {n}% · tekan M untuk menutup', { n: Math.round(explored(game.fog, WORLD) * 100) });
 }
@@ -1067,7 +1067,7 @@ function drawMinimap() {
   if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden, events: game.events });
+  drawRegionMap(g, game.fmap, game.fog, { x: 0, y: 0, w, h }, { x: game.px, y: game.py }, { labels: false, window: 5000, gates: game.gates.filter((g) => g.found), target: game.target, quest: liveQuestTarget(), treasures: game.treasures, hidden: game.hidden, events: game.events, dig: game.oldMap && { x: game.oldMap.hx, y: game.oldMap.hy, r: game.oldMap.r } });
 }
 $('minimap').addEventListener('click', () => (scene === 'town' ? openTownMap() : openMap()));
 $('mapclose').addEventListener('click', () => (scene === 'town' ? closeTownOverlay() : resume()));
