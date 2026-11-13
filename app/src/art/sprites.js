@@ -444,6 +444,7 @@ export const ENEMY_ART = {
 Object.assign(ENEMY_ART, MONSTER_ART);
 Object.assign(ENEMY_ART, ECLIPSE_ART);
 Object.assign(ENEMY_ART, BEAST_OVERRIDES); // the eclipse variants redrawn too (art/beasts.js)
+ENEMY_ART.mawshade ||= (g, r) => tinted(g, r, 'wraith', 'rgba(60,14,80,.5)'); // Bayang Maw in the old look (plan "Bos Berkesan")
 
 export const PICKUP_ART = {
   gem(g) { diamond(g, 1, '#8ff3ff', '#10a5c9'); },

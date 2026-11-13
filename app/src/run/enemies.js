@@ -4,7 +4,8 @@
 import { rand, rrange } from '../core/rng.js';
 import { ENEMIES, SHIELD_PIERCING } from '../data/enemies.js';
 import { sfx } from '../core/audio.js';
-import { DEATH_FX } from '../data/fx.js';
+import { t } from '../i18n.js';
+import { DEATH_FX, BOSS_TELL, BOSS_TIRED } from '../data/fx.js';
 import { leap, ambush, trail, mirror, stepPuddle, pack, mortar, totem, twin } from './foes.js';
 
 const TAU = Math.PI * 2;
@@ -50,6 +51,7 @@ export function aiStep(run, e, dt) {
     case 'mortar': return mortar(run, e, b);
     case 'totem': return totem(run, e, b, dt);
     case 'twin': return twin(run, e, b);
+    case 'shade': return shade(run, e, dt);
     default: return toward(e, run.px, run.py, e.speed);
   }
 }
@@ -220,7 +222,7 @@ function boss(run, e, b, dt) {
   if (b.phases) {
     const ph = b.phases.reduce((n, p, i) => (e.hp <= e.maxHp * p.at ? i : n), 0);
     if (ph !== (e.phase || 0)) {
-      e.phase = ph; e.pat = null; e.mode = 'walk'; e.actT = 1.2;
+      e.phase = ph; e.pat = null; e.mode = 'walk'; e.actT = 1.2; e.tired = 0;
       run.dark = !!b.phases[ph].dark;
       run.showBanner?.(b.phases[ph].name);
       run.addShake?.('big');
@@ -229,6 +231,7 @@ function boss(run, e, b, dt) {
       return { vx: 0, vy: 0 };
     }
   }
+  if (e.tired > 0) { tiredStep(run, e, dt); return { vx: 0, vy: 0 }; } // an opening (plan "Bos Berkesan")
   if (e.mode === 'wind' || e.mode === 'dash' || e.mode === 'rest') {
     const v = charge(run, e, b);
     if (e.mode === 'walk') e.actT = enraged ? b.enragedEvery : b.every;
@@ -237,7 +240,9 @@ function boss(run, e, b, dt) {
   if (e.pat) { stepPattern(run, e, b, dt, enraged); return { vx: 0, vy: 0 }; }
   if (e.actT <= 0) {
     const list = b.phases ? b.phases[e.phase || 0].patterns : b.patterns;
-    const id = list[Math.floor(rand() * list.length)];
+    let id = list[Math.floor(rand() * list.length)];
+    if (b.noRepeat) for (let i = 0; i < 6 && id === e.lastPat && list.some((x) => x !== id); i++) id = list[Math.floor(rand() * list.length)];
+    e.lastPat = id;
     if (id === 'charge') {
       e.actT = 0;
       e.mode = 'walk';
@@ -248,8 +253,9 @@ function boss(run, e, b, dt) {
       run.hazards.push({ kind: 'line', x: e.x, y: e.y, x2: e.x + e.dirX * len, y2: e.y + e.dirY * len, w: e.r * 2, t: b.windup, max: b.windup, dmg: 0 });
       return { vx: 0, vy: 0 };
     }
-    if (id === 'summon') { summon(run, e, b.summon); e.actT = enraged ? b.enragedEvery : b.every; return { vx: 0, vy: 0 }; }
-    e.pat = { id, t: 0, n: 0, fireT: 0, a0: rand() * TAU };
+    if (id === 'summon' && !b.tell?.summon) { summon(run, e, b.summon); e.actT = enraged ? b.enragedEvery : b.every; return { vx: 0, vy: 0 }; }
+    e.pat = { id, t: 0, n: 0, fireT: 0, a0: rand() * TAU, tell: b.tell?.[id] || 0 };
+    if (e.pat.tell) { tellStart(run, e, b, id); return { vx: 0, vy: 0 }; } // its own sound instead of the shared roar
     if (id === 'echo') { // one attack of a dungeon boss, with its own numbers and colours
       const from = b.echo[Math.floor(rand() * b.echo.length)], cfg = ENEMIES[from];
       const sig = cfg.signature || ['ring', 'spiral', 'slam']; // its own moves (spec §41.2)
@@ -265,8 +271,11 @@ function boss(run, e, b, dt) {
 
 export function stepPattern(run, e, b0, dt, enraged) {
   const p = e.pat, b = p.cfg || b0;
+  if (p.tell > 0) { p.tell -= dt; tellStep(run, e, b, p, dt); return; } // the wind-up: nothing fires yet
   p.t += dt; p.fireT -= dt;
+  const own = !p.cfg && b0 === ENEMIES[e.type]; // its own move, not an echo (Sang Gerhana) or a guardian's borrowed one
   const done = () => { e.pat = null; e.actT = enraged ? b0.enragedEvery : b0.every; };
+  if (p.id === 'summon') { summon(run, e, b.summon); done(); return; }
   if (p.id === 'ring') {
     const r = b.ring, waves = r.waves + (enraged ? 1 : 0), count = r.count + (enraged ? 6 : 0);
     if (p.fireT <= 0 && p.n < waves) {
@@ -304,29 +313,38 @@ export function stepPattern(run, e, b0, dt, enraged) {
     }
     done();
   } else if (p.id === 'gulp') { // Raja Maw (spec §41.2): a pull toward its open mouth, then the bite
-    const s = b.gulp;
-    if (p.n === 0) {
-      const a = Math.atan2(run.py - e.y, run.px - e.x);
-      run.hazards.push({ kind: 'hole', x: e.x + Math.cos(a) * e.r, y: e.y + Math.sin(a) * e.r, r: s.r, t: s.fuse, max: s.fuse, dmg: s.dmg, pull: s.pull * (enraged ? 1.3 : 1), by: e.type, look: 'maw' });
-      p.n = 1;
+    const s = b.gulp, bites = own && s.bites ? s.bites[Math.min(e.phase || 0, s.bites.length - 1)] : 1;
+    // bite k starts at `at(k)`: the first after the full fuse, each next one aimed anew and quicker (plan "Bos Berkesan")
+    const fuse = (k) => (k === 0 ? s.fuse : s.again), at = (k) => (k === 0 ? 0 : s.fuse + (k - 1) * s.again);
+    if (p.n < bites && p.t >= at(p.n)) {
+      const a = Math.atan2(run.py - e.y, run.px - e.x), last = p.n === bites - 1;
+      run.hazards.push({ kind: 'hole', x: e.x + Math.cos(a) * e.r, y: e.y + Math.sin(a) * e.r, r: s.r, t: fuse(p.n), max: fuse(p.n), dmg: s.dmg, pull: s.pull * (enraged ? 1.3 : 1), by: e.type, look: 'maw', miss: own && last && s.choke ? e : null });
+      if (p.n > 0) sfx.boss();
+      p.n++;
     }
-    if (p.t >= s.fuse) done();
+    if (p.t >= at(bites - 1) + fuse(bites - 1)) done();
   } else if (p.id === 'clones') { // shadows rise around the player, then each fires a ring
-    const s = b.clones, n = s.count + (enraged ? 1 : 0);
+    const s = b.clones, n = s.count + (enraged ? 1 : 0), shades = own && s.shade, warn = shades ? s.shade.warn : s.warn;
     if (p.n === 0) {
       p.spots = [];
       for (let i = 0; i < n; i++) {
         const a = p.a0 + (i / n) * TAU, x = run.px + Math.cos(a) * s.dist, y = run.py + Math.sin(a) * s.dist;
-        p.spots.push([x, y]);
-        run.hazards.push({ kind: 'circle', x, y, r: 26, t: s.warn, max: s.warn, dmg: 0, look: 'maw' });
+        const h = { kind: 'circle', x, y, r: 26, t: warn, max: warn, dmg: 0, look: 'maw' };
+        run.hazards.push(h);
+        p.spots.push([x, y, shades ? raiseShade(run, e, x, y, s.shade, h) : null]);
       }
       p.n = 1;
     }
-    if (p.n === 1 && p.t >= s.warn) {
-      for (const [x, y] of p.spots) { for (let i = 0; i < s.ring.count; i++) fire(run, x, y, p.a0 + (i / s.ring.count) * TAU, s.ring, e.type); run.spawnBurst(x, y, '#c26bd8', 12); }
+    if (p.n === 1 && p.t >= warn) {
+      for (const [x, y, sh] of p.spots) {
+        if (sh && !(sh.hp > 0 && run.enemies.includes(sh))) continue; // broken in time: no ring
+        if (sh) sh.hp = 0; // it fired: it fades (shade() ends it quietly)
+        for (let i = 0; i < s.ring.count; i++) fire(run, x, y, p.a0 + (i / s.ring.count) * TAU, s.ring, e.type);
+        run.spawnBurst(x, y, '#c26bd8', 12);
+      }
       p.n = 2;
     }
-    if (p.t >= s.warn + 0.4) done();
+    if (p.t >= warn + 0.4) done();
   } else if (p.id === 'prism') { // Golem Kristal: crystals around the player, beams flaring between them in turn
     const s = b.prism, n = s.count + (enraged ? 1 : 0);
     if (p.n === 0) { p.pts = Array.from({ length: n }, (_, i) => { const a = p.a0 + (i / n) * TAU; return [run.px + Math.cos(a) * s.dist, run.py + Math.sin(a) * s.dist]; }); p.n = 1; p.k = 0; }
@@ -400,6 +418,70 @@ export function stepPattern(run, e, b0, dt, enraged) {
   } else done();
 }
 
+// ---- boss wind-ups, openings and shadows (plan "Bos Berkesan") ----
+// The wind-up of a move with a `tell`: its own sound now, motes gathering while it lasts.
+function tellStart(run, e, b, id) {
+  sfx.tell(id);
+  const col = (b[id]?.color) || '#c26bd8';
+  if (id === 'ring') run.vfx?.ring(e.x, e.y, { r0: BOSS_TELL.from, r1: e.r, life: e.pat.tell, color: col, width: 3 });
+}
+function tellStep(run, e, b, p, dt) {
+  const v = run.vfx;
+  if (!v) return;
+  const id = p.id, col = id === 'summon' ? ['#3a2a4a', '#6a4a8a'] : [b[id]?.color || '#c26bd8', '#ffffff'];
+  if (id === 'summon') { // dark smoke rising off it
+    for (let i = Math.floor(BOSS_TELL.summonSmoke * v.mul * dt + v.rand()); i > 0; i--) v.spawn('smoke', e.x + v.range(-e.r, e.r), e.y + v.range(-6, 6), v.range(-8, 8), -v.range(30, 60), v.range(0.6, 1), v.range(6, 10), col, 0.96, -20);
+    return;
+  }
+  const spin = id === 'spiral' ? Math.sign(b.spiral?.turn || 1) : 0;
+  for (let i = Math.floor(BOSS_TELL.motes * v.mul * dt + v.rand()); i > 0; i--) {
+    const a = v.rand() * TAU, r = v.range(e.r + 20, BOSS_TELL.from), life = v.range(0.35, 0.5);
+    const inV = r / life; // inward to the boss in its life; a spiral's motes also turn its way
+    v.spawn(v.rand() < 0.3 ? 'star' : 'dot', e.x + Math.cos(a) * r, e.y + Math.sin(a) * r,
+      -Math.cos(a) * inV * 0.8 - Math.sin(a) * inV * spin, -Math.sin(a) * inV * 0.8 + Math.cos(a) * inV * spin, life, v.range(1.6, 2.6), col, 1);
+  }
+}
+
+// A boss caught out (Raja Maw bites air): it stands, does no touch damage and takes more damage for a while.
+export function tire(run, e, c, text) {
+  e.pat = null; e.mode = 'walk'; e.tired = c.time; e.vulnT = c.time; e.vulnK = c.taken;
+  e.actT = Math.max(e.actT, 0.4);
+  run.addFloater?.(e.x, e.y - e.r - 40, text, BOSS_TIRED.text);
+  run.vfx?.ring(e.x, e.y, { r0: e.r, r1: e.r * 3, life: 0.4, color: BOSS_TIRED.text, width: 4 });
+  run.addHitStop?.('elite');
+  sfx.choke();
+}
+function tiredStep(run, e, dt) {
+  e.tired -= dt;
+  const v = run.vfx;
+  if (v) for (let i = Math.floor(BOSS_TIRED.stars * v.mul * dt + v.rand()); i > 0; i--) { // stars round its head
+    const a = v.rand() * TAU;
+    v.spawn('star', e.x + Math.cos(a) * e.r * 0.7, e.y - e.r * 1.6 + Math.sin(a) * e.r * 0.25, -Math.sin(a) * 40, Math.cos(a) * 12, v.range(0.4, 0.6), v.range(2.4, 3.4), BOSS_TIRED.color, 0.97);
+  }
+  if (e.tired <= 0) { e.tired = 0; e.vulnT = 0; e.actT = Math.max(e.actT, 0.6); }
+}
+
+// Bayang Maw: a shadow raised by Bayang Kembar. Its HP is a share of its maker's; it never moves.
+function raiseShade(run, e, x, y, c, h) {
+  const sh = run.spawnEnemy('mawshade');
+  sh.x = x; sh.y = y; sh.hp = sh.maxHp = e.maxHp * c.hp; sh.dmg = 0;
+  sh.shadeOf = e; sh.life = c.warn + 0.2; sh.mark = h; sh.gap = e.gap;
+  run.vfx?.burst('smoke', x, y, ['#2a1040', '#6a2a8a'], { n: 6 });
+  return sh;
+}
+function shade(run, e, dt) {
+  if ((e.life -= dt) <= 0 || !(e.shadeOf?.hp > 0) || !run.enemies.includes(e.shadeOf)) { e.hp = 0; e.faded = true; } // fired, timed out, or its maker is gone
+  return { vx: 0, vy: 0 };
+}
+// A shade at 0 HP (run.js killEnemy asks first): broken by the player, or faded. No loot, no kill counted.
+export function shadeDown(run, e) {
+  if (e.mark) e.mark.t = 0;
+  if (e.faded) { run.vfx?.burst('smoke', e.x, e.y, ['#2a1040', '#6a2a8a'], { n: 5 }); return; }
+  run.vfx?.ring(e.x, e.y, { r0: 6, r1: 60, life: 0.35, color: '#c26bd8', width: 4 });
+  run.vfx?.burst('shards', e.x, e.y, ['#c26bd8', '#2a1040', '#ffffff'], { n: 10 });
+  sfx.shadeBreak();
+}
+
 // Enemy projectiles: fly, hit the player (unless dodging / invulnerable), leave the room.
 // bound: how far from (cx, cy) a shot may fly (the room, or around the player in a region)
 export function stepShots(run, dt, bound, cx = 0, cy = 0) {
@@ -446,7 +528,8 @@ export function stepHazards(run, dt) {
       run.pulses.push({ x: h.x2, y: h.y2, r: 30, t: 0.25, max: 0.25, color: '199,155,255' });
     }
     if (h.kind === 'hole' && h.dmg > 0) {
-      if ((run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r * 0.6) ** 2) run.hurtPlayer(h.dmg, h.onHit, h.by);
+      const landed = (run.px - h.x) ** 2 + (run.py - h.y) ** 2 < (h.r * 0.6) ** 2 && run.hurtPlayer(h.dmg, h.onHit, h.by, h);
+      if (!landed && h.miss?.hp > 0 && run.state === 1) tire(run, h.miss, ENEMIES[h.miss.type].gulp.choke, t('TERSEDAK!')); // Raja Maw bit air (plan "Bos Berkesan")
       run.pulses.push({ x: h.x, y: h.y, r: h.r, t: 0.4, max: 0.4, color: '150,90,255' });
       run.addShake?.('medium');
     }

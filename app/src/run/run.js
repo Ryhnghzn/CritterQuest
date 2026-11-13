@@ -29,7 +29,7 @@ import { initTrait, traitStep, traitBasicHit, traitDealt, traitHurt, traitMods }
 import { FX } from '../data/dungeon.js';
 import { dungeonById } from '../data/dungeons.js';
 import { makeRoom } from './room.js';
-import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor } from './enemies.js';
+import { initAi, aiStep, onDeath, stepShots, stepHazards, guardFactor, shadeDown } from './enemies.js';
 import { affixStep, affixHit, affixDeath } from './affix.js';
 import { reflectShot, foeStep, twinDown, splitDeath } from './foes.js';
 import { startFloor, stepDungeon, enemyGoal, confineEnemy, dropLoot, gearPickedUp, hpMul } from './dungeon.js';
@@ -586,7 +586,7 @@ export class Game {
       if (this.field) confineFieldEnemy(this, e); else confineEnemy(this, e);
       // touch damage
       const rr = e.r + 10;
-      if (e.dmg > 0 && !e.hidden && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg, ENEMIES[e.type].onHit, e.type)) {
+      if (e.dmg > 0 && !e.hidden && !(e.tired > 0) && (e.x - this.px) ** 2 + (e.y - this.py) ** 2 < rr * rr && this.hurtPlayer(e.dmg, ENEMIES[e.type].onHit, e.type)) {
         const a = Math.atan2(this.py - e.y, this.px - e.x);
         if (this.fx.thorns) { e.hp -= this.stats.atk * this.fx.thorns; e.flash = 0.12; thornsBurst(this, e); }
         e.kx = -Math.cos(a) * 220; e.ky = -Math.sin(a) * 220;
@@ -623,6 +623,7 @@ export class Game {
   }
 
   killEnemy(e) {
+    if (e.ai === 'shade') { shadeDown(this, e); return; } // a Bayang Maw: no loot, no kill counted (plan "Bos Berkesan")
     const s0 = this.shots.length, h0 = this.hazards.length;
     onDeath(this, e);
     affixDeath(this, e);

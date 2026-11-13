@@ -237,5 +237,6 @@ const SET = {
   icewisp: [frostwisp, C('#6ab8e8', 'ice', '#7fd8ff', '#ffffff')], scorpion: [scorpion, C('#3a1a1e', 'fire', '#9dff6a', '#ff5a3a')],
   sandworm: [sandworm, C('#8a6a3a', 'sand', '#ff8a3c')], imp: [imp, C('#8a2a22', 'fire', '#ff7a2a', '#ffd25a')],
   salamander: [salamander, C('#5a1e14', 'fire', '#ff8a3c', '#ffd25a')], wraith: [wraith, C('#2a1e40', 'void', '#c79bff', '#e8d8ff')],
+  mawshade: [wraith, C('#1a0e26', 'shadow', '#c26bd8', '#ff5f9e')], // Bayang Maw (plan "Bos Berkesan")
 };
 export const BEAST_ART = Object.fromEntries(Object.entries(SET).map(([id, [f, c, k]]) => [id, (g) => (k ? f(g, c, k) : f(g, c))]));

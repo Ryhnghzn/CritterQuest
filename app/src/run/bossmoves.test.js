@@ -55,8 +55,88 @@ describe('Raja Maw', () => {
     const { g } = move('boss', 'clones'), C = ENEMIES.boss.clones;
     step(g);
     expect(g.hazards.filter((z) => z.dmg === 0).length).toBe(C.count);
-    step(g, secs(C.warn) + 1);
+    step(g, secs(C.shade.warn) + 1);
     expect(g.shots.length).toBe(C.count * C.ring.count);
+  });
+});
+
+// plan "Bos Berkesan" A: wind-ups, openings, shadows to break
+describe('Raja Maw: membaca & membalas', () => {
+  const shades = (g) => g.enemies.filter((e) => e.type === 'mawshade');
+  it('bayangan bisa dihancurkan: yang hancur tidak menembak, tanpa hadiah & tidak dihitung', () => {
+    const { g, b } = move('boss', 'clones'), C = ENEMIES.boss.clones;
+    step(g);
+    const [a] = shades(g);
+    expect(shades(g).length).toBe(C.count);
+    expect(a.maxHp).toBeCloseTo(b.maxHp * C.shade.hp);
+    const kills = g.kills, gear = g.loot.length;
+    a.hp = 0; step(g);
+    expect(shades(g).length).toBe(C.count - 1);
+    step(g, secs(C.shade.warn) + 1);
+    expect(g.shots.length).toBe((C.count - 1) * C.ring.count);
+    expect(g.kills).toBe(kills); expect(g.loot.length).toBe(gear);
+    step(g, 30);
+    expect(shades(g).length).toBe(0); // the one that fired fades too
+  });
+  it('bayangan hilang bersama Maw', () => {
+    const { g, b } = move('boss', 'clones');
+    step(g);
+    b.hp = 0; step(g, 3);
+    expect(shades(g).length).toBe(0);
+  });
+  it('Telan meleset → tersedak: diam, tanpa damage sentuh, menerima damage lebih', () => {
+    const { g, b } = move('boss', 'gulp'), S = ENEMIES.boss.gulp;
+    g.px = -2000; g.py = 0; // far out of the pull
+    step(g, secs(S.fuse) + 2);
+    expect(b.tired).toBeGreaterThan(0);
+    expect(b.vulnT).toBeGreaterThan(0);
+    const hp = b.hp; g.damageEnemy({ mult: 1, fx: 'slash' }, b);
+    const hit = hp - b.hp; b.vulnT = 0; const hp2 = b.hp; g.damageEnemy({ mult: 1, fx: 'slash' }, b);
+    expect(hit / (hp2 - b.hp)).toBeCloseTo(1 + S.choke.taken, 5);
+    b.vulnT = S.choke.time;
+    const x = b.x; g.px = b.x; g.py = b.y; const php = g.stats.hp; g.invuln = 0; step(g, 10);
+    expect(b.x).toBe(x); expect(g.stats.hp).toBe(php); // stands, no touch damage
+    step(g, secs(S.choke.time) + 1);
+    expect(b.tired).toBe(0);
+  });
+  it('Telan kena → tidak tersedak', () => {
+    const { g, b } = move('boss', 'gulp'), S = ENEMIES.boss.gulp;
+    g.invuln = 0; g.dodgeInv = 0;
+    step(g, secs(S.fuse) + 2, );
+    expect(b.tired || 0).toBe(0);
+  });
+  it('fase 2: menggigit dua kali, dibidik ulang', () => {
+    const { g, b } = move('boss', 'gulp'), S = ENEMIES.boss.gulp;
+    b.phase = 1; b.hp = b.maxHp * 0.4;
+    g.px = -2000;
+    step(g, 2); expect(g.hazards.filter((h) => h.kind === 'hole').length).toBe(1);
+    step(g, secs(S.fuse));
+    const second = g.hazards.find((h) => h.kind === 'hole');
+    expect(second).toBeTruthy(); expect(second.max).toBe(S.again);
+    expect(b.tired || 0).toBe(0); // only the last bite chokes
+    step(g, secs(S.again) + 2);
+    expect(b.tired).toBeGreaterThan(0);
+  });
+  it('ancang-ancang: cincin tidak keluar sebelum waktunya; jurus tidak beruntun', () => {
+    const g = start(), b = g.spawnEnemy('boss');
+    b.x = 200; b.y = 0; b.speed = 0; b.actT = 0;
+    let picked = null;
+    for (let i = 0; i < 200 && picked !== 'ring'; i++) { b.pat = null; b.actT = 0; b.mode = 'walk'; b.lastPat = null; g.shots.length = 0; step(g); picked = b.pat?.id; }
+    expect(picked).toBe('ring');
+    expect(g.shots.length).toBe(0);
+    step(g, secs(ENEMIES.boss.tell.ring) - 2); expect(g.shots.length).toBe(0);
+    step(g, 4); expect(g.shots.length).toBeGreaterThan(0);
+    let last = null;
+    for (let i = 0; i < 60; i++) { b.pat = null; b.actT = 0; b.mode = 'walk'; step(g); if (b.pat) { expect(b.pat.id).not.toBe(last); last = b.pat.id; } else if (b.mode === 'wind') { expect('charge').not.toBe(last); last = 'charge'; } }
+  });
+  it('Sang Gerhana menggemakan Telan tanpa tersedak & Bayang Kembar tanpa bayangan', () => {
+    const g = start(), b = g.spawnEnemy('eclipseboss');
+    b.x = 200; b.speed = 0; b.actT = 99;
+    b.pat = { id: 'clones', t: 0, n: 0, fireT: 0, a0: 0, cfg: ENEMIES.boss };
+    step(g); expect(shades(g).length).toBe(0);
+    b.pat = { id: 'gulp', t: 0, n: 0, fireT: 0, a0: 0, cfg: ENEMIES.boss }; g.px = -2000;
+    step(g, secs(ENEMIES.boss.gulp.fuse) + 2);
+    expect(b.tired || 0).toBe(0);
   });
 });
 

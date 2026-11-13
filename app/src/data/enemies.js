@@ -151,6 +151,9 @@ export const ENEMIES = {
     name: 'Kembar Hampa', hp: 72, speed: 62, dmg: 12, r: 13, xp: 6, sprite: 'voidtwin', score: 6, group: [2, 2],
     ai: 'twin', flank: 120, revive: 4, reviveHp: 0.5, link: { max: 340, w: 12, dmg: 10, every: 0.5 },
   },
+  // Bayang Maw (plan "Bos Berkesan" A): a shadow of Raja Maw in its Bayang Kembar; stands, breaks, or
+  // fires its ring and fades. No touch damage, no loot, not in the bestiary.
+  mawshade: { name: 'Bayang Maw', hp: 1, speed: 0, dmg: 0, r: 16, xp: 0, sprite: 'mawshade', score: 0, ai: 'shade' },
   // Raja Maw: chases slowly and every few seconds runs one random pattern;
   // below enrageAt HP faster and denser (spec §18.1).
   boss: {
@@ -169,8 +172,15 @@ export const ENEMIES = {
       { at: 1, patterns: ['gulp', 'clones', 'ring', 'charge'] },
       { at: 0.5, name: 'LAPAR!', patterns: ['gulp', 'clones', 'clones', 'ring', 'charge', 'summon'] },
     ],
-    gulp: { r: 95, pull: 150, fuse: 1.8, dmg: 36 },
-    clones: { count: 2, dist: 170, warn: 0.8, ring: { count: 12, speed: 150, dmg: 11, r: 6, color: '#c26bd8' } },
+    gulp: { r: 95, pull: 150, fuse: 1.8, dmg: 36,
+      // plan "Bos Berkesan" A: bites per phase (phase 2 aims again, the second bite quicker);
+      // the last bite missing (out of reach, dodged or parried) chokes it: tired, takes more damage
+      bites: [1, 2], again: 1.2, choke: { time: 2.2, taken: 0.3 } },
+    clones: { count: 2, dist: 170, warn: 0.8, ring: { count: 12, speed: 150, dmg: 11, r: 6, color: '#c26bd8' },
+      shade: { hp: 0.01, warn: 2.2 } }, // the shadows are things to break (HP × the boss's max HP); a broken one does not fire
+    // plan "Bos Berkesan" A: seconds of wind-up before these moves (the rest show their own warnings),
+    // and never the same move twice in a row
+    tell: { ring: 0.6, summon: 0.6, spiral: 0.7 }, noRepeat: true,
   },
   // Golem Kristal (Gua Kristal): crystal shards in rings, slams, charges.
   crystalboss: {

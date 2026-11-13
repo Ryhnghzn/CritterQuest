@@ -89,3 +89,8 @@ export const BURST = {
   shards: { kind: 'shard', count: 8, speed: [90, 220], life: [0.35, 0.7], size: [2.5, 4.5], drag: 0.9, gravity: 260 },
   stars: { kind: 'star', count: 6, speed: [40, 140], life: [0.35, 0.7], size: [3, 5], drag: 0.9 },
 };
+
+// Boss wind-ups and tired spells (plan "Bos Berkesan"): motes gathered into the boss before a move
+// (per second, × quality; from how far), and the stars over a tired boss's head.
+export const BOSS_TELL = { motes: 60, from: 150, summonSmoke: 30 };
+export const BOSS_TIRED = { stars: 6, color: ['#fff3c4', '#ffd166', '#ffffff'], text: '#ffd166' };
