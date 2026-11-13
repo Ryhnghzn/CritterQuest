@@ -43,7 +43,7 @@ import { BIG_ENEMY_R, HURT_HEAVY } from '../data/audio.js';
 import { Vfx } from './vfx.js';
 import { stepHitFx, impactFx, stepPlayerFx, executeFx } from './skillfx.js';
 import { bloodThread, thornsBurst, killBlast, phoenixRise, shieldFlash, goldGlint } from './auraevents.js';
-import { SHAKE, SHAKE_DECAY, HITSTOP, HITSTOP_GAP, RECOIL, FLOATER, FLOATER_MAX, DEATH_FX, PALETTES, elementOf } from '../data/fx.js';
+import { SHAKE, SHAKE_DECAY, PUNCH, HITSTOP, HITSTOP_GAP, RECOIL, FLOATER, FLOATER_MAX, DEATH_FX, PALETTES, elementOf } from '../data/fx.js';
 
 export const ST = { TITLE: 0, PLAY: 1, PAUSE: 3, OVER: 4 };
 
@@ -94,7 +94,7 @@ export class Game {
     this.floaters = [];
     this.state = ST.TITLE;
     this.shake = 0;
-    this.hitStop = 0; this.stopAt = {};     // seconds the loop holds the simulation (main.js), set by addHitStop
+    this.hitStop = 0; this.stopAt = {}; this.punch = 0;     // seconds the loop holds the simulation (main.js), set by addHitStop
     this.calm = false;    // reduced motion (main.js): the peak moments skip their flash and black-and-white
     this.weaponRarity = 0; // weapon rarity, colours attack sparks (set by main.js)
     this.reset(DEFAULT_START);
@@ -208,7 +208,7 @@ export class Game {
     this.fx = { ...effects }; this.fxShieldT = 0; this.frenzyOn = false; this.revived = false;
     initTrait(this);
     this.applyBuffs();
-    this.invuln = 0; this.flash = 0; this.shake = 0; this.hitStop = 0; this.stopAt = {}; // stopAt: when each rate-limited hit-stop last fired (HITSTOP_GAP)
+    this.invuln = 0; this.flash = 0; this.shake = 0; this.punch = 0; this.hitStop = 0; this.stopAt = {}; // stopAt: when each rate-limited hit-stop last fired (HITSTOP_GAP)
     this.slowT = 0; this.slowK = 0; this.dotT = 0; this.dotDps = 0; this.dotKind = null; // biome status (spec §25.4)
     this.lastFoe = null; this.dotFoe = null; this.diedOf = null; this.surrendered = false; // what felled the player (death dialog)
     this.dashSid = null; this.buffSid = null; // skill whose dash trail / buff aura is showing (run/skillfx.js)
@@ -354,6 +354,7 @@ export class Game {
     }
     if (this.flash > 0) this.flash -= dt;
     if (this.shake > 0) this.shake -= dt * SHAKE_DECAY;
+    if (this.punch > 0) this.punch = Math.max(0, this.punch - dt * PUNCH.decay);
     if (this.bannerT > 0) this.bannerT -= dt;
 
     stepAttack(this, this.intent, dt);
@@ -470,7 +471,7 @@ export class Game {
     if (fx.execute && e.hp < e.maxHp * FX.executeBelow) dmg *= 1 + fx.execute;
     if (fx.bossdmg && (e.boss || e.elite)) dmg *= 1 + fx.bossdmg;
     if (h.breakShield) { e.armor = 0; if (e.ward) e.ward = 0; } // Tebasan Raksasa at full
-    if (h.focusHit && !h.shook) { h.shook = true; this.addShake('big'); this.addHitStop('crit'); } // a focused ultimate lands
+    if (h.focusHit && !h.shook) { h.shook = true; this.addShake('big'); this.addHitStop('crit'); this.addPunch('ult'); } // a focused ultimate lands
     if (h.burn) dotFoe(this, e, h.burn);                    // Semburan Api L5
     runeFeed(this, e, h);                                     // Bom Waktu grows
     if (h.vuln) { e.vulnT = VULN_TIME; e.vulnK = h.vuln; }          // Kabut Racun L5 marks the foes inside
@@ -656,7 +657,7 @@ export class Game {
         const a = (i / 8) * Math.PI * 2;
         this.gems.push({ x: e.x + Math.cos(a) * 30, y: e.y + Math.sin(a) * 30, v: 5, mag: false, big: true, t: rand() * 6 });
       }
-      this.addShake('big'); this.addHitStop('bossKill');
+      this.addShake('big'); this.addHitStop('bossKill'); this.addPunch('bossKill');
       this.vfx.ring(e.x, e.y, { r1: e.r * 4, life: 0.6, color: '#c26bd8', width: 5 });
       this.vfx.ring(e.x, e.y, { r1: e.r * 6, life: 0.9, color: '#f0d8ff', width: 3, delay: 0.12 });
       this.vfx.flash('#f0d8ff', 0.35, 0.2);
@@ -757,6 +758,11 @@ export class Game {
   // an unknown tier counts as none (an undefined once turned shake into NaN for the rest of the trip)
   addShake(tier) {
     this.shake = Math.max(this.shake, SHAKE[tier] ?? 0);
+  }
+
+  // kind: a key of data/fx.js PUNCH: the camera leans in for the biggest moments (the strongest wins)
+  addPunch(kind) {
+    this.punch = Math.max(this.punch, PUNCH[kind] ?? 0);
   }
 
   // kind: a key of data/fx.js HITSTOP. Kinds in HITSTOP_GAP fire at most once per their gap of

@@ -3,7 +3,7 @@
 // Kinds: 'rage' (Warrior), 'heat' (Mage), 'focus' (Archer), 'combo' (Assassin).
 import { CLASSES } from '../data/classes.js';
 import { tr } from '../i18n.js';
-import { frenzyFx } from './skillfx.js';
+import { frenzyFx, overheatFx, focusReadyFx, comboReadyFx, comboFinisherFx } from './skillfx.js';
 import { heatBlast } from './branch.js';
 
 const MODS = { arcR: 0, arcDeg: 0, lifesteal: 0, dmgTaken: 1, skillDmg: 0, locked: false, slow: 0, slowImmune: false };
@@ -42,7 +42,7 @@ export function traitStep(run, dt, moving, attacking) {
       if (moving) { t.v = 0; t.focus = false; }
       else if (attacking && !t.focus) {
         t.v = Math.min(c.max, t.v + c.rate * (1 + pv(run, 'focusGain')) * dt); // Napas Tenang
-        if (t.v >= c.max) t.focus = true;
+        if (t.v >= c.max) { t.focus = true; if (run.vfx) focusReadyFx(run); }
       }
       break;
     case 'combo':
@@ -72,6 +72,7 @@ function rageAdd(run, c, n) {
 function overheat(run, c, t) {
   t.v = 0; t.lock = c.overheat.duration * (1 - pv(run, 'overheatShort'));
   run.showBanner(tr('KEPANASAN!'));
+  if (run.vfx) overheatFx(run); // plan "Rasa Pukulan" C (test stand-ins have no vfx)
   heatBlast(run);
 }
 // the Kombo cap: 5, or 10 for the Penari Pedang
@@ -104,7 +105,11 @@ export function traitBasicHit(run) {
   else if (c.id === 'combo') {
     const t = run.trait;
     t.idle = 0;
-    if (++t.hits >= c.hitsPer) { t.hits = 0; t.v = Math.min(comboMax(run, c), t.v + 1); }
+    if (++t.hits >= c.hitsPer) {
+      const was = t.v, max = comboMax(run, c);
+      t.hits = 0; t.v = Math.min(max, t.v + 1);
+      if (t.v >= max && was < max && run.vfx) comboReadyFx(run);
+    }
   }
 }
 
@@ -142,7 +147,7 @@ export function traitCast(run, skill) {
       return 1;
     case 'combo': {
       const n = t.v;
-      if (n >= comboMax(run, c)) castExecute = c.executeBelow;
+      if (n >= comboMax(run, c)) { castExecute = c.executeBelow; if (run.vfx) comboFinisherFx(run); }
       t.v = 0; t.hits = 0;
       return 1 + c.perPoint * n;
     }

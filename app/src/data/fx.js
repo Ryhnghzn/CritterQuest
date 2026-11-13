@@ -41,6 +41,11 @@ export const SHAKE = { light: 0.35, medium: 0.6, heavy: 1, big: 1.3 };
 export const SHAKE_DECAY = 3;
 export const SHAKE_PX = 9;
 
+// Camera punch (plan "Rasa Pukulan" B): the camera moves this share closer for the biggest
+// moments, then drifts back (falls by `decay` per second of game time, held during hit-stop;
+// render3d/stage.js eases toward it by `ease` per frame). Off with screen shake or reduced motion.
+export const PUNCH = { frenzy: 0.04, ult: 0.07, phase: 0.1, bossKill: 0.14, decay: 0.32, ease: 0.22 };
+
 // Hit-stop: the simulation pauses this many seconds (the longest wins). The impact ladder
 // (plan "Rasa Pukulan"): basic none < crit / skill < ultHit / elite < frenzy < ult < phase < bossKill.
 export const HITSTOP = {

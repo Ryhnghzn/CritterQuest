@@ -9,6 +9,8 @@
 import { PALETTES, elementOf } from '../data/fx.js';
 import { SKILL_FX, BASIC_FX, TRAIT_FX } from '../data/skillfx.js';
 import { RARITIES } from '../data/items.js';
+import { CLASSES } from '../data/classes.js';
+import { sfx } from '../core/audio.js';
 import { branchCastFx, branchWaitFx, branchStepFx, branchImpactFx, branchDashFx, branchBuffFx } from './branchfx.js';
 
 const TAU = Math.PI * 2;
@@ -533,6 +535,14 @@ export function stepPlayerFx(run, dt) {
       v.spawn('smoke', x + v.range(-9, 9), y - v.range(8, 30), v.range(-8, 8), -v.range(30, 55), v.range(0.7, 1.1), v.range(5, 9), ['#5a4a48', '#7a6660', '#3a3030'], 0.97, -14);
     }
   }
+  const tr = run.trait;
+  const rc = CLASSES[run.classId]?.trait;
+  if (tr && rc?.id === 'rage' && !(tr.on > 0) && tr.v >= TRAIT_FX.rage.from * rc.max) { // Murka filling: embers at the feet, more as it climbs
+    const k = tr.v / rc.max;
+    for (let i = steps(v, TRAIT_FX.rage.embers * k * k, dt); i > 0; i--) {
+      v.spawn('ember', x + v.range(-10, 10), y + 8 + v.range(-3, 3), v.range(-12, 12), -v.range(30, 60 + 60 * k), v.range(0.4, 0.8), v.range(1.4, 2.4 + k), k > 0.75 ? ['#ff3040', '#ff7a2a', '#ffd166'] : ['#c2321f', '#ff7a2a'], 0.96, -20);
+    }
+  }
   if (run.dashSid && branchDashFx(run, run.dashSid, dt, !(run.dodgeT > 0))) { // Job Lanjutan (spec §48)
     if (!(run.dodgeT > 0)) run.dashSid = null;
   } else if (run.dashSid) {
@@ -599,10 +609,46 @@ export function stepPlayerFx(run, dt) {
 export function frenzyFx(run) {
   const v = run.vfx, F = TRAIT_FX.frenzy;
   if (!run.calm) v.flash(...F.flash);
-  run.addShake('medium'); run.addHitStop('frenzy');
+  run.addShake('medium'); run.addHitStop('frenzy'); run.addPunch?.('frenzy');
+  sfx.roar();
   v.ring(run.px, run.py, { r1: F.ring, life: 0.45, color: '#ff3040', width: 5 });
   v.ring(run.px, run.py, { r1: F.ring * 0.6, life: 0.35, color: '#ffb030', width: 3, delay: 0.06 });
   v.burst('blast', run.px, run.py, ['#ff3040', '#ff7a2a', '#ffd166'], { n: 20 });
+}
+
+// Kepanasan (spec §31): the staff blows its heat out — an orange flash, a hot ring, smoke and a hiss
+export function overheatFx(run) {
+  const v = run.vfx, H = TRAIT_FX.heat;
+  if (!run.calm) v.flash(...H.flash);
+  v.ring(run.px, run.py, { r0: 10, r1: H.ring, life: 0.4, color: '#ff8a3d', width: 5 });
+  v.burst('blast', run.px, run.py - 20, PALETTES.fire, { n: 14, speed: 1.2 });
+  v.burst('smoke', run.px, run.py - 20, ['#5a4a48', '#7a6660'], { n: 8, speed: 1.4 });
+  run.addShake('medium');
+  sfx.sizzle();
+}
+
+// Bidik just filled: a ping and a small ring where the shot will go
+export function focusReadyFx(run) {
+  const F = TRAIT_FX.focus;
+  run.vfx.ring(run.px + run.aimX * F.ahead, run.py + run.aimY * F.ahead, { r0: TRAIT_FX.focusReady.ring * 2, r1: 6, life: 0.3, color: '#b8ffc8', width: 3 });
+  sfx.ready(true);
+}
+
+// Kombo reached its cap: a violet ring out of the feet and a ping — the next skill is the finisher
+export function comboReadyFx(run) {
+  const C = TRAIT_FX.combo;
+  run.vfx.ring(run.px, run.py + 8, { r0: C.r, r1: C.ready, life: 0.35, color: '#b07cff', width: 4 });
+  run.vfx.burst('stars', run.px, run.py, PALETTES.shadow, { n: 6, speed: 0.8 });
+  sfx.ready(false);
+}
+
+// the skill cast on a full Kombo: a violet cross-cut over the assassin, a held beat
+export function comboFinisherFx(run) {
+  const v = run.vfx, C = TRAIT_FX.combo, x = run.px, y = run.py;
+  if (!run.calm) v.flash(...C.flash);
+  v.cut(x, y - 10, 0.8, 46, '#b07cff', 0.3); v.cut(x, y - 10, -0.8, 46, '#ffffff', 0.25);
+  v.ring(x, y + 8, { r0: 8, r1: C.ready * 1.3, life: 0.4, color: '#6a2fb8', width: 5 });
+  run.addShake('medium'); run.addHitStop('ultHit');
 }
 
 // a full-Bidik arrow: a line of light through the whole screen along the shot

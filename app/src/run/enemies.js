@@ -202,7 +202,7 @@ export function onDeath(run, e) {
 // A boss enters a new phase (plan "Rasa Pukulan" A): the world holds its breath, a flash
 // (not with reduced motion), rings out of the boss, sparks, and a low roar.
 function phaseFx(run, e) {
-  run.addHitStop?.('phase');
+  run.addHitStop?.('phase'); run.addPunch?.('phase');
   sfx.boss();
   const v = run.vfx;
   if (!v) return; // test stand-ins

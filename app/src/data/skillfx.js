@@ -92,7 +92,10 @@ export const ULT_TINT = {
 // reduced motion drops the flash and the black-and-white moment.
 export const TRAIT_FX = {
   frenzy: { scale: 1.15, flash: ['#ff3040', 0.3, 0.2], ring: 95 },  // Mengamuk: hero size, red flash (colour, alpha, s)
-  heat: { glowFrom: 80, smoke: 14 },                                   // Panas: staff glows above this; Kepanasan smoke/s
+  heat: { glowFrom: 50, smoke: 14, flash: ['#ff8a3d', 0.22, 0.2], ring: 80 }, // Panas: staff glows above this; Kepanasan smoke/s, its flash & ring
+  rage: { embers: 22, from: 0.15 },                                    // Murka filling: embers/s at the feet at a full bar (× fill²), none below `from`
+  focusReady: { ring: 30 },                                            // Bidik just filled: a small ring at the aim point
+  combo: { pip: 3, r: 20, ready: 54, flash: ['#b07cff', 0.16, 0.15] }, // Kombo at the feet: pip size, ring radius; at max a ring out & the finisher flash
   focus: { line: 1500, ring: [34, 10], ahead: 70 },                    // Bidik: shot line length; aim ring radius empty → full, distance ahead
   execute: { gray: 0.15, slash: 2.6 },                                 // Kombo: black-and-white seconds; slash length × enemy radius
 };

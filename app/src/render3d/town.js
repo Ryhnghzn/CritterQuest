@@ -175,7 +175,7 @@ export class Town25 {
     if (this.snap || Math.hypot(tx - this.camX, ty - this.camY) > 900) { this.camX = tx; this.camY = ty; this.snap = false; }
     const k = town ? 0.14 : 0.03;
     this.camX += (tx - this.camX) * k; this.camY += (ty - this.camY) * k;
-    st.shake.x = st.shake.y = 0;
+    st.shake.x = st.shake.y = 0; st.punch = 0;
     st.look(this.camX, this.camY);
     const hx = town ? town.x : this.camX, hy = town ? town.y : this.camY, yaw = st.yaw;
 

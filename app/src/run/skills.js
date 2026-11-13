@@ -138,7 +138,7 @@ export function stepSkills(run, intent, dt) {
     if (u.invuln) run.dodgeInv = Math.max(run.dodgeInv, u.invuln);
     run.attackT = ATTACK_POSE;
     run.showBanner(u.name.toUpperCase());
-    run.addShake('heavy'); run.addHitStop('ult');
+    run.addShake('heavy'); run.addHitStop('ult'); run.addPunch?.('ult');
     run.vfx.flash('#fff3c4', 0.4, 0.18);
     run.vfx.ring(run.px, run.py, { r1: 120, life: 0.5, color: '#ffd166', width: 5 });
     sfx.ult(u.id);

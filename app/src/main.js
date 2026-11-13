@@ -223,6 +223,7 @@ function applyEffects() {
   document.body.classList.toggle('hud-lite', id === 'lite'); // Ringan: the HUD's decorations stand still too
   game.vfx.setQuality(q, TOUCH ? q.touchCap : q.cap);
   R.shakeOn = q.shake && settings.shake && !CALM.matches;
+  R.punchOn = settings.shake && !CALM.matches; // costs nothing, so it stays in Ringan too
   game.calm = CALM.matches; // the class peaks skip their flash and black-and-white (spec §31.8)
 }
 CALM.addEventListener('change', applyEffects);

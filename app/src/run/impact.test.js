@@ -3,8 +3,10 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from './run.js';
 import { recoilOf } from './vfx.js';
+import { stepPlayerFx } from './skillfx.js';
+import { traitHeat, traitStep, traitBasicHit, traitCast } from './traits.js';
 import { CLASSES, CLASS_BASE } from '../data/classes.js';
-import { SHAKE, HITSTOP, HITSTOP_GAP, RECOIL, FLOATER_MAX } from '../data/fx.js';
+import { SHAKE, HITSTOP, HITSTOP_GAP, RECOIL, FLOATER_MAX, PUNCH } from '../data/fx.js';
 
 const DT = 1 / 60;
 function start() {
@@ -118,5 +120,71 @@ describe('kematian & bos', () => {
     expect(b.phase).toBe(1);
     expect(g.hitStop).toBe(HITSTOP.phase);
     expect(g.shake).toBeGreaterThan(SHAKE.heavy * 0.9);
+  });
+});
+
+describe('kamera mendekat (punch)', () => {
+  it('bos ganti fase mendekatkan kamera, lalu kembali perlahan', () => {
+    const g = start(), b = g.spawnEnemy('lavaboss');
+    b.x = 200; b.speed = 0; b.hp = b.maxHp * 0.45; step(g);
+    expect(g.punch).toBeCloseTo(PUNCH.phase, 2);
+    for (let i = 0; i < 120; i++) step(g);
+    expect(g.punch).toBe(0);
+  });
+  it('bos tumbang paling dekat, yang terkuat menang', () => {
+    const g = start();
+    g.addPunch('bossKill'); g.addPunch('ult');
+    expect(g.punch).toBe(PUNCH.bossKill);
+    expect(PUNCH.bossKill).toBeGreaterThan(PUNCH.phase);
+    expect(PUNCH.phase).toBeGreaterThan(PUNCH.ult);
+    g.addPunch('tidak-ada'); expect(g.punch).toBe(PUNCH.bossKill);
+  });
+  it('ultimate dilepas mendekatkan kamera', () => {
+    const g = new Game();
+    g.start({ classId: 'mage', stats: { ...CLASS_BASE, ...CLASSES.mage.stats }, ult: CLASSES.mage.ult });
+    g.spawnT = 1e9; g.ultCharge = 1e9;
+    g.intent = { move: { x: 0, y: 0 }, aimAt: null, dodge: false, attack: false, ult: true, potion: -1 };
+    g.step(DT);
+    expect(g.punch).toBeGreaterThan(0);
+  });
+});
+
+describe('identitas kelas (bagian C)', () => {
+  const as = (classId) => {
+    const g = new Game();
+    g.start({ classId, stats: { ...CLASS_BASE, ...CLASSES[classId].stats, maxHp: 100000 } });
+    g.spawnT = 1e9; g.vfx.clear();
+    return g;
+  };
+  it('Murka mengisi: bara di kaki makin banyak, kosong = tidak ada', () => {
+    const g = as('warrior');
+    g.trait.v = 0; stepPlayerFx(g, 0.5); expect(g.vfx.particles.size).toBe(0);
+    g.trait.v = 40; stepPlayerFx(g, 1); const low = g.vfx.particles.size;
+    g.vfx.clear(); g.trait.v = 95; stepPlayerFx(g, 1);
+    expect(g.vfx.particles.size).toBeGreaterThan(low);
+  });
+  it('Kepanasan: guncangan & cincin', () => {
+    const g = as('mage');
+    g.trait.v = 99; traitHeat(g, 5);
+    expect(g.trait.lock).toBeGreaterThan(0);
+    expect(g.shake).toBeGreaterThanOrEqual(SHAKE.medium);
+    expect(g.vfx.rings.size).toBeGreaterThan(0);
+  });
+  it('Bidik penuh: cincin di titik bidik', () => {
+    const g = as('archer');
+    g.trait.v = CLASSES.archer.trait.max - 0.1; traitStep(g, 0.1, false, true);
+    expect(g.trait.focus).toBe(true);
+    expect(g.vfx.rings.size).toBe(1);
+  });
+  it('Kombo penuh memberi aba-aba sekali, finisher menjeda', () => {
+    const g = as('assassin'), c = CLASSES.assassin.trait;
+    g.trait.v = c.max - 1; g.trait.hits = c.hitsPer - 1;
+    traitBasicHit(g);
+    expect(g.trait.v).toBe(c.max); expect(g.vfx.rings.size).toBe(1);
+    for (let i = 0; i < c.hitsPer; i++) traitBasicHit(g); // already full: no second cue
+    expect(g.vfx.rings.size).toBe(1);
+    const mul = traitCast(g, CLASSES.assassin.skills[0]);
+    expect(mul).toBeCloseTo(1 + c.perPoint * c.max);
+    expect(g.hitStop).toBe(HITSTOP.ultHit);
   });
 });

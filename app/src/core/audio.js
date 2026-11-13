@@ -125,6 +125,10 @@ export const sfx = {
   clear() { if (!play('clear')) this.chime(); }, // a floor cleared
   chime() { tone(523, 0.1, 'square', 0.1); tone(659, 0.1, 'square', 0.1, 0, 0.09); tone(784, 0.16, 'square', 0.1, 0, 0.18); },
   pickCard() { tone(660, 0.08, 'square', 0.09); tone(990, 0.12, 'square', 0.09, 0, 0.07); },
+  // class peaks (plan "Rasa Pukulan" C): synth only, short and quiet
+  roar() { tone(150, 0.32, 'sawtooth', 0.14, -70); noise(0.22, 0.07); },                  // Mengamuk
+  sizzle() { noise(0.4, 0.09); tone(420, 0.35, 'sawtooth', 0.06, -300); },                // Kepanasan
+  ready(high = false) { const f = high ? 1568 : 1175; tone(f, 0.07, 'triangle', 0.07); tone(f * 1.5, 0.12, 'triangle', 0.06, 0, 0.06); }, // Bidik full / Kombo max
   boss() { tone(110, 0.7, 'sawtooth', 0.2, -40); tone(82, 0.9, 'sawtooth', 0.18, 0, 0.25); noise(0.5, 0.08, 0.1); },
   gameover() { // the player's fall, then the jingle
     const after = play('playerDie') ? 0.8 : 0;

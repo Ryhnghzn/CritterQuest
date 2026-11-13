@@ -13,6 +13,7 @@ import { RARITIES } from '../data/items.js';
 import { CLASSES } from '../data/classes.js';
 import { glow, star4 } from './fxkit.js';
 import { BRANCH_SKILL, BRANCH_AURA } from './branchfx.js';
+import { comboMax } from '../run/traits.js';
 
 const TAU = Math.PI * 2;
 const OUT = '#1a1226';
@@ -874,6 +875,29 @@ export function drawTraitHero(g, game, t, hero) {
     glow(g, 9, -47, (3 + k * 4) * p, '#ffd166');
     g.restore();
   }
+}
+
+// Kombo at the feet (ground layer, plan "Rasa Pukulan" C): one violet pip per point round the
+// assassin; at the cap the pips glow and a ring breathes — the next skill is the finisher.
+export function drawComboMark(g, game, t) {
+  if (traitId(game) !== 'combo') return;
+  const n = Math.floor(game.trait.v);
+  if (n <= 0) return;
+  const C = TRAIT_FX.combo, max = comboMax(game), full = n >= max, x = game.px, y = game.py + 8;
+  g.save();
+  for (let i = 0; i < max; i++) {
+    const a = -Math.PI / 2 + (i / max) * TAU + (full ? t * 1.2 : 0), px = x + Math.cos(a) * C.r, py = y + Math.sin(a) * C.r * 0.45; // flattened: it's the floor
+    g.beginPath(); g.moveTo(px, py - C.pip); g.lineTo(px + C.pip * 0.7, py); g.lineTo(px, py + C.pip); g.lineTo(px - C.pip * 0.7, py); g.closePath();
+    g.fillStyle = i < n ? (full ? '#e9d8ff' : '#b07cff') : 'rgba(40,24,60,.55)';
+    g.fill();
+  }
+  if (full) {
+    const p = 0.5 + 0.5 * Math.sin(t * 9);
+    g.lineWidth = 2; g.strokeStyle = `rgba(176,124,255,${0.45 + p * 0.45})`;
+    g.beginPath(); g.ellipse(x, y, C.r + 6 + p * 3, (C.r + 6 + p * 3) * 0.45, 0, 0, TAU); g.stroke();
+    g.globalCompositeOperation = 'lighter'; glow(g, x, y, 14 + p * 6, '#6a2fb8');
+  }
+  g.restore();
 }
 
 // Bidik filling (ground layer): an aim ring ahead of the archer that shrinks as the bar fills;

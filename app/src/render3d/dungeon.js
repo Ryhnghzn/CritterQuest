@@ -171,6 +171,7 @@ export class Dungeon25 {
     this.camY += (ty - this.camY) * (playing ? 0.12 : 0.02);
     const sh = playing && game.shake > 0 && this.flat.shakeOn ? game.shake * SHAKE_PX * S : 0;
     st.shake.x = (Math.random() - 0.5) * sh; st.shake.y = (Math.random() - 0.5) * sh;
+    st.punch = playing && this.flat.punchOn ? game.punch || 0 : 0; // camera punch (plan "Rasa Pukulan" B)
     st.look(this.camX, this.camY);
     sunAt(this.moon, this.camX * S, this.camY * S, [-10, 20, -8]); // follows the camera: its shadows cover the view
 

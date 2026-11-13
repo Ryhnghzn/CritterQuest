@@ -7,6 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { LOOK, CAMERA } from '../data/look.js';
+import { PUNCH } from '../data/fx.js';
 import { detailPixels, DETAIL_SCALE, DETAIL_SIZE } from './texkit.js';
 
 export const S = 1 / 22;          // game units → metres (a hero ≈ 1.7 m)
@@ -169,6 +170,7 @@ export class Stage {
     this.turnSens = 1;                // Settings: camera turn speed (data/settings.js CAM_SENS)
     this.lite = false;
     this.shake = { x: 0, y: 0 };
+    this.punch = 0; this.punchNow = 0; // camera punch (data/fx.js PUNCH): the wanted share closer, and the eased one
     this.target = new THREE.Vector3();
     this.ready = false;
     this.cap = null;                  // load guard (run/loadguard.js): a lower pixel ratio for a while, nothing rebuilt
@@ -279,7 +281,7 @@ export class Stage {
   look(x, y) {
     if (CAMERA.behind) { this.lookBehind(x, y); return; }
     this.yaw += (this.yawGoal - this.yaw) * 0.18;
-    const k = this.zoom, tx = x * S, tz = y * S, sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
+    const k = this.zoom * this.leanIn(), tx = x * S, tz = y * S, sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
     this.camera.position.set(tx + sx * CAM.dist * k + this.shake.x, CAM.height * k, tz + cz * CAM.dist * k + this.shake.y);
     this.camera.lookAt(tx - sx * 0.8, 0.6, tz - cz * 0.8);
     this.target.set(tx, 0, tz);
@@ -299,10 +301,17 @@ export class Stage {
     }
     this.prev = { x: tx, z: tz };
     this.yaw += (this.yawGoal - this.yaw) * 0.18;
-    const k = this.zoom, sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
+    const k = this.zoom * this.leanIn(), sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
     this.camera.position.set(tx + sx * CAMERA.dist * k + this.shake.x, CAMERA.height * k, tz + cz * CAMERA.dist * k + this.shake.y);
     this.camera.lookAt(tx - sx * CAMERA.ahead, CAMERA.lookH, tz - cz * CAMERA.ahead);
     this.target.set(tx, 0, tz);
+  }
+
+  // eases the camera punch and returns the distance factor (1 = none)
+  leanIn() {
+    this.punchNow += (this.punch - this.punchNow) * PUNCH.ease;
+    if (this.punchNow < 1e-4) this.punchNow = 0;
+    return 1 - this.punchNow;
   }
 
   render(scene) {

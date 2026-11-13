@@ -24,7 +24,7 @@ import { REGIONS } from '../data/world.js';
 import { skyAt } from '../meta/clock.js';
 import { drawVfx, drawFlashes, drawFloaters } from './fxkit.js';
 import { bushDisguise, mirrorMark, puddle, leapHeight, foeMarks } from './foes.js';
-import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, playerAlpha } from './skillfx.js';
+import { drawHit, drawUltTint, drawBuffAura, drawEnemyMarks, heroScale, drawTraitHero, drawFocusAim, drawComboMark, playerAlpha } from './skillfx.js';
 import { SHAKE_PX, RECOIL } from '../data/fx.js';
 import { recoilOf } from '../run/vfx.js';
 
@@ -59,6 +59,7 @@ export class Renderer {
     this.atkStart = -9; this.lastAttackT = 0; // keyframed swing: starts when a new attack fires
     this.lastCast = null; this.move = null;  // skill move being played: { id, t0, dur }
     this.trail = [];      // dodge afterimages: { x, y, life }
+    this.punchOn = true;  // camera punch: off with Settings → screen shake off or reduced motion (main.js)
     this.shakeOn = true;  // off in the 'lite' effects setting and with Settings → screen shake off (main.js)
     this.numbersOn = true; // Settings → damage numbers (main.js)
     this.rect = { x0: 0, y0: 0, x1: 0, y1: 0 }; // visible world area, for culling effects
@@ -270,6 +271,7 @@ export class Renderer {
     drawEnemyMarks(g, game, t);
     drawBuffAura(g, game, t);
     drawFocusAim(g, game, t);
+    drawComboMark(g, game, t);
     potionAuras(g, game, t);
     if (this.avatar) auraFront(g, game.px, game.py + 10, game.fx, bestRarity(this.avatar.look.gear), t, { host: this, lite: game.vfx.mul < 1, level: game.level, set: this.avatar.set, facing: this.facing, enemies: game.enemies, frenzyOn: game.frenzyOn, shield: game.shieldMax > 0 ? game.shield / game.shieldMax : 0 });
 
