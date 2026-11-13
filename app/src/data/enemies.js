@@ -199,8 +199,13 @@ export const ENEMIES = {
     signature: ['prism', 'shardrain'],
     phases: [
       { at: 1, patterns: ['prism', 'shardrain', 'ring', 'slam'] },
-      { at: 0.5, name: 'RETAK!', patterns: ['prism', 'shardrain', 'shardrain', 'spiral', 'prism'] },
+      { at: 0.5, name: 'RETAK!', patterns: ['prism', 'shardrain', 'shardrain', 'spiral', 'prism'], shatter: true },
     ],
+    // plan "Bos Berkesan" D: Kulit Kristal — a crust (× max HP) that soaks every hit; heavy hits (crit, skill,
+    // ultimate) wear it × heavy, Tebasan Raksasa at full breaks it at once. Broken: stunned; grows back after
+    // `regrow` s. Phase 2 (RETAK!) shatters it for good.
+    crust: { hp: 0.06, heavy: 2.5, regrow: 9, stun: { time: 2.4, taken: 0.3 } },
+    tell: { ring: 0.6, spiral: 0.7, summon: 0.6 }, noRepeat: true,
     prism: { count: 3, dist: 150, w: 18, fuse: 0.9, gap: 0.35, flashes: 6, dmg: 26 },
     shardrain: { rows: 8, step: 38, width: 2, gapW: 34, r: 22, fuse: 0.8, gap: 0.14, dmg: 22 },
   },

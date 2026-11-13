@@ -230,9 +230,11 @@ function boss(run, e, b, dt) {
       run.pulses.push({ x: e.x, y: e.y, r: 260, t: 0.8, max: 0.8, color: '199,155,255' });
       phaseFx(run, e);
       if (b.phases[ph].guards && b.guards) raiseGuards(run, e, b.guards); // Raja Mumi (plan "Bos Berkesan" B)
+      if (b.phases[ph].shatter && e.crustMax) { e.crust = 0; e.crustMax = 0; run.vfx?.burst('shards', e.x, e.y, ['#9fe0ff', '#ffffff'], { n: 18, speed: 1.6 }); } // Golem Kristal: the crust is gone for good
       return { vx: 0, vy: 0 };
     }
   }
+  if (b.crust) crustStep(run, e, b.crust, dt); // Golem Kristal (plan "Bos Berkesan" D)
   if (e.tired > 0) { tiredStep(run, e, dt); return { vx: 0, vy: 0 }; } // an opening (plan "Bos Berkesan")
   if (e.mode === 'wind' || e.mode === 'dash' || e.mode === 'rest') {
     const v = charge(run, e, b);
@@ -469,6 +471,33 @@ function tiredStep(run, e, dt) {
     v.spawn('star', e.x + Math.cos(a) * e.r * 0.7, e.y - e.r * 1.6 + Math.sin(a) * e.r * 0.25, -Math.sin(a) * 40, Math.cos(a) * 12, v.range(0.4, 0.6), v.range(2.4, 3.4), BOSS_TIRED.color, 0.97);
   }
   if (e.tired <= 0) { e.tired = 0; e.vulnT = 0; e.actT = Math.max(e.actT, 0.6); }
+}
+
+// Kulit Kristal (plan "Bos Berkesan" D): Golem Kristal's crust soaks hits; heavy ones wear it faster.
+function crustStep(run, e, c, dt) {
+  if (e.crustMax == null) { if ((e.phase || 0) === 0) { e.crustMax = e.maxHp * c.hp; e.crust = e.crustMax; } else e.crustMax = 0; return; }
+  if (!e.crustMax || e.crust > 0 || e.tired > 0) return;
+  if ((e.crustT -= dt) > 0) return;
+  e.crust = e.crustMax;
+  run.addFloater?.(e.x, e.y - e.r - 40, t('Kulit kristal tumbuh lagi'), '#9fe0ff');
+  run.vfx?.ring(e.x, e.y, { r0: e.r * 2.2, r1: e.r, life: 0.5, color: '#9fe0ff', width: 4 });
+}
+// A hit on the crust: returns the damage left for HP. heavy: a crit, skill or ultimate.
+export function crustHit(run, e, dmg, h, heavy) {
+  const c = ENEMIES[e.type].crust, k = h.breakShield ? Infinity : heavy ? c.heavy : 1;
+  const into = dmg * k, soak = Math.min(e.crust, into);
+  e.crust -= soak;
+  if (run.time - (e.crustFxT || -1) > 0.12) { // a few chips, not one burst per hit
+    e.crustFxT = run.time;
+    run.vfx?.burst('shards', e.x, e.y - e.r * 0.5, ['#9fe0ff', '#ffffff'], { n: heavy ? 5 : 2 });
+  }
+  if (e.crust <= 0) {
+    e.crust = 0; e.crustT = c.regrow;
+    tire(run, e, c.stun, t('KULIT KRISTAL PECAH!'));
+    run.vfx?.burst('shards', e.x, e.y, ['#9fe0ff', '#ffffff', '#5aa8d8'], { n: 20, speed: 1.6 });
+    run.addShake?.('heavy');
+  }
+  return k === Infinity ? dmg : dmg * (1 - soak / into);
 }
 
 // Raja Lava cools down after its meteors (plan "Bos Berkesan" C): it stands with its back glowing —

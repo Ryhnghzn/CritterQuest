@@ -95,6 +95,19 @@ export function foeMarks(g, game, t, { shells = true, enemies = true } = {}) {
       g.lineWidth = 2.5; g.strokeStyle = `rgba(${e.wardBy || '255,140,60'},${0.55 + 0.3 * Math.sin(t * 8)})`;
       g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.1, e.r * 0.42, 0, 0, TAU); g.stroke();
     }
+    if (e.crust > 0 && e.hp > 0) { // Kulit Kristal (plan "Bos Berkesan" D): crystal plates round the golem, fewer as it wears
+      const k = e.crust / e.crustMax, n = Math.ceil(10 * k), R = e.r * 1.25;
+      g.save(); g.translate(e.x, e.y); g.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < n; i++) {
+        const a = (i / 10) * TAU + t * 0.4, x = Math.cos(a) * R, y = Math.sin(a) * R * 0.55 - e.r * 0.4;
+        g.beginPath(); g.moveTo(x, y - 14); g.lineTo(x + 6, y); g.lineTo(x, y + 8); g.lineTo(x - 6, y); g.closePath();
+        g.fillStyle = `rgba(150,220,255,${0.35 + 0.35 * k})`; g.fill();
+        g.lineWidth = 1.2; g.strokeStyle = 'rgba(230,248,255,.9)'; g.stroke();
+      }
+      g.restore();
+      g.lineWidth = 4; g.strokeStyle = 'rgba(150,220,255,.85)'; // what is left of it, as an arc under its feet
+      g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.7, e.r * 1.3, e.r * 0.5, 0, -Math.PI / 2, -Math.PI / 2 + TAU * k); g.stroke();
+    }
     if (e.vent && e.hp > 0) { // Raja Lava cooling (plan "Bos Berkesan" C): a glowing wedge on the ground behind it — stand here
       const v = e.vent, k = 0.6 + 0.4 * Math.sin(t * 10), R = e.r * 4;
       g.save(); g.translate(e.x, e.y + e.r * 0.6); g.scale(1, 0.62);

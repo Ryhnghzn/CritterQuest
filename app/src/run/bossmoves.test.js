@@ -312,3 +312,38 @@ describe('Raja Lava: kepanasan', () => {
     expect(b.vent || null).toBe(null);
   });
 });
+
+// plan "Bos Berkesan" D
+describe('Golem Kristal: kulit kristal', () => {
+  const C = ENEMIES.crystalboss.crust;
+  const golem = () => { const g = start(); g.stats.crit = 0; const b = g.spawnEnemy('crystalboss'); b.x = 200; b.speed = 0; b.actT = 99; step(g); return { g, b }; };
+  it('kulit menyerap pukulan; pukulan berat mengikis lebih cepat', () => {
+    const { g, b } = golem();
+    expect(b.crust).toBeCloseTo(b.maxHp * C.hp);
+    const hp = b.hp, c0 = b.crust;
+    g.damageEnemy({ mult: 0.5, fx: 'slash' }, b);
+    expect(b.hp).toBe(hp);
+    const light = c0 - b.crust, c1 = b.crust;
+    g.damageEnemy({ mult: 0.5, fx: 'spin', skill: true }, b);
+    expect((c1 - b.crust) / light).toBeCloseTo(C.heavy * (1 + (g.fx.skillDmg || 0)), 1);
+  });
+  it('kulit pecah → lelah, lalu tumbuh lagi', () => {
+    const { g, b } = golem();
+    b.crust = 1; g.damageEnemy({ mult: 1, fx: 'slash' }, b);
+    expect(b.crust).toBe(0); expect(b.tired).toBeGreaterThan(0);
+    step(g, secs(C.stun.time + C.regrow) + 5);
+    expect(b.crust).toBeCloseTo(b.crustMax);
+  });
+  it('Tebasan Raksasa penuh memecahkan kulit seketika', () => {
+    const { g, b } = golem();
+    g.damageEnemy({ mult: 0.01, fx: 'slash', breakShield: true }, b);
+    expect(b.crust).toBe(0); expect(b.tired).toBeGreaterThan(0);
+  });
+  it('fase 2 RETAK!: kulit hancur untuk selamanya', () => {
+    const { g, b } = golem();
+    b.hp = b.maxHp * 0.45; step(g);
+    expect(b.phase).toBe(1); expect(b.crust).toBe(0); expect(b.crustMax).toBe(0);
+    step(g, secs(C.regrow) + 5);
+    expect(b.crust).toBe(0);
+  });
+});
