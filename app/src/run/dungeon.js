@@ -194,12 +194,13 @@ function stepPortals(run, dt) {
 }
 
 // A piece of gear on the ground; picked up like a gem (run.pickup).
-export function dropGear(run, source, x, y) {
+// from: the boss it fell from (its own uniques come more often, plan endgame tahap 1)
+export function dropGear(run, source, x, y, from = null) {
   // deeper dungeons give higher-level gear
   const level = run.field // regions: around the level of the enemy that fell (spec §25.1)
     ? Math.max(1, Math.min(CHAR_LEVEL_MAX, (run.lootLevel || run.level) + Math.floor(rand() * 3) - 1))
     : Math.min(CHAR_LEVEL_MAX, itemLevelFor(run.level, run.dungeon.rift ? 5 : run.floor, rand) + run.dungeon.itemLevel + (run.dungeon.rift ? Math.floor(run.floor * RIFT.itemPerFloor) : 0));
-  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level, mods: run.mods }, rand);
+  const item = dropItem({ source, classId: run.classId, charLevel: run.level, floor: run.floor, luk: run.luk, level, mods: run.mods, from, owned: run.codex }, rand);
   const a = rand() * Math.PI * 2;
   run.gems.push({ x: x + Math.cos(a) * 18, y: y + Math.sin(a) * 18, v: 0, mag: false, big: false, gear: item, t: rand() * 6 });
   return item;
@@ -235,7 +236,7 @@ export function addMats(run, mats, dx = 0, dy = -50) {
 export function dropLoot(run, e) {
   run.lootLevel = e.level || 0;
   if (e.boss) {
-    for (let i = 0; i < DROP.bossItems; i++) dropGear(run, 'boss', e.x, e.y);
+    for (let i = 0; i < DROP.bossItems; i++) dropGear(run, 'boss', e.x, e.y, e.type);
     addMats(run, MAT_DROPS.boss);
     const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)];
     run.gemsFound.push({ gem, tier: 1 });

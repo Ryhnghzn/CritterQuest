@@ -65,7 +65,7 @@ export function buyChest(char, kind, now, rng = Math.random) {
   if (char.inventory.length >= INVENTORY_MAX) return { ok: false, reason: 'bag' };
   if (char.gold < price) return { ok: false, reason: 'gold' };
   const c = structuredClone(char);
-  const item = dropItem({ source: CHESTS[kind].source, classId: c.classId, charLevel: c.level, floor: 1, luk: c.attrs.luk, level: c.level }, rng);
+  const item = dropItem({ source: CHESTS[kind].source, classId: c.classId, charLevel: c.level, floor: 1, luk: c.attrs.luk, level: c.level, owned: c.records.uniques }, rng);
   while (c.inventory.some((x) => x.id === item.id)) item.id += 'x';
   c.gold -= price;
   c.inventory.push(item);

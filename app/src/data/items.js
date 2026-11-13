@@ -78,29 +78,31 @@ export const EFFECTS = {
 
 // Unique items. A Legendary / Mythic drop picks one that fits the slot (and the
 // class, for weapons); class: null fits everyone.
+// from: the boss that drops it more often (plan endgame tahap 1, UNIQUE_FAVOR); any Legendary / Mythic roll can still
+// be any unique that fits the class
 export const UNIQUES = [
   // Legendaris
-  { id: 'fajar', rarity: 4, slot: 'weapon', classId: 'warrior', name: 'Pedang Fajar', effect: 'execute', v: 0.5 },
-  { id: 'anginutara', rarity: 4, slot: 'weapon', classId: 'archer', name: 'Busur Angin Utara', effect: 'chain', v: 0.12 },
-  { id: 'baraabadi', rarity: 4, slot: 'weapon', classId: 'mage', name: 'Tongkat Bara Abadi', effect: 'explode', v: 0.6 },
-  { id: 'bulansabit', rarity: 4, slot: 'weapon', classId: 'assassin', name: 'Belati Bulan Sabit', effect: 'lifesteal', v: 0.03 },
-  { id: 'rajalendir', rarity: 4, slot: 'helm', classId: null, name: 'Mahkota Raja Lendir', effect: 'regen', v: 0.008 },
-  { id: 'tanduksetan', rarity: 4, slot: 'helm', classId: null, name: 'Helm Tanduk Gelap', effect: 'frenzy', v: 0.3 },
-  { id: 'durihitam', rarity: 4, slot: 'armor', classId: null, name: 'Zirah Duri Hitam', effect: 'thorns', v: 0.5 },
-  { id: 'jubahpenjaga', rarity: 4, slot: 'armor', classId: null, name: 'Jubah Penjaga', effect: 'shield', v: 0.15 },
-  { id: 'kabut', rarity: 4, slot: 'boots', classId: null, name: 'Sepatu Kabut', effect: 'dodgecd', v: 0.4 },
-  { id: 'matanaga', rarity: 4, slot: 'amulet', classId: null, name: 'Kalung Mata Naga', effect: 'bossdmg', v: 0.4 },
-  { id: 'keserakahan', rarity: 4, slot: 'amulet', classId: null, name: 'Liontin Keserakahan', effect: 'goldfind', v: 0.4 },
-  { id: 'sangbijak', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Sang Bijak', effect: 'expfind', v: 0.25 },
-  { id: 'amarah', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Amarah', effect: 'frenzy', v: 0.3 },
+  { id: 'fajar', rarity: 4, slot: 'weapon', classId: 'warrior', name: 'Pedang Fajar', effect: 'execute', v: 0.5, from: 'tombboss' },
+  { id: 'anginutara', rarity: 4, slot: 'weapon', classId: 'archer', name: 'Busur Angin Utara', effect: 'chain', v: 0.12, from: 'crystalboss' },
+  { id: 'baraabadi', rarity: 4, slot: 'weapon', classId: 'mage', name: 'Tongkat Bara Abadi', effect: 'explode', v: 0.6, from: 'lavaboss' },
+  { id: 'bulansabit', rarity: 4, slot: 'weapon', classId: 'assassin', name: 'Belati Bulan Sabit', effect: 'lifesteal', v: 0.03, from: 'sporeboss' },
+  { id: 'rajalendir', rarity: 4, slot: 'helm', classId: null, name: 'Mahkota Raja Lendir', effect: 'regen', v: 0.008, from: 'boss' },
+  { id: 'tanduksetan', rarity: 4, slot: 'helm', classId: null, name: 'Helm Tanduk Gelap', effect: 'frenzy', v: 0.3, from: 'boss' },
+  { id: 'durihitam', rarity: 4, slot: 'armor', classId: null, name: 'Zirah Duri Hitam', effect: 'thorns', v: 0.5, from: 'sporeboss' },
+  { id: 'jubahpenjaga', rarity: 4, slot: 'armor', classId: null, name: 'Jubah Penjaga', effect: 'shield', v: 0.15, from: 'crystalboss' },
+  { id: 'kabut', rarity: 4, slot: 'boots', classId: null, name: 'Sepatu Kabut', effect: 'dodgecd', v: 0.4, from: 'sporeboss' },
+  { id: 'matanaga', rarity: 4, slot: 'amulet', classId: null, name: 'Kalung Mata Naga', effect: 'bossdmg', v: 0.4, from: 'eclipseboss' },
+  { id: 'keserakahan', rarity: 4, slot: 'amulet', classId: null, name: 'Liontin Keserakahan', effect: 'goldfind', v: 0.4, from: 'tombboss' },
+  { id: 'sangbijak', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Sang Bijak', effect: 'expfind', v: 0.25, from: 'tombboss' },
+  { id: 'amarah', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Amarah', effect: 'frenzy', v: 0.3, from: 'lavaboss' },
   // Mitos
-  { id: 'taringmaw', rarity: 5, slot: 'weapon', classId: 'warrior', name: 'Taring Raja Maw', effect: 'lifesteal', v: 0.05 },
-  { id: 'bintangjatuh', rarity: 5, slot: 'weapon', classId: 'archer', name: 'Busur Bintang Jatuh', effect: 'chain', v: 0.25 },
-  { id: 'kiamat', rarity: 5, slot: 'weapon', classId: 'mage', name: 'Tongkat Kiamat', effect: 'explode', v: 1 },
-  { id: 'ketiadaan', rarity: 5, slot: 'weapon', classId: 'assassin', name: 'Belati Ketiadaan', effect: 'execute', v: 0.8 },
-  { id: 'phoenix', rarity: 5, slot: 'ring', classId: null, name: 'Cincin Phoenix', effect: 'phoenix', v: 0.3 },
-  { id: 'zirahmaw', rarity: 5, slot: 'armor', classId: null, name: 'Zirah Raja Maw', effect: 'thorns', v: 1 },
-  { id: 'mahkotabayang', rarity: 5, slot: 'helm', classId: null, name: 'Mahkota Bayangan', effect: 'bossdmg', v: 0.6 },
+  { id: 'taringmaw', rarity: 5, slot: 'weapon', classId: 'warrior', name: 'Taring Raja Maw', effect: 'lifesteal', v: 0.05, from: 'boss' },
+  { id: 'bintangjatuh', rarity: 5, slot: 'weapon', classId: 'archer', name: 'Busur Bintang Jatuh', effect: 'chain', v: 0.25, from: 'eclipseboss' },
+  { id: 'kiamat', rarity: 5, slot: 'weapon', classId: 'mage', name: 'Tongkat Kiamat', effect: 'explode', v: 1, from: 'eclipseboss' },
+  { id: 'ketiadaan', rarity: 5, slot: 'weapon', classId: 'assassin', name: 'Belati Ketiadaan', effect: 'execute', v: 0.8, from: 'eclipseboss' },
+  { id: 'phoenix', rarity: 5, slot: 'ring', classId: null, name: 'Cincin Phoenix', effect: 'phoenix', v: 0.3, from: 'lavaboss' },
+  { id: 'zirahmaw', rarity: 5, slot: 'armor', classId: null, name: 'Zirah Raja Maw', effect: 'thorns', v: 1, from: 'boss' },
+  { id: 'mahkotabayang', rarity: 5, slot: 'helm', classId: null, name: 'Mahkota Bayangan', effect: 'bossdmg', v: 0.6, from: 'eclipseboss' },
   // quest rewards only (spec §26.5): never dropped, sold or rolled from chests
   { id: 'akartua', rarity: 4, slot: 'amulet', classId: null, name: 'Kalung Akar Tua', effect: 'regen', v: 0.01, quest: true },
   { id: 'bintangbeku', rarity: 4, slot: 'ring', classId: null, name: 'Cincin Bintang Beku', effect: 'shield', v: 0.12, quest: true },
@@ -121,6 +123,9 @@ export const DROP_WEIGHTS = {
   riftGreat: [0, 0, 0, 0, 75, 25], // every RIFT_MILESTONE.great floors: Legendaris and up
 };
 export const LUK_RARITY = 0.01;
+// Which unique a Legendary / Mythic roll becomes (plan endgame tahap 1): weight × source when it fell from its own
+// boss (UNIQUES[].from), × fresh when the character has not found it yet (its codex) — bad luck wears off
+export const UNIQUE_FAVOR = { source: 4, fresh: 3 };
 export const DROP = {
   enemyChance: 0.015,   // normal enemy drops a piece of gear
   bossItems: 2,

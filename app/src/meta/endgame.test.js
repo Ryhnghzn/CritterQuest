@@ -2,7 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { createCharacter, applyTrip } from './character.js';
 import { RIFT_MILESTONE } from '../data/rift.js';
-import { DROP_WEIGHTS, LEGENDARY } from '../data/items.js';
+import { DROP_WEIGHTS, LEGENDARY, MYTHIC, UNIQUES, UNIQUE_FAVOR } from '../data/items.js';
+import { pickUnique } from './itemgen.js';
 
 const NOW = 1700000000000;
 const hero = () => ({ ...createCharacter({ slot: 0, name: 'Reyhan', look: { hair: 2, hairColor: 4 }, classId: 'warrior' }, NOW), level: 50, marks: 0 });
@@ -35,5 +36,36 @@ describe('tonggak Celah', () => {
   it('bobot hadiah: tonggak Epik ke atas, tonggak agung Legendaris ke atas', () => {
     expect(DROP_WEIGHTS.rift.slice(0, 3).every((w) => w === 0)).toBe(true);
     expect(DROP_WEIGHTS.riftGreat.slice(0, 4).every((w) => w === 0)).toBe(true);
+  });
+});
+
+describe('item unik bersumber & pengurang sial', () => {
+  const fits = UNIQUES.filter((u) => !u.quest && u.rarity === LEGENDARY && (u.classId === null || u.classId === 'warrior'));
+  const share = (from, owned, id) => {
+    seed = 7; let n = 0;
+    for (let i = 0; i < 6000; i++) if (pickUnique(fits, from, owned, rng).id === id) n++;
+    return n / 6000;
+  };
+  it('setiap unik yang bisa jatuh punya bos sumber', () => {
+    for (const u of UNIQUES.filter((x) => !x.quest)) expect(u.from, u.id).toMatch(/boss$/);
+  });
+  it('bos sumbernya menjatuhkan unik itu lebih sering (Pedang Fajar dari Raja Mumi)', () => {
+    const base = share(null, null, 'fajar'), fromMummy = share('tombboss', null, 'fajar');
+    const own = fits.filter((u) => u.from === 'tombboss').length, k = UNIQUE_FAVOR.source;
+    expect(base).toBeCloseTo(1 / fits.length, 1);
+    expect(fromMummy).toBeCloseTo(k / (k * own + fits.length - own), 1); // its own share among its own favourites
+    expect(fromMummy).toBeGreaterThan(base * 1.8);
+  });
+  it('yang belum ada di kodeks lebih sering; tanpa kodeks semua sama', () => {
+    const owned = fits.map((u) => u.id).filter((id) => id !== 'amarah');
+    const k = UNIQUE_FAVOR.fresh, expect1 = k / (k + fits.length - 1);
+    expect(share(null, owned, 'amarah')).toBeCloseTo(expect1, 1);
+    expect(share(null, owned, 'amarah')).toBeGreaterThan(share(null, null, 'amarah') * 2);
+  });
+  it('tiap bos punya unik Mitos atau Legendaris untuk kelas apa pun lewat item bersama', () => {
+    for (const b of ['boss', 'crystalboss', 'sporeboss', 'tombboss', 'lavaboss', 'eclipseboss']) {
+      expect(UNIQUES.filter((u) => u.from === b && u.classId === null).length, b).toBeGreaterThanOrEqual(1);
+    }
+    expect(UNIQUES.filter((u) => u.rarity === MYTHIC && !u.quest).every((u) => u.from)).toBe(true);
   });
 });

@@ -208,8 +208,8 @@ export function applyTrip(char, trip, now, rng = Math.random) {
       if (m <= char.rift.best) continue;
       riftMilestones.push(m);
       c.marks += M.marks + M.marksPer * (m / M.every - 1);
-      milestoneItems.push(dropItem({ source: 'rift', classId: c.classId, charLevel: c.level, floor: 0, level: lvl }, rng));
-      if (m % M.great === 0) milestoneItems.push(dropItem({ source: 'riftGreat', classId: c.classId, charLevel: c.level, floor: 0, level: lvl }, rng));
+      milestoneItems.push(dropItem({ source: 'rift', classId: c.classId, charLevel: c.level, floor: 0, level: lvl, owned: c.records.uniques }, rng));
+      if (m % M.great === 0) milestoneItems.push(dropItem({ source: 'riftGreat', classId: c.classId, charLevel: c.level, floor: 0, level: lvl, owned: c.records.uniques }, rng));
     }
   }
   else {

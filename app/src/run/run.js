@@ -142,7 +142,7 @@ export class Game {
   // dungeon: id from data/dungeons.js (spec §18.3)
   // skills: the two skill ids worn on Q / E (spec §21), default the class's first two
   // ult: the ultimate picked in the skill tree (meta/jobs.js equippedUlt), else null
-  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null, power = null }) {
+  reset({ classId, stats, hp = stats.maxHp, potions = NO_POTIONS, belt = DEFAULT_BELT, level = 1, exp = 0, luk = 0, codex = null, effects = {}, dungeon = 'shadow', skills = null, ult = null, eclipse = false, levels = {}, skillsB = null, page = 0, branch = null, power = null }) {
     resetRng();
     this.classId = classId;
     this.mountRolls = { any: 0, eclipse: 0 }; this.inEclipse = !!eclipse; // boss kills this trip, for the Stable's drops (meta/stable.js)
@@ -186,6 +186,7 @@ export class Game {
     this.events = []; this.eventsDone = []; this.raceTimes = []; // quest events in the world (spec §42, run/questev.js)
     this.expGained = 0; this.bossKills = 0; this.gold = 0; this.spent = 0; // spent: coins paid out on the way (Pedagang Kelana, plan "Momen Acak")
     this.loot = []; this.luk = luk; // gear picked up this trip; LUK raises its rarity
+    this.codex = codex || []; // uniques already found: a Legendary / Mythic roll favours new ones (plan endgame tahap 1)
     this.mats = { dust: 0, crystal: 0, core: 0 }; this.gemsFound = []; // forge materials & gems (spec §20)
     // character level & EXP, live during the trip
     this.level = level; this.xp = exp; this.xpNeed = expToNext(level); this.levelsGained = 0;

@@ -2,7 +2,7 @@
 // `rng` passed in (a () => [0, 1) function), so tests can seed it.
 import {
   RARITIES, LEGENDARY, SLOTS, SLOT_IDS, TIER_LEVELS, VARIANTS, LEVEL_GROWTH, BONUSES, BONUS_IDS,
-  ROLL_MIN, UNIQUES, EFFECTS, DROP_WEIGHTS, LUK_RARITY, DROP,
+  ROLL_MIN, UNIQUES, EFFECTS, DROP_WEIGHTS, LUK_RARITY, DROP, UNIQUE_FAVOR,
 } from '../data/items.js';
 import { SOCKETS, ENHANCE, GEMS, GEM_TIER_NAMES } from '../data/forge.js';
 import { CHAR_LEVEL_MAX } from '../data/balance.js';
@@ -72,16 +72,26 @@ export function makeItem({ slot, classId, rarity, itemLevel, unique = null }, rn
 }
 
 // A random drop for a character: rarity by source (+ LUK), slot at random; a
+// One of the uniques that fit, weighted (plan endgame tahap 1): its own boss and not-yet-found ones come more often.
+export function pickUnique(fits, from, owned, rng) {
+  const have = owned ? new Set(owned) : null;
+  const w = fits.map((u) => (from && u.from === from ? UNIQUE_FAVOR.source : 1) * (have && !have.has(u.id) ? UNIQUE_FAVOR.fresh : 1));
+  let roll = rng() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < fits.length; i++) if ((roll -= w[i]) < 0) return fits[i];
+  return fits[fits.length - 1];
+}
+
 // Legendary / Mythic roll becomes one of the uniques that fit the class.
 // level: fixed item level (shop chests), otherwise rolled from character level + floor.
-export function dropItem({ source, classId, charLevel, floor, luk = 0, level = null, mods = null }, rng) {
+// from: the boss it fell from (enemy type) · owned: the uniques already in the character's codex (ids)
+export function dropItem({ source, classId, charLevel, floor, luk = 0, level = null, mods = null, from = null, owned = null }, rng) {
   const itemLevel = level ?? itemLevelFor(charLevel, floor, rng);
   let rarity = rollRarity(source, luk, rng, mods);
   const noWeapon = classId === 'novice'; // a Pengembara finds no weapons (spec §43.1)
   if (rarity >= LEGENDARY) {
     const fits = UNIQUES.filter((u) => !u.quest && u.rarity === rarity && (u.classId === null || u.classId === classId) && !(noWeapon && u.slot === 'weapon'));
     if (fits.length) {
-      const u = fits[Math.floor(rng() * fits.length)];
+      const u = pickUnique(fits, from, owned, rng);
       return makeItem({ slot: u.slot, classId, rarity, itemLevel, unique: u.id }, rng);
     }
   }
