@@ -11,6 +11,7 @@ export const SETTING_CHOICES = {
 };
 export const SETTING_DEFAULTS = {
   musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal', camera: 'top',
+  foeMotion: true, rimLight: true, // Grafis: monsters that move, the rim light on figures (plan "hybrid-visual")
 };
 // starting camera zoom (render3d/stage.js ZOOM: bigger = farther)
 export const ZOOM_START = { near: 1, mid: 1.18, far: 1.35 };

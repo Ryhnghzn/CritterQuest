@@ -15,6 +15,8 @@ Audit (ringkas): dunia 3D dari kode + tanah & props lukisan (props **sudah** ber
 
 - [x] **6. Musuh benar-benar bergerak (`LOOK.foeFrames`, `?tanpa=animasi`):** contoh di `app/gerak.html`; di game untuk Serigala Bayang, Golem, Lendir. `art/foeanim.js` (bagian tubuh kit anime yang digerakkan, `FRAME_PLAN` 23 gambar: diam 4, jalan 6, ancang-ancang 3, serang 3, kena pukul 2, mati 5; `frameAt`; tes) + `render3d/foeframes.js` (lembar gambar per jenis, dibuat **sekali** saat pertama terlihat dengan ukuran & filter pixel yang sama dengan sprite lama; waktu & ukuran dicatat di console `[cq] foe frames`). Tiap musuh punya salinan tekstur yang berbagi satu gambar di GPU dan hanya menggeser jendelanya (12 fps): tanpa menggambar saat bermain. Keadaan: kena pukul (kilat), ancang-ancang, seruduk, gigit/hantam saat menempel (berulang), jalan, diam; mati memutar gambar jatuh lalu memudar. Kilat putih & beku biru lewat shader (`uTint`). Perkiraan memori ±0,5–1,2 MB per jenis.
 
+- [x] **7. Pengaturan → Grafis:** "Animasi musuh" (`foeMotion`, `data/look.js` `setFoeMotion`, bisa diubah saat bermain: musuh kembali ke satu gambar) dan "Cahaya tepi karakter" (`rimLight`, `stage.js` `setRimLight`, lewat uniform yang sama dengan Ringan). Pengaturan v8 + migrasi 7 → 8 (keduanya nyala).
+
 ## Kriteria berhasil
 
 - Di screenshot iPhone landscape karakter tidak terlihat ditempel: sisi terangnya searah bayangan pohon, kaki menapak, ada kilau obor di tepi tubuh di malam hari/dungeon.

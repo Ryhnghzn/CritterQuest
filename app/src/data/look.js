@@ -86,6 +86,14 @@ const q = typeof location !== 'undefined' ? new URLSearchParams(location.search)
 // Settings → Kamera (main.js setCamera) can change it while playing; the URL wins at the start.
 export const CAMERA = { url: q.get('kamera') === 'belakang', behind: q.get('kamera') === 'belakang', follow: q.has('ikut'), dist: 4.6, height: 2.3, ahead: 7, lookH: 1.15, fov: 52, followRate: 1.6 };
 export const LOOK = old ? LAMA : MATANG;
+// Settings → Grafis → Animasi musuh (main.js): monsters that move on or off while playing; the URL's ?tanpa
+// and ?lama still win (what they switched off stays off)
+const MOTION = { foeAnim: null, foeFrames: null };
+export function setFoeMotion(on) {
+  if (old) return;
+  MOTION.foeAnim ??= MATANG.foeAnim; MOTION.foeFrames ??= MATANG.foeFrames;
+  MATANG.foeAnim = on ? MOTION.foeAnim : null; MATANG.foeFrames = on ? MOTION.foeFrames : null;
+}
 // ?tanpa=rim,miring,bayang,gerak,animasi: switch off single parts of the hybrid prototype to compare
 {
   const off = (q.get('tanpa') || '').split(',');

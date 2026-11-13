@@ -17,7 +17,7 @@ import './ui/dialog.css'; // NPC dialog "Potret Besar" + shop panel (spec §45.2
 import { Dungeon25 } from './render3d/dungeon.js';
 import { Field25 } from './render3d/field.js';
 import { Town25 } from './render3d/town.js';
-import { Stage, setSharpScale } from './render3d/stage.js';
+import { Stage, setSharpScale, setRimLight } from './render3d/stage.js';
 import { SHARP_SCALE, ZOOM_START, CAM_SENS } from './data/settings.js';
 import { renderSettings } from './ui/settings.js';
 import { freshSettings } from './meta/schema.js';
@@ -53,7 +53,7 @@ import { showLoading, loadingStep, hideLoading } from './ui/loading.js';
 import { renderTitle, TITLE_SAMPLE, titleBusy } from './ui/title.js';
 import { artReady as titleArtReady } from './art/titlebg.js';
 import { destinationInfo } from './meta/destination.js';
-import { LOOK } from './data/look.js';
+import { LOOK, setFoeMotion } from './data/look.js';
 import { LoadGuard } from './run/loadguard.js';
 import { drawCampfire } from './art/titlebg.js';
 import { UNIQUES, SLOT_IDS, LEGENDARY, RARITIES } from './data/items.js';
@@ -239,6 +239,7 @@ function applySettings() {
   fpsShown = settings.showFps; fpsMeter.reset(); setTouchDots(fpsShown);
   $('fps').classList.toggle('hidden', !fpsShown);
   setSharpScale(SHARP_SCALE[settings.sharp]);
+  setFoeMotion(settings.foeMotion); setRimLight(settings.rimLight); // Grafis: Animasi musuh, Cahaya tepi karakter
   STAGE.turnSens = CAM_SENS[settings.camSens];
   STAGE.setCamera(settings.camera); // Kamera (percobaan): 2.5D by default
   STAGE.resize();

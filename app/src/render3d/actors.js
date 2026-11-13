@@ -393,6 +393,10 @@ export class Actors {
         else u.tint.value = 0;
         ext = sheet.ext;
       } else {
+        if (m.userData.sheet) { // Animasi musuh switched off while it stood here: back to its one picture
+          m.userData.tex.dispose(); m.userData.sheet = null; m.userData.tex = null;
+          m.material.userData.tint.value = 0; m.material.userData.rimW.value.setScalar(LOOK.rim?.w || 0);
+        }
         const key = warn || e.flash > 0 ? `${e.type}Flash` : e.frozen > 0 ? `${e.type}Frozen` : e.type;
         const s = SPRITES[key] || SPRITES[e.type];
         if (!s) { m.visible = false; continue; }
@@ -478,7 +482,7 @@ export class Actors {
     const D = this.dying;
     if (!D?.length) return;
     for (let i = D.length - 1; i >= 0; i--) {
-      const d = D[i], sheet = d.m.userData.sheet, k = (t - d.t0) / (sheet ? LOOK.foeFrames.die : LOOK.foeAnim.die);
+      const d = D[i], sheet = d.m.userData.sheet, k = (t - d.t0) / (sheet ? LOOK.foeFrames?.die ?? 0.5 : LOOK.foeAnim?.die ?? 0.35); // the setting may have switched off mid-fall
       if (k >= 1 || k < 0) { this.dropFoe(d.m); D.splice(i, 1); continue; }
       if (sheet) {
         const fr = sheet.index.die;

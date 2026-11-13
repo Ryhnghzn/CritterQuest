@@ -487,11 +487,11 @@ export default {
   Grafis: 'Graphics', Permainan: 'Gameplay', Bahasa: 'Language',
   Musik: 'Music', 'Efek suara': 'Sound effects', 'Bisukan semua': 'Mute all',
   Tampilan: 'View', 'Kualitas efek': 'Effect quality', Otomatis: 'Auto', Penuh: 'Full', Ringan: 'Lite',
-  Ketajaman: 'Sharpness', Hemat: 'Saver', Normal: 'Normal', Tajam: 'Sharp', 'Tampilkan FPS': 'Show FPS',
+  Ketajaman: 'Sharpness', Hemat: 'Saver', Normal: 'Normal', Tajam: 'Sharp', 'Tampilkan FPS': 'Show FPS', 'Animasi musuh': 'Monster animation', 'Cahaya tepi karakter': 'Character rim light',
   'Serang otomatis': 'Auto attack', 'Guncangan layar': 'Screen shake', 'Angka damage': 'Damage numbers',
   'Zoom kamera awal': 'Starting camera zoom', Dekat: 'Near', Sedang: 'Medium', Jauh: 'Far',
-  'Otomatis: efek penuh, turun ke Ringan bila FPS rendah. Ketajaman lebih tinggi lebih berat di HP; berlaku penuh untuk tempat yang dimuat berikutnya.':
-    'Auto: full effects, dropping to Lite when the FPS runs low. Higher sharpness is heavier on phones; it fully applies to the next place loaded.',
+  'Otomatis: efek penuh, turun ke Ringan bila FPS rendah. Ketajaman lebih tinggi lebih berat di HP; berlaku penuh untuk tempat yang dimuat berikutnya. Animasi musuh & Cahaya tepi karakter bisa dimatikan bila HP berat (Cahaya tepi juga mati di Ringan).':
+    'Auto: full effects, dropping to Lite when the FPS runs low. Higher sharpness is heavier on phones; it fully applies to the next place loaded. Monster animation & Character rim light can be switched off if your phone struggles (the rim light is also off in Lite).',
   'Game dimuat ulang setelah bahasa diganti.': 'The game reloads after the language changes.',
   'Tersimpan otomatis': 'Saved automatically',
 

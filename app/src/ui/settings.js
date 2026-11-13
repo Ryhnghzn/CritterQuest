@@ -12,6 +12,7 @@ const ROWS = {
     ['view', 'Tampilan', 'pick', [['25d', '2.5D'], ['2d', '2D']]],
     ['effects', 'Kualitas efek', 'pick', [['auto', 'Otomatis'], ['full', 'Penuh'], ['lite', 'Ringan']]],
     ['sharp', 'Ketajaman', 'pick', [['save', 'Hemat'], ['normal', 'Normal'], ['sharp', 'Tajam']]],
+    ['foeMotion', 'Animasi musuh', 'bool'], ['rimLight', 'Cahaya tepi karakter', 'bool'],
     ['showFps', 'Tampilkan FPS', 'bool'],
   ],
   play: [
@@ -23,7 +24,7 @@ const ROWS = {
   lang: [['lang', 'Bahasa', 'pick', [['en', 'English'], ['id', 'Indonesia']]]],
 };
 const NOTES = {
-  gfx: 'Otomatis: efek penuh, turun ke Ringan bila FPS rendah. Ketajaman lebih tinggi lebih berat di HP; berlaku penuh untuk tempat yang dimuat berikutnya.',
+  gfx: 'Otomatis: efek penuh, turun ke Ringan bila FPS rendah. Ketajaman lebih tinggi lebih berat di HP; berlaku penuh untuk tempat yang dimuat berikutnya. Animasi musuh & Cahaya tepi karakter bisa dimatikan bila HP berat (Cahaya tepi juga mati di Ringan).',
   play: 'Putar kamera: di HP geser atau putar dua jari, di PC tahan klik kanan lalu geser. Kamera Belakang masih percobaan: rendah di belakang hero; Belakang + ikut berputar sendiri mengikuti arah jalan.',
   lang: 'Game dimuat ulang setelah bahasa diganti.',
 };

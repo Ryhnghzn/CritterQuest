@@ -410,28 +410,33 @@ describe('readSlot', () => {
 });
 
 describe('readSettings', () => {
-  const V5 = { musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal', camera: 'top' };
+  const V5 = { musicVol: 80, sfxVol: 80, view: '25d', sharp: 'normal', showFps: false, shake: true, dmgNumbers: true, zoom: 'far', camSens: 'normal', camera: 'top', foeMotion: true, rimLight: true };
   it('menerima pengaturan versi terkini', () => {
     const s = { version: SETTINGS_VERSION, muted: true, lastSlot: 2, autoAttack: true, lang: 'id', effects: 'lite',
-      musicVol: 30, sfxVol: 100, view: '2d', sharp: 'sharp', showFps: true, shake: false, dmgNumbers: false, zoom: 'near', camSens: 'fast', camera: 'follow' };
+      musicVol: 30, sfxVol: 100, view: '2d', sharp: 'sharp', showFps: true, shake: false, dmgNumbers: false, zoom: 'near', camSens: 'fast', camera: 'follow', foeMotion: false, rimLight: false };
     expect(readSettings(s)).toEqual(s);
   });
-  it('memigrasi versi 1 → 7 (autoAttack mati, bahasa Inggris, efek otomatis)', () => {
+  it('memigrasi versi 1 → 8 (autoAttack mati, bahasa Inggris, efek otomatis)', () => {
     expect(readSettings({ version: 1, muted: true, lastSlot: 1 }))
-      .toEqual({ version: 7, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', ...V5 });
+      .toEqual({ version: 8, muted: true, lastSlot: 1, autoAttack: false, lang: 'en', effects: 'auto', ...V5 });
   });
-  it('memigrasi versi 3 → 7 tanpa mengubah bahasa', () => {
+  it('memigrasi versi 3 → 8 tanpa mengubah bahasa', () => {
     expect(readSettings({ version: 3, muted: false, lastSlot: 0, autoAttack: true, lang: 'id' }))
-      .toEqual({ version: 7, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'auto', ...V5 });
+      .toEqual({ version: 8, muted: false, lastSlot: 0, autoAttack: true, lang: 'id', effects: 'auto', ...V5 });
   });
-  it('memigrasi versi 5 → 7: sensitivitas kamera Normal, kamera 2.5D', () => {
+  it('memigrasi versi 5 → 8: sensitivitas kamera Normal, kamera 2.5D', () => {
     const v5 = { version: 5, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'lite', ...V5 };
-    delete v5.camSens; delete v5.camera;
-    expect(readSettings(v5)).toEqual({ ...v5, version: 7, camSens: 'normal', camera: 'top' });
+    delete v5.camSens; delete v5.camera; delete v5.foeMotion; delete v5.rimLight;
+    expect(readSettings(v5)).toEqual({ ...v5, version: 8, camSens: 'normal', camera: 'top', foeMotion: true, rimLight: true });
+  });
+  it('memigrasi versi 7 → 8: Animasi musuh & Cahaya tepi menyala seperti sebelumnya', () => {
+    const v7 = { version: 7, muted: false, lastSlot: 1, autoAttack: true, lang: 'id', effects: 'full', ...V5 };
+    delete v7.foeMotion; delete v7.rimLight;
+    expect(readSettings(v7)).toEqual({ ...v7, version: 8, foeMotion: true, rimLight: true });
   });
   it('memigrasi versi 4 → 5: Penuh jadi Otomatis, Ringan tetap Ringan', () => {
     const v4 = { version: 4, muted: false, lastSlot: 0, autoAttack: false, lang: 'en' };
-    expect(readSettings({ ...v4, effects: 'full' })).toEqual({ ...v4, version: 7, effects: 'auto', ...V5 });
+    expect(readSettings({ ...v4, effects: 'full' })).toEqual({ ...v4, version: 8, effects: 'auto', ...V5 });
     expect(readSettings({ ...v4, effects: 'lite' }).effects).toBe('lite');
   });
   it.each([
@@ -449,7 +454,8 @@ describe('readSettings', () => {
     [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, shake: 1 }],
     [{ version: 6, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, camSens: 'turbo' }],
     [{ version: 7, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, camera: 'fps' }],
-    [{ version: 8, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5 }],
+    [{ version: 8, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5, foeMotion: 'ya' }],
+    [{ version: 9, muted: false, lastSlot: 0, autoAttack: false, lang: 'en', effects: 'full', ...V5 }],
   ])('menolak %j', (raw) => { expect(readSettings(raw)).toBeNull(); });
 });
 
