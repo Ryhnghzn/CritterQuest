@@ -117,6 +117,8 @@ export const DROP_WEIGHTS = {
   chest: [44, 32, 16, 6, 2, 0],
   boss: [0, 0, 55, 32, 11, 2],
   grand: [0, 0, 50, 35, 12, 3],
+  rift: [0, 0, 0, 62, 30, 8],      // a Rift milestone (plan endgame tahap 1): Epik and up
+  riftGreat: [0, 0, 0, 0, 75, 25], // every RIFT_MILESTONE.great floors: Legendaris and up
 };
 export const LUK_RARITY = 0.01;
 export const DROP = {

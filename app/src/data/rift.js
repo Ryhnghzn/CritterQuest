@@ -9,6 +9,10 @@ const LAST = DUNGEONS[DUNGEONS.length - 1]; // the Rift starts as hard as Menara
 // What a run's blessings change (spec §41.3, §47.5): coins & EXP ×, elite chance ×, a chance a dropped
 // piece comes one rarity higher. Neutral outside the Rift.
 export const RUN_MODS = { reward: 1, elite: 1, rarityUp: 0 };
+// Milestones (plan endgame tahap 1): the first time a character's record passes every `every` floors it gets
+// marks (Lencana) + marksPer for each milestone before it, and a piece of gear (DROP_WEIGHTS.rift); every `great`
+// floors one more (DROP_WEIGHTS.riftGreat). Once per character: counted from the old record to the new one.
+export const RIFT_MILESTONE = { every: 10, marks: 5, marksPer: 3, great: 30, levelAhead: 2 };
 
 export const RIFT = {
   step: 0.08,          // +8% HP & damage per floor above the first

@@ -13,7 +13,8 @@ import { advanceBounties, isDone } from './bounties.js';
 import { newJob, treeStats } from './jobs.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { START_TIME } from '../data/time.js';
-import { itemStats } from './itemgen.js';
+import { itemStats, dropItem } from './itemgen.js';
+import { RIFT_MILESTONE } from '../data/rift.js';
 import { UPGRADES } from '../data/shop.js';
 import { freshMounts, mountStatMul, mountFx, rollMountDrops, storyMounts } from './stable.js';
 
@@ -186,7 +187,8 @@ export function usePotion(char, id, now) {
 // mats / gems: forge materials & gems found — a death keeps half the materials
 // (rounded down) and each gem with DEATH.gearKeepChance.
 // Returns { char, levelsGained, goldLost, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost,
-//           bountiesDone (newly finished), uniquesFound, ending, mountsFound (ids or extra colours) }.
+//           bountiesDone (newly finished), uniquesFound, ending, mountsFound (ids or extra colours),
+//           riftMilestones (Rift floors passed for the first time: their marks & gear are in) }.
 export function applyTrip(char, trip, now, rng = Math.random) {
   const leveled = addExp(char, trip.exp);
   const levelsGained = leveled.levelsGained;
@@ -198,7 +200,18 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   c.potions = { ...trip.potions };
   withHp(c, trip.died ? Math.max(1, finalStats(c).maxHp * DEATH.wakeHp) : trip.hp);
   const r = c.records;
-  if (trip.rift) c.rift = { best: Math.max(c.rift.best, trip.rift.best), checkpoint: Math.max(c.rift.checkpoint, trip.rift.checkpoint) };
+  const riftMilestones = [], milestoneItems = [];
+  if (trip.rift) {
+    c.rift = { best: Math.max(c.rift.best, trip.rift.best), checkpoint: Math.max(c.rift.checkpoint, trip.rift.checkpoint) };
+    const M = RIFT_MILESTONE, lvl = Math.min(CHAR_LEVEL_MAX, c.level + M.levelAhead);
+    for (let m = M.every; m <= c.rift.best; m += M.every) { // milestones passed for the first time (plan endgame tahap 1)
+      if (m <= char.rift.best) continue;
+      riftMilestones.push(m);
+      c.marks += M.marks + M.marksPer * (m / M.every - 1);
+      milestoneItems.push(dropItem({ source: 'rift', classId: c.classId, charLevel: c.level, floor: 0, level: lvl }, rng));
+      if (m % M.great === 0) milestoneItems.push(dropItem({ source: 'riftGreat', classId: c.classId, charLevel: c.level, floor: 0, level: lvl }, rng));
+    }
+  }
   else {
     const dr = r.dungeons[trip.dungeon || 'shadow'];
     dr.bestFloor = Math.max(dr.bestFloor, trip.floor);
@@ -213,7 +226,8 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   r.kills += trip.kills;
   r.bossKills += trip.bossKills;
   addKills(c, trip.killsBy);
-  const uniquesFound = discover(c, trip.items);
+  const found = milestoneItems.length ? [...(trip.items || []), ...milestoneItems] : trip.items || [];
+  const uniquesFound = discover(c, found);
   const before = c.bounties.filter(isDone).length;
   c.bounties = advanceBounties(c.bounties, trip);
   const bountiesDone = c.bounties.filter(isDone).length - before;
@@ -223,7 +237,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   if (x && x.dungeon === trip.dungeon) x.have = Math.min(x.need, x.have + (trip.floorsCleared || 0));
   const itemsKept = [], itemsLost = [], itemsLeft = [];
   const ids = new Set(c.inventory.map((it) => it.id));
-  for (const item of trip.items || []) {
+  for (const item of found) {
     if (lose && rng() >= DEATH.gearKeepChance) { itemsLost.push(item); continue; }
     if (c.inventory.length >= INVENTORY_MAX) { itemsLeft.push(item); continue; }
     const it = structuredClone(item);
@@ -245,7 +259,7 @@ export function applyTrip(char, trip, now, rng = Math.random) {
   }
   const mountsFound = [...rollMountDrops(c, trip.mountRolls || { any: 0, eclipse: 0 }, rng), ...storyMounts(c, rng)]; // storyMounts catches the dragon on the ending
   c.updatedAt = now;
-  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound, ending, mountsFound };
+  return { char: c, levelsGained, goldLost: trip.gold - gold, itemsKept, itemsLost, itemsLeft, matsLost, gemsLost, bountiesDone, uniquesFound, ending, mountsFound, riftMilestones };
 }
 
 // Dungeons open one after another: the next once the previous has been cleared (spec §18.3).

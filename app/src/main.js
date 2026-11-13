@@ -1141,6 +1141,7 @@ async function endRun(died) {
   const gains = mountGains(before, applied.char, applied.mountsFound);
   current = applied.char; // keep progress in memory even if the write fails
   questNews(before);
+  if (applied.riftMilestones?.length) toast(t('Tonggak Celah lantai {n}! Lencana & gear hadiah masuk tas.', { n: applied.riftMilestones.join(', ') }), '#ffd166'); // plan endgame tahap 1
   const saveError = await saveCurrent();
   // back out of a gate in a region (gold portal), or wake in town (spec §25.5)
   const back = !died && dungeonReturn;
