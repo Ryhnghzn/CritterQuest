@@ -3,6 +3,7 @@
 // follows the player; darkness with light holes comes from render/light.js and
 // emissive effects (attacks, flames, portals) are drawn over it.
 import { tr, t as tf } from '../i18n.js';
+import { LOOK } from '../data/look.js';
 import { PORTAL } from '../data/dungeon.js';
 import { DUNGEONS } from '../data/dungeons.js';
 import { flagTile, drawRoom, decorLights, decorGlow } from './dungeonroom.js';
@@ -225,7 +226,7 @@ export class Renderer {
       drawDoll(g, this.avatar.classId, this.avatar.look, { t, moving: 1, walk: this.walk });
       g.restore();
     }
-    shadow(g, game.px, game.py + 10, 10, 3);
+    if (LOOK.contact) contactShadow(g, game.px, game.py + 10, 16, 4.8); else shadow(g, game.px, game.py + 10, 10, 3); // the hero's: soft (hybrid prototype)
     levelRing(g, game.px, game.py + 10, game.level, t, { lite: game.vfx.mul < 1 });
     auraBack(g, game.px, game.py + 10, game.fx, t, { host: this, lite: game.vfx.mul < 1, best: bestRarity(this.avatar?.look.gear), set: this.avatar?.set, hurt: game.flash > 0, frenzyOn: game.frenzyOn });
     aimMarker(g, game.px, game.py, game.aimX, game.aimY);
@@ -384,9 +385,29 @@ function portalSwirl(g, p, clearT, t) {
   }
 }
 
-function shadow(g, x, y, rx, ry) {
+function shadow(g, x, y, rx, ry) { // cheap: gems, coins and drops lie in their hundreds
   g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU);
   g.fillStyle = 'rgba(20,30,40,.22)'; g.fill();
+}
+
+// A soft contact shadow under a figure standing on the ground (plan "hybrid-visual", LOOK.contact): dark at
+// the feet, fading out, pushed a little away from the sun (LOOK.mood.sunDir) so it agrees with the long shadows.
+const SUN_AWAY = (() => { const d = LOOK.mood?.sunDir; if (!d) return [0, 0]; const l = Math.hypot(d[0], d[2]) || 1; return [-d[0] / l, -d[2] / l]; })();
+let blob = null; // the soft shadow, painted once and stamped (no gradient per figure per frame)
+function shadowBlob() {
+  if (blob) return blob;
+  const C = LOOK.contact, n = 64, c = document.createElement('canvas'), g = c.getContext('2d');
+  c.width = c.height = n;
+  const gr = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  gr.addColorStop(0, `rgba(12,8,16,${C.dark})`); gr.addColorStop(0.55, `rgba(12,8,16,${(C.dark * 0.55).toFixed(3)})`); gr.addColorStop(1, 'rgba(12,8,16,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, n, n);
+  return (blob = c);
+}
+export function contactShadow(g, x, y, rx, ry) {
+  const C = LOOK.contact;
+  rx *= C.size; ry *= C.size;
+  const cx = x + SUN_AWAY[0] * rx * C.off, cy = y + SUN_AWAY[1] * ry * C.off;
+  g.drawImage(shadowBlob(), cx - rx, cy - ry, rx * 2, ry * 2);
 }
 
 // potion effects on the player: shield bubble, wind streaks, rage glow

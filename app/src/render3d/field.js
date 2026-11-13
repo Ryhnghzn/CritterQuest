@@ -14,7 +14,8 @@ import { ILLUSTRATED, illustratedIn, illustrated } from './billprops.js';
 import { Fireflies } from './fireflies.js';
 import { drawFrame } from './frame.js';
 import { LOOK } from '../data/look.js';
-import { Actors, canvasTexture, billMat } from './actors.js';
+import { Actors, canvasTexture, billMat, stand } from './actors.js';
+import { contactShadow } from '../render/world.js';
 import { pixelateCanvas } from './pixelate.js';
 const GUARD_OUTFIT = ['#3a4a6a', '#141c2e']; // the anime gate guard's colours
 import { dispose } from './dungeon.js';
@@ -671,7 +672,7 @@ export class Field25 {
     cd.tex.needsUpdate = true;
     const feet = cd.spot ? cd.y : cd.y + 10 * (cd.home?.scale || 1);
     cd.mesh.position.set(cd.x * S, (feet - (cd.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
-    cd.mesh.rotation.y = this.stage.yaw;
+    if (cd.spot) cd.mesh.rotation.y = this.stage.yaw; else stand(cd.mesh, this.stage.yaw); // a person leans back like the hero (hybrid prototype)
   }
 
   // ground tiles
@@ -956,6 +957,7 @@ export class Field25 {
       if (!cd.walker) continue;
       const n = cd.walker.npc, feet = n.y + 10;
       cd.mesh.position.set(n.x * S, (feet - (n.y - cd.top + (cd.top + cd.bottom) / 2)) * S, (feet + 2) * S);
+      stand(cd.mesh, this.stage.yaw);
     }
     // cards near the hero are repainted (every other frame; every 4th in Ringan)
     const every = lite ? 4 : 2;
@@ -995,6 +997,11 @@ export class Field25 {
       g.beginPath(); g.arc(0, 0, START_R, 0, TAU); g.stroke(); g.setLineDash([]);
       g.fillStyle = `rgba(255,210,74,${(0.08 + pulse * 0.06).toFixed(2)})`; g.fill();
       g.restore();
+    }
+    if (LOOK.contact) for (const cd of this.cards) { // the people on cards stand on the ground too (hybrid prototype)
+      if (cd.spot || !cd.mesh.visible || !visible(cd.x, cd.y, 60)) continue;
+      const sc = cd.home?.scale || 1;
+      contactShadow(g, cd.x, cd.y + 10 * sc, 13 * sc, 5 * sc);
     }
     for (const ev of game.events || []) { // Cahaya Aneh (plan "Momen Acak"): a pale pool of light on the ground under it
       if (ev.kind !== 'wisp' || !ev.orb || !visible(ev.orb.x, ev.orb.y, 120)) continue;

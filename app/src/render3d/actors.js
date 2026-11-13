@@ -4,8 +4,8 @@
 // auras), and the 2D overlay on top (HP bars, damage numbers, flashes, fades).
 import * as THREE from 'three';
 import { LOOK } from '../data/look.js';
-import { S, sharp } from './stage.js';
-import { Renderer, MAJESTIC_BY_ID, mountDust, eliteTags } from '../render/world.js';
+import { S, sharp, BILL_U } from './stage.js';
+import { Renderer, MAJESTIC_BY_ID, mountDust, eliteTags, contactShadow } from '../render/world.js';
 import { drawFlashes, drawFloaters } from '../render/fxkit.js';
 import { playerAlpha, heroScale, drawTraitHero } from '../render/skillfx.js';
 import { SPRITES } from '../art/sprites.js';
@@ -61,7 +61,72 @@ const HX = 58, HT = 100, HB = 14;
 
 // lit, cut-out billboard material; a little self light keeps it readable in the dark (LOOK.bill)
 export function billMat(map, self = LOOK.bill) {
-  return new THREE.MeshLambertMaterial({ map, transparent: true, alphaTest: 0.04, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: self, side: THREE.DoubleSide });
+  const m = new THREE.MeshLambertMaterial({ map, transparent: true, alphaTest: 0.04, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: self, side: THREE.DoubleSide });
+  m.userData.bend = { value: 0 }; // a monster's lean (foeAnim): the top of the picture moves this share of its width
+  if (LOOK.rim || LOOK.foeAnim) lit(m);
+  return m;
+}
+
+// Hybrid prototype (plan "hybrid-visual", data/look.js rim): the figure is lit from where the scene's lights
+// are on screen. Side shading: the half toward the sun / moon a little brighter, the other darker. Rim: the
+// picture's edge facing the sun, the moon or a torch nearby catches a thin line of that light. vFlip: whether
+// the picture's +x is screen right (the paper turn mirrors it). The vertex part bends the top (foeAnim).
+const RIM_FRAG = `#ifdef USE_MAP
+if ( uRimOn > 0.5 ) { // Ringan: skipped (stage.js setQuality)
+  float aC = diffuseColor.a;
+  float aR = texture2D( map, vMapUv + vec2( uRimW * vFlip, 0.0 ) ).a;
+  float aL = texture2D( map, vMapUv - vec2( uRimW * vFlip, 0.0 ) ).a;
+  float aU = texture2D( map, vMapUv + vec2( 0.0, uRimW ) ).a;
+  float eR = aC * ( 1.0 - aR ), eL = aC * ( 1.0 - aL ), eU = aC * ( 1.0 - aU );
+  float side = ( vMapUv.x - 0.5 ) * 2.0 * vFlip;
+  vec3 rim = vec3( 0.0 ); float shade = 0.0;
+  #if NUM_DIR_LIGHTS > 0
+  for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
+    vec3 d = directionalLights[ i ].direction, c = directionalLights[ i ].color;
+    float sx = d.x;
+    rim += c * uRimSun * ( ( sx > 0.0 ? eR * sx : eL * -sx ) + 0.6 * eU * max( d.y, 0.0 ) );
+    shade += sx * side * uShade * min( 1.0, dot( c, vec3( 0.3, 0.59, 0.11 ) ) );
+  }
+  #endif
+  #if NUM_POINT_LIGHTS > 0
+  for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {
+    vec3 lv = pointLights[ i ].position + vViewPosition;
+    float dist = max( length( lv ), 1e-3 );
+    float att = getDistanceAttenuation( dist, pointLights[ i ].distance, pointLights[ i ].decay );
+    float sx = lv.x / dist;
+    rim += pointLights[ i ].color * att * uRimPoint * ( sx > 0.0 ? eR * sx : eL * -sx );
+  }
+  #endif
+  outgoingLight = outgoingLight * ( 1.0 + shade ) + rim * ( 0.4 + 0.6 * diffuseColor.rgb );
+}
+#endif
+#include <opaque_fragment>`;
+function lit(m) {
+  const R = LOOK.rim, u = m.userData;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uBend = u.bend;
+    sh.uniforms.uRimW = { value: R?.w || 0 }; sh.uniforms.uRimSun = { value: R?.sun || 0 };
+    sh.uniforms.uRimPoint = { value: R?.point || 0 }; sh.uniforms.uShade = { value: R?.shade || 0 }; sh.uniforms.uRimOn = BILL_U.uRimOn;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uBend;\nvarying float vFlip;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed.x += uBend * ( position.y + 0.5 );')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvFlip = ( modelViewMatrix * vec4( 1.0, 0.0, 0.0, 0.0 ) ).x >= 0.0 ? 1.0 : -1.0;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uRimW;\nuniform float uRimSun;\nuniform float uRimPoint;\nuniform float uShade;\nuniform float uRimOn;\nvarying float vFlip;');
+    if (R) sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', RIM_FRAG);
+  };
+  m.customProgramCacheKey = () => `bill|${R ? 1 : 0}`;
+}
+
+// An upright figure turned to the camera (yaw), leaning back by LOOK.lean so it is not seen foreshortened
+// from above. Its position must be set this frame with the ground at y = 0 in its parent; the feet stay put.
+export function stand(mesh, yaw) {
+  const a = LOOK.lean || 0;
+  if (!a) { mesh.rotation.y = yaw; return; }
+  mesh.rotation.set(-a, yaw, 0, 'YXZ');
+  const fy = -mesh.position.y, dz = fy * Math.sin(a); // the ground under its centre, in its own frame
+  mesh.position.y += fy * (1 - Math.cos(a));
+  mesh.position.x += dz * Math.sin(yaw); mesh.position.z += dz * Math.cos(yaw);
 }
 export function canvasTexture(c) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 
@@ -204,7 +269,8 @@ export class Actors {
         if (e.hidden && e.ai === 'ambush' && visible(e.x, e.y, 40)) { bushDisguise(g, e, t, (e.x - game.px) ** 2 + (e.y - game.py) ** 2 < 160 ** 2); continue; } // spec §41.1
         if (e.hidden || !visible(e.x, e.y, 40)) continue;
         if (e.ai === 'mirror') mirrorMark(g, e, t);
-        g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 0.9, e.r * 0.34, 0, 0, Math.PI * 2); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill();
+        if (LOOK.contact) contactShadow(g, e.x, e.y + e.r * 0.75, e.r * (e.boss ? 1.1 : 0.95), e.r * 0.38); // soft, away from the sun (hybrid prototype)
+        else { g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 0.9, e.r * 0.34, 0, 0, Math.PI * 2); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill(); }
         if (e.elite) { g.beginPath(); g.ellipse(e.x, e.y + e.r * 0.75, e.r * 1.2, e.r * 0.45, 0, 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = 'rgba(255,190,80,.8)'; g.stroke(); }
       }
       foeMarks(g, game, t, { shells: false }); // totems, beams, fallen twins (the ghost has no enemies)
@@ -287,7 +353,7 @@ export class Actors {
     if (this.fxList?.length) { drawFx(g, this.fxList, new DOMMatrix()); this.fxList = null; }
     this.heroTex.needsUpdate = true;
     mesh.position.set(game.px * S, (bt - (bt + HB) / 2) * S, (game.py + 10) * S);
-    mesh.rotation.y = this.stage.yaw; // face the camera
+    stand(mesh, this.stage.yaw); // face the camera
   }
 
   spriteTex(s) {
@@ -297,6 +363,7 @@ export class Actors {
   }
   drawEnemies(game, t, playing) {
     const seen = new Set();
+    this.lastPx = game.px; this.lastPy = game.py; // foeBody: which way is away from the hero
     if (playing) for (const e of game.enemies) {
       if (e.hidden || e.nest) continue; // a quest nest is drawn by the field (render3d/field.js)
       seen.add(e);
@@ -316,13 +383,58 @@ export class Actors {
       if (!f) { f = makeFacing(screenX(game.px - e.x, game.py - e.y, yaw) < 0 ? -1 : 1); this.enemyFace.set(e, f); }
       turnTo(f, e.mode === 'dash' ? screenX(e.dirX, e.dirY, yaw) : screenX(game.px - e.x, game.py - e.y, yaw), t);
       const turn = pose2d(f, t), rc = recoilOf(e), hs = 1 + rc.k * RECOIL.squash; // struck: pushed back and squashed (plan "Rasa Pukulan")
-      m.scale.set(size / squash * turn.w * hs, size * squash / hs, 1);
+      const body = LOOK.foeAnim ? this.foeBody(e, t, yaw, rc) : null, sq = body ? body.squash : 1;
+      m.scale.set(size / squash * turn.w * hs * (2 - sq), size * squash / hs * sq, 1);
       m.position.set((e.x + rc.x) * S, (e.r * 0.9 * k + turn.hop + leapHeight(e)) * S, (e.y + rc.y + e.r * 0.75) * S); // leapHeight: Katak Rawa mid-jump
-      m.rotation.y = yaw;
+      stand(m, yaw);
+      m.material.userData.bend.value = body ? body.lean * Math.sign(turn.w || 1) : 0; // the bend is in the picture's own frame: mirrored with it
       m.visible = true;
     }
-    for (const [e, m] of this.enemyMesh) if (!seen.has(e)) { this.enemies.remove(m); m.geometry.dispose(); m.material.dispose(); this.enemyMesh.delete(e); }
     for (const [e, b] of this.bossBill) if (!seen.has(e)) { this.enemies.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); b.tex.dispose(); this.bossBill.delete(e); }
+    for (const [e, m] of this.enemyMesh) {
+      if (seen.has(e)) continue;
+      this.enemyMesh.delete(e);
+      if (LOOK.foeAnim && playing && e.hp <= 0) { (this.dying ||= []).push({ m, t0: t, dir: Math.sign(m.material.userData.bend.value || 1) }); continue; } // slain: falls and fades
+      this.enemies.remove(m); m.geometry.dispose(); m.material.dispose();
+    }
+    this.fallen(t);
+  }
+
+  // A one-picture monster's body (plan "hybrid-visual", LOOK.foeAnim): lean into its walk, rear back away
+  // from the hero while it winds up, lunge in a charge, flinch from a blow, breathe when idle. Returns the
+  // lean (share of the picture's width, + = screen right) and a vertical squash.
+  foeBody(e, t, yaw, rc) {
+    const A = LOOK.foeAnim, map = (this.bodies ||= new WeakMap());
+    let b = map.get(e);
+    if (!b) { b = { x: e.x, y: e.y, t, lean: 0, sq: 1 }; map.set(e, b); }
+    const dt = Math.min(0.1, Math.max(1e-3, t - b.t)), vx = (e.x - b.x) / dt, vy = (e.y - b.y) / dt;
+    b.x = e.x; b.y = e.y; b.t = t;
+    let lean = Math.sin(t * 2.4 + (e.wob || 0)) * A.idle, sq = 1;
+    if (e.frozen > 0) lean = 0;
+    else if (e.mode === 'wind' || e.mode === 'fuse' || e.pat?.tell > 0) { // the wind-up: rear back from the hero, crouch
+      const away = -Math.sign(screenX(this.lastPx - e.x, this.lastPy - e.y, yaw) || 1);
+      lean = away * A.wind; sq = 1 - A.squash;
+    } else if (e.mode === 'dash') lean = Math.sign(screenX(e.dirX, e.dirY, yaw) || 1) * A.dash;
+    else {
+      const sp = Math.hypot(vx, vy);
+      if (sp > 4) lean += Math.max(-1, Math.min(1, screenX(vx, vy, yaw) / Math.max(40, e.speed || 60))) * A.walk;
+    }
+    if (rc.k > 0) lean += Math.sign(screenX(rc.x, rc.y, yaw) || 0) * A.hurt * rc.k * 4; // knocked back: the top lags
+    const k = Math.min(1, dt * A.ease);
+    b.lean += (lean - b.lean) * k; b.sq += (sq - b.sq) * k;
+    return { lean: b.lean, squash: b.sq };
+  }
+  // the slain ones topple and fade, then are freed
+  fallen(t) {
+    const D = this.dying;
+    if (!D?.length) return;
+    for (let i = D.length - 1; i >= 0; i--) {
+      const d = D[i], k = (t - d.t0) / LOOK.foeAnim.die;
+      if (k >= 1 || k < 0) { this.enemies.remove(d.m); d.m.geometry.dispose(); d.m.material.dispose(); D.splice(i, 1); continue; }
+      d.m.material.userData.bend.value = d.dir * (0.15 + 0.5 * k * k);
+      d.m.material.opacity = 1 - k * k;
+      d.m.scale.y *= 1 - 0.04; d.m.position.y *= 1 - 0.06;
+    }
   }
 
   // An anime boss (spec §41.2): redrawn every frame on its own canvas like the hero — the body, the
@@ -366,7 +478,7 @@ export class Actors {
     b.tex.needsUpdate = true;
     const rc = recoilOf(e);
     b.mesh.position.set((e.x + rc.x) * S, ((ht - hb) / 2) * S, (e.y + rc.y + e.r * 0.75) * S);
-    b.mesh.rotation.y = yaw;
+    stand(b.mesh, yaw);
     b.mesh.visible = true;
   }
 

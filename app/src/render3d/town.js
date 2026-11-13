@@ -10,7 +10,7 @@ import { drawFrame } from './frame.js';
 // plan C4: towns among the trees get fireflies at night and branches at the screen's corners
 const GREEN_TOWNS = new Set(['home', 'forest']);
 import { LOOK } from '../data/look.js';
-import { billMat, canvasTexture } from './actors.js';
+import { billMat, canvasTexture, stand } from './actors.js';
 import { pixelateCanvas, pixelTexture } from './pixelate.js';
 import { setFxSink, drawFx } from '../art/anime/elemfx.js';
 import { pickWing } from '../art/anime/wingpick.js';
@@ -345,7 +345,7 @@ export class Town25 {
         b.tex.needsUpdate = true; b.fresh = false;
       }
       b.grp.position.set(x * S, 0, (y + 10 * sc) * S); b.grp.scale.setScalar(sc);
-      b.mesh.rotation.y = yaw;
+      stand(b.mesh, yaw); // its picture's pivot is at the feet: it only leans (hybrid prototype)
       b.grp.visible = true; this.shown.push(b);
     }
     // the hero
@@ -375,7 +375,7 @@ export class Town25 {
     if (fx?.length) drawFx(H.g, fx, new DOMMatrix());
     H.tex.needsUpdate = true;
     H.grp.position.set(town.x * S, 0, (town.y + 10) * S);
-    H.mesh.rotation.y = yaw;
+    stand(H.mesh, yaw);
   }
 
   // game point at height h (game units) → CSS px into this._p; false when off screen

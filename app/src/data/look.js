@@ -51,6 +51,22 @@ const MATANG = {
   // effects on the weapon (drawn after the pixel filter so they stay smooth); townsfolk stay as they are
   anime: true,
   mood: { warm: 0.55, hemi: 0xb4927e, ground: 0x2c1f1a, sun: 0xffb070, fog: 0x2a1c1c, sunDir: [-11, 8, 7], sunDist: 24 },
+  // Hybrid 2D/3D prototype (plan docs/superpowers/plans/2026-11-13-hybrid-visual.md): figures that belong in
+  // the lit world instead of stickers on it. Each one can be switched off: ?tanpa=rim,miring,bayang,gerak
+  // rim: on every figure billboard (render3d/actors.js billMat) the side toward the sun / moon is lit and the
+  // far side darker (shade, ± at the edges), and a thin rim of light catches the edge facing the sun (sun)
+  // and any torch or lantern near it (point); w = how far in from the edge the rim reaches (share of the picture)
+  rim: { w: 0.012, sun: 0.8, point: 1.6, shade: 0.22 },
+  // figures lean back toward the camera (radians) so they are not seen foreshortened from above; the feet
+  // stay where they stand (render3d/actors.js stand)
+  lean: 0.3,
+  // soft contact shadows under every figure on the ground layer, pushed a little away from the sun:
+  // dark = darkness at the centre, off = push (share of the radius), size = × the old ellipses
+  contact: { dark: 0.55, off: 0.3, size: 1.15 },
+  // monsters drawn as one picture move their body (render3d/actors.js): lean into a walk, rear back before an
+  // attack, lunge in a charge, flinch when struck, breathe when idle (all as a bend of the picture's top,
+  // share of its width); die = seconds a slain one takes to fall and fade
+  foeAnim: { walk: 0.12, wind: 0.16, dash: 0.2, hurt: 0.05, idle: 0.025, squash: 0.08, ease: 12, die: 0.35 },
 };
 // the look before §36, for comparing side by side
 const LAMA = {
@@ -66,3 +82,9 @@ const q = typeof location !== 'undefined' ? new URLSearchParams(location.search)
 // Settings → Kamera (main.js setCamera) can change it while playing; the URL wins at the start.
 export const CAMERA = { url: q.get('kamera') === 'belakang', behind: q.get('kamera') === 'belakang', follow: q.has('ikut'), dist: 4.6, height: 2.3, ahead: 7, lookH: 1.15, fov: 52, followRate: 1.6 };
 export const LOOK = old ? LAMA : MATANG;
+// ?tanpa=rim,miring,bayang,gerak: switch off single parts of the hybrid prototype to compare
+{
+  const off = (q.get('tanpa') || '').split(',');
+  const keys = { rim: 'rim', miring: 'lean', bayang: 'contact', gerak: 'foeAnim' };
+  for (const k of off) if (keys[k]) MATANG[keys[k]] = null;
+}

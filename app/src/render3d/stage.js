@@ -156,7 +156,7 @@ function shade(scene, on) {
 
 // Illustrated props (plan C3) turn to face the camera in their vertex shader; their shadow
 // copies turn to face the sun so a tree always throws its whole silhouette (billprops.js)
-export const BILL_U = { uYaw: { value: 0 }, uSunYaw: { value: 0 }, uTime: { value: 0 } };
+export const BILL_U = { uYaw: { value: 0 }, uSunYaw: { value: 0 }, uTime: { value: 0 }, uRimOn: { value: 1 } }; // uRimOn: the figures' rim light (render3d/actors.js), off in Ringan
 { const d = LOOK.mood?.sunDir || [-8, 18, 10]; BILL_U.uSunYaw.value = Math.atan2(d[0], d[2]); }
 
 export const glowMat = (c, k = 1.8) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k) });
@@ -205,6 +205,7 @@ export class Stage {
 
   setQuality(lite) {
     this.lite = lite;
+    BILL_U.uRimOn.value = lite ? 0 : 1; // Ringan: no rim light on the figures (hybrid prototype)
     if (!this.ready) return;
     this.resize();
   }
