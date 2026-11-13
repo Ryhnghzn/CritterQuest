@@ -985,13 +985,20 @@ export class Field25 {
       g.beginPath(); g.ellipse(x - e.r * 0.2, y - e.r * 0.15, e.r * 0.6, e.r * 0.25, 0, 0, TAU); g.fillStyle = 'rgba(220,180,120,.45)'; g.fill();
     }
     for (const ev of game.events || []) { // where a quest event starts (spec §42): a turning ring of gold
-      if (ev.kind === 'outlaw' || ev.kind === 'race' || ev.kind === 'rescue' || ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue;
+      if (ev.kind === 'outlaw' || ev.kind === 'race' || ev.kind === 'rescue' || ev.quiet || ev.state !== 'wait' || ev.cool > 0 || !visible(ev.start.x, ev.start.y, START_R + 20)) continue; // quiet ones (plan "Momen Acak") are found by their own signs
       const pulse = 0.5 + 0.5 * Math.sin(t * 3);
       g.save(); g.translate(ev.start.x, ev.start.y); g.scale(1, 0.7);
       g.setLineDash([18, 12]); g.lineDashOffset = -t * 30; g.lineWidth = 4; g.strokeStyle = `rgba(255,210,74,${(0.55 + pulse * 0.35).toFixed(2)})`;
       g.beginPath(); g.arc(0, 0, START_R, 0, TAU); g.stroke(); g.setLineDash([]);
       g.fillStyle = `rgba(255,210,74,${(0.08 + pulse * 0.06).toFixed(2)})`; g.fill();
       g.restore();
+    }
+    for (const ev of game.events || []) { // Cahaya Aneh (plan "Momen Acak"): a pale pool of light on the ground under it
+      if (ev.kind !== 'wisp' || !ev.orb || !visible(ev.orb.x, ev.orb.y, 120)) continue;
+      const o = ev.orb, k = 0.75 + 0.25 * Math.sin(t * 3), r = 70 + 10 * k;
+      const gr = g.createRadialGradient(o.x, o.y, 0, o.x, o.y, r);
+      gr.addColorStop(0, `rgba(190,232,255,${(0.32 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(140,180,255,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(o.x, o.y, r, r * 0.55, 0, 0, TAU); g.fill();
     }
     for (const ev of game.events || []) { // a meteor shower (spec §42): warnings, impacts, crystals to pick up
       if (ev.kind !== 'meteor' || ev.state !== 'run') continue;
@@ -1027,15 +1034,15 @@ export class Field25 {
   foeBars(game, ev) {
     const g = this.view.ctx, dpr = this.view.c.width / innerWidth;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const list = ev.kind === 'outlaw' ? [ev.foe] : ev.nests;
+    const one = ev.kind === 'outlaw' || ev.kind === 'giant', list = one ? [ev.foe] : ev.nests; // giant: Raksasa Pengembara (plan "Momen Acak")
     for (const e of list) {
       if (!e || e.hp <= 0) continue;
       const p = this.stage.project(e.x, e.y, e.r * 2.6 + 40);
       if (!p) continue;
-      const w = ev.kind === 'outlaw' ? 80 : 48, k = Math.max(0, e.hp / e.maxHp);
+      const w = one ? 80 : 48, k = Math.max(0, e.hp / e.maxHp);
       g.fillStyle = 'rgba(10,8,20,.85)'; g.fillRect(p.x - w / 2 - 2, p.y - 2, w + 4, 8);
-      g.fillStyle = ev.kind === 'outlaw' ? '#ff8a3c' : '#c86aff'; g.fillRect(p.x - w / 2, p.y, w * k, 4);
-      if (ev.kind === 'outlaw') {
+      g.fillStyle = one ? '#ff8a3c' : '#c86aff'; g.fillRect(p.x - w / 2, p.y, w * k, 4);
+      if (one) {
         g.font = '700 13px Barlow, system-ui, sans-serif'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(10,8,20,.9)';
         g.strokeText(ev.name, p.x, p.y - 6); g.fillStyle = '#ffb36a'; g.fillText(ev.name, p.x, p.y - 6);
       }
@@ -1046,8 +1053,10 @@ export class Field25 {
   labels(game) {
     if (game.state !== 0) for (const ev of game.events || []) {
       if (ev.state !== 'run') continue;
-      if (ev.kind === 'outlaw' || ev.kind === 'nest') { this.foeBars(game, ev); continue; }
-      const who = ev.npc || ev.altar, p = this.stage.project(who.x, who.y, ev.npc ? 150 : 130);
+      if (ev.kind === 'outlaw' || ev.kind === 'nest' || ev.kind === 'giant') { this.foeBars(game, ev); continue; }
+      const who = ev.npc || ev.altar; // a meteor shower or a wisp has no one to guard
+      if (!who) continue;
+      const p = this.stage.project(who.x, who.y, ev.npc ? 150 : 130);
       if (!p) continue;
       const g = this.view.ctx, dpr = this.view.c.width / innerWidth, w = 64, k = Math.max(0, who.hp / who.maxHp);
       g.setTransform(dpr, 0, 0, dpr, 0, 0);

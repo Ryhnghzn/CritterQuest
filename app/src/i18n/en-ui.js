@@ -320,6 +320,7 @@ export default {
   Wilayah: 'Region',
   'Buka seluruh peta': 'Reveal whole map',
   'Ke ujung timur': 'Warp to east end',
+  Karavan: 'Caravan', Serbuan: 'Raid', Meteor: 'Meteor', Raksasa: 'Giant', // cheat: world happenings (plan "Momen Acak")
   'Ke tengah': 'Warp to middle',
   '+10 Lencana': '+10 Badges',
   'Selesaikan tugas': 'Finish bounties',

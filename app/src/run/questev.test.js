@@ -256,3 +256,77 @@ describe('Peristiwa dunia (§42)', async () => {
     expect(h.events.includes(m)).toBe(false);
   });
 });
+
+describe('Momen acak: peristiwa diam (rencana "Momen Acak")', async () => {
+  const { HAPPEN } = await import('../data/questev.js');
+  const { stepHappenings, kindWeights } = await import('./questev.js');
+  const { zoneToWorld } = await import('./worldmap.js');
+  const at = (g) => { const p = zoneToWorld('forest', 0.5, 0.5); g.px = p.x; g.py = p.y; };
+  const force = (g, kind, phase = 'moon') => {
+    g.phase = phase;
+    for (let i = 0; i < 200 && !g.events.some((e) => e.kind === kind); i++) { g.events = []; g.enemies = []; g.happenCool = {}; g.happenT = 0; stepHappenings(g, 1 / 60); }
+    return g.events.find((e) => e.kind === kind);
+  };
+  it('waktu menentukan jenis: siang tanpa Cahaya Aneh, malam tanpa Karavan, Raksasa lebih sering di malam hari', () => {
+    const g = game();
+    g.phase = 'sun'; const day = Object.fromEntries(kindWeights(g));
+    g.phase = 'moon'; const night = Object.fromEntries(kindWeights(g));
+    expect(day.wisp).toBeUndefined(); expect(day.caravan).toBeGreaterThan(0);
+    expect(night.caravan).toBeUndefined(); expect(night.wisp).toBeGreaterThan(0);
+    expect(night.giant).toBeCloseTo(day.giant * HAPPEN.kinds.giant.nightMul);
+    g.happenCool = { giant: 10 };
+    expect(Object.fromEntries(kindWeights(g)).giant).toBeUndefined();
+  });
+  it('Cahaya Aneh: diam (tanpa banner), terlihat saat dekat, kabur saat didekati, tertangkap → hadiah atau jebakan', () => {
+    const g = game(); at(g);
+    let banner = null; g.showBanner = (s) => { banner = s; };
+    const w = force(g, 'wisp');
+    g.events = [w]; banner = null; g.happenT = 1e9; stepHappenings(g, 1 / 60); // tries before may have shown other kinds
+    expect(w).toBeTruthy(); expect(w.quiet).toBe(true); expect(banner).toBe(null); expect(w.seen).toBeFalsy();
+    g.px = w.orb.x + HAPPEN.seen - 100; g.py = w.orb.y; run(g, 0.1, () => { g.happenT = 1e9; });
+    expect(w.seen).toBe(true);
+    g.px = w.orb.x + HAPPEN.wisp.near - 20; g.py = w.orb.y; run(g, 0.1, () => { g.happenT = 1e9; });
+    expect(w.state).toBe('run');
+    const x0 = w.orb.x; run(g, 0.5, () => { g.happenT = 1e9; });
+    expect(Math.hypot(w.orb.x - g.px, w.orb.y - g.py)).toBeGreaterThan(HAPPEN.wisp.near - 20); // it drifts away
+    expect(w.orb.x).not.toBe(x0);
+    const gold0 = g.gold, foes0 = g.enemies.length;
+    run(g, 0.2, () => { g.px = w.orb.x; g.py = w.orb.y; g.happenT = 1e9; });
+    expect(g.events.includes(w)).toBe(false);
+    expect(g.gold > gold0 || g.enemies.length > foes0).toBe(true);
+  });
+  it('Cahaya Aneh yang tidak terkejar lenyap sendiri', () => {
+    const g = game(); at(g);
+    const w = force(g, 'wisp');
+    g.px = w.orb.x + HAPPEN.wisp.near - 20; g.py = w.orb.y; run(g, 0.1, () => { g.happenT = 1e9; });
+    g.px -= 3000; run(g, HAPPEN.wisp.time + 1, () => { g.happenT = 1e9; });
+    expect(g.events.includes(w)).toBe(false);
+  });
+  it('Raksasa Pengembara: berjalan sendiri, menyerang bila didekati, kalah → harta Penguasa; jeda sebelum muncul lagi', () => {
+    const g = game(); at(g);
+    const ev = force(g, 'giant');
+    expect(ev).toBeTruthy();
+    const foe = ev.foe;
+    expect(foe.mini && foe.lord && foe.ev === ev.key).toBe(true);
+    expect(g.happenCool.giant).toBe(HAPPEN.kinds.giant.cool);
+    const x0 = foe.x, y0 = foe.y;
+    run(g, 3, () => { g.happenT = 1e9; });
+    expect(ev.state).toBe('wait');
+    expect(Math.hypot(foe.x - x0, foe.y - y0)).toBeGreaterThan(10); // it wanders
+    g.px = foe.x + HAPPEN.giant.engage - 50; g.py = foe.y; run(g, 0.1, () => { g.happenT = 1e9; });
+    expect(ev.state).toBe('run');
+    const gold0 = g.gold;
+    foe.hp = 0; run(g, 0.2, () => { g.happenT = 1e9; });
+    expect(g.events.includes(ev)).toBe(false);
+    expect(g.gold).toBeGreaterThan(gold0);
+    expect(g.eventsDone).toContain(ev.key);
+  });
+  it('Raksasa yang diabaikan pergi dan membawa dirinya (tidak ada musuh tertinggal)', () => {
+    const g = game(); at(g);
+    const ev = force(g, 'giant'), foe = ev.foe;
+    g.px -= 1000; // stays out of reach
+    run(g, HAPPEN.giant.life + 2, () => { g.happenT = 1e9; foe.target = null; foe.x = g.px + 2000; foe.y = g.py; foe.speed = 0; });
+    expect(g.events.includes(ev)).toBe(false);
+    expect(g.enemies.includes(foe)).toBe(false);
+  });
+});

@@ -229,7 +229,7 @@ export function drawRegionMap(g, map, fog, rect, player, opts = {}) {
   }
   // quest events & happenings (spec §42): an orange "!" where each waits or runs (an outlaw only once seen)
   for (const ev of opts.events || []) {
-    if (ev.state === 'done' || (ev.kind === 'outlaw' && ev.state !== 'run')) continue;
+    if (ev.state === 'done' || (ev.kind === 'outlaw' && ev.state !== 'run') || (ev.quiet && !ev.seen)) continue; // a quiet happening: only once seen (plan "Momen Acak")
     const p = ev.state === 'run' ? (ev.npc || ev.altar || (ev.foe && { x: ev.foe.x, y: ev.foe.y }) || ev.start) : ev.start;
     const x = sx(p.x), y = sy(p.y);
     if (x < ox + 4 || x > ox + w - 4 || y < oy + 4 || y > oy + h - 4) { if (ev.world) edgeArrow(g, ox, oy, w, h, x, y, '#ff9a3c'); continue; }

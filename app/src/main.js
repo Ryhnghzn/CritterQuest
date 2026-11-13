@@ -90,7 +90,7 @@ import { renderNpc, renderDungeonGate } from './ui/npc.js';
 import { renderCharPanel, setCharTab } from './ui/charpanel.js';
 import { stepText } from './ui/journal.js';
 import { bountyText } from './ui/board.js';
-import { setEvents, eventPoint } from './run/questev.js';
+import { setEvents, eventPoint, startHappening } from './run/questev.js';
 import { playCutscene, cutscenePlaying } from './ui/cutscene.js';
 import { SCENES, momentScene } from './data/scenes.js';
 import { talkOffers, npcMarks, questTalk, questTarget, activeQuests, syncQuests, shards, hiddenIn, fieldQuests, abandonQuest, trackQuest, questDef } from './meta/quests.js';
@@ -1261,6 +1261,7 @@ const cheatActions = {
   heal: () => cheatChar((c) => { c.hp = null; }, 'HP penuh'),
   resetPoints: () => cheatChar((c) => { for (const k in c.attrs) c.attrs[k] = 0; }, 'Poin dikembalikan'),
   hours: (n) => { worldClock += n * 60; toast(t('+{n} jam', { n })); },
+  happen: (kind) => { if (game.field) toast(startHappening(game, kind) ? `Peristiwa: ${kind}` : 'Tidak ada tempat yang pas, coba geser'); }, // plan "Momen Acak"
   allTowns: () => cheatChar((c) => { c.towns = [...TOWN_IDS]; }, 'Semua kota dikunjungi'),
   mats: () => cheatChar((c) => { c.mats.dust += 500; c.mats.crystal += 100; c.mats.core += 20; }, 'Material bertambah'),
   gems: () => cheatChar((c) => { for (const g in c.gems) c.gems[g][0] += 6; }, 'Permata bertambah'),
@@ -1438,7 +1439,8 @@ function tickRun(pressed) {
   }
   if (game.field) {
     game.clock = worldClock;
-    game.night = phaseOf(worldClock).icon === 'moon';
+    game.phase = phaseOf(worldClock).icon; // dawn | sun | dusk | moon: which world happenings can come (plan "Momen Acak")
+    game.night = game.phase === 'moon';
     if (game.state === ST.PLAY && ((fieldSaveT += STEP) >= FIELD.saveEvery || game.zoneChanged || game.eventsDone.length)) commitField();
   }
   if (game.state === ST.PLAY && game.rift?.offer) { // between Rift floors: one blessing of three (spec §41.3); the fight waits

@@ -149,6 +149,13 @@ export default {
   '{name} selesai! +{g} koin': '{name} done! +{g} coins',
   'Karavan Pedagang': 'Merchant Caravan', Pedagang: 'Merchant', Barikade: 'the Barricade', 'Hujan Meteor': 'Meteor Shower',
   'Peristiwa: {name}! Lihat tanda di peta.': 'Happening: {name}! See the mark on the map.',
+  // quiet happenings (plan "Momen Acak")
+  'Cahaya Aneh': 'Strange Light', 'Raksasa Pengembara': 'Wandering Giant', '{name} Pengembara': 'Wandering {name}',
+  'Cahaya apa itu…?': 'What is that light…?', 'Sesuatu yang besar…': 'Something big…',
+  'Cahaya itu memudar…': 'The light fades…', 'Cahaya itu lenyap.': 'The light is gone.',
+  'Cahaya itu meninggalkan hadiah!': 'The light left a gift behind!', 'Jebakan! Cahaya itu memanggil kawanan!': 'A trap! The light called a pack!',
+  'Langkah berat itu menjauh…': 'The heavy footsteps fade away…', '{name} menyerang!': '{name} attacks!',
+  '{name} tumbang! Hartanya tercecer.': '{name} falls! Its treasure lies scattered.',
   'Celah ke Tanah Gerhana tertutup segel. Kumpulkan kelima Pecahan Segel.': 'The pass to the Eclipse Lands is sealed. Gather all five Seal Shards.',
   'Lencana bertambah': 'Badges added',
   'Semua tugas selesai': 'All bounties finished',

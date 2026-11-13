@@ -225,19 +225,28 @@ export const fieldHere = (run) => (run.place === 'hub' ? t('Padang Kota Awal') :
 const GUARD_SKIP = ['healer', 'summoner', 'bomber', 'embertotem', 'voidobelisk', 'voidtwin', 'bushling']; // too soft to guard a chest; still, paired or hidden (spec §41.1)
 
 // The guardian (a crowned, giant version of a regional enemy) and its escort.
-export function spawnGuardian(run, tr) {
-  const region = regionById(tr.zone || run.region.id), rule = tr.lord ? TREASURE.lord : TREASURE.guard;
+// A crowned giant of a zone enemy at (x, y): rule { hp, dmg, size } × an enemy of that level, with one
+// move of the zone's dungeon boss (spec §41.2). A treasure's guardian, or a Raksasa Pengembara (questev.js).
+export function spawnGiant(run, x, y, zone, rule, lord = false) {
+  const region = regionById(zone);
   let type = pickType(region);
   if (GUARD_SKIP.includes(type)) type = Object.keys(region.enemies).find((id) => !GUARD_SKIP.includes(id));
-  const level = levelAt(run.fmap, tr.x, tr.y), sc = fieldScale(level);
+  const level = levelAt(run.fmap, x, y), sc = fieldScale(level);
   const g = run.spawnEnemy(type);
-  g.x = tr.x + 40; g.y = tr.y + 30;
+  g.x = x; g.y = y;
   g.hp *= sc.hp * rule.hp; g.maxHp = g.hp; g.dmg *= sc.dmg * rule.dmg; g.r *= rule.size;
   g.xp = Math.round(ENEMIES[type].xp * sc.reward * rule.hp * 0.5);
-  g.level = level; g.elite = true; g.mini = true; g.lord = tr.lord;
+  g.level = level; g.elite = true; g.mini = true; g.lord = lord;
   setFoeLevel(run, g, level);
-  initMiniMove(g, tr.zone || run.region.id); // one move of the zone's dungeon boss (spec §41.2)
+  initMiniMove(g, zone);
   pushOut(run.fmap, g, g.r);
+  return g;
+}
+
+export function spawnGuardian(run, tr) {
+  const rule = tr.lord ? TREASURE.lord : TREASURE.guard;
+  const g = spawnGiant(run, tr.x + 40, tr.y + 30, tr.zone || run.region.id, rule, tr.lord), type = g.type;
+  const level = g.level, sc = fieldScale(level);
   for (let i = 0; i < rule.escort; i++) {
     const e = run.spawnEnemy(type);
     e.hp *= sc.hp * HORDE.hp; e.maxHp *= sc.hp * HORDE.hp; e.dmg *= sc.dmg; // escorts are horde (§33.3)
@@ -253,19 +262,25 @@ export function spawnGuardian(run, tr) {
 }
 
 // What a chest gives: coins, materials, a gem and gear of Grand Chest quality.
-export function openTreasure(run, tr) {
-  const level = levelAt(run.fmap, tr.x, tr.y), sc = fieldScale(level);
-  const gold = Math.round((TREASURE.gold.base + TREASURE.gold.perLevel * level) * (tr.lord ? TREASURE.lordGold : 1));
+// A chest's worth at (x, y): coins, materials, a gem and gear of Grand Chest quality (a lord's: more).
+export function treasureLoot(run, x, y, lord) {
+  const level = levelAt(run.fmap, x, y), sc = fieldScale(level);
+  const gold = Math.round((TREASURE.gold.base + TREASURE.gold.perLevel * level) * (lord ? TREASURE.lordGold : 1));
   run.addGold(gold);
-  run.addFloater(tr.x, tr.y - 60, t('+{n} koin', { n: gold }), '#ffd166');
+  run.addFloater(x, y - 60, t('+{n} koin', { n: gold }), '#ffd166');
   const mats = {};
-  for (const [m, [a, b]] of Object.entries(tr.lord ? TREASURE.lordMats : TREASURE.mats)) mats[m] = rint(a, b);
+  for (const [m, [a, b]] of Object.entries(lord ? TREASURE.lordMats : TREASURE.mats)) mats[m] = rint(a, b);
   addMats(run, mats);
-  const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)], tier = Math.min(4, 1 + Math.floor(level / 15) + (tr.lord ? 1 : 0));
+  const gem = GEM_IDS[Math.floor(rand() * GEM_IDS.length)], tier = Math.min(4, 1 + Math.floor(level / 15) + (lord ? 1 : 0));
   run.gemsFound.push({ gem, tier });
-  run.addFloater(tr.x, tr.y - 90, `+${GEMS[gem].name}`, GEMS[gem].color);
+  run.addFloater(x, y - 90, `+${GEMS[gem].name}`, GEMS[gem].color);
   run.lootLevel = level;
-  for (let i = 0; i < (tr.lord ? TREASURE.lordItems : TREASURE.items); i++) dropGear(run, TREASURE.source, tr.x, tr.y + 20);
+  for (let i = 0; i < (lord ? TREASURE.lordItems : TREASURE.items); i++) dropGear(run, TREASURE.source, x, y + 20);
+  return { gold, mats, gem, tier, sc };
+}
+
+export function openTreasure(run, tr) {
+  const { gold, mats, gem, tier, sc } = treasureLoot(run, tr.x, tr.y, tr.lord);
   tr.state = 'open';
   run.treasuresOpened.push({ zone: tr.zone, idx: tr.idx });
   run.showBanner(tr.lord ? t('Harta Penguasa {region} terbuka!', { region: regionById(tr.zone || run.region.id).name }) : t('Harta karun ditemukan!'));

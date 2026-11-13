@@ -129,6 +129,9 @@ export const sfx = {
   roar() { tone(150, 0.32, 'sawtooth', 0.14, -70); noise(0.22, 0.07); },                  // Mengamuk
   sizzle() { noise(0.4, 0.09); tone(420, 0.35, 'sawtooth', 0.06, -300); },                // Kepanasan
   ready(high = false) { const f = high ? 1568 : 1175; tone(f, 0.07, 'triangle', 0.07); tone(f * 1.5, 0.12, 'triangle', 0.06, 0, 0.06); }, // Bidik full / Kombo max
+  // world happenings (plan "Momen Acak"): synth only
+  glint() { tone(1760, 0.18, 'sine', 0.05); tone(2349, 0.26, 'sine', 0.04, 0, 0.09); tone(1319, 0.3, 'sine', 0.03, 0, 0.2); }, // Cahaya Aneh: a faint chime
+  rumble() { tone(55, 0.6, 'sawtooth', 0.12, -15); noise(0.45, 0.06, 0.05); },                 // Raksasa Pengembara: a far footfall
   boss() { tone(110, 0.7, 'sawtooth', 0.2, -40); tone(82, 0.9, 'sawtooth', 0.18, 0, 0.25); noise(0.5, 0.08, 0.1); },
   gameover() { // the player's fall, then the jingle
     const after = play('playerDie') ? 0.8 : 0;

@@ -73,8 +73,30 @@ export const HAPPEN = {
   first: 150, every: [300, 480],     // seconds before the first, between the next ones
   dist: [900, 1400],                 // how far from the player one appears
   expire: 150, far: 2800,            // gone if not started in this many seconds, or left this far behind
-  kinds: { caravan: 1, raid: 1, meteor: 1 }, // weights
-  caravan: { len: 1800, gold: 1.5 }, // a short escort along the nearest road; purse × QUEST_REWARD gold
+  // per kind: weight w; `when` = the parts of the day it can come (data/time.js PHASES icons:
+  // dawn, sun, dusk, moon; none = any); nightMul: the weight × this at night; cool: seconds before the
+  // same kind can come again (plan "Momen Acak")
+  kinds: {
+    caravan: { w: 1, when: ['dawn', 'sun'] },
+    raid: { w: 1 },
+    meteor: { w: 0.8 },
+    wisp: { w: 1, when: ['dusk', 'moon'] },
+    giant: { w: 0.25, nightMul: 3, cool: 900 },
+  },
+  seen: 950,                         // a quiet happening shows on the map once the player comes this close
+  // Cahaya Aneh: a light that drifts off when you come near; caught → a gift, or a trap
+  wisp: {
+    dist: [700, 1100], near: 320, catch: 60, speed: 140, time: 20, expire: 120,
+    glow: 26,                        // particles / s while it hangs there (× quality)
+    trap: 0.3, pack: 6,              // chance it calls an ambush instead, pack size (one of them elite)
+    gift: { gold: 1.2, mats: { dust: [4, 9], crystal: [0, 2] }, gem: 0.35 }, // coins × QUEST_REWARD gold; gem chance
+  },
+  // Raksasa Pengembara: a crowned giant walking the land; fight it, follow it or let it go
+  giant: {
+    dist: [1400, 1900], life: 240, wander: 9, speed: 26,   // seconds before it leaves, between new wander goals
+    engage: 480, rumble: [5, 8], hear: 2400,               // fights when this close (or struck); quakes felt within `hear`
+    hp: 30, dmg: 1.7, size: 2.3,                           // × a zone enemy at that level
+  },  caravan: { len: 1800, gold: 1.5 }, // a short escort along the nearest road; purse × QUEST_REWARD gold
   raid: { time: 40, waves: [[0, 4], [13, 6], [26, 8]], gold: 2, hp: 0.7 }, // a short defence; barricade HP × DEFEND.hp
   meteor: {
     time: 22, every: 0.9, r: 380, near: 400,   // seconds, between falls, area radius, start distance
